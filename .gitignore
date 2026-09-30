@@ -8,3 +8,8 @@
 .externalNativeBuild
 .cxx
 local.properties
+.kotlin
+# Release signing: written by the release workflow, never committed.
+.env
+*.jks
+*.keystore

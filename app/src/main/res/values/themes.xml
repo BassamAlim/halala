@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.Halala" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Dark-only, matching the Compose theme, and painted before the first frame so there is
+         no white flash on cold start. -->
+    <style name="Theme.Halala" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
 </resources>

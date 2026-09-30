@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The Halala mark, from the design's final logo: the ه coin with a thin inner ring, one jade
+    shape with an even-odd fill, so what shows through is whatever it sits on. Drawn on the
+    board's 108 grid and cropped to the coin (the board's viewBox 22 22 64 64). Two fixed inks;
+    never tinted. Minimum size 32dp, except beside the wordmark on Home, where the board sets it
+    at 26.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="26dp"
+    android:height="26dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    <group android:translateX="-22" android:translateY="-22">
+        <path
+            android:fillColor="@color/accent"
+            android:fillType="evenOdd"
+            android:pathData="M22 54a32 32 0 1 0 64 0a32 32 0 1 0 -64 0ZM28.2 54a25.8 25.8 0 1 0 51.6 0a25.8 25.8 0 1 0 -51.6 0ZM30.8 54a23.2 23.2 0 1 0 46.4 0a23.2 23.2 0 1 0 -46.4 0ZM40.5 64.66V60.52H43.53Q42.81 59.87 42.34 58.68Q41.88 57.49 41.88 55.7Q41.88 54.7 42.14 53.75Q42.4 52.8 42.95 51.9Q44.02 50.14 45.84 49.13Q47.67 48.11 49.78 48.11Q52.12 48.11 53.86 49.08Q55.6 50.04 56.59 51.73Q57.57 53.42 57.57 55.63V60.52H62.36V54.14Q62.36 49.73 60.19 47.4Q58.02 45.08 53.91 45.08Q51.33 45.08 49.36 45.39Q47.4 45.7 45.53 46.39L44.36 42.46Q45.95 41.9 47.48 41.58Q49.02 41.25 50.6 41.09Q52.19 40.94 53.91 40.94Q60.71 40.94 64.1 44.21Q67.5 47.49 67.5 53.7V64.66ZM51.33 60.52H52.43V55.83Q52.43 54.04 51.81 53.23Q51.19 52.42 49.81 52.42Q48.64 52.42 47.9 53.4Q47.16 54.39 47.16 55.9Q47.16 57.42 47.62 58.46Q48.09 59.49 49.02 60.01Q49.95 60.52 51.33 60.52Z" />
+    </group>
+</vector>
