@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Themed-icon layer: the coin as one ink, the ring cut out of it. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd"
+        android:pathData="M34,54 a20,20 0 1,0 40,0 a20,20 0 1,0 -40,0 M38.65,54 a15.35,15.35 0 1,0 30.7,0 a15.35,15.35 0 1,0 -30.7,0 M40.95,54 a13.049999999999999,13.049999999999999 0 1,0 26.099999999999998,0 a13.049999999999999,13.049999999999999 0 1,0 -26.099999999999998,0" />
+</vector>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Halala coin: a jade disc with a dark inner ring. Two fixed inks; do not tint. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="26dp"
+    android:height="26dp"
+    android:viewportWidth="26"
+    android:viewportHeight="26">
+    <path android:fillColor="@color/accent" android:pathData="M1,13 a12,12 0 1,0 24,0 a12,12 0 1,0 -24,0" />
+    <path android:strokeColor="@color/bg" android:strokeWidth="1.4" android:pathData="M4.5,13 a8.5,8.5 0 1,0 17.0,0 a8.5,8.5 0 1,0 -17.0,0" />
+</vector>
