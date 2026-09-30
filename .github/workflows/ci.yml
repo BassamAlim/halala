@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # gradle/gradle-daemon-jvm.properties asks for a JDK 25 daemon; providing it here saves
+      # Gradle downloading one on every run.
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build debug APK
+        run: ./gradlew :app:assembleDebug
+
+      - name: Run unit tests
+        run: ./gradlew :app:testDebugUnitTest
+
+      # Room exports its schema on every build; migrations are written against the checked-in
+      # copies, so a schema change must come with its JSON.
+      - name: Check Room schemas are committed
+        run: |
+          if [ -n "$(git status --porcelain app/schemas)" ]; then
+            echo "::error::Room schema changed but app/schemas wasn't committed:"
+            git status --porcelain app/schemas
+            for f in $(git status --porcelain app/schemas | awk '{print $2}'); do
+              find "$f" -type f -print -exec cat {} \;
+            done
+            exit 1
+          fi
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-reports
+          path: app/build/reports/tests/testDebugUnitTest/
