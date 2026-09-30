@@ -2,17 +2,27 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- BiometricPrompt on every cold start, with device credential as the fallback. -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
+    <!--
+        No Android backup at all: the database is encrypted with a key that never leaves this
+        phone's Keystore, so a copy restored elsewhere could never be opened. Halala's own
+        export (and, later, its encrypted .halala backup) is the way data moves.
+    -->
     <application
-        android:allowBackup="true"
+        android:name=".App"
+        android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Halala">
+        android:theme="@style/Theme.Halala"
+        tools:targetApi="31">
         <activity
-            android:name=".MainActivity"
+            android:name=".core.Activity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.Halala"
@@ -23,6 +33,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- WorkManager is configured by App (it supplies Hilt's worker factory). -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
     </application>
 
 </manifest>
