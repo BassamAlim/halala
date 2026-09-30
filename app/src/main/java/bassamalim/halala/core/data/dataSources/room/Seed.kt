@@ -14,7 +14,7 @@ class Seed(private val clock: Clock) : RoomDatabase.Callback() {
 
     override fun onCreate(db: SupportSQLiteDatabase) {
         for (name in INSTITUTIONS)
-            db.execSQL("INSERT INTO institutions (name, senderIds, parserVersion) VALUES (?, '', 0)", arrayOf(name))
+            db.execSQL("INSERT INTO institutions (name, senderIds, parserVersion) VALUES (?, '', 0)", arrayOf<Any>(name))
 
         db.execSQL(
             """
@@ -22,7 +22,7 @@ class Seed(private val clock: Clock) : RoomDatabase.Callback() {
                 openingBalanceMinor, archived, createdAt)
             VALUES (?, NULL, ?, 'CASH', NULL, NULL, ?, 0, 0, ?)
             """.trimIndent(),
-            arrayOf(
+            arrayOf<Any>(
                 UUID.randomUUID().toString(),
                 CASH_WALLET_NAME,
                 Globals.PRIMARY_CURRENCY,
