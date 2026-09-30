@@ -37,9 +37,9 @@ object Sizes {
     /** Settings-style rows inside a card. */
     val listRow = 52.dp
     val fab = 56.dp
-    /** The coin on the lock screen. */
+    /** The mark on the lock screen. */
     val lockMark = 64.dp
-    /** The coin beside the wordmark on Home. */
+    /** The mark beside the wordmark on Home (the board's size). */
     val logo = 26.dp
 }
 

@@ -81,7 +81,7 @@ private fun LockContent(onUnlockClick: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
-                painter = painterResource(R.drawable.ic_halala_coin),
+                painter = painterResource(R.drawable.ic_halala_mark),
                 contentDescription = null,
                 modifier = Modifier.size(Sizes.lockMark)
             )

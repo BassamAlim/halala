@@ -47,7 +47,7 @@ object HalalaType {
         lineHeight = 32.sp
     )
 
-    /** The wordmark beside the coin on Home. */
+    /** The wordmark beside the mark on Home. */
     val Wordmark = TextStyle(
         fontFamily = InstrumentSans,
         fontWeight = FontWeight(600),

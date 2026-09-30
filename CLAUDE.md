@@ -129,8 +129,14 @@ Don't hardcode hex values or `.dp` literals that aren't a named token in `Dimens
   styles by token name; `Typography` maps them onto Material slots.
 - **Icons are the boards' own stroke glyphs** (24 grid, 1.7 stroke, round caps and joins),
   transcribed into `res/drawable/ic_*.xml` and tinted in code. There is no `material-icons`
-  dependency — don't add one; port the glyph from a board. The coin (`ic_halala_coin`) has two
-  fixed inks and is never tinted.
+  dependency — don't add one; port the glyph from a board.
+- **The logo** is the design's final mark (canvas *Logo* page, "Final · ه coin with inner
+  ring"; design system *Logos* group): a jade coin with a thin inner ring and ه cut out, one
+  even-odd shape. `ic_halala_mark` is it cropped to the coin (Home's header at 26dp, the lock at
+  64dp; never tinted, 32dp minimum elsewhere). The launcher icon is the design's app icon on
+  the same 108dp adaptive grid (`ic_launcher_foreground` over bg, plus a monochrome layer for
+  themed icons). The small `halala-glyph` (no ring, for under 32dp) is for the notification
+  icon when notifications arrive.
 - **Touch targets are at least 44dp** (`Sizes.touchTarget`); a 28dp chip pads its hit area.
 - Components (`core/ui/components`): `HalalaCard`/`SummaryCard`/`ListCard`+`ListRow`,
   `BalanceCard`, `HalalaButton` (Primary: one per section; Secondary; destructive = secondary with
@@ -210,7 +216,7 @@ key, the theme and shared components, the biometric lock, the five-tab shell, ac
 archive, several per bank by last four), manual transactions and moves, the cash wallet with its
 count, CSV/JSON export, and the CI and release workflows.
 
-Screens and where they come from: **Home** (Home board: coin and wordmark, wallet and banks in the
+Screens and where they come from: **Home** (Home board: mark and wordmark, wallet and banks in the
 summary-card grid, Recent; the balance card waits for budgets, the review pill for the inbox),
 **Activity** (Activity board: search, account filter chips, month In/Out, rows by day; Money flow
 waits for Phase 6), **Transaction** (Transaction detail board, minus category, tags, location

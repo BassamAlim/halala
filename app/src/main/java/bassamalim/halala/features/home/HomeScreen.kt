@@ -38,7 +38,7 @@ import bassamalim.halala.core.ui.theme.Sizes
 import bassamalim.halala.core.ui.theme.Spacing
 
 /**
- * Home, from the Home board as far as Phase 0 can fill it: the coin and wordmark, the wallet and
+ * Home, from the Home board as far as Phase 0 can fill it: the mark and wordmark, the wallet and
  * the banks in the two summary cards, and the latest transactions. The balance card arrives
  * with budgets, and the review pill with the inbox.
  */
@@ -83,7 +83,7 @@ private fun HomeContent(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
             ) {
                 Image(
-                    painter = painterResource(R.drawable.ic_halala_coin),
+                    painter = painterResource(R.drawable.ic_halala_mark),
                     contentDescription = null,
                     modifier = Modifier.size(Sizes.logo)
                 )
