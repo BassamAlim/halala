@@ -20,6 +20,7 @@ import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.absoluteValue
 
 /**
  * The spec's ingestion pipeline, the same for a live SMS and the back-import: store the raw
@@ -167,7 +168,8 @@ class SmsIngest @Inject constructor(
 
     /**
      * Pairs [leg] with the other side of a move between your accounts, if it was recorded: an
-     * unpaired leg the other way, same amount, on another account. Either SMS naming the other
+     * unpaired leg the other way on another account, for the same amount or the amount plus the
+     * sender's fee (which then becomes its own debit). Either SMS naming the other
      * account's digits pairs them within 48 hours; two plain transfers pair within 10 minutes.
      */
     private suspend fun pairWithFarSide(leg: Transaction, parsed: ParsedSms.Movement, all: List<Account>, learned: List<AccountRef>) {
@@ -177,7 +179,9 @@ class SmsIngest @Inject constructor(
         val candidates = sms.findUnpaired(
             accountId = leg.accountId,
             direction = if (outgoing) Direction.CREDIT else Direction.DEBIT,
-            amountMinor = leg.amountMinor,
+            // The sending bank may quote its fee inside the amount (1,250.25 leaves, 1,250 arrives).
+            amounts = if (outgoing) leg.amountMinor - FEE_TOLERANCE..leg.amountMinor
+            else leg.amountMinor..leg.amountMinor + FEE_TOLERANCE,
             currency = leg.currency,
             from = leg.occurredAt - PAIR_WINDOW,
             to = leg.occurredAt + PAIR_WINDOW
@@ -200,12 +204,15 @@ class SmsIngest @Inject constructor(
                 plainTransfers && gap <= CLOSE_WINDOW -> Triple(other, gap, CLOSE_CONFIDENCE)
                 else -> null
             }
-        }.minWithOrNull(compareByDescending<Triple<Transaction, Duration, Double>> { it.third }.thenBy { it.second })
-            ?: return
+        }.minWithOrNull(
+            compareByDescending<Triple<Transaction, Duration, Double>> { it.third }
+                .thenBy { (it.first.amountMinor - leg.amountMinor).absoluteValue }
+                .thenBy { it.second }
+        ) ?: return
 
-        val other = best.first
-        if (outgoing) transactions.pair(leg.id, other.id, best.third)
-        else transactions.pair(other.id, leg.id, best.third)
+        val (sent, arrived) = if (outgoing) leg to best.first else best.first to leg
+        if (sent.amountMinor > arrived.amountMinor) transactions.splitFee(sent.id, sent.amountMinor - arrived.amountMinor)
+        transactions.pair(sent.id, arrived.id, best.third)
     }
 
     private suspend fun institutionIdOf(bank: BankFormat): Long? =
@@ -216,6 +223,8 @@ class SmsIngest @Inject constructor(
         val DUPLICATE_WINDOW: Duration = Duration.ofMinutes(3)
         val PAIR_WINDOW: Duration = Duration.ofHours(48)
         val CLOSE_WINDOW: Duration = Duration.ofMinutes(10)
+        /** The most a sending bank's fee adds to the amount it quotes (2 SAR; SARIE costs up to 1.15). */
+        const val FEE_TOLERANCE = 200L
         const val LINKED_CONFIDENCE = 0.9
         const val CLOSE_CONFIDENCE = 0.6
 

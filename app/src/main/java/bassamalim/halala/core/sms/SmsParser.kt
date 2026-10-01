@@ -27,7 +27,7 @@ enum class Role {
  * bank's "Local transfer" and "Local Transfer" can mean opposite directions).
  *
  * A null [direction] is inferred from which side quotes an account number, and [kind] becomes
- * TRANSFER_OUT or TRANSFER_IN to match. A null [kind] (and not [declined]) is a message that
+ * TRANSFER_OUT or TRANSFER_IN to match (an INTERNAL_TRANSFER stays one). A null [kind] (and not [declined]) is a message that
  * moves no money.
  */
 data class Template(
@@ -107,7 +107,10 @@ object SmsParser {
             fields.getOrPut(role, ::mutableListOf) += line.substring(label.length).trimStart(' ', ':').trim()
         }
         fun refsOf(role: Role) = fields[role].orEmpty().flatMap(::refs)
-        fun bareRefsOf(role: Role) = fields[role].orEmpty().filter { LEADING_REF.containsMatchIn(it) }.flatMap(::refs)
+        // Only what the value leads with: "لـ1111 من4444;…" on one line is your 1111, not both.
+        fun bareRefsOf(role: Role) = fields[role].orEmpty()
+            .filter { LEADING_REF.containsMatchIn(it) }
+            .flatMap { refs(it.trim().substringBefore(' ')) }
         fun nameOf(role: Role) = fields[role].orEmpty().firstNotNullOfOrNull(::name)
         fun moneyOf(role: Role, currency: String) =
             fields[role].orEmpty().firstNotNullOfOrNull { money(it) ?: bare(it, currency) }
@@ -115,7 +118,7 @@ object SmsParser {
         val direction = template.direction
             ?: if (refsOf(Role.TO).isNotEmpty() && refsOf(Role.FROM).isEmpty()) Direction.CREDIT else Direction.DEBIT
         val kind = when {
-            template.direction != null -> templateKind
+            template.direction != null || templateKind == TransactionKind.INTERNAL_TRANSFER -> templateKind
             direction == Direction.CREDIT -> TransactionKind.TRANSFER_IN
             else -> TransactionKind.TRANSFER_OUT
         }
@@ -138,7 +141,9 @@ object SmsParser {
             // Your side of a transfer leads with its digits ("من:1111", "To: ***9003; VISA"); digits
             // trailing a name there are a shop's ("من aldaji1234"). The card that tops up a wallet
             // is the other bank's.
-            ownRefs = (refsOf(Role.ACCOUNT) + bareRefsOf(if (credit) Role.TO else Role.FROM) +
+            // An SMS that names your account outright ("حساب 444*690") says nothing more about
+            // you in its from/to lines: there, digits are a shop's id.
+            ownRefs = (refsOf(Role.ACCOUNT).ifEmpty { bareRefsOf(if (credit) Role.TO else Role.FROM) } +
                 (if (toppedUp) emptyList() else refsOf(Role.CARD))).distinct(),
             partyRefs = (refsOf(Role.PARTY) + refsOf(if (credit) Role.FROM else Role.TO) +
                 (if (toppedUp) refsOf(Role.CARD) else emptyList())).distinct(),
@@ -149,7 +154,9 @@ object SmsParser {
                 ?: "",
             // A total already includes the fees; so does a fee charged on its own.
             feeMinor = if (total != null || kind == TransactionKind.FEE) 0
-            else moneyOf(Role.FEE, charged.second)?.takeIf { it.second == charged.second }?.first ?: 0,
+            else fields[Role.FEE].orEmpty().filter { '*' !in it } // a masked number in the fee's place
+                .firstNotNullOfOrNull { money(it) ?: bare(it, charged.second) }
+                ?.takeIf { it.second == charged.second && it.first < charged.first }?.first ?: 0,
             originalMinor = stated.first.takeIf { foreign },
             originalCurrency = stated.second.takeIf { foreign },
             balanceMinor = moneyOf(Role.BALANCE, charged.second)?.takeIf { it.second == charged.second }?.first

@@ -6,6 +6,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.InternalTransfer
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.enums.Direction
+import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.enums.TransactionSource
 import bassamalim.halala.core.models.TransactionDraft
 import bassamalim.halala.core.models.TransferDraft
@@ -116,6 +117,28 @@ class TransactionsRepository @Inject constructor(
         check(inLeg)
         require(outLeg.direction == Direction.DEBIT && inLeg.direction == Direction.CREDIT)
         return transactionsDao.insertPair(outLeg, inLeg, pairUid = UUID.randomUUID().toString())
+    }
+
+    /**
+     * Takes [feeMinor] out of a recorded debit as its own FEE debit: a bank that quotes a
+     * transfer with its fee included. The account's balance is unchanged.
+     */
+    suspend fun splitFee(id: Long, feeMinor: Long) {
+        val whole = checkNotNull(transactionsDao.get(id)) { "No transaction $id" }
+        require(whole.direction == Direction.DEBIT && feeMinor in 1 until whole.amountMinor)
+
+        transactionsDao.update(whole.copy(amountMinor = whole.amountMinor - feeMinor))
+        transactionsDao.insert(
+            whole.copy(
+                id = 0,
+                uid = UUID.randomUUID().toString(),
+                amountMinor = feeMinor,
+                kind = TransactionKind.FEE,
+                title = "",
+                originalAmountMinor = null,
+                originalCurrency = null
+            )
+        )
     }
 
     /** Pairs two recorded legs as one move between your accounts, so neither counts in totals. */

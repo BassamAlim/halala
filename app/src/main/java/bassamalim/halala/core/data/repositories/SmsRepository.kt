@@ -52,9 +52,9 @@ class SmsRepository @Inject constructor(
     suspend fun findUnpaired(
         accountId: Long,
         direction: Direction,
-        amountMinor: Long,
+        amounts: LongRange,
         currency: String,
         from: Instant,
         to: Instant
-    ): List<Transaction> = smsDao.findUnpaired(accountId, direction, amountMinor, currency, from, to)
+    ): List<Transaction> = smsDao.findUnpaired(accountId, direction, amounts.first, amounts.last, currency, from, to)
 }

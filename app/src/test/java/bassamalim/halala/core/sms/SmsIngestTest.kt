@@ -167,6 +167,30 @@ class SmsIngestTest {
     }
 
     @Test
+    fun `a sender's fee inside the amount still pairs, and becomes a fee`() = runTest {
+        receive("SNB-AlAhli", """
+            حوالة صادرة محلية
+            من:4444*
+            إلى:أحمد -. -
+            عبر:AL RAJHI BANK
+            آيبان:*1111
+            مبلغ:1250.25 SAR
+            في:12/09/26 18:01
+        """)
+        receive("AlRajhiBank", """
+            حوالة محلية واردة بـSR 1250
+            لـ1111
+            من4444;أحمد علي
+            26/9/12 18:02
+        """, minutes = 1)
+
+        assertEquals(1, transactions.getAllTransfers().size)
+        assertEquals(-125_025L, balance(snb))
+        assertEquals(125_000L, balance(rajhiMain))
+        assertEquals(25L, transactions.getAll().single { it.kind == TransactionKind.FEE }.amountMinor)
+    }
+
+    @Test
     fun `fees are their own debit`() = runTest {
         receive("AlRajhiBank", """
             حوالة محلية صادرة بـSR 2500

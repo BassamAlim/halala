@@ -41,6 +41,8 @@ object BankFormats {
     /** A transfer whose header doesn't say which way it went. */
     private fun transfer(header: String) = Template(header, TRANSFER_OUT)
     private fun declined(header: String) = Template(header, declined = true)
+    /** A move between your own accounts; older SMS name only where it went, so it reads as a credit. */
+    private fun between(header: String) = Template(header, INTERNAL_TRANSFER)
     private fun ignore(header: String) = Template(header)
 
     val AL_RAJHI = BankFormat(
@@ -60,7 +62,7 @@ object BankFormats {
             into("حوالة داخلية واردة", TRANSFER_IN),
             out("حوالة داخلية صادرة", TRANSFER_OUT),
             into("اضافه حوالة داخلية", TRANSFER_IN),
-            out("حوالة بين حساباتك", INTERNAL_TRANSFER),
+            between("حوالة بين حساباتك"),
             into("حوالة واردة راتب", SALARY),
             into("ايداع:الأرباح", OTHER),
             out("سحب:صراف", ATM_WITHDRAWAL),
@@ -111,7 +113,7 @@ object BankFormats {
             into("عملية نقل رصيد", TRANSFER_IN),
             out("حوالة صادرة", TRANSFER_OUT),
             out("حوالة فورية محلية صادرة", TRANSFER_OUT),
-            out("حوالة بين حساباتك", INTERNAL_TRANSFER),
+            between("حوالة بين حساباتك"),
             into("ايداع رواتب", SALARY),
             into("مستحقات أخرى من صاحب العمل", SALARY),
             out("سحب", ATM_WITHDRAWAL),

@@ -97,6 +97,22 @@ sender: AlRajhiBank
 expect: TRANSFER_IN CREDIT 2700.00 SAR own=1111
 ===
 
+# Both sides on one line: only the leading digits are yours.
+sender: AlRajhiBank
+حوالة محلية واردة بـSR 2000
+لـ1111 من4444;أحمد علي
+26/4/11 21:06
+expect: TRANSFER_IN CREDIT 2000.00 SAR own=1111
+===
+# An older "between your accounts" names only where the money went.
+sender: AlRajhiBank
+حوالة بين حساباتك
+مبلغ: SAR 1500
+الى: 1111
+في: 24-3-14 17:03
+expect: INTERNAL_TRANSFER CREDIT 1500.00 SAR own=1111 party=-
+===
+
 # ───────── Al Rajhi: the older "label:value" layout ─────────
 
 sender: AlRajhiBank
@@ -265,6 +281,27 @@ sender: SNB-AlAhli
 حساب 444*690
 في 03/09/2022 00:08
 expect: PURCHASE DEBIT 42.00 SAR own=444,690,9002 title=Cafe
+===
+# A masked number where the fee should be is not a fee; a shop's id is not your account.
+sender: SNB-AlAhli
+حوالة صادرة محلية
+مبلغ 2407 SAR
+رسوم *9100 SAR
+من 444*690
+مستفيد أحمد
+إلى *علي
+بنك 00000000000000000
+في 30/01/25 09:50
+expect: TRANSFER_OUT DEBIT 2407.00 SAR own=444,690 fee=0.00
+===
+sender: SNB-AlAhli
+شراء انترنت
+مبلغ 10 SAR
+بطاقة مدى *9002
+حساب 444*690
+من 0123456789
+في 14/01/2022 13:52
+expect: PURCHASE DEBIT 10.00 SAR own=444,690,9002
 ===
 # Digits in a shop's name are not yours.
 sender: SNB-AlAhli

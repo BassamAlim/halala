@@ -44,6 +44,7 @@ fun EditAccountScreen(viewModel: EditAccountViewModel = hiltViewModel()) {
         onCurrencyClick = viewModel::onCurrencyClick,
         onCurrencyChange = viewModel::onCurrencyChange,
         onOpeningBalanceChange = viewModel::onOpeningBalanceChange,
+        onBalanceNowChange = viewModel::onBalanceNowChange,
         onArchiveClick = viewModel::onArchiveClick,
         onCountCashClick = viewModel::onCountCashClick
     )
@@ -61,6 +62,7 @@ private fun EditAccountContent(
     onCurrencyClick: (String?) -> Unit,
     onCurrencyChange: (String) -> Unit,
     onOpeningBalanceChange: (String) -> Unit,
+    onBalanceNowChange: (String) -> Unit,
     onArchiveClick: () -> Unit,
     onCountCashClick: () -> Unit
 ) {
@@ -178,6 +180,21 @@ private fun EditAccountContent(
                 placeholder = "0.00",
                 numeric = true,
                 isError = AccountProblem.OpeningBalanceInvalid in problems
+            )
+        }
+
+        // The wallet is corrected by counting it; a bank's balance by reading it off the bank.
+        if (!state.isNew && !state.isCash) FormField(
+            label = stringResource(R.string.account_balance_now),
+            hint = stringResource(R.string.account_balance_now_hint),
+            error = stringResource(R.string.amount_invalid).takeIf { AccountProblem.BalanceNowInvalid in problems }
+        ) {
+            HalalaTextField(
+                value = form.balanceNow,
+                onValueChange = onBalanceNowChange,
+                placeholder = "0.00",
+                numeric = true,
+                isError = AccountProblem.BalanceNowInvalid in problems
             )
         }
 

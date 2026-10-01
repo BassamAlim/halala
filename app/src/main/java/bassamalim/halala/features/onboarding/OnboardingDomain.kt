@@ -136,7 +136,7 @@ class OnboardingDomain @Inject constructor(
                         bank = rows.first().first.bank,
                         name = rows.first().second,
                         last4 = refs.firstOrNull(),
-                        otherRefs = refs.drop(1) + if (quotesNone && refs.isNotEmpty()) listOf(SmsIngest.NO_DIGITS) else emptyList()
+                        otherRefs = refs.drop(1) + if (quotesNone) listOf(SmsIngest.NO_DIGITS) else emptyList()
                     )
                 }
     }

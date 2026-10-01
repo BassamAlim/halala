@@ -97,6 +97,8 @@
     <string name="account_currency_invalid">That isn\'t a currency code.</string>
     <string name="account_currency_locked">Fixed once an account has transactions.</string>
     <string name="account_opening_balance">Opening balance</string>
+    <string name="account_balance_now">Balance today</string>
+    <string name="account_balance_now_hint">What your bank shows right now. Halala counts on from this, whatever the old messages add up to. Leave blank to keep it as it is.</string>
     <string name="account_opening_balance_hint">What it held before Halala started counting. A minus for money owed.</string>
     <string name="account_archive">Archive</string>
     <string name="account_unarchive">Bring back</string>

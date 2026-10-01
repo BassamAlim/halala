@@ -4,6 +4,9 @@ import bassamalim.halala.core.data.TEST_CLOCK
 import bassamalim.halala.core.data.dataSources.room.AppDatabase
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.InstitutionsRepository
+import bassamalim.halala.core.data.repositories.SmsRepository
+import bassamalim.halala.core.models.AccountDraft
+import kotlinx.coroutines.flow.first
 import bassamalim.halala.core.data.testDatabase
 import bassamalim.halala.core.enums.AccountType
 import bassamalim.halala.features.editAccount.EditAccountDomain.Checked
@@ -28,7 +31,7 @@ class EditAccountDomainTest {
     fun setUp() = runTest {
         db = testDatabase()
         accounts = AccountsRepository(db.accountsDao(), TEST_CLOCK)
-        domain = EditAccountDomain(accounts, InstitutionsRepository(db.institutionsDao()))
+        domain = EditAccountDomain(accounts, InstitutionsRepository(db.institutionsDao()), SmsRepository(db.smsDao()), TEST_CLOCK)
         rajhi = db.institutionsDao().getAll().first { it.name == "Al Rajhi" }.id
     }
 
@@ -102,5 +105,26 @@ class EditAccountDomainTest {
 
         assertEquals(AccountSave.Saved, domain.save(id, form(institutionId = rajhi, name = "Main")))
         assertTrue(accounts.getAll().any { it.nickname == "Main" && it.id == id })
+    }
+
+    @Test
+    fun `balance today replaces whatever the history added up to, and counts on from there`() = runTest {
+        val id = accounts.create(AccountDraft(rajhi, "Salary", AccountType.CURRENT, "4821", "SAR", 99_999))
+
+        assertEquals(AccountSave.Saved, domain.save(id, form(institutionId = rajhi).copy(balanceNow = "6,240.50")))
+        assertEquals(624_050L, accounts.observe(id).first()!!.balanceMinor)
+
+        assertEquals(
+            AccountSave.Invalid(setOf(AccountProblem.BalanceNowInvalid)),
+            domain.save(id, form(institutionId = rajhi).copy(balanceNow = "lots"))
+        )
+    }
+
+    @Test
+    fun `an account found without digits can stay without them`() = runTest {
+        val id = accounts.create(AccountDraft(rajhi, "Wallet", AccountType.WALLET, null, "SAR", 0))
+
+        assertEquals(AccountSave.Saved, domain.save(id, form(institutionId = rajhi, type = AccountType.WALLET, last4 = "")))
+        assertEquals(setOf(AccountProblem.Last4Invalid), problems(form(last4 = "")))
     }
 }

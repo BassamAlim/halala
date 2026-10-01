@@ -76,7 +76,7 @@ interface SmsDao {
     /** Unpaired SMS legs on other accounts that could be the far side of a move. */
     @Query(
         "SELECT t.* FROM transactions t WHERE t.accountId != :accountId " +
-                "AND t.direction = :direction AND t.amountMinor = :amountMinor " +
+                "AND t.direction = :direction AND t.amountMinor BETWEEN :minMinor AND :maxMinor " +
                 "AND t.currency = :currency AND t.occurredAt BETWEEN :from AND :to " +
                 "AND t.rawMessageId IS NOT NULL AND t.id NOT IN " +
                 "(SELECT outTransactionId FROM internal_transfers " +
@@ -85,7 +85,8 @@ interface SmsDao {
     suspend fun findUnpaired(
         accountId: Long,
         direction: Direction,
-        amountMinor: Long,
+        minMinor: Long,
+        maxMinor: Long,
         currency: String,
         from: Instant,
         to: Instant

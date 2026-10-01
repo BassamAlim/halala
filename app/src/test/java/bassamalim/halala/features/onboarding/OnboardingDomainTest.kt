@@ -84,7 +84,7 @@ class OnboardingDomainTest {
     @Test
     fun `an account whose messages quote no digits has no last four`() {
         assertEquals(
-            listOf(OnboardingDomain.NewAccount("Barq", "Barq", null, emptyList())),
+            listOf(OnboardingDomain.NewAccount("Barq", "Barq", null, listOf(SmsIngest.NO_DIGITS))),
             OnboardingDomain.plan(listOf(FoundAccount("Barq", emptyList(), 5) to "Barq"))
         )
     }
