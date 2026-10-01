@@ -34,7 +34,12 @@ data class Template(
     val header: String,
     val kind: TransactionKind? = null,
     val direction: Direction? = null,
-    val declined: Boolean = false
+    val declined: Boolean = false,
+    /**
+     * The bank's own product the money goes into, when the SMS quotes no number for it: an
+     * "Awaeed" term deposit. It is kept as one account of yours under that name.
+     */
+    val into: String? = null
 )
 
 /** How one bank writes its SMS. [institution] is the seeded Institution's name. */
@@ -67,7 +72,9 @@ sealed interface ParsedSms {
         val feeMinor: Long = 0,
         val originalMinor: Long? = null,
         val originalCurrency: String? = null,
-        val balanceMinor: Long? = null
+        val balanceMinor: Long? = null,
+        /** See [Template.into]. */
+        val into: String? = null
     ) : ParsedSms
 
     /** A declined card or transfer: no money moved, kept for anomaly alerts. */
@@ -159,7 +166,8 @@ object SmsParser {
                 ?.takeIf { it.second == charged.second && it.first < charged.first }?.first ?: 0,
             originalMinor = stated.first.takeIf { foreign },
             originalCurrency = stated.second.takeIf { foreign },
-            balanceMinor = moneyOf(Role.BALANCE, charged.second)?.takeIf { it.second == charged.second }?.first
+            balanceMinor = moneyOf(Role.BALANCE, charged.second)?.takeIf { it.second == charged.second }?.first,
+            into = template.into
         )
     }
 

@@ -9,10 +9,12 @@ import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.InstitutionsRepository
 import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
+import bassamalim.halala.core.enums.AccountType
 import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.enums.RawStatus
 import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.enums.TransactionSource
+import bassamalim.halala.core.models.AccountDraft
 import java.security.MessageDigest
 import java.time.Clock
 import java.time.Duration
@@ -139,10 +141,13 @@ class SmsIngest @Inject constructor(
         }
         // An older SMS names only one side ("to ••1111"). The other side is still one of your
         // accounts at that bank, and when only one other was in use by then, it is that one.
+        // (Numberless accounts, like Awaeed below, are never what such an SMS leaves unsaid.)
         val implied = if (named != null || parsed.kind != TransactionKind.INTERNAL_TRANSFER || parsed.partyRefs.isNotEmpty()) null
-        else all.filter { it.institutionId == account.institutionId && it.id != account.id && it.currency == account.currency }
+        else all.filter { it.institutionId == account.institutionId && it.id != account.id && it.currency == account.currency && it.last4 != null }
             .let { siblings -> sms.inUseBy(siblings.map(Account::id), at).singleOrNull()?.let { id -> siblings.first { it.id == id } } }
-        val otherSide = named ?: implied
+        val product = parsed.into?.let { productAccount(it, account, all, learned) }
+        val stated = named ?: product
+        val otherSide = stated ?: implied
 
         val legId = if (otherSide != null) {
             val far = leg.copy(
@@ -151,7 +156,7 @@ class SmsIngest @Inject constructor(
                 direction = if (parsed.direction == Direction.DEBIT) Direction.CREDIT else Direction.DEBIT
             )
             val (sent, arrived) = if (leg.direction == Direction.DEBIT) leg to far else far to leg
-            if (named != null) transactions.addParsedPair(sent, arrived)
+            if (stated != null) transactions.addParsedPair(sent, arrived)
             else transactions.addParsed(sent).also { transactions.pair(it, transactions.addParsed(arrived), IMPLIED_CONFIDENCE) }
         } else {
             transactions.addParsed(leg).also { pairWithFarSide(leg.copy(id = it), parsed, all, learned) }
@@ -223,6 +228,22 @@ class SmsIngest @Inject constructor(
         transactions.pair(sent.id, arrived.id, best.third)
     }
 
+    /**
+     * Your account for a bank product an SMS names without a number ("Awaeed"), made the first
+     * time money goes into it. It is found again by a learned ref, so renaming it is safe.
+     */
+    private suspend fun productAccount(name: String, beside: Account, all: List<Account>, learned: List<AccountRef>): Account? {
+        val institutionId = beside.institutionId ?: return null
+        val ref = PRODUCT_REF + name
+        learned.firstOrNull { it.institutionId == institutionId && it.ref == ref }
+            ?.let { hit -> all.firstOrNull { it.id == hit.accountId } }
+            ?.let { return it }
+
+        val id = accounts.create(AccountDraft(institutionId, name, AccountType.SAVINGS, null, beside.currency, 0))
+        sms.addRef(institutionId, ref, id)
+        return accounts.get(id)
+    }
+
     private suspend fun institutionIdOf(bank: BankFormat): Long? =
         institutions.getAll().firstOrNull { it.name == bank.institution }?.id
 
@@ -240,6 +261,9 @@ class SmsIngest @Inject constructor(
 
         /** The learned ref for a bank's SMS that quote no digits at all. */
         const val NO_DIGITS = ""
+
+        /** The learned ref that finds a product's account again: "product:Awaeed". */
+        const val PRODUCT_REF = "product:"
 
         /** A top-up is a "purchase" at your other bank, so a purchase can be a move's sending leg. */
         private val OUT_KINDS = setOf(TransactionKind.TRANSFER_OUT, TransactionKind.INTERNAL_TRANSFER, TransactionKind.PURCHASE)

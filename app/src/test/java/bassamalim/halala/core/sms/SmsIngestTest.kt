@@ -230,6 +230,25 @@ class SmsIngestTest {
     }
 
     @Test
+    fun `an Awaeed deposit moves into one Awaeed account, and isn't spending`() = runTest {
+        val deposit = """
+            انشاء حساب عوائد
+            مبلغ:SR 5000
+            من:3333
+            26/9/24 04:34
+        """
+        receive("AlRajhiBank", deposit)
+        receive("AlRajhiBank", deposit.replace("5000", "3000"), minutes = 60)
+
+        val awaeed = accounts.getAll().single { it.nickname == "Awaeed" }
+        assertEquals(800_000L, balance(awaeed.id))
+        assertEquals(-800_000L, balance(rajhiSavings))
+        assertEquals(2, transactions.getAllTransfers().size)
+        assertEquals(false, TransactionKind.SAVINGS_DEPOSIT.countsInTotals)
+        assertEquals(false, TransactionKind.INVESTMENT_BUY.countsInTotals)
+    }
+
+    @Test
     fun `fees are their own debit`() = runTest {
         receive("AlRajhiBank", """
             حوالة محلية صادرة بـSR 2500
