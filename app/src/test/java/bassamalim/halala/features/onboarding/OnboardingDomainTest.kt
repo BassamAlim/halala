@@ -63,7 +63,7 @@ class OnboardingDomainTest {
     }
 
     @Test
-    fun `rows given the same name at one bank become one account`() {
+    fun `rows given the same name at one bank become one account, and a blank row is shelved`() {
         val account = FoundAccount("SNB", listOf("4444", "9002"), 904)
         val card = FoundAccount("SNB", listOf("9005"), 209)
         val quiet = FoundAccount("SNB", emptyList(), 30)
@@ -73,6 +73,7 @@ class OnboardingDomainTest {
         assertEquals(
             listOf(
                 OnboardingDomain.NewAccount("SNB", "Main", "4444", listOf("9002", "9005", SmsIngest.NO_DIGITS)),
+                OnboardingDomain.NewAccount("SNB", "••5555", "5555", emptyList(), shelved = true),
                 OnboardingDomain.NewAccount("D360", "Main", "7777", emptyList())
             ),
             OnboardingDomain.plan(

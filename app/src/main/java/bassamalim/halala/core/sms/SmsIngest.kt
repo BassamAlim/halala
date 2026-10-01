@@ -133,18 +133,26 @@ class SmsIngest @Inject constructor(
         )
 
         // "Between your accounts": one SMS names both sides, so both legs are recorded at once.
-        val otherSide = all.firstOrNull { other ->
+        val named = all.firstOrNull { other ->
             parsed.kind == TransactionKind.INTERNAL_TRANSFER && other.id != account.id &&
                 other.currency == account.currency && isLinked(parsed.partyRefs, other, learned)
         }
+        // An older SMS names only one side ("to ••1111"). The other side is still one of your
+        // accounts at that bank, and when only one other was in use by then, it is that one.
+        val implied = if (named != null || parsed.kind != TransactionKind.INTERNAL_TRANSFER || parsed.partyRefs.isNotEmpty()) null
+        else all.filter { it.institutionId == account.institutionId && it.id != account.id && it.currency == account.currency }
+            .let { siblings -> sms.inUseBy(siblings.map(Account::id), at).singleOrNull()?.let { id -> siblings.first { it.id == id } } }
+        val otherSide = named ?: implied
+
         val legId = if (otherSide != null) {
             val far = leg.copy(
                 uid = UUID.randomUUID().toString(),
                 accountId = otherSide.id,
                 direction = if (parsed.direction == Direction.DEBIT) Direction.CREDIT else Direction.DEBIT
             )
-            if (leg.direction == Direction.DEBIT) transactions.addParsedPair(leg, far)
-            else transactions.addParsedPair(far, leg)
+            val (sent, arrived) = if (leg.direction == Direction.DEBIT) leg to far else far to leg
+            if (named != null) transactions.addParsedPair(sent, arrived)
+            else transactions.addParsed(sent).also { transactions.pair(it, transactions.addParsed(arrived), IMPLIED_CONFIDENCE) }
         } else {
             transactions.addParsed(leg).also { pairWithFarSide(leg.copy(id = it), parsed, all, learned) }
         }
@@ -225,6 +233,8 @@ class SmsIngest @Inject constructor(
         val CLOSE_WINDOW: Duration = Duration.ofMinutes(10)
         /** The most a sending bank's fee adds to the amount it quotes (2 SAR; SARIE costs up to 1.15). */
         const val FEE_TOLERANCE = 200L
+        /** The far side wasn't named, only implied by being the bank's one other account. */
+        const val IMPLIED_CONFIDENCE = 0.8
         const val LINKED_CONFIDENCE = 0.9
         const val CLOSE_CONFIDENCE = 0.6
 
@@ -270,7 +280,8 @@ class SmsIngest @Inject constructor(
         fun isDuplicate(body: String, other: String?): Boolean =
             other != null && (body == other || header(body) != header(other))
 
-        private fun header(body: String) = body.trim().lineSequence().first().trim()
+        /** The kind of message: its first line, less any numbers in it (an order's number, an amount). */
+        private fun header(body: String) = body.trim().lineSequence().first().filterNot(Char::isDigit).trim()
 
         fun hash(sender: String, body: String, receivedAt: Instant): String =
             MessageDigest.getInstance("SHA-256")

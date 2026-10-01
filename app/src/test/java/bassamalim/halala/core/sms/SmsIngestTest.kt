@@ -191,6 +191,45 @@ class SmsIngestTest {
     }
 
     @Test
+    fun `a move naming only where it went comes out of the bank's one other account in use`() = runTest {
+        val unnamed = """
+            حوالة بين حساباتك
+            مبلغ: SAR 1500
+            الى: 1111
+            في: 24-3-14 17:03
+        """
+        // Savings has had nothing yet, so there is no telling where this came from.
+        receive("AlRajhiBank", unnamed)
+        assertEquals(150_000L, balance(rajhiMain))
+        assertEquals(0L, balance(rajhiSavings))
+
+        receive("AlRajhiBank", """
+            حوالة محلية
+            عبر:SNB
+            مبلغ:SAR 5000
+            الى:3333
+            من:أحمد علي
+            في:25-5-16 21:41
+        """, minutes = 10)
+        receive("AlRajhiBank", unnamed.replace("1500", "2000"), minutes = 20)
+
+        assertEquals(350_000L, balance(rajhiMain))
+        assertEquals(300_000L, balance(rajhiSavings))
+        assertEquals(SmsIngest.IMPLIED_CONFIDENCE, transactions.getAllTransfers().single().matchConfidence, 0.0)
+    }
+
+    @Test
+    fun `two orders for the same amount in the same minute are two orders`() {
+        val order = "Subscription Order 6600001\n10.000000 Units\nFund A\nUnit Price 10.0000\nAmount 100.00"
+        val next = order.replace("6600001", "6600007").replace("Fund A", "Fund B")
+        val arabic = "حوالة محلية\nمن:****8888\nالمبلغ:1435.0"
+
+        assertEquals(false, SmsIngest.isDuplicate(order, next))
+        assertEquals(true, SmsIngest.isDuplicate(order, order))
+        assertEquals(true, SmsIngest.isDuplicate("Local Transfer\nFrom:****8888\nAmount:1435.0", arabic))
+    }
+
+    @Test
     fun `fees are their own debit`() = runTest {
         receive("AlRajhiBank", """
             حوالة محلية صادرة بـSR 2500

@@ -94,7 +94,7 @@ fun OnboardingScreen(viewModel: OnboardingViewModel = hiltViewModel()) {
         when (state.step) {
             OnboardingStep.Permission -> PermissionStep(state) { askPermission.launch(SMS_PERMISSIONS) }
             OnboardingStep.Accounts -> AccountsStep(state, viewModel::onNameChange, viewModel::onContinueClick)
-            OnboardingStep.History -> HistoryStep(state, viewModel::onLeaveClick)
+            OnboardingStep.History -> HistoryStep(state, viewModel::onBalanceChange, viewModel::onDoneClick)
         }
     }
 }
@@ -181,7 +181,11 @@ private fun ColumnScope.AccountsStep(
 }
 
 @Composable
-private fun ColumnScope.HistoryStep(state: OnboardingUiState, onDone: () -> Unit) {
+private fun ColumnScope.HistoryStep(
+    state: OnboardingUiState,
+    onBalanceChange: (Long, String) -> Unit,
+    onDone: () -> Unit
+) {
     Heading(
         stringResource(if (state.isReading) R.string.onboarding_sorting_title else R.string.onboarding_history_title),
         stringResource(if (state.isReading) R.string.onboarding_sorting_body else R.string.onboarding_history_body)
@@ -193,7 +197,36 @@ private fun ColumnScope.HistoryStep(state: OnboardingUiState, onDone: () -> Unit
         Stat(stringResource(R.string.onboarding_since), state.since, Modifier.weight(1f))
     }
 
-    Spacer(Modifier.weight(1f))
+    // Balances settle only once every message is filed, so they wait for the sorting.
+    Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+        if (!state.isReading && state.balances.isNotEmpty()) {
+            Text(
+                text = stringResource(R.string.onboarding_balances_body),
+                style = HalalaType.Caption,
+                color = HalalaColors.TextMuted,
+                modifier = Modifier.padding(bottom = Spacing.xs)
+            )
+            state.balances.forEachIndexed { index, row ->
+                if (index > 0) HorizontalDivider(thickness = Sizes.border, color = HalalaColors.Line)
+                Row(
+                    modifier = Modifier.padding(vertical = Insets.row),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                ) {
+                    Text(row.name, style = HalalaType.Label, color = HalalaColors.Text, modifier = Modifier.weight(1f))
+                    HalalaTextField(
+                        value = row.value,
+                        onValueChange = { onBalanceChange(row.accountId, it) },
+                        numeric = true,
+                        isError = row.isInvalid,
+                        modifier = Modifier.width(Sizes.onboardingBalance)
+                    )
+                    Text(row.currency, style = HalalaType.Caption, color = HalalaColors.TextMuted)
+                }
+            }
+        }
+    }
+
     HalalaButton(
         text = stringResource(R.string.onboarding_done),
         onClick = onDone,

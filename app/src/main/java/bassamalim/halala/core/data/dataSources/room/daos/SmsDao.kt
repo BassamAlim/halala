@@ -73,6 +73,10 @@ interface SmsDao {
         to: Instant
     ): List<Transaction>
 
+    /** Which of [accountIds] already had a transaction by [at]: the accounts in use then. */
+    @Query("SELECT DISTINCT accountId FROM transactions WHERE accountId IN (:accountIds) AND occurredAt <= :at")
+    suspend fun inUseBy(accountIds: List<Long>, at: Instant): List<Long>
+
     /** Unpaired SMS legs on other accounts that could be the far side of a move. */
     @Query(
         "SELECT t.* FROM transactions t WHERE t.accountId != :accountId " +

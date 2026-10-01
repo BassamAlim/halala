@@ -199,11 +199,12 @@
     <string name="onboarding_accounts_body">Give each a name you\'ll recognise. You can change them any time.</string>
     <string name="onboarding_name_placeholder">Name</string>
     <string name="onboarding_no_digits">No digits</string>
-    <string name="onboarding_same_name">A card and the account it\'s on: give both the same name. Leave a row blank to skip it.</string>
+    <string name="onboarding_same_name">A card and the account it\'s on: give both the same name. Leave a row blank to set it aside: it\'s kept under Archived accounts, and you can name it later.</string>
     <string name="onboarding_also_found">Also found: %1$s (funds). It will appear under Wealth.</string>
     <string name="onboarding_continue">Continue</string>
     <string name="onboarding_history_title">Your history is in</string>
-    <string name="onboarding_history_body">Amounts, accounts and balances are all set.</string>
+    <string name="onboarding_history_body">Every message is filed. Old messages only add up to roughly what each account holds.</string>
+    <string name="onboarding_balances_body">Check each balance against your bank and type over any that is off. Halala counts on from what you enter.</string>
     <string name="onboarding_sorting_title">Sorting your history</string>
     <string name="onboarding_sorting_body">Each message is going to its account. You can leave; it carries on.</string>
     <string name="onboarding_messages">Messages</string>

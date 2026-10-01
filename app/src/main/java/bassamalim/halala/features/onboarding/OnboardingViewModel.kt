@@ -4,9 +4,11 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
 import bassamalim.halala.core.sms.BankFormats
+import bassamalim.halala.core.utils.accountLabel
 import bassamalim.halala.core.utils.initialOf
 import bassamalim.halala.core.utils.maskedLast4
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -36,19 +38,25 @@ class OnboardingViewModel @Inject constructor(
         val step: OnboardingStep = OnboardingStep.Permission,
         val permissionDenied: Boolean = false,
         /** What you typed, by row key; a row you haven't touched shows its default. */
-        val names: Map<String, String> = emptyMap()
+        val names: Map<String, String> = emptyMap(),
+        /** Balances you typed over, by account id. */
+        val balances: Map<Long, String> = emptyMap(),
+        val showInvalid: Boolean = false
     )
 
     private val local = MutableStateFlow(Local())
     private var found: List<FoundAccount> = emptyList()
+    private var currencies: Map<Long, String> = emptyMap()
 
     val uiState: StateFlow<OnboardingUiState> = combine(
         domain.observeFound(),
         domain.observeStats(),
         domain.importing,
+        domain.observeAccounts(),
         local
-    ) { found, stats, importing, local ->
+    ) { found, stats, importing, accounts, local ->
         this.found = found
+        currencies = accounts.associate { it.account.id to it.account.currency }
         val (brokers, toName) = found.partition { it.bank == BROKER }
 
         OnboardingUiState(
@@ -69,7 +77,18 @@ class OnboardingViewModel @Inject constructor(
             alsoFound = BROKER.takeIf { brokers.isNotEmpty() },
             messages = COUNT.format(Locale.US, stats.messages),
             transactions = COUNT.format(Locale.US, stats.transactions),
-            since = stats.since?.atZone(clock.zone)?.format(MONTH).orEmpty()
+            since = stats.since?.atZone(clock.zone)?.format(MONTH).orEmpty(),
+            balances = accounts.map {
+                val typed = local.balances[it.account.id]
+                BalanceRow(
+                    accountId = it.account.id,
+                    name = accountLabel(it.institutionName, it.account.nickname),
+                    value = typed ?: Money.format(it.balanceMinor, it.account.currency),
+                    currency = it.account.currency,
+                    isInvalid = local.showInvalid && typed != null &&
+                        Money.parseSigned(typed, it.account.currency) == null
+                )
+            }
         )
     }.stateIn(
         scope = viewModelScope,
@@ -96,6 +115,21 @@ class OnboardingViewModel @Inject constructor(
         viewModelScope.launch {
             domain.nameAccounts(named)
             local.update { it.copy(step = OnboardingStep.History) }
+        }
+    }
+
+    fun onBalanceChange(accountId: Long, value: String) =
+        local.update { it.copy(balances = it.balances + (accountId to value), showInvalid = false) }
+
+    /** Done: the balances you corrected become each account's balance from now, then leave. */
+    fun onDoneClick() {
+        val typed = local.value.balances.filterKeys { it in currencies }
+        val parsed = typed.mapValues { (id, text) -> Money.parseSigned(text, currencies.getValue(id)) }
+        if (parsed.values.any { it == null }) return local.update { it.copy(showInvalid = true) }
+
+        viewModelScope.launch {
+            domain.setBalances(parsed.mapValues { it.value!! })
+            onLeaveClick()
         }
     }
 

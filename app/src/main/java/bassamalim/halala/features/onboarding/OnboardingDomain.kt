@@ -1,5 +1,7 @@
 package bassamalim.halala.features.onboarding
 
+import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
+import bassamalim.halala.core.data.dataSources.room.relations.AccountWithBalance
 import bassamalim.halala.core.data.dataSources.room.relations.SmsStats
 import bassamalim.halala.core.data.dataSources.room.relations.UnroutedGroup
 import bassamalim.halala.core.data.repositories.AccountsRepository
@@ -12,8 +14,10 @@ import bassamalim.halala.core.sms.BankFormats
 import bassamalim.halala.core.sms.SmsImport
 import bassamalim.halala.core.sms.SmsIngest
 import bassamalim.halala.core.sms.SmsParser
+import bassamalim.halala.core.utils.maskedLast4
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.time.Clock
 import javax.inject.Inject
 
 /** An account the SMS point at that the ledger doesn't have yet. */
@@ -32,7 +36,8 @@ class OnboardingDomain @Inject constructor(
     private val accountsRepository: AccountsRepository,
     private val institutionsRepository: InstitutionsRepository,
     private val preferencesRepository: PreferencesRepository,
-    private val smsImport: SmsImport
+    private val smsImport: SmsImport,
+    private val clock: Clock
 ) {
 
     val importing: Flow<Boolean> get() = smsImport.running
@@ -41,12 +46,27 @@ class OnboardingDomain @Inject constructor(
 
     fun observeStats(): Flow<SmsStats> = smsRepository.observeStats()
 
+    /** The bank accounts in use, to check their balances against the banks. */
+    fun observeAccounts(): Flow<List<AccountWithBalance>> = accountsRepository.observeAll()
+        .map { accounts -> accounts.filter { !it.account.archived && it.account.type != AccountType.CASH } }
+
+    /**
+     * What you say each account holds right now, by account id: a checkpoint the balance counts
+     * on from, since the messages only ever add up to roughly it.
+     */
+    suspend fun setBalances(balances: Map<Long, Long>) {
+        val now = clock.instant()
+        for ((accountId, balanceMinor) in balances)
+            smsRepository.addCheckpoint(BalanceCheckpoint(accountId = accountId, balanceMinor = balanceMinor, at = now, rawMessageId = null))
+    }
+
     fun startImport() = smsImport.start()
 
     /**
      * Creates the accounts you named and teaches each its digits, then sends the waiting SMS
      * through again. Rows at one bank given the same name are one account (a card and the
-     * account it is on); a row left blank stays unasked for now.
+     * account it is on). A row left blank is shelved: an archived account under its digits, so
+     * its history is kept and it is never asked about again; rename and restore it any time.
      */
     suspend fun nameAccounts(named: List<Pair<FoundAccount, String>>) {
         val institutions = institutionsRepository.getAll().associate { it.name to it.id }
@@ -57,13 +77,21 @@ class OnboardingDomain @Inject constructor(
                 AccountDraft(institutionId, account.name, typeFor(account.bank), account.last4, DEFAULT_CURRENCY, 0)
             )
             for (ref in account.otherRefs) smsRepository.addRef(institutionId, ref, id)
+            if (account.shelved) accountsRepository.setArchived(id, true)
         }
         smsImport.retry()
     }
 
     suspend fun finish() = preferencesRepository.setOnboarded()
 
-    data class NewAccount(val bank: String, val name: String, val last4: String?, val otherRefs: List<String>)
+    data class NewAccount(
+        val bank: String,
+        val name: String,
+        val last4: String?,
+        val otherRefs: List<String>,
+        /** You didn't name it: kept, archived, under its digits. */
+        val shelved: Boolean = false
+    )
 
     companion object {
         const val DEFAULT_CURRENCY = "SAR"
@@ -124,17 +152,21 @@ class OnboardingDomain @Inject constructor(
             }
         }
 
-        /** Which accounts naming those rows creates: one per bank and name, blank rows skipped. */
+        /**
+         * Which accounts naming those rows creates: one per bank and name, and one shelved
+         * account per row left blank, named by its digits ("••8888") or, with none, its bank.
+         */
         fun plan(named: List<Pair<FoundAccount, String>>): List<NewAccount> =
             named.map { (found, name) -> found to name.trim() }
-                .filter { it.second.isNotEmpty() }
-                .groupBy { (found, name) -> found.bank to name.lowercase() }
+                .groupBy { (found, name) -> if (name.isEmpty()) found.key to "" else found.bank to name.lowercase() }
                 .map { (_, rows) ->
                     val refs = rows.flatMap { it.first.refs }.distinct()
                     val quotesNone = rows.any { it.first.refs.isEmpty() }
+                    val bank = rows.first().first.bank
                     NewAccount(
-                        bank = rows.first().first.bank,
-                        name = rows.first().second,
+                        bank = bank,
+                        name = rows.first().second.ifEmpty { refs.firstOrNull()?.let(::maskedLast4) ?: bank },
+                        shelved = rows.first().second.isEmpty(),
                         last4 = refs.firstOrNull(),
                         otherRefs = refs.drop(1) + if (quotesNone) listOf(SmsIngest.NO_DIGITS) else emptyList()
                     )

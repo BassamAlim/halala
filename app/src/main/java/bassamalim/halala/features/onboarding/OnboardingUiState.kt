@@ -15,7 +15,20 @@ data class OnboardingUiState(
     val messages: String = "0",
     val transactions: String = "0",
     /** "Mar 2023", or blank before any message. */
-    val since: String = ""
+    val since: String = "",
+    /** Each account's balance as the messages add up, for you to correct. */
+    val balances: List<BalanceRow> = emptyList()
+)
+
+/** One account's balance to check against the bank. */
+data class BalanceRow(
+    val accountId: Long,
+    /** "Al Rajhi – Salary" */
+    val name: String,
+    /** What the field holds: the computed balance until you type over it. */
+    val value: String,
+    val currency: String,
+    val isInvalid: Boolean
 )
 
 /** One account found in the messages, to name. */

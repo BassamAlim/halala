@@ -92,6 +92,7 @@ class SmsCorpusReplayTest {
             SELECT strftime('%Y-%m-%d %H:%M', t.occurredAt/1000, 'unixepoch'), a.nickname, t.kind, t.direction, t.amountMinor/100.0, t.title FROM transactions t JOIN accounts a ON a.id=t.accountId
             WHERE t.id NOT IN (SELECT outTransactionId FROM internal_transfers UNION SELECT inTransactionId FROM internal_transfers)
             AND t.kind IN ('TRANSFER_IN','TRANSFER_OUT','INTERNAL_TRANSFER') AND t.occurredAt > 1782000000000 ORDER BY t.amountMinor DESC LIMIT 40""")
+        query("dropped or held", "SELECT status, sender, replace(body, char(10), ' / ') FROM raw_messages WHERE status IN ('DUPLICATE','FOREIGN','UNRECOGNISED') ORDER BY status, sender, receivedAt")
         File(corpus.parentFile, "replay.txt").writeText(out.toString())
         db.close()
     }
