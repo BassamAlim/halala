@@ -49,7 +49,8 @@ CI (`.github/workflows/ci.yml`) runs both on every push and PR to `main` and `de
 the Room schema changed without its `app/schemas` JSON. A `v*` tag runs `release.yml`: unit
 tests, a release APK signed from the `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` and
 `KEY_PASSWORD` secrets (unsigned, with a warning, if any is missing), attached to a GitHub
-Release with its SHA-256. Bump `versionCode`/`versionName` in `app/build.gradle.kts` before
+Release with its SHA-256. It can also be run by hand from the Actions tab with a tag name: it
+builds `main` (or the given ref) and creates the tag on the commit it built. Bump `versionCode`/`versionName` in `app/build.gradle.kts` before
 tagging. Locally, a `.env` at the root with the same four keys (`KEYSTORE_PATH` instead of the
 base64) signs `assembleRelease`; it is gitignored.
 
