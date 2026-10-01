@@ -45,8 +45,9 @@ designs disagree, ask the owner.
 ./gradlew :app:installDebug         # install on a connected device
 ```
 
-CI (`.github/workflows/ci.yml`) runs both on every push and PR to `main` and `dev`, and fails if
-the Room schema changed without its `app/schemas` JSON. A `v*` tag runs `release.yml`: unit
+CI (`.github/workflows/ci.yml`) runs both on every push and PR to `main` (not `dev`), uploads
+the debug APK as a run artifact, and fails if the Room schema changed without its `app/schemas`
+JSON. A `v*` tag runs `release.yml`: unit
 tests, a release APK signed from the `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` and
 `KEY_PASSWORD` secrets (unsigned, with a warning, if any is missing), attached to a GitHub
 Release with its SHA-256. It can also be run by hand from the Actions tab with a tag name: it
