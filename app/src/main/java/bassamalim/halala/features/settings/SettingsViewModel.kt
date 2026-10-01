@@ -41,4 +41,6 @@ class SettingsViewModel @Inject constructor(
     fun onAccountsClick() = navigator.navigate(Screen.Accounts)
 
     fun onExportClick() = navigator.navigate(Screen.Export)
+
+    fun onMessagesClick() = navigator.navigate(Screen.Onboarding(fromSettings = true))
 }

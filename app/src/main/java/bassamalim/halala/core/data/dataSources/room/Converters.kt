@@ -3,6 +3,7 @@ package bassamalim.halala.core.data.dataSources.room
 import androidx.room.TypeConverter
 import bassamalim.halala.core.enums.AccountType
 import bassamalim.halala.core.enums.Direction
+import bassamalim.halala.core.enums.RawStatus
 import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.enums.TransactionSource
 import java.time.Instant
@@ -46,4 +47,11 @@ class Converters {
 
     @TypeConverter
     fun fromTransactionSource(source: TransactionSource): String = source.name
+
+    @TypeConverter
+    fun toRawStatus(name: String): RawStatus =
+        RawStatus.entries.firstOrNull { it.name == name } ?: RawStatus.PENDING
+
+    @TypeConverter
+    fun fromRawStatus(status: RawStatus): String = status.name
 }

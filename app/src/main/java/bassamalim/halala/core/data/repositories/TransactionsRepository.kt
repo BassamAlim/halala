@@ -101,6 +101,40 @@ class TransactionsRepository @Inject constructor(
         )
     }
 
+    /**
+     * Records what an SMS said. [transaction] is built by the SMS pipeline, which has already
+     * matched its currency to the account; that and the sign are checked again here.
+     */
+    suspend fun addParsed(transaction: Transaction): Long {
+        check(transaction)
+        return transactionsDao.insert(transaction)
+    }
+
+    /** Both legs of a move one SMS described ("between your accounts"). Returns the sending leg's id. */
+    suspend fun addParsedPair(outLeg: Transaction, inLeg: Transaction): Long {
+        check(outLeg)
+        check(inLeg)
+        require(outLeg.direction == Direction.DEBIT && inLeg.direction == Direction.CREDIT)
+        return transactionsDao.insertPair(outLeg, inLeg, pairUid = UUID.randomUUID().toString())
+    }
+
+    /** Pairs two recorded legs as one move between your accounts, so neither counts in totals. */
+    suspend fun pair(outId: Long, inId: Long, confidence: Double) {
+        transactionsDao.insertTransfer(
+            InternalTransfer(
+                uid = UUID.randomUUID().toString(),
+                outTransactionId = outId,
+                inTransactionId = inId,
+                matchConfidence = confidence
+            )
+        )
+    }
+
+    private suspend fun check(transaction: Transaction) {
+        require(transaction.amountMinor > 0) { "Amounts are positive; the direction carries the sign." }
+        require(transaction.currency == currencyOf(transaction.accountId)) { "Not the account's currency." }
+    }
+
     /** Deletes a transaction, and the other leg with it when it is half of a move. */
     suspend fun delete(id: Long) = transactionsDao.deleteWithCounterpart(id)
 

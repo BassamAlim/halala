@@ -16,6 +16,7 @@ import bassamalim.halala.features.editTransaction.EditTransactionScreen
 import bassamalim.halala.features.export.ExportScreen
 import bassamalim.halala.features.lock.LockScreen
 import bassamalim.halala.features.main.MainScreen
+import bassamalim.halala.features.onboarding.OnboardingScreen
 import bassamalim.halala.features.reconcileCash.ReconcileCashScreen
 import bassamalim.halala.features.settings.SettingsScreen
 import bassamalim.halala.features.transaction.TransactionScreen
@@ -63,5 +64,7 @@ fun NavGraph(navController: NavHostController, startDestination: Screen) {
         composable<Screen.Settings> { SettingsScreen() }
 
         composable<Screen.Export> { ExportScreen() }
+
+        composable<Screen.Onboarding> { OnboardingScreen() }
     }
 }

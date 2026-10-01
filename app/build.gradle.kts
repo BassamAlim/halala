@@ -64,10 +64,18 @@ android {
         // Settings shows the version number.
         buildConfig = true
     }
+    sourceSets {
+        // MigrationTestHelper reads the exported schemas as assets, and Robolectric only sees
+        // the tested variant's (a test source set's are never merged). Debug builds only.
+        getByName("debug").assets.directories.add("$projectDir/schemas")
+    }
     testOptions {
         unitTests {
             // Repository tests run Room on Robolectric.
             isIncludeAndroidResources = true
+            // Robolectric's JVM otherwise takes a quarter of RAM, which beside the IDE and the
+            // Gradle daemons is enough to run the machine out of memory.
+            all { it.maxHeapSize = "1g"; it.maxParallelForks = 1 }
         }
     }
 }
@@ -117,6 +125,7 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.room.testing)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
