@@ -11,10 +11,8 @@ import android.os.CancellationSignal
 import androidx.core.content.ContextCompat
 import bassamalim.halala.core.data.dataSources.room.entities.TransactionPlace
 import bassamalim.halala.core.data.repositories.PlacesRepository
-import bassamalim.halala.core.data.repositories.PreferencesRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
 import bassamalim.halala.core.domain.Places
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import java.time.Clock
@@ -23,29 +21,38 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
 
+/** What location Halala has: all of it, only while open, none, or none because location is off. */
+enum class LocationAccess { GRANTED, FOREGROUND_ONLY, DENIED, SERVICES_OFF }
+
 /**
- * "Remember where you spend": when a purchase's SMS arrives, where the phone is. Android's own
- * location (no Play services); kept only in the encrypted ledger, never sent anywhere.
+ * Where you spend: when a purchase's SMS arrives, where the phone is, whenever location is
+ * allowed all the time. Android's own location (no Play services); kept only in the encrypted
+ * ledger, never sent anywhere.
  */
 @Singleton
 class PlaceCapture @Inject constructor(
     private val application: Application,
-    private val preferences: PreferencesRepository,
     private val places: PlacesRepository,
     private val transactions: TransactionsRepository,
     private val clock: Clock
 ) {
 
-    /** Location, and in the background too (the SMS arrives while the app is closed). */
-    fun hasPermission(): Boolean {
+    /** Needs location in the background too: the SMS arrives while the app is closed. */
+    fun access(): LocationAccess {
         fun granted(permission: String) = ContextCompat.checkSelfPermission(application, permission) == PackageManager.PERMISSION_GRANTED
         val location = granted(Manifest.permission.ACCESS_FINE_LOCATION) || granted(Manifest.permission.ACCESS_COARSE_LOCATION)
-        return location && granted(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+        val manager = application.getSystemService(LocationManager::class.java)
+        return when {
+            !location -> LocationAccess.DENIED
+            !granted(Manifest.permission.ACCESS_BACKGROUND_LOCATION) -> LocationAccess.FOREGROUND_ONLY
+            manager == null || !manager.isLocationEnabled -> LocationAccess.SERVICES_OFF
+            else -> LocationAccess.GRANTED
+        }
     }
 
     /** Gives a place to the purchases this SMS run recorded since [since], if any just happened. */
     suspend fun captureFor(since: Instant) {
-        if (!preferences.observePlacesOn().first() || !hasPermission()) return
+        if (access() != LocationAccess.GRANTED) return
         val placed = places.getAll().map { it.transactionId }.toSet()
         val fresh = Places.needingPlace(transactions.getAll(), placed, since, clock.instant())
         if (fresh.isEmpty()) return

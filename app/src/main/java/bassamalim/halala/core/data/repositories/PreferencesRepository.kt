@@ -96,11 +96,11 @@ class PreferencesRepository @Inject constructor(
         dataStore.edit { it[BACKUP_LAST_AT] = at.toEpochMilli() }
     }
 
-    /** Whether to remember where the phone was when a purchase's SMS arrives. Off until you turn it on. */
-    fun observePlacesOn(): Flow<Boolean> = dataStore.data.map { it[PLACES_ON] ?: false }
+    /** Whether location was asked for once, after onboarding (the map asks again on its own). */
+    fun observeLocationAsked(): Flow<Boolean> = dataStore.data.map { it[LOCATION_ASKED] ?: false }
 
-    suspend fun setPlacesOn(on: Boolean) {
-        dataStore.edit { it[PLACES_ON] = on }
+    suspend fun setLocationAsked() {
+        dataStore.edit { it[LOCATION_ASKED] = true }
     }
 
     /** Tag suggestions you said no to, by their keys (a currency and a day: nothing about money). */
@@ -118,7 +118,7 @@ class PreferencesRepository @Inject constructor(
         private val REVIEW_MINUTE = intPreferencesKey("review_reminder_minute")
         private val ONBOARDED = booleanPreferencesKey("onboarded")
         private val LOCK_TIMEOUT_SECONDS = intPreferencesKey("lock_timeout_seconds")
-        private val PLACES_ON = booleanPreferencesKey("places_on")
+        private val LOCATION_ASKED = booleanPreferencesKey("location_asked")
         private val TAG_DISMISSED = stringSetPreferencesKey("tag_suggestions_dismissed")
         private val BACKUP_FOLDER = stringPreferencesKey("backup_folder")
         private val BACKUP_EVERY = stringPreferencesKey("backup_every")

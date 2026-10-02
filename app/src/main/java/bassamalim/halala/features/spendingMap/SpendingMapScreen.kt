@@ -19,10 +19,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
 import bassamalim.halala.core.ui.components.ChipStyle
 import bassamalim.halala.core.ui.components.ChoiceSheet
-import bassamalim.halala.core.ui.components.HalalaButton
-import bassamalim.halala.core.ui.components.HalalaCard
 import bassamalim.halala.core.ui.components.HalalaChip
 import bassamalim.halala.core.ui.components.HeatMap
+import bassamalim.halala.core.ui.components.MapPlaceholder
+import bassamalim.halala.core.ui.components.openLocationSettings
+import bassamalim.halala.core.ui.components.rememberLocationRequest
+import bassamalim.halala.core.places.LocationAccess
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import bassamalim.halala.core.ui.components.ListCard
 import bassamalim.halala.core.ui.components.ListRow
 import bassamalim.halala.core.ui.components.TopBar
@@ -38,6 +42,13 @@ import bassamalim.halala.core.ui.theme.Spacing
 @Composable
 fun SpendingMapScreen(viewModel: SpendingMapViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val askLocation = rememberLocationRequest(viewModel::onCheckAccess)
+    // Back from Android's settings, or the location switch: look again.
+    LifecycleResumeEffect(viewModel) {
+        viewModel.onCheckAccess()
+        onPauseOrDispose { }
+    }
 
     Column(
         modifier = Modifier
@@ -48,11 +59,6 @@ fun SpendingMapScreen(viewModel: SpendingMapViewModel = hiltViewModel()) {
     ) {
         TopBar(title = stringResource(R.string.map_title), onBack = viewModel::onBackClick)
         if (state.isLoading) return@Column
-
-        if (!state.placesOn) HalalaCard(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            Text(text = stringResource(R.string.map_off), style = HalalaType.Body, color = HalalaColors.TextMuted)
-            HalalaButton(stringResource(R.string.map_turn_on), viewModel::onTurnOnClick, Modifier.fillMaxWidth())
-        }
 
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             MapPeriod.entries.forEach { period ->
@@ -76,15 +82,32 @@ fun SpendingMapScreen(viewModel: SpendingMapViewModel = hiltViewModel()) {
             onClick = viewModel::onCategoryClick
         )
 
-        HeatMap(
-            points = state.points,
-            focus = state.focus,
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .heightIn(min = Sizes.onboardingBalance)
-                .clip(Radius.lg)
-        )
+        val mapModifier = Modifier
+            .fillMaxWidth()
+            .weight(1f)
+            .heightIn(min = Sizes.onboardingBalance)
+            .clip(Radius.lg)
+        when (state.access) {
+            LocationAccess.GRANTED -> HeatMap(points = state.points, focus = state.focus, modifier = mapModifier)
+            LocationAccess.SERVICES_OFF -> MapPlaceholder(
+                message = stringResource(R.string.map_location_off),
+                action = stringResource(R.string.map_turn_location_on),
+                onAction = { openLocationSettings(context) },
+                modifier = mapModifier
+            )
+            LocationAccess.FOREGROUND_ONLY -> MapPlaceholder(
+                message = stringResource(R.string.map_needs_always),
+                action = stringResource(R.string.map_allow_always),
+                onAction = askLocation,
+                modifier = mapModifier
+            )
+            LocationAccess.DENIED -> MapPlaceholder(
+                message = stringResource(R.string.map_no_permission),
+                action = stringResource(R.string.map_allow),
+                onAction = askLocation,
+                modifier = mapModifier
+            )
+        }
         Text(
             text = if (state.count == 0) stringResource(R.string.map_empty)
             else pluralStringResource(R.plurals.map_summary, state.count, state.count, state.total),

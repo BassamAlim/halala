@@ -353,15 +353,20 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   months, are "Trip to <the country of that currency>?" ("Tag the trip" makes an automatic tag
   over those days; "Not a trip" is remembered in DataStore by its key). Budgets by tag and a
   feed filtered by tag aren't built yet.
-- **Where you spend** (the spec's heatmap; no board): with "Remember where you spend" on
-  (Settings; off by default; needs location all the time, since SMS arrive while the app is
-  closed), `SmsWorker` asks Android's own location (`PlaceCapture`, no Play services) for the
-  purchases its run recorded that happened in the last 30 minutes, and keeps it
-  (`TransactionPlace`, degrees × 10⁷, accuracy; nothing worse than 500 m) in the encrypted ledger.
-  History before it was on has no places. The map (`HeatMap`, osmdroid, tiles inverted for the
-  dark theme) shows a heat of your spending by period and category, and the top places (purchases
-  within about 200 m, named by their usual merchant; `core/domain/Places`). Reached from
-  Activity's "Where you spend" chip. Turning it off can forget every place.
+- **Where you spend** (the spec's heatmap; no board). There is no setting: whenever location is
+  allowed all the time (it must be, since SMS arrive while the app is closed), `SmsWorker` asks
+  Android's own location (`PlaceCapture`, no Play services) for the purchases its run recorded
+  that happened in the last 30 minutes, and keeps it (`TransactionPlace`, degrees × 10⁷,
+  accuracy; nothing worse than 500 m) in the encrypted ledger. History from before has no
+  places. Location is asked for once, the first time in after onboarding (a sheet on the main
+  shell; "Not now" is remembered, `locationAsked`), and again from the map: without permission,
+  with it only while in use, or with location off, the map is `MapPlaceholder` (a drawn street
+  grid) saying why, with the button that fixes it (`rememberLocationRequest`, which opens
+  Halala's settings when Android won't ask again, or the location switch); it looks again on
+  resume. The map (`HeatMap`, osmdroid, tiles inverted for the dark theme) shows a heat of
+  your spending by period and category, and the top places (purchases within about 200 m,
+  named by their usual merchant; `core/domain/Places`). Reached from Activity's "Where you
+  spend" chip.
 - **Undo**: everything you do to filing (an answer, "always", saving, switching or deleting a
   rule, editing or deleting a category, renaming, merging or splitting a merchant, saying what a
   merchant is) is one `AuditBatch`:

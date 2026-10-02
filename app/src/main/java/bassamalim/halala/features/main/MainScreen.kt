@@ -20,6 +20,14 @@ import bassamalim.halala.R
 import bassamalim.halala.core.ui.components.BottomNav
 import bassamalim.halala.core.ui.components.BottomNavItem
 import bassamalim.halala.core.ui.components.QuickAddButton
+import bassamalim.halala.core.ui.components.ButtonKind
+import bassamalim.halala.core.ui.components.HalalaButton
+import bassamalim.halala.core.ui.components.HalalaSheet
+import bassamalim.halala.core.ui.components.rememberLocationRequest
+import bassamalim.halala.core.ui.theme.HalalaType
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.Text
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.core.ui.theme.HalalaColors
 import bassamalim.halala.features.activity.ActivityScreen
 import bassamalim.halala.features.assistant.AssistantScreen
@@ -34,6 +42,15 @@ import bassamalim.halala.features.wealth.WealthScreen
 @Composable
 fun MainScreen(viewModel: MainViewModel = hiltViewModel()) {
     var selected by rememberSaveable { mutableStateOf(MainTab.HOME) }
+    val askLocation by viewModel.askLocation.collectAsStateWithLifecycle()
+    val requestLocation = rememberLocationRequest(viewModel::onLocationAnswered)
+
+    if (askLocation) HalalaSheet(viewModel::onLocationAnswered) {
+        Text(text = stringResource(R.string.location_ask_title), style = HalalaType.Title)
+        Text(text = stringResource(R.string.location_ask_body), style = HalalaType.Body, color = HalalaColors.TextMuted)
+        HalalaButton(stringResource(R.string.location_ask_allow), requestLocation, Modifier.fillMaxWidth(), kind = ButtonKind.Primary)
+        HalalaButton(stringResource(R.string.location_ask_later), viewModel::onLocationAnswered, Modifier.fillMaxWidth())
+    }
 
     Scaffold(
         containerColor = HalalaColors.Bg,

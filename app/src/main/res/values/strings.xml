@@ -976,8 +976,6 @@
     <string name="asset_gold_mine">I\'ll type it</string>
     <string name="asset_gold_failed">Couldn\'t get today\'s gold price. Check you\'re online.</string>
     <string name="map_title">Where you spend</string>
-    <string name="map_off">Halala doesn\'t know where you spend yet. Turn on Remember where you spend, and each purchase from then on is placed where your phone was when its SMS came.</string>
-    <string name="map_turn_on">Turn it on in Settings</string>
     <string name="map_month">This month</string>
     <string name="map_three_months">3 months</string>
     <string name="map_year">A year</string>
@@ -993,15 +991,16 @@
         <item quantity="other">%1$d purchases</item>
     </plurals>
     <string name="map_privacy">Places stay on your phone. The map\'s tiles come from OpenStreetMap, which sees the area you look at, never your purchases.</string>
-    <string name="places_title">Remember where you spend</string>
-    <string name="places_on">On: purchases are placed as their SMS arrive</string>
-    <string name="places_off">Off</string>
-    <string name="places_explain">When a purchase\'s SMS arrives, Halala notes where your phone is, so you can see where you spend on a map. Only purchases from now on, and only those whose SMS come within half an hour. Places are kept in the encrypted ledger and never sent anywhere. Android asks to allow location all the time, because the SMS arrives while Halala is closed.</string>
-    <string name="places_denied">It needs location allowed all the time. You can allow it in the app\'s settings, then turn it on again.</string>
-    <string name="places_turn_on">Turn it on</string>
-    <string name="places_turn_off">Turn it off</string>
-    <string name="places_see_map">See the map</string>
-    <string name="places_forget">Turn off and forget every place</string>
+    <string name="map_no_permission">Halala can\'t see where you are, so it can\'t place your purchases.</string>
+    <string name="map_allow">Allow location</string>
+    <string name="map_needs_always">Purchases are placed when their SMS arrives, usually with Halala closed. Allow location all the time.</string>
+    <string name="map_allow_always">Allow all the time</string>
+    <string name="map_location_off">Location is off on this phone, so new purchases aren\'t placed.</string>
+    <string name="map_turn_location_on">Turn location on</string>
+    <string name="location_ask_title">See where you spend</string>
+    <string name="location_ask_body">When a purchase\'s SMS arrives, Halala can note where your phone is and show your spending on a map. It needs location all the time, since the SMS comes while Halala is closed. Places stay on your phone, in the encrypted ledger, and are never sent anywhere.</string>
+    <string name="location_ask_allow">Allow location</string>
+    <string name="location_ask_later">Not now</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="cadence_daily">Daily</string>
