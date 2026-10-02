@@ -99,6 +99,8 @@ class EditAccountViewModel @Inject constructor(
 
     fun onOpeningBalanceChange(value: String) = edit { it.copy(openingBalance = value) }
 
+    fun onBalanceNowChange(value: String) = edit { it.copy(balanceNow = value) }
+
     fun onSaveClick() {
         viewModelScope.launch {
             when (val result = domain.save(id, local.value.form)) {

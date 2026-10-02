@@ -57,6 +57,12 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 ),
                 onClick = viewModel::onAccountsClick
             )
+            ListRow(
+                title = stringResource(R.string.settings_messages),
+                subtitle = stringResource(R.string.settings_messages_summary),
+                divider = true,
+                onClick = viewModel::onMessagesClick
+            )
         }
 
         Section(stringResource(R.string.settings_privacy)) {

@@ -19,6 +19,7 @@ fun TransactionItemRow(
         title = itemTitle(item),
         meta = itemMeta(item, withDay),
         amount = item.amount,
+        currency = item.currency,
         tone = item.tone,
         initial = item.initial,
         divider = divider,

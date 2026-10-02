@@ -36,5 +36,11 @@ sealed interface Screen {
 
     @Serializable data object Settings : Screen
 
+    /**
+     * SMS access, naming the accounts found in the messages, and the back-import. Opened on the
+     * first run, and again from Settings ([fromSettings]), where leaving goes back.
+     */
+    @Serializable data class Onboarding(val fromSettings: Boolean = false) : Screen
+
     @Serializable data object Export : Screen
 }

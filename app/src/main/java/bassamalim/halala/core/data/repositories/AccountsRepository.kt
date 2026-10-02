@@ -64,6 +64,9 @@ class AccountsRepository @Inject constructor(
     }
 
     /** Accounts are archived, never deleted: their history still points at them. */
+    suspend fun setOpeningBalance(id: Long, openingBalanceMinor: Long) =
+        accountsDao.setOpeningBalance(id, openingBalanceMinor)
+
     suspend fun setArchived(id: Long, archived: Boolean) = accountsDao.setArchived(id, archived)
 
     private fun String?.normalized() = this?.trim()?.ifEmpty { null }

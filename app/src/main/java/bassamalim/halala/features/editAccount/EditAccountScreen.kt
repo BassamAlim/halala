@@ -11,6 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -44,6 +46,7 @@ fun EditAccountScreen(viewModel: EditAccountViewModel = hiltViewModel()) {
         onCurrencyClick = viewModel::onCurrencyClick,
         onCurrencyChange = viewModel::onCurrencyChange,
         onOpeningBalanceChange = viewModel::onOpeningBalanceChange,
+        onBalanceNowChange = viewModel::onBalanceNowChange,
         onArchiveClick = viewModel::onArchiveClick,
         onCountCashClick = viewModel::onCountCashClick
     )
@@ -61,6 +64,7 @@ private fun EditAccountContent(
     onCurrencyClick: (String?) -> Unit,
     onCurrencyChange: (String) -> Unit,
     onOpeningBalanceChange: (String) -> Unit,
+    onBalanceNowChange: (String) -> Unit,
     onArchiveClick: () -> Unit,
     onCountCashClick: () -> Unit
 ) {
@@ -117,7 +121,8 @@ private fun EditAccountContent(
                 value = form.name,
                 onValueChange = onNameChange,
                 placeholder = stringResource(R.string.account_name_placeholder),
-                isError = AccountProblem.NameMissing in problems
+                isError = AccountProblem.NameMissing in problems,
+                capitalization = KeyboardCapitalization.Words
             )
         }
 
@@ -162,7 +167,8 @@ private fun EditAccountContent(
                     value = form.currency,
                     onValueChange = onCurrencyChange,
                     placeholder = stringResource(R.string.account_currency_placeholder),
-                    isError = AccountProblem.CurrencyInvalid in problems
+                    isError = AccountProblem.CurrencyInvalid in problems,
+                    capitalization = KeyboardCapitalization.Characters
                 )
             }
         }
@@ -177,7 +183,24 @@ private fun EditAccountContent(
                 onValueChange = onOpeningBalanceChange,
                 placeholder = "0.00",
                 numeric = true,
-                isError = AccountProblem.OpeningBalanceInvalid in problems
+                isError = AccountProblem.OpeningBalanceInvalid in problems,
+                imeAction = ImeAction.Done
+            )
+        }
+
+        // The wallet is corrected by counting it; a bank's balance by reading it off the bank.
+        if (!state.isNew && !state.isCash) FormField(
+            label = stringResource(R.string.account_balance_now),
+            hint = stringResource(R.string.account_balance_now_hint),
+            error = stringResource(R.string.amount_invalid).takeIf { AccountProblem.BalanceNowInvalid in problems }
+        ) {
+            HalalaTextField(
+                value = form.balanceNow,
+                onValueChange = onBalanceNowChange,
+                placeholder = "0.00",
+                numeric = true,
+                isError = AccountProblem.BalanceNowInvalid in problems,
+                imeAction = ImeAction.Done
             )
         }
 

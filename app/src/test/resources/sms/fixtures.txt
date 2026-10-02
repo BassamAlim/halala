@@ -1,0 +1,793 @@
+# Bank SMS fixtures: real layouts from a real inbox, with every name, account and card number
+# and reference replaced, and the amounts altered. Each block is a sender line, the body, then what it must parse
+# to, ending with "===". An expectation is Ignored, Declined, Unrecognised, or
+#   KIND DIRECTION AMOUNT CURRENCY [own=..] [party=..] [title=..] [fee=..] [original=AMOUNT CUR] [balance=..]
+# where own and party list every ref in order (comma-separated, "-" for none) and title is the
+# rest of the line after "title=" up to the next " key=" (or the end).
+
+# ───────── Al Rajhi: the current layout (2026) ─────────
+
+sender: AlRajhiBank
+شراء انترنت بـSR 530.52
+عبر9001;مدى
+من1111
+لـTameeni
+؜2/10/26 21:18
+expect: PURCHASE DEBIT 530.52 SAR own=1111,9001 party=- title=Tameeni
+===
+sender: AlRajhiBank
+شراء
+عبر:9001;مدى-سامسونج باي
+بـSR 16.52
+لـSASCO Station
+26/6/11 19:16
+expect: PURCHASE DEBIT 16.52 SAR own=9001 title=SASCO Station
+===
+sender: AlRajhiBank
+شراء PoS
+عبر9001;مدى-سامسونج باي
+بـSR 12
+لـClean laundry
+26/9/5 19:03
+expect: PURCHASE DEBIT 12.00 SAR own=9001 title=Clean laundry
+===
+sender: AlRajhiBank
+حوالة محلية واردة بـSR 3000
+لـ1111
+من7700;AHMED null ALI
+26/10/1 21:34
+expect: TRANSFER_IN CREDIT 3000.00 SAR own=1111 party=7700 title=AHMED ALI
+===
+sender: AlRajhiBank
+حوالة محلية صادرة بـSR 2500
+من2222
+لـ7700;أحمد علي
+رسوم:SR 0.58
+26/9/24 04:28
+expect: TRANSFER_OUT DEBIT 2500.00 SAR own=2222 party=7700 title=أحمد علي fee=0.58
+===
+sender: AlRajhiBank
+حوالة داخلية واردة بـSR 500
+لـ1111
+من7700;سارة خالد
+26/6/28 19:39
+expect: TRANSFER_IN CREDIT 500.00 SAR own=1111 party=7700 title=سارة خالد
+===
+sender: AlRajhiBank
+حوالة بين حساباتك
+مبلغ:SR 1598.84
+من:2222
+الى:1111
+26/9/24 04:35
+expect: INTERNAL_TRANSFER DEBIT 1598.84 SAR own=2222 party=1111 title=
+===
+sender: AlRajhiBank
+ايداع:الأرباح الشهرية لحساب الادخار
+مبلغ:10.46 SAR
+إلى:3333
+؜1/10/26 07:41
+expect: OTHER CREDIT 10.46 SAR own=3333
+===
+sender: AlRajhiBank
+انشاء حساب عوائد
+مبلغ:SR 5000
+من:2222
+26/9/24 04:34
+expect: SAVINGS_DEPOSIT DEBIT 5000.00 SAR own=2222
+===
+sender: AlRajhiBank
+حوالة واردة راتب
+مبلغ:SAR 21000
+الى:2222
+25/8/26 10:09
+expect: SALARY CREDIT 21000.00 SAR own=2222
+===
+sender: AlRajhiBank
+خصم:رسوم
+من:2222
+رسوم التوصيل:SR 34.50
+26/8/8 20:17 33
+expect: FEE DEBIT 34.50 SAR own=2222 fee=0.00
+===
+sender: AlRajhiBank
+تحويل من حساب الراجحي المالية
+الى:1111
+مبلغ:SR 2700
+26/6/4 16:11
+expect: TRANSFER_IN CREDIT 2700.00 SAR own=1111
+===
+
+# Both sides on one line: only the leading digits are yours.
+sender: AlRajhiBank
+حوالة محلية واردة بـSR 2000
+لـ1111 من4444;أحمد علي
+26/4/11 21:06
+expect: TRANSFER_IN CREDIT 2000.00 SAR own=1111
+===
+# An older "between your accounts" names only where the money went.
+sender: AlRajhiBank
+حوالة بين حساباتك
+مبلغ: SAR 1500
+الى: 1111
+في: 24-3-14 17:03
+expect: INTERNAL_TRANSFER CREDIT 1500.00 SAR own=1111 party=-
+===
+
+# ───────── Al Rajhi: the older "label:value" layout ─────────
+
+sender: AlRajhiBank
+شراء
+بطاقة:9001;مدى
+مبلغ:SAR 50
+لدى:ALDREES 524
+في:23-11-22 09:05
+expect: PURCHASE DEBIT 50.00 SAR own=9001 title=ALDREES 524
+===
+sender: AlRajhiBank
+شراء انترنت
+بطاقة:9001;مدى
+من:1111
+مبلغ:SAR 100.00
+لدى:STC BANK
+في:26/5/29 09:31
+expect: PURCHASE DEBIT 100.00 SAR own=1111,9001 title=STC BANK
+===
+sender: AlRajhiBank
+شراء انترنت
+بطاقة:9001;مدى
+مبلغ:USD 7.99
+لدى:PLAYSTATIONNETWORK
+في:23-11-17 12:32
+expect: PURCHASE DEBIT 7.99 USD own=9001 title=PLAYSTATIONNETWORK
+===
+# A direction the header doesn't give: the side quoting your account number is yours.
+sender: AlRajhiBank
+حوالة محلية
+عبر:SNB
+مبلغ:SAR 1016
+الى:3333
+من:سارة خالد
+في:25-5-16 21:41
+expect: TRANSFER_IN CREDIT 1016.00 SAR own=3333 party=- title=سارة خالد
+===
+sender: AlRajhiBank
+حوالة محلية
+مصرف:SNB
+من:1111
+مبلغ:SAR 2500
+الى:خالد محمد
+الرسوم:SAR 1.15
+مرجع:9100000000000000
+في:25-2-7 17:12
+expect: TRANSFER_OUT DEBIT 2500.00 SAR own=1111 party=- title=خالد محمد fee=1.15
+===
+sender: AlRajhiBank
+حوالة محلية صادرة
+مصرف:SNB
+من:1111
+مبلغ:SAR 86
+الى:عمر صالح
+الى:9400
+الرسوم:SAR 0.58
+26/4/4 01:20
+expect: TRANSFER_OUT DEBIT 86.00 SAR own=1111 party=9400 title=عمر صالح fee=0.58
+===
+sender: AlRajhiBank
+سحب:صراف آلي
+بطاقة:9001;مدى
+مبلغ:SAR 400
+مكان السحب:CENTRAL REGION
+؜30/3/26 20:51
+expect: ATM_WITHDRAWAL DEBIT 400.00 SAR own=9001 title=CENTRAL REGION
+===
+sender: AlRajhiBank
+استرداد شراء
+بطاقة:9001;مدى
+مبلغ:SAR 1
+لدى:Barakah
+في:25-12-27 22:58
+expect: REFUND CREDIT 1.00 SAR own=9001 title=Barakah
+===
+sender: AlRajhiBank
+خصم من التفويض عبر الانترنت
+بطاقة:9001;مدى
+من:1111
+مبلغ:SAR 280.00
+اعادة مبلغ:SAR 0.00
+لدى:Car Rental
+في:25-8-28 23:49
+expect: PURCHASE DEBIT 280.00 SAR own=1111,9001 title=Car Rental
+===
+# The hold before the capture above: the capture is the purchase.
+sender: AlRajhiBank
+تفويض عبر الانترنت
+بطاقة:9001;مدى
+من:1111
+مبلغ:SAR 280.00
+لدى:Car Rental
+في:25-8-28 23:49
+expect: Ignored
+===
+sender: AlRajhiBank
+تحويل Urpay
+من:1111
+مبلغ:SAR 17
+المستفيد:عمر يورباي
+الى جوال:2900
+في:25-8-28 23:15
+expect: TRANSFER_OUT DEBIT 17.00 SAR own=1111 party=2900 title=عمر يورباي
+===
+sender: AlRajhiBank
+سداد فاتورة
+من:1111
+مبلغ:SAR 529.20
+مفوتر:022
+الخدمة:الخطوط الجوية العربية السعودية
+الفاتورة:240000000000
+في:25-2-6 20:44
+expect: BILL_PAYMENT DEBIT 529.20 SAR own=1111 title=الخطوط الجوية العربية السعودية
+===
+sender: AlRajhiBank
+مدفوعات وزارة الداخلية
+من:1111
+مبلغ:SAR 200
+الجهة:رخص القيادة
+الخدمة:تجديد رخصة القيادة
+في:25-4-12 19:00
+expect: BILL_PAYMENT DEBIT 200.00 SAR own=1111 title=رخص القيادة
+===
+sender: AlRajhiBank
+ننصح بعدم مشاركة الرمز لحمايتك من الاحتيال
+الرمز:000000
+بطاقة:*9001
+مبلغ:SAR 1.00
+لدى:STC Pay
+في:23-11-05 10:01
+expect: Ignored
+===
+sender: AlRajhiBank
+تمت اضافة المستفيد: أحمد علي
+expect: Ignored
+===
+sender: AlRajhiBank
+تم تغيير حد التحويل اليومي
+الحد:75000SAR
+expect: Ignored
+===
+
+# ───────── SNB ─────────
+
+sender: SNB-AlAhli
+شراء-POS
+بـ70 SAR
+من shawerma
+مدى-باي*9002
+في 11/10/24 01:13
+expect: PURCHASE DEBIT 70.00 SAR own=9002 title=shawerma
+===
+sender: SNB-AlAhli
+شراء محلي عبر الانترنت
+بـ12.88 SAR
+من Aramex Sa
+مدى*9002
+في 12/10/24 20:12
+expect: PURCHASE DEBIT 12.88 SAR own=9002 title=Aramex Sa
+===
+sender: SNB-AlAhli
+شراء عبر نقاط البيع (مدى Pay)
+مبلغ 42 SAR
+اسم المتجر Cafe
+بطاقة مدى *9002
+حساب 444*690
+في 03/09/2022 00:08
+expect: PURCHASE DEBIT 42.00 SAR own=444,690,9002 title=Cafe
+===
+# A masked number where the fee should be is not a fee; a shop's id is not your account.
+sender: SNB-AlAhli
+حوالة صادرة محلية
+مبلغ 2407 SAR
+رسوم *9100 SAR
+من 444*690
+مستفيد أحمد
+إلى *علي
+بنك 00000000000000000
+في 30/01/25 09:50
+expect: TRANSFER_OUT DEBIT 2407.00 SAR own=444,690 fee=0.00
+===
+sender: SNB-AlAhli
+شراء انترنت
+مبلغ 10 SAR
+بطاقة مدى *9002
+حساب 444*690
+من 0123456789
+في 14/01/2022 13:52
+expect: PURCHASE DEBIT 10.00 SAR own=444,690,9002
+===
+# Digits in a shop's name are not yours.
+sender: SNB-AlAhli
+شراء عبر نقاط البيع (مدى Pay)
+مبلغ 38 SAR
+بطاقة مدى *9002
+حساب 444*690
+من aldaji1234
+في 23/06/2022 15:02
+expect: PURCHASE DEBIT 38.00 SAR own=444,690,9002 party=- title=aldaji
+===
+sender: SNB-AlAhli
+شراء عبر الانترنت - دولي
+بطاقة مدى *9002
+حساب 444*690
+بمبلغ 11.99 USD
+من PlaystationNetw LONDON
+في المملكة المتحدة
+01/08/2022 18:19
+expect: PURCHASE DEBIT 11.99 USD own=444,690,9002 title=PlaystationNetw LONDON
+===
+sender: SNB-AlAhli
+حوالة واردة داخلية ب50 SAR
+من9400* عمر صالح
+22/09/26 20:40
+expect: TRANSFER_IN CREDIT 50.00 SAR own=- party=9400 title=عمر صالح
+===
+sender: SNB-AlAhli
+حوالة صادرة داخلية ب150 SAR
+ل0200* سارة خالد
+16/09/26 19:29
+expect: TRANSFER_OUT DEBIT 150.00 SAR own=- party=0200 title=سارة خالد
+===
+sender: SNB-AlAhli
+حوالة صادرة محلية
+من:4444*
+إلى:أحمد -. -
+عبر:AL RAJHI BANK
+آيبان:*1111
+مبلغ:250.25 SAR
+في:12/09/26 18:01
+expect: TRANSFER_OUT DEBIT 250.25 SAR own=4444 party=1111 title=أحمد
+===
+sender: SNB-AlAhli
+حوالة واردة داخلية
+مبلغ:200 SAR
+مرسل:سارة خالد
+من:0200*
+إلى:5555*
+في:24/07/26 14:26
+expect: TRANSFER_IN CREDIT 200.00 SAR own=5555 party=0200 title=سارة خالد
+===
+sender: SNB-AlAhli
+حوالة بين حساباتك
+من 5555*
+مبلغ 38.50 SAR
+إلى 4444*
+في 16/08/26 02:26
+expect: INTERNAL_TRANSFER DEBIT 38.50 SAR own=5555 party=4444
+===
+sender: SNB-AlAhli
+ايداع رواتب
+مبلغ SAR 21000
+حساب4444*
+في 23/07/26 09:29
+expect: SALARY CREDIT 21000.00 SAR own=4444
+===
+sender: SNB-AlAhli
+مستحقات أخرى من صاحب العمل
+مبلغ 1404.37SAR
+حساب4444*
+في06/08/26 06:48
+expect: SALARY CREDIT 1404.37 SAR own=4444
+===
+sender: SNB-AlAhli
+حوالة واردة محلية
+إلى:4444*
+مبلغ:500 SAR
+من:OMAR SALEH
+عبر:BANK AL-JAZIRA
+في:22/05/26 09:55
+expect: TRANSFER_IN CREDIT 500.00 SAR own=4444 title=OMAR SALEH
+===
+sender: SNB-AlAhli
+حوالة فورية محلية صادرة مقبولة
+خصمت بنجاح من حساب: 444*690
+إلى: عمر صالح
+مصرف AL RAJHI BANK
+آيبان: *8100
+القيمة: 501 SAR
+في 23/05/2022 22:10
+الرقم مرجعي: 20220523SANCBKNCBK2B00000000000000
+expect: TRANSFER_OUT DEBIT 501.00 SAR own=444,690 party=8100 title=عمر صالح
+===
+sender: SNB-AlAhli
+سحب صراف آلي
+مبلغ SAR 50
+بطاقة مدى *9002
+موقع AL RAJHI BANK RIYADH SA
+في03/09/24 20:22
+expect: ATM_WITHDRAWAL DEBIT 50.00 SAR own=9002 title=AL RAJHI BANK RIYADH SA
+===
+sender: SNB-AlAhli
+خصم رسوم
+رسوم خدمات
+من 5555*
+مبلغ 10 SAR
+في 29/05/26 12:59
+expect: FEE DEBIT 10.00 SAR own=5555
+===
+sender: SNB-AlAhli
+سداد فاتورة
+مبلغ 450 SAR
+من 444*690
+مفوتر 138
+فاتورة 500000000000
+في 23/10/25 09:32
+expect: BILL_PAYMENT DEBIT 450.00 SAR own=444,690
+===
+sender: SNB-AlAhli
+حوالة صادرة دولية
+دولة مصر
+مرسل AHMED ALI
+من 444*690
+مستفيد Sample gift shop
+إلى *7500
+مبلغ 250 SAR
+ رسوم 50.00
+بنك QATAR NATIONAL BANK ALAHLI S.A.E (Q
+في 24/04/09 03:29
+استحقاق 24/04/10
+expect: TRANSFER_OUT DEBIT 250.00 SAR own=444,690 party=7500 title=Sample gift shop fee=50.00
+===
+sender: SNB-AlAhli
+اشعار رصيد غير كافي العملية شراء نقاط البيع مبلغ 21.00 SAR الحساب 690*555 في 08/17 19:33
+expect: Declined
+===
+sender: SNB-AlAhli
+فاتورة: Stc
+حالة: اضافة
+في: 27/07/2022 18:21:09
+expect: Ignored
+===
+sender: SNB-AlAhli
+Your One time Password is 0000
+For internet purchase SAR5.0
+using card ending *9002
+Date 01/10/2021 23:26
+expect: Ignored
+===
+
+# ───────── STC Bank (and stc pay before it) ─────────
+
+sender: STC Bank
+Online Purchase
+Via: *9003,Visa
+Amount: 23 USD
+From: ANTHRO
+Exchange rate: 3.755217
+VAT: 0.00 SAR
+Fees: 1.73 SAR
+Total due amount: 88.1 SAR
+Remaining balance: 50.47 SAR
+Country: US
+At: 30/09/26 23:40
+expect: PURCHASE DEBIT 88.10 SAR own=9003 title=ANTHRO fee=0.00 original=23.00 USD balance=50.47
+===
+sender: STC Bank
+VISA Purchase
+Via: *9003
+Amount: 23 USD
+From: CLAUDE.AI SUBSCRIPTION
+At: 12/02/26 23:26
+expect: PURCHASE DEBIT 23.00 USD own=9003 title=CLAUDE.AI SUBSCRIPTION
+===
+sender: STC Bank
+***9003 Purchase
+Via: *9003
+Amount: 79 SAR
+From: SASCO Station Company
+At: 24/06/25 19:34
+expect: PURCHASE DEBIT 79.00 SAR own=9003 title=SASCO Station Company
+===
+sender: STC Bank
+Online Purchase Transaction Amount 12.39 SAR
+From: Noon
+ Card: *9003
+Date 22/09/26 20:55
+expect: PURCHASE DEBIT 12.39 SAR own=9003 title=Noon
+===
+sender: STC Bank
+Internal incoming transfer
+Amount:100SR
+From:A SALEH
+Acc:720
+At:22/09/26 21:01
+expect: TRANSFER_IN CREDIT 100.00 SAR own=- party=720 title=A SALEH
+===
+sender: STC Bank
+Internal outward transfer
+Amount:15SR
+To:J ALI
+Acc:590
+At:19/09/26 17:10
+expect: TRANSFER_OUT DEBIT 15.00 SAR own=- party=590 title=J ALI
+===
+sender: STC Bank
+Credit Local transfer
+100SR
+From AHMED ALI
+From DBAK
+From 770
+22-09-2026 20:50
+expect: TRANSFER_IN CREDIT 100.00 SAR own=- party=770 title=AHMED ALI
+===
+sender: STC Bank
+Inward transfer (SARIE)
+100.00 SAR
+From AHMED ALI
+From DBAK
+Account
+31-08-2026 22:22
+Ref. No. *0AAA
+expect: TRANSFER_IN CREDIT 100.00 SAR own=- party=- title=AHMED ALI
+===
+sender: STC Bank
+Outward transfer (SARIE)
+1000.00 SAR
+To أحمد- علي
+To AL RAJHI BANK
+Account *666
+Fees 1.15 SAR
+06/02/26 04:19
+Ref. No. *0BBB
+expect: TRANSFER_OUT DEBIT 1000.00 SAR own=666 party=- title=أحمد- علي fee=1.15
+===
+sender: STC Bank
+Adding money to account
+Amount: 100.00 SAR
+Via: *9001
+At: 4/17/2026 8:47 PM
+expect: TRANSFER_IN CREDIT 100.00 SAR own=- party=9001 title=
+===
+sender: STC Bank
+Reverse
+To: ***9003; VISA
+Amount: 30.9 SAR
+At: UBR PENDING.UBER.COM
+Date: 08/05/26 18:56
+expect: REFUND CREDIT 30.90 SAR own=9003 title=UBR PENDING.UBER.COM
+===
+sender: STC Bank
+Notification: Refund
+Transaction: Noon One Subscription
+Card: ***9003
+Amount: 1 SAR
+Date: 27/09/26 07:10
+expect: REFUND CREDIT 1.00 SAR own=9003 title=Noon One Subscription
+===
+sender: STC Bank
+stc prepaid services payment
+Amount: 115.00 SAR
+At: 18/03/26 03:41
+expect: BILL_PAYMENT DEBIT 115.00 SAR own=- title=
+===
+sender: STC Bank
+Insufficient balance-Online Purchase
+Card:9003;VISA-VISA
+Amount:23USD
+At:ANTHROPIC* CLAUDE SUB
+12/09/26 23:26
+expect: Declined
+===
+sender: STC Bank
+0000 is your OTP
+For: Transfer to contact
+Amount: 50.00 SAR
+*Do not share the code
+expect: Ignored
+===
+sender: STCPAY
+Online Purchase
+Transaction Amount 16.70 SAR
+For Keeta
+Online Payment
+Account number ******6666
+Date 18/01/2025 Time 00:57
+expect: PURCHASE DEBIT 16.70 SAR own=6666 title=Keeta
+===
+sender: STCPAY
+debit internal transfer
+Amount: 31.00 SAR
+To: OMAR SALEH
+receiver account:***7500
+Date: 2024/22/05
+Time: 17:09:13
+expect: TRANSFER_OUT DEBIT 31.00 SAR own=- party=7500 title=OMAR SALEH
+===
+sender: STCPAY
+Debit via wallet transfer
+Amount: SAR 37.00 SAR
+Receiver name: OMAR SALEH
+Receiver account: 1000000001
+Date: 2023/08/02 13:28:56
+expect: TRANSFER_OUT DEBIT 37.00 SAR own=- party=0001 title=OMAR SALEH
+===
+sender: STCPAY
+STC pay wallet top up
+With: 30.00 SAR
+Card: 9001*, Mada
+At: 2024-05-04 - 05:34 PM
+expect: TRANSFER_IN CREDIT 30.00 SAR own=- party=9001 title=
+===
+sender: STCPAY
+Debit local transfer (SARIE)
+Amount: 50.00 SAR
+Fees: 5.00 SAR
+VAT: 0.75 SAR
+To: Ahmed Ali
+receiver account:***4444
+Date: 2023-07-21
+Time: 10:43 AM
+expect: TRANSFER_OUT DEBIT 50.00 SAR own=- party=4444 title=Ahmed Ali fee=5.00
+===
+sender: STCPAY
+تغذية محفظة عبر مدى
+محفظة: stc pay
+المبلغ: 40.00
+بتاريخ: 2023-01-21 03:33:44
+expect: TRANSFER_IN CREDIT 40.00 SAR
+===
+sender: STCPAY
+Notification: Declined due to Insufficient balance
+Amount: 20.00 SAR
+expect: Declined
+===
+
+# ───────── D360 ─────────
+
+sender: D360 Bank
+Local Online Purchase
+Amount: SAR 178.40
+Card: *9004 - mada (Ecommerce)
+At: HOMESTORE
+Account number: *7777
+On: 2026-09-30 20:41
+expect: PURCHASE DEBIT 178.40 SAR own=7777,9004 title=HOMESTORE
+===
+sender: D360 Bank
+Local POS Purchase
+Amount: SAR 8.00
+Card: *9004 - mada (Samsung Pay)
+At: Clean laundry machine
+On: 2026-09-26 17:15
+expect: PURCHASE DEBIT 8.00 SAR own=9004 title=Clean laundry machine
+===
+sender: D360 Bank
+Incoming Transfer: AlRajhi Bank
+Amount: SAR 2,500.00
+From: أحمد - - علي****
+IBAN: ****7777
+at: 2026-09-24 04:29
+expect: TRANSFER_IN CREDIT 2500.00 SAR own=7777 party=- title=أحمد - - علي
+===
+sender: D360 Bank
+Outgoing Local Transfer
+From : ****7777
+Amount: SAR 100.00
+To: AHMED ALI****
+IBAN: ****6666 - STC Bank
+On: 2026-09-22 20:50
+expect: TRANSFER_OUT DEBIT 100.00 SAR own=7777 party=6666 title=AHMED ALI
+===
+sender: D360 Bank
+Transaction Declined: Insufficient balance
+Amount: SAR 50.01
+Card: *9004 - Mada
+At: SAMPLE CATERING CO
+On: 2026-09-18 15:06:59
+expect: Declined
+===
+sender: D360 Bank
+<#> OTP: 0000
+Amount: SAR 70
+For: Local transfer AbCdEfGhIjK
+expect: Ignored
+===
+
+# ───────── Barq ─────────
+
+sender: barq app
+Money Added to your Barq wallet
+amount: 50.0 SAR
+via: Card
+card number: **9004, mada
+2026-09-26 00:41
+expect: TRANSFER_IN CREDIT 50.00 SAR own=- party=9004 title=
+===
+sender: barq app
+Debit Transfer Internal
+Amount: 10.00 SAR
+To: SARA KHALID**
+To A/C:**3200
+2026-09-26 00:39
+expect: TRANSFER_OUT DEBIT 10.00 SAR own=- party=3200 title=SARA KHALID
+===
+sender: barq app
+Barq wallet transfer
+Amount: 80.00 SAR
+To: OMAR SALEH**
+2025-07-18 16:20
+expect: TRANSFER_OUT DEBIT 80.00 SAR own=- title=OMAR SALEH
+===
+sender: barq app
+Barq wallet transfer
+Amount: 40.00 SAR
+From: OMAR SALEH**
+2025-07-17 16:07
+expect: TRANSFER_IN CREDIT 40.00 SAR own=- title=OMAR SALEH
+===
+
+# ───────── Al Rajhi Capital ─────────
+
+sender: ALRajhiCPTL
+Subscription Order 6600000
+10.000000 Units
+Al Rajhi Freestyle Saudi Equity
+Unit Price 10.0000
+Amount 100.00
+Subscription Fees 2.30
+expect: INVESTMENT_BUY DEBIT 100.00 SAR own=- fee=0.00
+===
+sender: ALRajhiCPTL
+Redemption Order 4300000
+NR Of Units: 20.000000
+Al Rajhi Freestyle Saudi Equity
+Unit Price 10.0000
+Amount 200.00
+expect: INVESTMENT_SELL CREDIT 200.00 SAR
+===
+sender: ALRajhiCPTL
+Local transfer
+Amount2700.0
+To: ARC account
+From: أحمد علي
+Date:25-05-2026 21:35
+expect: TRANSFER_IN CREDIT 2700.00 SAR own=- title=أحمد علي
+===
+sender: ALRajhiCPTL
+Local Transfer
+From:****8888
+Amount:1435.0
+To:****
+Ref:21000000
+Date:04-04-2026 14:08
+expect: TRANSFER_OUT DEBIT 1435.00 SAR own=8888 party=-
+===
+# Requested, not yet done: the "Status: Success" message that follows is the transfer.
+sender: ALRajhiCPTL
+Local Transfer
+From:****8888
+Amount:2531.59
+To:****4444 Status: Initiated
+Ref:11000000
+Date:31-01-2025 16:12
+expect: Ignored
+===
+sender: ALRajhiCPTL
+Local Transfer
+From:****8888
+Amount:2531.59
+To:****4444 Status: Success
+Ref:11000000
+Date:31-01-2025 16:12
+expect: TRANSFER_OUT DEBIT 2531.59 SAR own=8888 party=4444
+===
+sender: ALRajhiCPTL
+حوالة محلية
+من:****8888
+المبلغ:1435.0
+إلى:****1111
+المرجع:21000000
+التاريخ:04-04-2026 14:08
+expect: TRANSFER_OUT DEBIT 1435.00 SAR own=8888 party=1111
+===
+sender: ALRajhiCPTL
+Dear client, We have received your Subscription Order 6600000, Al Rajhi Mid/Small-Cap Fund , for more details rjhi.sa/ARCApp
+expect: Ignored
+===

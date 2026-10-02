@@ -62,6 +62,9 @@ object DataSourceModule {
     fun provideTransactionsDao(database: AppDatabase) = database.transactionsDao()
 
     @Provides @Singleton
+    fun provideSmsDao(database: AppDatabase) = database.smsDao()
+
+    @Provides @Singleton
     fun providePreferencesDataStore(application: Application): DataStore<Preferences> =
         application.preferencesDataStore
 

@@ -59,6 +59,7 @@
 
     <!-- Activity -->
     <string name="activity_search">Search transactions</string>
+    <string name="clear_search">Clear search</string>
     <string name="activity_in">In this month</string>
     <string name="activity_out">Out this month</string>
     <string name="activity_empty">No transactions yet.</string>
@@ -97,6 +98,8 @@
     <string name="account_currency_invalid">That isn\'t a currency code.</string>
     <string name="account_currency_locked">Fixed once an account has transactions.</string>
     <string name="account_opening_balance">Opening balance</string>
+    <string name="account_balance_now">Balance today</string>
+    <string name="account_balance_now_hint">What your bank shows right now. Halala counts on from this, whatever the old messages add up to. Leave blank to keep it as it is.</string>
     <string name="account_opening_balance_hint">What it held before Halala started counting. A minus for money owed.</string>
     <string name="account_archive">Archive</string>
     <string name="account_unarchive">Bring back</string>
@@ -179,4 +182,34 @@
     <string name="export_warning">Exports aren\'t encrypted: keep them somewhere private. Encrypted backups come later.</string>
     <string name="export_saved">Export saved.</string>
     <string name="export_failed">Couldn\'t write that file.</string>
+
+    <!-- Onboarding: bank SMS -->
+    <string name="settings_messages">Bank messages</string>
+    <string name="settings_messages_summary">Read your bank SMS and name new accounts</string>
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_permission_title">Let Halala read your bank messages</string>
+    <string name="onboarding_permission_body">Each bank SMS becomes a transaction, so you never type one. Only messages from your banks are read, and they stay on this phone.</string>
+    <string name="onboarding_permission_allow">Allow SMS access</string>
+    <string name="onboarding_permission_denied">Halala can\'t read SMS yet. If Android blocked it, open the app\'s info page, tap the three dots, choose Allow restricted settings, then try again.</string>
+    <string name="onboarding_reading_title">Reading your messages</string>
+    <string name="onboarding_reading_body">%1$s bank messages so far. This takes a minute the first time.</string>
+    <plurals name="onboarding_accounts_title">
+        <item quantity="one">We found %d account in your messages</item>
+        <item quantity="other">We found %d accounts in your messages</item>
+    </plurals>
+    <string name="onboarding_accounts_body">Give each a name you\'ll recognise. You can change them any time.</string>
+    <string name="onboarding_name_placeholder">Name</string>
+    <string name="onboarding_no_digits">No digits</string>
+    <string name="onboarding_same_name">A card and the account it\'s on: give both the same name. Leave a row blank to set it aside: it\'s kept under Archived accounts, and you can name it later.</string>
+    <string name="onboarding_also_found">Also found: %1$s (funds). It will appear under Wealth.</string>
+    <string name="onboarding_continue">Continue</string>
+    <string name="onboarding_history_title">Your history is in</string>
+    <string name="onboarding_history_body">Every message is filed. Old messages only add up to roughly what each account holds.</string>
+    <string name="onboarding_balances_body">Check each balance against your bank and type over any that is off. Halala counts on from what you enter.</string>
+    <string name="onboarding_sorting_title">Sorting your history</string>
+    <string name="onboarding_sorting_body">Each message is going to its account. You can leave; it carries on.</string>
+    <string name="onboarding_messages">Messages</string>
+    <string name="onboarding_transactions">Transactions</string>
+    <string name="onboarding_since">Since</string>
+    <string name="onboarding_done">Done</string>
 </resources>

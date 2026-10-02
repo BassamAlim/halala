@@ -1,5 +1,6 @@
 package bassamalim.halala.core.ui.components
 
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -73,12 +74,22 @@ fun SummaryCard(
     amount: String,
     modifier: Modifier = Modifier,
     amountColor: Color = HalalaColors.Text,
+    currency: String? = null,
     caption: String? = null,
     captionColor: Color = HalalaColors.TextMuted,
     onClick: (() -> Unit)? = null
 ) {
     HalalaCard(modifier = modifier, label = label, onClick = onClick) {
-        Text(text = amount, style = HalalaNumbers.AmountLg, color = amountColor)
+        Text(
+            text = buildAnnotatedString {
+                append(amount)
+                // A blank figure (still loading) gets no sign either.
+                if (currency != null && amount.isNotEmpty()) appendCurrency(currency)
+            },
+            style = HalalaNumbers.AmountLg,
+            color = amountColor,
+            inlineContent = currencyInlineContent(amountColor)
+        )
         if (caption != null)
             Text(text = caption, style = HalalaType.Caption, color = captionColor)
     }
@@ -151,7 +162,7 @@ fun ListRow(
 @Composable
 private fun CardPreview() = HalalaTheme {
     Column(Modifier.padding(Spacing.screen), verticalArrangement = Arrangement.spacedBy(Spacing.card)) {
-        SummaryCard(label = "Net worth", amount = "312,450", caption = "+2.1% this month", captionColor = HalalaColors.Income)
+        SummaryCard(label = "Net worth", amount = "312,450", currency = "SAR", caption = "+2.1% this month", captionColor = HalalaColors.Income)
         ListCard {
             ListRow(title = "Accounts", subtitle = "7 accounts at 6 banks", onClick = {})
             ListRow(title = "Backup and export", subtitle = "CSV or JSON", divider = true, onClick = {})

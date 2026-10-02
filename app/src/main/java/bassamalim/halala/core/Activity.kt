@@ -11,6 +11,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.ui.Modifier
@@ -45,14 +47,14 @@ class Activity : FragmentActivity() {
 
         setContent {
             HalalaTheme {
-                // safeDrawing keeps content out from under the status bar and gesture area.
-                // Applying it here consumes the insets, so the Scaffolds further down don't pad
-                // a second time.
+                // The top and sides are kept clear here, once. The bottom is each screen's: the
+                // tabs draw their nav behind the gesture bar, sub-screens stop above it and the
+                // keyboard (see NavGraph).
                 Box(
                     Modifier
                         .fillMaxSize()
                         .background(HalalaColors.Bg)
-                        .windowInsetsPadding(WindowInsets.safeDrawing)
+                        .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
                 ) {
                     // Every cold start opens on the lock; nothing is on screen before it.
                     Navigation(navigator = navigator, startDestination = Screen.Lock(resumable = false))

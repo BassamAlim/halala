@@ -21,12 +21,19 @@ import java.time.Instant
             parentColumns = ["id"],
             childColumns = ["accountId"],
             onDelete = ForeignKey.RESTRICT
+        ),
+        ForeignKey(
+            entity = RawMessage::class,
+            parentColumns = ["id"],
+            childColumns = ["rawMessageId"],
+            onDelete = ForeignKey.SET_NULL
         )
     ],
     indices = [
         Index(value = ["uid"], unique = true),
         Index(value = ["accountId"]),
-        Index(value = ["occurredAt"])
+        Index(value = ["occurredAt"]),
+        Index(value = ["rawMessageId"])
     ]
 )
 data class Transaction(
@@ -44,5 +51,10 @@ data class Transaction(
     val title: String = "",
     val note: String = "",
     val source: TransactionSource,
-    val createdAt: Instant
+    val createdAt: Instant,
+    /** The SMS it was parsed from (both legs of a one-SMS move point at it). */
+    val rawMessageId: Long? = null,
+    /** A foreign charge: what the merchant asked for, before the bank converted it. */
+    val originalAmountMinor: Long? = null,
+    val originalCurrency: String? = null
 )

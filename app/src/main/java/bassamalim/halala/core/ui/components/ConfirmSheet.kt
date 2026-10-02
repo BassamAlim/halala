@@ -1,6 +1,7 @@
 package bassamalim.halala.core.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -36,7 +37,8 @@ fun ConfirmSheet(
         containerColor = HalalaColors.Surface,
         contentColor = HalalaColors.Text,
         scrimColor = HalalaColors.Scrim,
-        shape = Radius.lg
+        // Rounded where it rises from, square where it meets the screen's edge.
+        shape = Radius.lg.copy(bottomStart = CornerSize(0), bottomEnd = CornerSize(0))
     ) {
         Column(
             modifier = Modifier

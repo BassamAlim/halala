@@ -26,14 +26,17 @@ enum class TransactionKind {
     OTHER;
 
     /**
-     * Whether it counts in spending and income. Moving your own money and correcting a count
-     * are neither; a paired internal transfer is excluded as well, whatever its kind.
+     * Whether it counts in spending and income. Moving your own money (between accounts, into
+     * savings or funds) and correcting a count are neither; a paired internal transfer is excluded as well, whatever its kind.
      */
     val countsInTotals get() = this !in NOT_IN_TOTALS
 
     companion object {
-        private val NOT_IN_TOTALS =
-            setOf(INTERNAL_TRANSFER, ATM_WITHDRAWAL, CASH_DEPOSIT, ADJUSTMENT)
+        // Putting money into savings or funds, or taking it back, moves it; it isn't spent or earned.
+        private val NOT_IN_TOTALS = setOf(
+            INTERNAL_TRANSFER, ATM_WITHDRAWAL, CASH_DEPOSIT, ADJUSTMENT,
+            SAVINGS_DEPOSIT, SAVINGS_WITHDRAWAL, INVESTMENT_BUY, INVESTMENT_SELL
+        )
 
         /** The kinds offered when entering money out by hand. */
         val MANUAL_OUT = listOf(PURCHASE, BILL_PAYMENT, FEE, TRANSFER_OUT, OTHER)

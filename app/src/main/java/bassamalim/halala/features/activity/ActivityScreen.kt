@@ -1,9 +1,12 @@
 package bassamalim.halala.features.activity
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -17,6 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
+import bassamalim.halala.core.Globals
 import bassamalim.halala.core.ui.components.ChipStyle
 import bassamalim.halala.core.ui.components.GroupLabel
 import bassamalim.halala.core.ui.components.HalalaChip
@@ -99,19 +103,23 @@ private fun ActivityContent(
 
         item {
             Row(
-                modifier = Modifier.padding(top = Spacing.xs, bottom = Spacing.sm),
+                modifier = Modifier
+                    .height(IntrinsicSize.Min)
+                    .padding(top = Spacing.xs, bottom = Spacing.sm),
                 horizontalArrangement = Arrangement.spacedBy(Insets.grid)
             ) {
                 SummaryCard(
                     label = stringResource(R.string.activity_in),
                     amount = state.monthIn,
+                    currency = Globals.PRIMARY_CURRENCY,
                     amountColor = HalalaColors.Income,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f).fillMaxHeight()
                 )
                 SummaryCard(
                     label = stringResource(R.string.activity_out),
                     amount = state.monthOut,
-                    modifier = Modifier.weight(1f)
+                    currency = Globals.PRIMARY_CURRENCY,
+                    modifier = Modifier.weight(1f).fillMaxHeight()
                 )
             }
         }

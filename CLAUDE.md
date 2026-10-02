@@ -45,8 +45,9 @@ designs disagree, ask the owner.
 ./gradlew :app:installDebug         # install on a connected device
 ```
 
-CI (`.github/workflows/ci.yml`) runs both on every push and PR to `main` and `dev`, and fails if
-the Room schema changed without its `app/schemas` JSON. A `v*` tag runs `release.yml`: unit
+CI (`.github/workflows/ci.yml`) runs both on every push and PR to `main` (not `dev`), uploads
+the debug APK as a run artifact, and fails if the Room schema changed without its `app/schemas`
+JSON. A `v*` tag runs `release.yml`: unit
 tests, a release APK signed from the `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` and
 `KEY_PASSWORD` secrets (unsigned, with a warning, if any is missing), attached to a GitHub
 Release with its SHA-256. It can also be run by hand from the Actions tab with a tag name: it
@@ -138,7 +139,7 @@ Don't hardcode hex values or `.dp` literals that aren't a named token in `Dimens
   the same 108dp adaptive grid (`ic_launcher_foreground` over bg, plus a monochrome layer for
   themed icons). The small `halala-glyph` (no ring, for under 32dp) is for the notification
   icon when notifications arrive.
-- **Touch targets are at least 44dp** (`Sizes.touchTarget`); a 28dp chip pads its hit area.
+- **Touch targets are at least 44dp** (`Sizes.touchTarget`); a 32dp chip pads its hit area.
 - Components (`core/ui/components`): `HalalaCard`/`SummaryCard`/`ListCard`+`ListRow`,
   `BalanceCard`, `HalalaButton` (Primary: one per section; Secondary; destructive = secondary with
   coral text), `HalalaChip` (Plain, Outline, Accent = active filter, On = selected choice),
@@ -229,5 +230,11 @@ export** or **Locked**: they are built from the system's components (Settings' l
 onboarding board's bank/••digits/name rows, the segmented control) — replace them when boards
 exist.
 
-Next is Phase 1 (SMS core): the receiver, per-bank parsers with fixture tests in CI, routing by
-last four, dedupe, pairing internal transfers from SMS, balance checkpoints, back-import.
+**Phase 1 (SMS core)** is built in `core/sms`: the receiver and worker (`SmsReceiver`,
+`SmsWorker`), per-bank parsers (`BankFormats`, `SmsParser`) with fixture tests, the ingest
+pipeline (`SmsIngest`: routing by last four, dedupe, pairing internal transfers, balance
+checkpoints) and back-import (`SmsImport`), plus **Onboarding** (the onboarding board).
+Amounts show the riyal sign for SAR (`Currency.kt`), the ISO code otherwise.
+
+Next is Phase 2 (classification and learning): categories and expense types, the rule engine,
+the review inbox, rules screen and audit log, then AI classification with scrubbing.

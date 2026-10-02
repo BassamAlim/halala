@@ -1,5 +1,6 @@
 package bassamalim.halala.features.editTransaction
 
+import bassamalim.halala.core.ui.components.CurrencyText
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,9 +19,13 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -111,6 +116,10 @@ private fun EditTransactionContent(
 
         if (state.isLoading) return@Column
 
+        // Quick-add opens straight onto the number pad; an edit leaves the keyboard down.
+        val amountFocus = remember { FocusRequester() }
+        LaunchedEffect(Unit) { if (state.isNew) amountFocus.requestFocus() }
+
         if (state.modes.size > 1) {
             SegmentedControl(
                 options = state.modes.map { stringResource(it.label) },
@@ -136,9 +145,10 @@ private fun EditTransactionContent(
                     numeric = true,
                     textStyle = HalalaNumbers.AmountXl,
                     isError = TransactionProblem.AmountInvalid in problems,
+                    focusRequester = amountFocus,
                     modifier = Modifier.weight(1f)
                 )
-                Text(text = state.currency, style = HalalaType.Title, color = HalalaColors.TextMuted)
+                CurrencyText(state.currency, HalalaType.Title, HalalaColors.TextMuted)
             }
         }
 
@@ -190,7 +200,8 @@ private fun EditTransactionContent(
             HalalaTextField(
                 value = form.title,
                 onValueChange = onTitleChange,
-                placeholder = stringResource(R.string.optional)
+                placeholder = stringResource(R.string.optional),
+                capitalization = KeyboardCapitalization.Sentences
             )
         }
 
@@ -206,7 +217,8 @@ private fun EditTransactionContent(
                 value = form.note,
                 onValueChange = onNoteChange,
                 placeholder = stringResource(R.string.optional),
-                singleLine = false
+                singleLine = false,
+                capitalization = KeyboardCapitalization.Sentences
             )
         }
     }

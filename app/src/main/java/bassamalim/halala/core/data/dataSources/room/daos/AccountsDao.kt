@@ -9,15 +9,26 @@ import bassamalim.halala.core.data.dataSources.room.relations.AccountWithBalance
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Every account column plus its bank's name and its balance: the opening balance plus every
- * credit less every debit, summed in SQL over integers, so no amount passes through a float.
+ * The signed sum of an account's transactions, in SQL integers; appended to by a condition.
+ * Buying or redeeming fund units changes what the account holds, not what it is worth: the units
+ * stay in it, counted at what was paid for them until their prices are tracked.
+ */
+private const val SIGNED_SUM = """
+            SELECT SUM(CASE WHEN t.kind IN ('INVESTMENT_BUY', 'INVESTMENT_SELL') THEN 0
+                WHEN t.direction = 'CREDIT' THEN t.amountMinor ELSE -t.amountMinor END)
+            FROM transactions t WHERE t.accountId = a.id"""
+
+/**
+ * Every account column plus its bank's name and its balance: the latest balance its bank
+ * reported plus every credit less every debit since, or with no report, the opening balance plus
+ * all of them. Summed in SQL over integers, so no amount passes through a float.
  */
 private const val WITH_BALANCE_SELECT = """
     SELECT a.*, i.name AS institutionName,
-        a.openingBalanceMinor + COALESCE((
-            SELECT SUM(CASE WHEN t.direction = 'CREDIT' THEN t.amountMinor ELSE -t.amountMinor END)
-            FROM transactions t WHERE t.accountId = a.id
-        ), 0) AS balanceMinor,
+        COALESCE((
+            SELECT c.balanceMinor + COALESCE(($SIGNED_SUM AND t.occurredAt > c.at), 0)
+            FROM balance_checkpoints c WHERE c.accountId = a.id ORDER BY c.at DESC, c.id DESC LIMIT 1
+        ), a.openingBalanceMinor + COALESCE(($SIGNED_SUM), 0)) AS balanceMinor,
         (SELECT COUNT(*) FROM transactions t WHERE t.accountId = a.id) AS transactionCount
     FROM accounts a
     LEFT JOIN institutions i ON i.id = a.institutionId
@@ -57,6 +68,9 @@ interface AccountsDao {
 
     @Update
     suspend fun update(account: Account)
+
+    @Query("UPDATE accounts SET openingBalanceMinor = :openingBalanceMinor WHERE id = :id")
+    suspend fun setOpeningBalance(id: Long, openingBalanceMinor: Long)
 
     @Query("UPDATE accounts SET archived = :archived WHERE id = :id")
     suspend fun setArchived(id: Long, archived: Boolean)

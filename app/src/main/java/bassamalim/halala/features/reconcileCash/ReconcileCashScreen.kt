@@ -1,5 +1,6 @@
 package bassamalim.halala.features.reconcileCash
 
+import bassamalim.halala.core.ui.components.CurrencyText
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,9 +11,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -53,9 +58,14 @@ fun ReconcileCashScreen(viewModel: ReconcileCashViewModel = hiltViewModel()) {
 
         if (state.isLoading) return@Column
 
+        // Counting is the only thing to do here, so the number pad is already up.
+        val countedFocus = remember { FocusRequester() }
+        LaunchedEffect(Unit) { countedFocus.requestFocus() }
+
         SummaryCard(
             label = stringResource(R.string.reconcile_recorded),
-            amount = "${state.recorded} ${state.currency}",
+            amount = state.recorded,
+            currency = state.currency,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -80,9 +90,11 @@ fun ReconcileCashScreen(viewModel: ReconcileCashViewModel = hiltViewModel()) {
                     numeric = true,
                     textStyle = HalalaNumbers.AmountXl,
                     isError = state.isInvalid,
+                    imeAction = ImeAction.Done,
+                    focusRequester = countedFocus,
                     modifier = Modifier.weight(1f)
                 )
-                Text(text = state.currency, style = HalalaType.Title, color = HalalaColors.TextMuted)
+                CurrencyText(state.currency, HalalaType.Title, HalalaColors.TextMuted)
             }
         }
     }

@@ -5,9 +5,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -27,6 +30,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
+import bassamalim.halala.core.Globals
 import bassamalim.halala.core.ui.components.CardLabel
 import bassamalim.halala.core.ui.components.SummaryCard
 import bassamalim.halala.core.ui.components.TransactionItemRow
@@ -70,7 +74,11 @@ private fun HomeContent(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = Spacing.screen)
-            .padding(top = Insets.screenTop, bottom = Spacing.md),
+            .padding(
+                top = Insets.screenTop,
+                // Clear of the quick-add button.
+                bottom = Sizes.fab + Spacing.section
+            ),
         verticalArrangement = Arrangement.spacedBy(Spacing.card)
     ) {
         Row(
@@ -106,23 +114,28 @@ private fun HomeContent(
             }
         }
 
-        if (state.isLoading) return@Column
-
-        Row(horizontalArrangement = Arrangement.spacedBy(Insets.grid)) {
+        // While loading, the cards keep their shape with blank figures, so nothing jumps in.
+        Row(
+            modifier = Modifier.height(IntrinsicSize.Min),
+            horizontalArrangement = Arrangement.spacedBy(Insets.grid)
+        ) {
             SummaryCard(
                 label = stringResource(R.string.home_cash),
                 amount = state.cashBalance,
+                currency = Globals.PRIMARY_CURRENCY,
                 caption = stringResource(R.string.home_cash_count),
                 captionColor = HalalaColors.Accent,
                 onClick = onCashClick,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).fillMaxHeight()
             )
             SummaryCard(
                 label = stringResource(R.string.home_banks),
                 amount = state.bankBalance,
-                caption = pluralStringResource(R.plurals.account_count, state.bankAccountCount, state.bankAccountCount),
+                currency = Globals.PRIMARY_CURRENCY,
+                caption = if (state.isLoading) ""
+                else pluralStringResource(R.plurals.account_count, state.bankAccountCount, state.bankAccountCount),
                 onClick = onAccountsClick,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).fillMaxHeight()
             )
         }
 
@@ -137,6 +150,7 @@ private fun HomeContent(
                     Box(
                         modifier = Modifier
                             .heightIn(min = Sizes.touchTarget)
+                            .clip(Radius.sm)
                             .clickable(role = Role.Button, onClick = onSeeAllClick),
                         contentAlignment = Alignment.CenterEnd
                     ) {
@@ -149,7 +163,7 @@ private fun HomeContent(
                 }
             }
 
-            if (state.recent.isEmpty()) {
+            if (!state.isLoading && state.recent.isEmpty()) {
                 Text(
                     text = stringResource(R.string.home_empty),
                     style = HalalaType.Body,

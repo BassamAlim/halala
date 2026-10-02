@@ -9,6 +9,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
+import bassamalim.halala.core.Globals
 import bassamalim.halala.core.ui.components.PlaceholderTab
 import bassamalim.halala.core.ui.components.SummaryCard
 
@@ -27,6 +28,7 @@ fun WealthScreen(viewModel: WealthViewModel = hiltViewModel()) {
         SummaryCard(
             label = stringResource(R.string.wealth_accounts),
             amount = state.accountsTotal,
+            currency = Globals.PRIMARY_CURRENCY,
             caption = pluralStringResource(R.plurals.account_count, state.accountCount, state.accountCount),
             onClick = viewModel::onAccountsClick,
             modifier = Modifier.fillMaxWidth()

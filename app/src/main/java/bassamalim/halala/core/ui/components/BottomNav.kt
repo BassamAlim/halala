@@ -6,6 +6,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectableGroup
@@ -16,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.res.painterResource
@@ -28,6 +32,7 @@ import bassamalim.halala.core.ui.theme.HalalaColors
 import bassamalim.halala.core.ui.theme.HalalaTheme
 import bassamalim.halala.core.ui.theme.HalalaType
 import bassamalim.halala.core.ui.theme.Insets
+import bassamalim.halala.core.ui.theme.Radius
 import bassamalim.halala.core.ui.theme.Sizes
 import bassamalim.halala.core.ui.theme.Spacing
 
@@ -58,6 +63,8 @@ fun BottomNav(
                     strokeWidth = Sizes.border.toPx()
                 )
             }
+            // The fill runs under the gesture bar; the items sit above it.
+            .windowInsetsPadding(WindowInsets.navigationBars)
             .padding(top = Insets.navTop, bottom = Insets.navBottom)
             .selectableGroup(),
         horizontalArrangement = Arrangement.SpaceAround,
@@ -71,6 +78,7 @@ fun BottomNav(
                 modifier = Modifier
                     .sizeIn(minWidth = Insets.navItemMinWidth, minHeight = Sizes.touchTarget)
                     .semantics { this.selected = selected }
+                    .clip(Radius.sm)
                     .clickable(role = Role.Tab, onClick = { onSelect(index) }),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(Spacing.xs)

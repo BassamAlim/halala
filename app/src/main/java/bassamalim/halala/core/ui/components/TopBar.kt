@@ -80,6 +80,7 @@ fun TopBar(
             Box(
                 modifier = Modifier
                     .heightIn(min = Sizes.touchTarget)
+                    .clip(Radius.sm)
                     .clickable(enabled = actionEnabled, role = Role.Button, onClick = onAction)
                     .alpha(if (actionEnabled) 1f else DISABLED_ALPHA)
                     .padding(horizontal = Spacing.xs),

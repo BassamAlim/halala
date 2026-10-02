@@ -26,10 +26,17 @@ object Sizes {
     val touchTarget = 44.dp
     /** Merchant and person avatars in rows. */
     val avatar = 36.dp
+    /** Onboarding's progress dots; the current step's is stretched. */
+    val stepDot = 8.dp
+    val stepDotCurrent = 22.dp
+    /** The bank and digits column beside an account's name field in onboarding. */
+    val onboardingBank = 108.dp
+    /** The balance field beside an account's name on onboarding's last step. */
+    val onboardingBalance = 132.dp
     /** Nav icons; inline icons use [iconSmall]. */
     val icon = 22.dp
     val iconSmall = 18.dp
-    val chip = 28.dp
+    val chip = 32.dp
     val border = 1.dp
     val progress = 4.dp
     /** The balance card's own track, thicker than a [progress] bar. */
