@@ -266,7 +266,8 @@ class Exporter @Inject constructor(
                                 amountMinor = event.amountMinor,
                                 at = event.at?.toString()
                             )
-                        }
+                        },
+                        splitOfTransactionUid = loan.splitOf?.let(transactionUids::getValue)
                     )
                 },
                 recurring = snapshot.recurring.map { series ->

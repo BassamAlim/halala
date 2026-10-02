@@ -5,6 +5,8 @@ import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.LoansRepository
+import bassamalim.halala.core.data.repositories.PeopleRepository
+import bassamalim.halala.core.data.dataSources.room.relations.PersonWithStats
 import bassamalim.halala.core.data.repositories.TransactionsRepository
 import bassamalim.halala.core.domain.DescribedRule
 import bassamalim.halala.core.domain.LoanState
@@ -22,8 +24,19 @@ class TransactionDomain @Inject constructor(
     private val classificationRepository: ClassificationRepository,
     private val accountsRepository: AccountsRepository,
     private val loansRepository: LoansRepository,
+    private val peopleRepository: PeopleRepository,
     private val clock: Clock
 ) {
+
+    fun observePeople(): Flow<List<PersonWithStats>> = peopleRepository.observePeople()
+
+    /** Its shares (person → minor units) become loans owed to you. */
+    suspend fun split(id: Long, shares: Map<Long, Long>) = loansRepository.split(id, shares)
+
+    suspend fun unsplit(id: Long) = loansRepository.unsplit(id)
+
+    /** Someone to split with whom no transfer has named: their id. */
+    suspend fun addPerson(name: String) = peopleRepository.add(name)
 
     fun observeLoans(): Flow<List<LoanState>> = loansRepository.observeStates()
 

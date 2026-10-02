@@ -14,7 +14,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -54,6 +56,11 @@ import bassamalim.halala.core.ui.components.ListCard
 import bassamalim.halala.core.ui.components.ListRow
 import bassamalim.halala.core.ui.components.MONEY_MARK
 import bassamalim.halala.core.ui.components.MoneyText
+import bassamalim.halala.core.ui.components.HalalaTextField
+import bassamalim.halala.core.ui.components.SegmentedControl
+import bassamalim.halala.core.domain.SplitProblem
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import bassamalim.halala.core.ui.components.rememberNotificationAsk
 import bassamalim.halala.core.ui.components.TopBar
 import bassamalim.halala.core.ui.expenseTypeLabel
@@ -180,6 +187,33 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
         }
 
         state.loan?.let { loan -> LoanCard(loan, viewModel) }
+
+        state.split?.let { split ->
+            HalalaCard(label = stringResource(R.string.split)) {
+                split.shares.forEach { (name, share) ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(text = stringResource(R.string.split_owes, name), style = HalalaType.Body)
+                        Text(text = share, style = HalalaNumbers.Amount)
+                    }
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(text = stringResource(R.string.split_yours), style = HalalaType.Label, color = HalalaColors.TextMuted)
+                    Text(text = split.yours, style = HalalaNumbers.Amount, color = HalalaColors.TextMuted)
+                }
+                HalalaButton(
+                    text = stringResource(R.string.split_undo),
+                    onClick = viewModel::onUnsplitClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = Spacing.xs)
+                )
+            }
+        }
+        if (state.canSplit) HalalaButton(
+            text = stringResource(R.string.split_with),
+            onClick = viewModel::onSplitClick,
+            modifier = Modifier.fillMaxWidth()
+        )
 
         state.filedBy?.let { rule ->
             HalalaCard {
@@ -342,6 +376,93 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
             )
         }
 
+        is TransactionSheet.Split -> HalalaSheet(onDismiss = viewModel::onSheetDismiss) {
+            Text(text = stringResource(R.string.split_title), style = HalalaType.Title)
+            SegmentedControl(
+                options = listOf(stringResource(R.string.split_equally), stringResource(R.string.split_by_amount)),
+                selectedIndex = if (sheet.byAmount) 1 else 0,
+                onSelect = { viewModel.onSplitModeClick(it == 1) }
+            )
+            if (state.people.isNotEmpty()) ChoiceChipsMulti(
+                options = state.people,
+                selected = sheet.selected,
+                onToggle = viewModel::onSplitPersonClick
+            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                HalalaTextField(
+                    value = sheet.newName,
+                    onValueChange = viewModel::onSplitNameChange,
+                    placeholder = stringResource(R.string.split_someone_else),
+                    capitalization = KeyboardCapitalization.Words,
+                    imeAction = ImeAction.Done,
+                    modifier = Modifier.weight(1f)
+                )
+                HalalaButton(
+                    text = stringResource(R.string.recurring_add),
+                    onClick = viewModel::onSplitAddPerson,
+                    enabled = sheet.newName.isNotBlank()
+                )
+            }
+            ListCard(Modifier.fillMaxWidth()) {
+                sheet.selected.forEachIndexed { index, personId ->
+                    val name = state.people.firstOrNull { it.id == personId }?.name.orEmpty()
+                    ListRow(
+                        title = name,
+                        divider = index > 0,
+                        trailing = {
+                            if (sheet.byAmount) HalalaTextField(
+                                value = sheet.amounts[personId].orEmpty(),
+                                onValueChange = { viewModel.onSplitAmountChange(personId, it) },
+                                numeric = true,
+                                isError = SplitProblem.ShareMissing in sheet.problems && sheet.preview[personId] == null,
+                                modifier = Modifier.width(SHARE_FIELD)
+                            ) else Text(
+                                text = sheet.preview[personId].orEmpty(),
+                                style = HalalaNumbers.Amount,
+                                modifier = Modifier.align(Alignment.CenterVertically)
+                            )
+                        }
+                    )
+                }
+                ListRow(
+                    title = stringResource(R.string.split_yours),
+                    divider = sheet.selected.isNotEmpty(),
+                    trailing = {
+                        Text(
+                            text = sheet.yours,
+                            style = HalalaNumbers.Amount,
+                            color = HalalaColors.TextMuted,
+                            modifier = Modifier.align(Alignment.CenterVertically)
+                        )
+                    }
+                )
+            }
+            val problem = when {
+                SplitProblem.NoOne in sheet.problems -> R.string.split_no_one
+                SplitProblem.TooMuch in sheet.problems -> R.string.split_too_much
+                SplitProblem.ShareMissing in sheet.problems -> R.string.amount_invalid
+                else -> null
+            }
+            problem?.let { Text(text = stringResource(it), style = HalalaType.Label, color = HalalaColors.StateOver) }
+            Text(text = stringResource(R.string.split_body), style = HalalaType.Label, color = HalalaColors.TextMuted)
+            HalalaButton(
+                text = stringResource(R.string.split_confirm),
+                onClick = viewModel::onSplitConfirm,
+                kind = ButtonKind.Primary,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        TransactionSheet.Unsplit -> ConfirmSheet(
+            title = stringResource(R.string.split_undo_title),
+            body = stringResource(R.string.split_undo_body),
+            confirmLabel = stringResource(R.string.split_undo),
+            dismissLabel = stringResource(R.string.cancel),
+            onConfirm = viewModel::onUnsplitConfirm,
+            onDismiss = viewModel::onSheetDismiss,
+            destructive = false
+        )
+
         TransactionSheet.Unlink -> ConfirmSheet(
             title = stringResource(R.string.loan_unlink_title),
             body = stringResource(R.string.loan_unlink_body),
@@ -445,6 +566,23 @@ private fun DetailRow(label: String, divider: Boolean = true, value: @Composable
 private fun Value(text: String) {
     Text(text = text, style = HalalaType.Body, textAlign = TextAlign.End)
 }
+
+/** Choosing several people: each chip on while picked. */
+@Composable
+private fun ChoiceChipsMulti(options: List<PersonChoice>, selected: List<Long>, onToggle: (Long) -> Unit) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        options.forEach { option ->
+            HalalaChip(
+                label = option.name,
+                style = if (option.id in selected) ChipStyle.On else ChipStyle.Outline,
+                onClick = { onToggle(option.id) }
+            )
+        }
+    }
+}
+
+/** A share typed beside a name. */
+private val SHARE_FIELD = Sizes.fab * 2
 
 /** The board's 40px detail rows. */
 private val DETAIL_ROW = Sizes.touchTarget - Spacing.xs

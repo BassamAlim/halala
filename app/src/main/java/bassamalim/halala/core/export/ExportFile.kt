@@ -42,7 +42,7 @@ data class ExportFile(
     val recurring: List<ExportRecurring> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 8
+        const val SCHEMA_VERSION = 9
     }
 }
 
@@ -174,7 +174,9 @@ data class ExportLoan(
     /** ISO-8601 date, or null with no due date. */
     val dueOn: String?,
     val createdAt: String,
-    val events: List<ExportLoanEvent>
+    val events: List<ExportLoanEvent>,
+    /** Since schema 9: the purchase this is a share of, when a bill was split. */
+    val splitOfTransactionUid: String? = null
 )
 
 @Serializable

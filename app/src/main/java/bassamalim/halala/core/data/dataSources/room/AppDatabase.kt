@@ -53,7 +53,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.Transaction
         LoanEvent::class,
         RecurringSeries::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

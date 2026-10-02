@@ -67,7 +67,7 @@ class MerchantDomain @Inject constructor(
                     it.transaction.currency == currency && it.transaction.kind.countsInTotals &&
                             toneOf(it) == AmountTone.Spending
                 }
-                .map { it.transaction.amountMinor }
+                .map { it.yourMinor }
         )
 
         /**

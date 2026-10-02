@@ -41,6 +41,9 @@ interface LoansDao {
     @Query("SELECT personId FROM person_aliases WHERE aliasKey = :key AND :key != ''")
     suspend fun getPersonFor(key: String): Long?
 
+    @Query("SELECT * FROM loans WHERE splitOf = :transactionId ORDER BY id")
+    suspend fun getSplitOf(transactionId: Long): List<Loan>
+
     @Insert
     suspend fun insertLoan(loan: Loan): Long
 
@@ -75,6 +78,15 @@ interface LoansDao {
         val loanId = insertLoan(loan)
         link(LoanEvent(uid = eventUid, loanId = loanId, type = LoanEventType.DISBURSEMENT, transactionId = transactionId), kind)
         return loanId
+    }
+
+    /** Each person's share of a split bill: a loan owed to you and the share lent, as one write. */
+    @Transaction
+    suspend fun split(loans: List<Pair<Loan, LoanEvent>>) {
+        for ((loan, event) in loans) {
+            val loanId = insertLoan(loan)
+            insertEvent(event.copy(loanId = loanId))
+        }
     }
 
     /** Transfers back to plain transfers ([kinds]: id → kind), and the events or loan gone, as one write. */

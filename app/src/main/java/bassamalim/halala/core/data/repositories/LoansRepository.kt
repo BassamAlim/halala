@@ -7,6 +7,8 @@ import bassamalim.halala.core.data.dataSources.room.entities.LoanEvent
 import bassamalim.halala.core.data.dataSources.room.relations.LoanEventRow
 import bassamalim.halala.core.domain.LoanState
 import bassamalim.halala.core.domain.Loans
+import bassamalim.halala.core.domain.Splits
+import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.enums.LoanDirection
 import bassamalim.halala.core.enums.LoanEventType
 import bassamalim.halala.core.enums.TransactionKind
@@ -124,6 +126,47 @@ class LoansRepository @Inject constructor(
 
         val kinds = freed.mapNotNull { id -> transactionsDao.get(id)?.let { id to Loans.plainKind(it.direction) } }.toMap()
         loansDao.unlink(kinds, eventId = event.id.takeUnless { lastLent }, loanId = event.loanId.takeIf { lastLent })
+    }
+
+    /**
+     * Splits [transactionId], a purchase or bill you paid, with others: each person's share
+     * ([shares], person → minor units) becomes a loan owed to you, dated the purchase's day. False
+     * when it can't be split (not your spending, already split, or shares that don't fit).
+     */
+    suspend fun split(transactionId: Long, shares: Map<Long, Long>): Boolean {
+        val tx = transactionsDao.get(transactionId) ?: return false
+        if (tx.direction != Direction.DEBIT || !tx.kind.countsInTotals) return false
+        if (transactionsDao.getTransferFor(transactionId) != null || loansDao.getSplitOf(transactionId).isNotEmpty()) return false
+        if (Splits.validate(tx.amountMinor, shares).isNotEmpty()) return false
+
+        loansDao.split(
+            shares.map { (personId, minor) ->
+                Loan(
+                    uid = UUID.randomUUID().toString(),
+                    personId = personId,
+                    direction = LoanDirection.LENT,
+                    currency = tx.currency,
+                    createdAt = clock.instant(),
+                    splitOf = transactionId
+                ) to LoanEvent(
+                    uid = UUID.randomUUID().toString(),
+                    loanId = 0,
+                    type = LoanEventType.DISBURSEMENT,
+                    amountMinor = minor,
+                    at = tx.occurredAt
+                )
+            }
+        )
+        return true
+    }
+
+    /** The split of [transactionId] undone: its shares' loans go, and their repayments are plain transfers again. */
+    suspend fun unsplit(transactionId: Long) {
+        for (loan in loansDao.getSplitOf(transactionId)) {
+            val freed = loansDao.getEventRows(loan.id).mapNotNull { it.transactionId }
+            val kinds = freed.mapNotNull { id -> transactionsDao.get(id)?.let { id to Loans.plainKind(it.direction) } }.toMap()
+            loansDao.unlink(kinds, eventId = null, loanId = loan.id)
+        }
     }
 
     /** A plain transfer to or from someone: not a move between your own accounts, nor part of a loan. */

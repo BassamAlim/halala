@@ -149,6 +149,27 @@ class LoansRepositoryTest {
     }
 
     @Test
+    fun `a split bill is your share of spending, and each share is owed to you`() = runTest {
+        val dinner = transactions.add(TransactionDraft(cash, Direction.DEBIT, 30_000, TEST_CLOCK.instant(), TransactionKind.PURCHASE, "Al Romansiah"))
+        val faisal = people.add("Faisal")!!
+        val khalid = people.add("Khalid")!!
+
+        assertFalse(loans.split(dinner, mapOf(faisal to 20_000, khalid to 20_000)))
+        assertTrue(loans.split(dinner, mapOf(faisal to 10_000, khalid to 10_000)))
+        assertFalse(loans.split(dinner, mapOf(faisal to 1)))
+
+        assertEquals(10_000, inOut(transactions.observeAll().first(), "SAR").outMinor)
+        assertEquals(2, loans.observeStates().first().count { it.isOpen && it.loan.splitOf == dinner })
+
+        val back = transactions.add(TransactionDraft(cash, Direction.CREDIT, 10_000, TEST_CLOCK.instant(), TransactionKind.TRANSFER_IN, "Faisal"))
+        loans.repay(loans.observeStates().first().first { it.loan.personId == faisal }.loan.id, back)
+        loans.unsplit(dinner)
+        assertEquals(emptyList<LoanState>(), loans.observeStates().first())
+        assertEquals(TransactionKind.TRANSFER_IN, transactions.get(back)!!.kind)
+        assertEquals(30_000, inOut(transactions.observeAll().first(), "SAR").outMinor)
+    }
+
+    @Test
     fun `nobody named, nothing to lend to`() = runTest {
         assertNull(loans.open(transfer("", 1_000), null))
     }

@@ -100,10 +100,14 @@ class ImporterTest {
         ),
         people = listOf(Person(121, "person-khalid", "Khalid A.", namedByYou = true)),
         personAliases = listOf(PersonAlias(131, 121, "khalid ali", "KHALID ALI")),
-        loans = listOf(Loan(141, "loan-khalid", 121, LoanDirection.LENT, "SAR", LocalDate.parse("2026-10-15"), at)),
+        loans = listOf(
+            Loan(141, "loan-khalid", 121, LoanDirection.LENT, "SAR", LocalDate.parse("2026-10-15"), at),
+            Loan(142, "loan-split", 121, LoanDirection.LENT, "SAR", null, at, splitOf = 31)
+        ),
         loanEvents = listOf(
             LoanEvent(151, "lent", 141, LoanEventType.DISBURSEMENT, transactionId = 34),
-            LoanEvent(152, "forgiven", 141, LoanEventType.FORGIVENESS, amountMinor = 50_000, at = at)
+            LoanEvent(152, "forgiven", 141, LoanEventType.FORGIVENESS, amountMinor = 50_000, at = at),
+            LoanEvent(153, "share", 142, LoanEventType.DISBURSEMENT, amountMinor = 7_000, at = at)
         ),
         recurring = listOf(
             RecurringSeries(161, "rec-jahez", RecurringKind.SUBSCRIPTION, "Jahez Plus", merchantId = 84, amountMinor = 2_900, currency = "SAR", unit = CadenceUnit.MONTH, anchor = LocalDate.parse("2026-10-03"), autoRenew = true, reminderDays = 3, status = SeriesStatus.ACTIVE, createdAt = at),

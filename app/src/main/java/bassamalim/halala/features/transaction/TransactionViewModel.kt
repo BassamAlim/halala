@@ -7,6 +7,8 @@ import androidx.navigation.toRoute
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.domain.LoanState
 import bassamalim.halala.core.domain.Loans
+import bassamalim.halala.core.domain.Splits
+import bassamalim.halala.core.data.dataSources.room.relations.PersonWithStats
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.Rules
 import bassamalim.halala.core.domain.titleOf
@@ -49,12 +51,12 @@ class TransactionViewModel @Inject constructor(
     private val sheet = MutableStateFlow<TransactionSheet?>(null)
 
     val uiState: StateFlow<TransactionUiState> = combine(
-        combine(domain.observe(id), domain.observeLoans(), ::Pair),
+        combine(domain.observe(id), domain.observeLoans(), domain.observePeople(), ::Triple),
         domain.observeCategories(),
         domain.observeRules(),
         confirmingDelete,
         sheet
-    ) { (detail, loans), categories, rules, confirming, sheet ->
+    ) { (detail, loans, people), categories, rules, confirming, sheet ->
         // Gone (deleted from here or elsewhere): the screen stays as it was while it leaves.
         if (detail == null) return@combine TransactionUiState(isLoading = true)
 
@@ -79,6 +81,7 @@ class TransactionViewModel @Inject constructor(
                 showPlus = tone == AmountTone.Income
             ),
             currency = tx.currency,
+            amountMinor = tx.amountMinor,
             whenLabel = "${dateLabel(local.toLocalDate(), today)} · ${timeLabel(local.toLocalTime())}",
             accountLabel = here,
             fromLabel = there?.let { if (detail.isTransferInLeg) it else here },
@@ -102,13 +105,17 @@ class TransactionViewModel @Inject constructor(
                     confidence = detail.merchantConfidence
                 )
             },
-            sheet = sheet,
             merchant = tx.title,
             merchantId = detail.merchantId,
             merchantName = detail.merchantName,
             personId = detail.personId,
             personName = detail.personName,
-            loan = loanLinkOf(detail, loans, today)
+            loan = loanLinkOf(detail, loans, today),
+            canSplit = tx.direction == Direction.DEBIT && tx.kind.countsInTotals && !detail.isInternalTransfer &&
+                    detail.sharedMinor == 0L,
+            split = splitOf(detail, loans, people),
+            people = people.map { PersonChoice(it.person.id, it.person.name) },
+            sheet = (sheet as? TransactionSheet.Split)?.let { previewed(it, tx.amountMinor, tx.currency) } ?: sheet
         )
     }.stateIn(
         scope = viewModelScope,
@@ -178,6 +185,81 @@ class TransactionViewModel @Inject constructor(
     }
 
     fun onUnlinkClick() = sheet.update { TransactionSheet.Unlink }
+
+    fun onSplitClick() = sheet.update { TransactionSheet.Split() }
+
+    private fun editSplit(change: (TransactionSheet.Split) -> TransactionSheet.Split) =
+        sheet.update { (it as? TransactionSheet.Split)?.let(change)?.copy(problems = emptySet()) ?: it }
+
+    fun onSplitPersonClick(personId: Long) = editSplit {
+        it.copy(selected = if (personId in it.selected) it.selected - personId else it.selected + personId)
+    }
+
+    fun onSplitModeClick(byAmount: Boolean) = editSplit { it.copy(byAmount = byAmount) }
+
+    fun onSplitAmountChange(personId: Long, text: String) = editSplit { it.copy(amounts = it.amounts + (personId to text)) }
+
+    fun onSplitNameChange(text: String) = editSplit { it.copy(newName = text) }
+
+    /** Adds someone by name and picks them. */
+    fun onSplitAddPerson() {
+        val split = sheet.value as? TransactionSheet.Split ?: return
+        viewModelScope.launch {
+            val personId = domain.addPerson(split.newName) ?: return@launch
+            editSplit { it.copy(newName = "", selected = it.selected + personId) }
+        }
+    }
+
+    fun onSplitConfirm() {
+        val split = sheet.value as? TransactionSheet.Split ?: return
+        val state = uiState.value
+        val total = state.amountMinor
+        val shares = sharesOf(split, total)
+        val problems = Splits.validate(total, shares)
+        if (problems.isNotEmpty()) {
+            sheet.update { split.copy(problems = problems) }
+            return
+        }
+        sheet.update { null }
+        viewModelScope.launch { domain.split(id, shares.mapValues { it.value!! }) }
+    }
+
+    fun onUnsplitClick() = sheet.update { TransactionSheet.Unsplit }
+
+    fun onUnsplitConfirm() {
+        sheet.update { null }
+        viewModelScope.launch { domain.unsplit(id) }
+    }
+
+    /** Each selected person's share in minor units: equal, or as typed (null when not a valid amount). */
+    private fun sharesOf(split: TransactionSheet.Split, totalMinor: Long): Map<Long, Long?> {
+        val currency = uiState.value.currency
+        return split.selected.associateWith { personId ->
+            if (split.byAmount) split.amounts[personId]?.let { Money.parse(it, currency) }
+            else Splits.equalShare(totalMinor, split.selected.size)
+        }
+    }
+
+    private fun previewed(split: TransactionSheet.Split, totalMinor: Long, currency: String): TransactionSheet.Split {
+        val shares = split.selected.associateWith { personId ->
+            if (split.byAmount) split.amounts[personId]?.let { Money.parse(it, currency) } else Splits.equalShare(totalMinor, split.selected.size)
+        }
+        val known = shares.values.filterNotNull()
+        return split.copy(
+            preview = shares.mapNotNull { (id, minor) -> minor?.let { id to Money.format(it, currency) } }.toMap(),
+            yours = Money.format(Splits.yours(totalMinor, known).coerceAtLeast(0), currency)
+        )
+    }
+
+    private fun splitOf(detail: TransactionDetail, loans: List<LoanState>, people: List<PersonWithStats>): SplitInfo? {
+        if (detail.sharedMinor == 0L) return null
+        val names = people.associate { it.person.id to it.person.name }
+        val currency = detail.transaction.currency
+        val shares = loans.filter { it.loan.splitOf == detail.transaction.id }.map {
+            names[it.loan.personId].orEmpty() to Money.format(it.lentMinor, currency)
+        }
+        return SplitInfo(shares, Money.format(detail.yourMinor, currency), currency)
+    }
 
     fun onUnlinkConfirm() {
         sheet.update { null }

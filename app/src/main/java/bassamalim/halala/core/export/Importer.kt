@@ -261,7 +261,8 @@ class Importer @Inject constructor(
                     direction = LoanDirection.valueOf(loan.direction),
                     currency = loan.currency,
                     dueOn = loan.dueOn?.let(LocalDate::parse),
-                    createdAt = Instant.parse(loan.createdAt)
+                    createdAt = Instant.parse(loan.createdAt),
+                    splitOf = loan.splitOfTransactionUid?.let { transactionIds.named(it, "transaction") }
                 )
             }
             val loanIds = loans.associate { it.uid to it.id }

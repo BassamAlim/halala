@@ -7,7 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * The phone is the only place the full ledger lives: every schema change is a migration, never
  * a destructive rebuild. Add each one here, in order, against the schemas in `app/schemas`.
  */
-val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6, Migration6To7, Migration7To8)
+val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6, Migration6To7, Migration7To8, Migration8To9)
 
 /** Phase 1: raw bank SMS, the digits learned per bank, reported balances, and SMS links. */
 private object Migration1To2 : Migration(1, 2) {
@@ -237,5 +237,16 @@ private object Migration7To8 : Migration(7, 8) {
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_recurring_series_uid` ON `recurring_series` (`uid`)")
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_recurring_series_merchantId` ON `recurring_series` (`merchantId`)")
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_recurring_series_personId` ON `recurring_series` (`personId`)")
+    }
+}
+
+/** Phase 3: splitting a bill, each person's share a loan that points at the purchase. */
+private object Migration8To9 : Migration(8, 9) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "ALTER TABLE `loans` ADD COLUMN `splitOf` INTEGER " +
+                    "REFERENCES `transactions`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE"
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_loans_splitOf` ON `loans` (`splitOf`)")
     }
 }

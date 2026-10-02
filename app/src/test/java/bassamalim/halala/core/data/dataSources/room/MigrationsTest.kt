@@ -204,6 +204,21 @@ class MigrationsTest {
         }
     }
 
+    @Test
+    fun `8 to 9 lets a loan be a share of a split bill, and matches the schema`() {
+        helper.createDatabase(DB, 8).use { db ->
+            db.execSQL("INSERT INTO people (id, uid, name) VALUES (1, 'p', 'Khalid')")
+            db.execSQL("INSERT INTO loans (id, uid, personId, direction, currency, createdAt) VALUES (1, 'l', 1, 'LENT', 'SAR', 0)")
+        }
+
+        helper.runMigrationsAndValidate(DB, 9, true, *MIGRATIONS).use { db ->
+            db.query("SELECT splitOf FROM loans").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(true, cursor.isNull(0))
+            }
+        }
+    }
+
     private companion object {
         const val DB = "migration-test"
     }

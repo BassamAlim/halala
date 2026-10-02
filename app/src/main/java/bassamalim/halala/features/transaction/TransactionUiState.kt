@@ -8,6 +8,7 @@ import bassamalim.halala.core.models.CategoryOption
 import bassamalim.halala.core.models.RuleWords
 import bassamalim.halala.core.enums.BusinessType
 import bassamalim.halala.core.enums.IdentifiedBy
+import bassamalim.halala.core.domain.SplitProblem
 import java.time.LocalDate
 
 data class TransactionUiState(
@@ -20,6 +21,8 @@ data class TransactionUiState(
     /** amount-xl, signed as a row signs it: "−62.00". */
     val amount: String = "",
     val currency: String = "",
+    /** The exact amount, for splitting it. */
+    val amountMinor: Long = 0,
     /** "Mon 29 Sep · 21:14" */
     val whenLabel: String = "",
     val accountLabel: String = "",
@@ -48,6 +51,11 @@ data class TransactionUiState(
     val personName: String? = null,
     /** How it stands with a loan: one it could open or repay, or the one it is part of. */
     val loan: LoanLink? = null,
+    /** Spending you paid can be split with others; once split, how. */
+    val canSplit: Boolean = false,
+    val split: SplitInfo? = null,
+    /** Everyone to split with, the latest first. */
+    val people: List<PersonChoice> = emptyList(),
     val sheet: TransactionSheet? = null
 ) {
     val isMove get() = fromLabel != null
@@ -64,6 +72,11 @@ data class FiledBy(
     val identifiedBy: IdentifiedBy? = null,
     val confidence: Int? = null
 )
+
+/** A bill you split: each person's share ("100.00") and what is left as yours. */
+data class SplitInfo(val shares: List<Pair<String, String>>, val yours: String, val currency: String)
+
+data class PersonChoice(val id: Long, val name: String)
 
 /** A transfer to or from someone, and loans. */
 sealed interface LoanLink {
@@ -102,6 +115,23 @@ sealed interface TransactionSheet {
 
     /** "Not part of a loan", to confirm. */
     data object Unlink : TransactionSheet
+
+    /**
+     * Splitting it with [selected] people, equally or [byAmount] (each person's [amounts] as
+     * typed); [preview] is each share and yours as they would be, formatted; [newName] someone
+     * to add.
+     */
+    data class Split(
+        val selected: List<Long> = emptyList(),
+        val byAmount: Boolean = false,
+        val amounts: Map<Long, String> = emptyMap(),
+        val newName: String = "",
+        val problems: Set<SplitProblem> = emptySet(),
+        val preview: Map<Long, String> = emptyMap(),
+        val yours: String = ""
+    ) : TransactionSheet
+
+    data object Unsplit : TransactionSheet
 
     data object Category : TransactionSheet
     data object Type : TransactionSheet

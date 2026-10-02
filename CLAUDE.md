@@ -250,7 +250,12 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   `LOAN_GIVEN`/`LOAN_RECEIVED`/`LOAN_REPAYMENT`, which count as **neither spending nor income**,
   take no category, and survive editing; "Not part of a loan" (or deleting the transfer) makes it
   a plain transfer again, and when it was all that was lent the loan goes and its repayments are
-  freed. Transaction detail asks whether a transfer repays the person's oldest open loan
+  freed. **Splits**: spending you paid can be split with people (equally, the remainder staying
+  yours, or by amount, no more than the whole): each share is a loan owed to you with
+  `splitOf` the purchase and an event without a transfer, and only your share counts as
+  spending (`TransactionDetail.yourMinor`, used by `inOut` and a merchant's spent). Someone no
+  transfer names can be added by name to split with. Undoing a split drops its loans and frees
+  their repayments. Transaction detail asks whether a transfer repays the person's oldest open loan
   (`Loans.repaidBy`) and offers marking it as a loan. Merging people moves their loans.
 - **Subscriptions, bills and planned payments** are one `RecurringSeries` (the spec's
   RecurringSeries): kind (`SUBSCRIPTION`, `BILL`, `PLANNED` for family support and the like),
@@ -310,7 +315,8 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   `ExportFile`, schema-versioned (`schemaVersion`, bump on any shape change; 2 added categories
   and rules, 3 merchants with their aliases, 4 business types on merchants and categories, 5 all
   a restore needs: raw bank messages, account refs, balance checkpoints, full rule conditions,
-  6 people with their aliases, 7 loans with their events, 8 subscriptions and bills),
+  6 people with their aliases, 7 loans with their events, 8 subscriptions and bills, 9 a loan's
+  split purchase),
   keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
 - **Restore** (same screen, "Restore from JSON"): `Importer.read` turns a schema-5 or later export into
   rows numbered afresh (pure; refuses older or newer schemas and dangling uids), you confirm,
@@ -384,4 +390,6 @@ price rise, a missed charge and what was found, Next 30 days and Later, each wit
 reached from the Plan tab's card and Home's Coming up), **Subscription or bill** (no board: the
 form, from the list or its + Add), Home's **People owe you** and **Coming up** cards (Home
 board), and the Plan tab's Subscriptions and bills card (Plan board; the rest of Plan comes with
-Phase 4). Still to come: splits.
+Phase 4), and Transaction detail's **Split** card and sheet (no board). Still to come in
+Phase 3: the Review board's one-tap loan/split/subscription marks, linking people to IBANs and
+contacts.

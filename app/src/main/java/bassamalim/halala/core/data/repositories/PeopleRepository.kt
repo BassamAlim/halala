@@ -31,6 +31,15 @@ class PeopleRepository @Inject constructor(
 
     suspend fun getAliases(): List<PersonAlias> = peopleDao.getAliases()
 
+    /**
+     * Someone no transfer has named yet (to split a bill with): known by the name you give, with
+     * no spelling of their own until you merge them with one a bank writes. Returns their id.
+     */
+    suspend fun add(name: String): Long? {
+        val trimmed = name.trim().takeIf { it.isNotEmpty() } ?: return null
+        return peopleDao.insertPerson(Person(uid = UUID.randomUUID().toString(), name = trimmed, namedByYou = true))
+    }
+
     /** What you call them. The bank's spellings stay as they were written. */
     suspend fun rename(id: Long, name: String) {
         val person = peopleDao.getPerson(id) ?: return
