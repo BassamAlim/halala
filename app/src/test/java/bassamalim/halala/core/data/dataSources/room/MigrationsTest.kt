@@ -131,6 +131,21 @@ class MigrationsTest {
         }
     }
 
+    @Test
+    fun `4 to 5 adds merchants to a database stamped 4 that never got them`() {
+        helper.createDatabase(DB, 3).use { db ->
+            db.execSQL("INSERT INTO categories (uid, name, expenseType) VALUES ('g', 'Groceries', 'VARIABLE_ESSENTIAL')")
+            db.version = 4
+        }
+
+        helper.runMigrationsAndValidate(DB, 5, true, *MIGRATIONS).use { db ->
+            db.query("SELECT COUNT(*) FROM merchants").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+        }
+    }
+
     private companion object {
         const val DB = "migration-test"
     }

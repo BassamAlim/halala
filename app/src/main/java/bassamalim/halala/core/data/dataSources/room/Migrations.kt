@@ -115,7 +115,9 @@ private object Migration2To3 : Migration(2, 3) {
  * both on its next run (the app runs it on opening), since telling merchants apart is Kotlin.
  */
 private object Migration3To4 : Migration(3, 4) {
-    override fun migrate(db: SupportSQLiteDatabase) {
+    override fun migrate(db: SupportSQLiteDatabase) = addMerchants(db)
+
+    fun addMerchants(db: SupportSQLiteDatabase) {
         db.execSQL(
             "CREATE TABLE IF NOT EXISTS `merchants` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
                     "`uid` TEXT NOT NULL, `name` TEXT NOT NULL)"
@@ -146,6 +148,12 @@ private object Migration3To4 : Migration(3, 4) {
  */
 private object Migration4To5 : Migration(4, 5) {
     override fun migrate(db: SupportSQLiteDatabase) {
+        // A development build stamped version 4 on a database that was still version 3's
+        // schema, so a phone that ran it has no merchants yet: add them before altering them.
+        val hasMerchants = db.query("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'merchants'")
+            .use { it.moveToFirst() }
+        if (!hasMerchants) Migration3To4.addMerchants(db)
+
         db.execSQL("ALTER TABLE `categories` ADD COLUMN `businessTypes` TEXT NOT NULL DEFAULT ''")
         Seed.seedBusinessTypes(db)
 
