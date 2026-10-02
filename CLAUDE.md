@@ -13,7 +13,8 @@ it for AI. It is sideloaded (APKs from GitHub Releases), never published to a st
 Sources of truth, read before writing code:
 
 - **Spec** (product, data model, AI pipeline, roadmap):
-  `https://claude.ai/code/artifact/198e29a7-8f36-4d4b-8c39-ada8fb94df56`
+  `https://claude.ai/code/artifact/198e29a7-8f36-4d4b-8c39-ada8fb94df56`; a copy is checked in at the
+  root (`Personal Finance App — Product & Technical Spec.md`), which may be the newer of the two
 - **Design system** "Halala Design System" (tokens, components, voice, Compose mapping):
   `https://claude.ai/artifact/S6fcpdnuBUEso5u7ojecaj`
 - **Screen designs** "Halala design canvas", 22 phone screens on its *Screens* page (Home and its
