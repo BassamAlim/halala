@@ -5,8 +5,13 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import bassamalim.halala.core.models.ReminderMode
+import bassamalim.halala.core.models.ReviewSchedule
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.time.DayOfWeek
+import java.time.LocalTime
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -33,7 +38,27 @@ class PreferencesRepository @Inject constructor(
         dataStore.edit { it[ONBOARDED] = true }
     }
 
+    fun observeReviewSchedule(): Flow<ReviewSchedule> = dataStore.data.map { preferences ->
+        val default = ReviewSchedule()
+        ReviewSchedule(
+            mode = ReminderMode.entries.firstOrNull { it.name == preferences[REVIEW_MODE] } ?: default.mode,
+            day = preferences[REVIEW_DAY]?.let { DayOfWeek.entries.getOrNull(it - 1) } ?: default.day,
+            time = preferences[REVIEW_MINUTE]?.let { LocalTime.ofSecondOfDay(it.coerceIn(0, 1439) * 60L) } ?: default.time
+        )
+    }
+
+    suspend fun setReviewSchedule(schedule: ReviewSchedule) {
+        dataStore.edit {
+            it[REVIEW_MODE] = schedule.mode.name
+            it[REVIEW_DAY] = schedule.day.value
+            it[REVIEW_MINUTE] = schedule.time.toSecondOfDay() / 60
+        }
+    }
+
     companion object {
+        private val REVIEW_MODE = stringPreferencesKey("review_reminder_mode")
+        private val REVIEW_DAY = intPreferencesKey("review_reminder_day")
+        private val REVIEW_MINUTE = intPreferencesKey("review_reminder_minute")
         private val ONBOARDED = booleanPreferencesKey("onboarded")
         private val LOCK_TIMEOUT_SECONDS = intPreferencesKey("lock_timeout_seconds")
 

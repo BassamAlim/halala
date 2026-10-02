@@ -1,5 +1,9 @@
 package bassamalim.halala.features.settings
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +16,18 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.NotificationManagerCompat
+import bassamalim.halala.core.models.ReminderMode
+import bassamalim.halala.core.ui.components.ChoiceChips
+import bassamalim.halala.core.ui.components.HalalaButton
+import bassamalim.halala.core.ui.components.HalalaSheet
+import bassamalim.halala.core.ui.components.TimeDialog
+import bassamalim.halala.core.ui.dayOfWeekLabel
+import java.time.DayOfWeek
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -31,7 +47,8 @@ import bassamalim.halala.core.ui.theme.Spacing
 
 /**
  * Settings, from the Settings board, holding only the rows that are true today: accounts, bank
- * messages, categories, rules, backup and export, and the lock. Reminders and AI join as they
+ * messages, categories, rules, recent changes, the review reminder, backup and export, and the
+ * lock. Digests and AI join as they
  * are built.
  */
 @Composable
@@ -76,6 +93,25 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 divider = true,
                 onClick = viewModel::onRulesClick
             )
+            ListRow(
+                title = stringResource(R.string.history),
+                subtitle = stringResource(R.string.settings_history_summary),
+                divider = true,
+                onClick = viewModel::onHistoryClick
+            )
+        }
+
+        Section(stringResource(R.string.settings_reminders)) {
+            ListRow(
+                title = stringResource(R.string.reminder_review),
+                subtitle = when (state.reminder.mode) {
+                    ReminderMode.OFF -> stringResource(R.string.reminder_off)
+                    ReminderMode.DAILY -> stringResource(R.string.reminder_daily_at, state.reminderTime)
+                    ReminderMode.WEEKLY ->
+                        stringResource(R.string.reminder_weekly_at, dayOfWeekLabel(state.reminder.day), state.reminderTime)
+                },
+                onClick = viewModel::onReminderClick
+            )
         }
 
         Section(stringResource(R.string.settings_privacy)) {
@@ -104,6 +140,79 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             style = HalalaType.Caption,
             color = HalalaColors.TextMuted
         )
+    }
+
+    if (state.isPickingReminderTime) {
+        TimeDialog(
+            time = state.reminder.time,
+            onPicked = viewModel::onReminderTimePicked,
+            onDismiss = viewModel::onReminderTimeDismiss
+        )
+    } else if (state.isEditingReminder) {
+        ReminderSheet(state, viewModel)
+    }
+}
+
+/**
+ * How often, which day, and when. Turning it on asks for the notification permission (Android
+ * 13 and later); if that is refused the sheet says so, since the reminder would never show.
+ */
+@Composable
+private fun ReminderSheet(state: SettingsUiState, viewModel: SettingsViewModel) {
+    val context = LocalContext.current
+    var allowed by remember { mutableStateOf(NotificationManagerCompat.from(context).areNotificationsEnabled()) }
+    val askPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { allowed = it }
+
+    HalalaSheet(onDismiss = viewModel::onReminderDismiss) {
+        Text(text = stringResource(R.string.reminder_review), style = HalalaType.Title)
+        Text(
+            text = stringResource(R.string.reminder_hint),
+            style = HalalaType.Body,
+            color = HalalaColors.TextMuted
+        )
+
+        ChoiceChips(
+            options = ReminderMode.entries,
+            selected = state.reminder.mode,
+            label = {
+                stringResource(
+                    when (it) {
+                        ReminderMode.OFF -> R.string.reminder_off
+                        ReminderMode.DAILY -> R.string.reminder_daily
+                        ReminderMode.WEEKLY -> R.string.reminder_weekly
+                    }
+                )
+            },
+            onSelect = { mode ->
+                if (mode != ReminderMode.OFF && !allowed && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                    askPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                viewModel.onReminderModePick(mode)
+            }
+        )
+
+        if (state.reminder.mode == ReminderMode.WEEKLY) {
+            ChoiceChips(
+                options = DayOfWeek.entries,
+                selected = state.reminder.day,
+                label = { dayOfWeekLabel(it, short = true) },
+                onSelect = viewModel::onReminderDayPick
+            )
+        }
+
+        if (state.reminder.mode != ReminderMode.OFF) {
+            HalalaButton(
+                text = state.reminderTime,
+                onClick = viewModel::onReminderTimeClick,
+                modifier = Modifier.fillMaxWidth()
+            )
+            if (!allowed) {
+                Text(
+                    text = stringResource(R.string.reminder_blocked),
+                    style = HalalaType.Caption,
+                    color = HalalaColors.Info
+                )
+            }
+        }
     }
 }
 

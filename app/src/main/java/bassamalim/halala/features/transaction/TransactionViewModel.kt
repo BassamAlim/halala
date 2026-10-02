@@ -82,12 +82,12 @@ class TransactionViewModel @Inject constructor(
             category = tx.categoryId?.let { CategoryOption(it, detail.categoryName.orEmpty()) },
             expenseType = tx.expenseType,
             categories = categories.map { CategoryOption(it.id, it.name) },
-            filedBy = rules.firstOrNull { it.rule.id == tx.ruleId }?.let {
+            filedBy = rules.firstOrNull { it.stats.rule.id == tx.ruleId }?.let {
                 FiledBy(
-                    merchant = it.rule.conditions.merchant.orEmpty(),
-                    category = it.categoryName.orEmpty(),
-                    expenseType = it.rule.actions.expenseType,
-                    hits = it.hits
+                    words = it.words,
+                    category = it.stats.categoryName.orEmpty(),
+                    expenseType = it.stats.rule.actions.expenseType,
+                    hits = it.stats.hits
                 )
             },
             sheet = sheet,
@@ -111,8 +111,13 @@ class TransactionViewModel @Inject constructor(
 
     /** A named merchant can be remembered, so it asks; a nameless one is filed on its own. */
     fun onCategoryPick(category: CategoryOption) {
-        if (uiState.value.merchant.isNotBlank()) sheet.update { TransactionSheet.Always(category) }
-        else onJustThisOne(category)
+        val merchant = uiState.value.merchant
+        if (merchant.isBlank()) return onJustThisOne(category)
+
+        viewModelScope.launch {
+            val others = domain.othersFrom(merchant, id)
+            sheet.update { TransactionSheet.Always(category, others) }
+        }
     }
 
     fun onJustThisOne(category: CategoryOption) {

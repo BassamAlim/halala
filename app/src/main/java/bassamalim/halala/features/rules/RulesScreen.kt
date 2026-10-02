@@ -29,7 +29,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
 import bassamalim.halala.core.enums.RuleSource
-import bassamalim.halala.core.ui.components.ChoiceSheet
 import bassamalim.halala.core.ui.components.DISABLED_ALPHA
 import bassamalim.halala.core.ui.components.HalalaButton
 import bassamalim.halala.core.ui.components.HalalaSheet
@@ -46,9 +45,8 @@ import bassamalim.halala.core.ui.theme.Spacing
 
 /**
  * Rules, from the Rules board: every rule in plain words with who made it and how often it was
- * used, searchable; a rule opens to change its category, turn it off, or delete it. Writing a
- * rule by hand (the board's +) and the Learned / Yours / AI filter arrive once there is more
- * than one kind of rule.
+ * used, searchable; a rule opens to edit it, turn it off, or delete it, and Add (the board's +)
+ * writes one by hand. The Learned / Yours / AI filter waits for AI rules.
  */
 @Composable
 fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
@@ -61,7 +59,12 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
             .padding(top = Insets.screenTop),
         verticalArrangement = Arrangement.spacedBy(Spacing.card)
     ) {
-        TopBar(title = stringResource(R.string.rules), onBack = viewModel::onBackClick)
+        TopBar(
+            title = stringResource(R.string.rules),
+            onBack = viewModel::onBackClick,
+            actionLabel = stringResource(R.string.add),
+            onAction = viewModel::onAddClick
+        )
 
         if (state.isLoading) return@Column
 
@@ -92,44 +95,33 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
 
     val selected = state.selected ?: return
 
-    if (state.isPickingCategory) {
-        ChoiceSheet(
-            title = selected.merchant,
-            options = state.categories,
-            selected = state.categories.firstOrNull { it.id == selected.categoryId },
-            label = { it.name },
-            onPick = viewModel::onCategoryPick,
-            onDismiss = viewModel::onSheetDismiss
+    HalalaSheet(onDismiss = viewModel::onSheetDismiss) {
+        Text(
+            text = ruleSentence(selected.words, selected.category, selected.expenseType),
+            style = HalalaType.Title
         )
-    } else {
-        HalalaSheet(onDismiss = viewModel::onSheetDismiss) {
-            Text(
-                text = ruleSentence(selected.merchant, selected.category, selected.expenseType),
-                style = HalalaType.Title
-            )
-            Text(text = ruleMeta(selected), style = HalalaType.Body, color = HalalaColors.TextMuted)
+        Text(text = ruleMeta(selected), style = HalalaType.Body, color = HalalaColors.TextMuted)
 
-            Column(
-                modifier = Modifier.padding(top = Spacing.sm),
-                verticalArrangement = Arrangement.spacedBy(Spacing.sm)
-            ) {
-                HalalaButton(
-                    text = stringResource(R.string.rule_change_category),
-                    onClick = viewModel::onChangeCategoryClick,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                HalalaButton(
-                    text = stringResource(if (selected.enabled) R.string.rule_turn_off else R.string.rule_turn_on),
-                    onClick = viewModel::onToggleClick,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                HalalaButton(
-                    text = stringResource(R.string.delete),
-                    onClick = viewModel::onDeleteClick,
-                    destructive = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+        Column(
+            modifier = Modifier.padding(top = Spacing.sm),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm)
+        ) {
+            HalalaButton(
+                text = stringResource(R.string.edit),
+                onClick = viewModel::onEditClick,
+                modifier = Modifier.fillMaxWidth()
+            )
+            HalalaButton(
+                text = stringResource(if (selected.enabled) R.string.rule_turn_off else R.string.rule_turn_on),
+                onClick = viewModel::onToggleClick,
+                modifier = Modifier.fillMaxWidth()
+            )
+            HalalaButton(
+                text = stringResource(R.string.delete),
+                onClick = viewModel::onDeleteClick,
+                destructive = true,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
@@ -153,7 +145,7 @@ private fun RuleRow(rule: RuleItem, divider: Boolean, onClick: () -> Unit) {
         ) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xxs)) {
                 Text(
-                    text = ruleSentence(rule.merchant, rule.category, rule.expenseType),
+                    text = ruleSentence(rule.words, rule.category, rule.expenseType),
                     style = HalalaType.Body
                 )
                 Text(text = ruleMeta(rule), style = HalalaType.Caption, color = HalalaColors.TextMuted)

@@ -8,8 +8,12 @@ data class ReviewUiState(
     val cards: List<ReviewCard> = emptyList(),
     val categories: List<CategoryOption> = emptyList(),
     /** The card whose category is being chosen. */
-    val picking: ReviewCard? = null
+    val picking: ReviewCard? = null,
+    /** The answer just given, while its undo is offered. */
+    val justFiled: JustFiled? = null
 )
+
+data class JustFiled(val batchId: Long, val merchant: String, val category: String)
 
 /** One merchant's uncategorised spending: a single transaction, or many filed with one answer. */
 data class ReviewCard(

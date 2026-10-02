@@ -10,6 +10,8 @@ import bassamalim.halala.core.data.dataSources.room.daos.SmsDao
 import bassamalim.halala.core.data.dataSources.room.daos.TransactionsDao
 import bassamalim.halala.core.data.dataSources.room.entities.Account
 import bassamalim.halala.core.data.dataSources.room.entities.AccountRef
+import bassamalim.halala.core.data.dataSources.room.entities.AuditBatch
+import bassamalim.halala.core.data.dataSources.room.entities.AuditChange
 import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
 import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.entities.Institution
@@ -28,7 +30,9 @@ import bassamalim.halala.core.data.dataSources.room.entities.Transaction
         AccountRef::class,
         BalanceCheckpoint::class,
         Category::class,
-        Rule::class
+        Rule::class,
+        AuditBatch::class,
+        AuditChange::class
     ],
     version = 3,
     exportSchema = true

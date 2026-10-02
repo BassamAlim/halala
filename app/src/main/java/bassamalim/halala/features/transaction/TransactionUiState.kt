@@ -5,6 +5,7 @@ import bassamalim.halala.core.enums.ExpenseType
 import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.enums.TransactionSource
 import bassamalim.halala.core.models.CategoryOption
+import bassamalim.halala.core.models.RuleWords
 
 data class TransactionUiState(
     val isLoading: Boolean = true,
@@ -42,12 +43,15 @@ data class TransactionUiState(
 }
 
 /** The rule behind an automatic filing, as the "Filed automatically" card words it. */
-data class FiledBy(val merchant: String, val category: String, val expenseType: ExpenseType?, val hits: Int)
+data class FiledBy(val words: RuleWords, val category: String, val expenseType: ExpenseType?, val hits: Int)
 
 sealed interface TransactionSheet {
     data object Category : TransactionSheet
     data object Type : TransactionSheet
 
-    /** After choosing [category] for a named merchant: this one only, or always? */
-    data class Always(val category: CategoryOption) : TransactionSheet
+    /**
+     * After choosing [category] for a named merchant: this one only, or always? [others] is how
+     * many of its other transactions "always" would file.
+     */
+    data class Always(val category: CategoryOption, val others: Int) : TransactionSheet
 }

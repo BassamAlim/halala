@@ -193,7 +193,7 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
                 Text(
                     text = stringResource(
                         R.string.meta_pair,
-                        ruleSentence(rule.merchant, rule.category, rule.expenseType),
+                        ruleSentence(rule.words, rule.category, rule.expenseType),
                         pluralStringResource(R.plurals.rule_used, rule.hits, rule.hits)
                     ),
                     style = HalalaType.Label,
@@ -255,7 +255,8 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
 
         is TransactionSheet.Always -> ConfirmSheet(
             title = stringResource(R.string.always_title, state.merchant, sheet.category.name),
-            body = stringResource(R.string.always_body),
+            body = if (sheet.others == 0) stringResource(R.string.always_body_none)
+            else pluralStringResource(R.plurals.always_body, sheet.others, sheet.others),
             confirmLabel = stringResource(R.string.always_confirm),
             dismissLabel = stringResource(R.string.always_dismiss),
             onConfirm = { viewModel.onAlways(sheet.category) },

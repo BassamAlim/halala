@@ -50,4 +50,10 @@ sealed interface Screen {
     @Serializable data object Rules : Screen
 
     @Serializable data object Categories : Screen
+
+    /** Writing a rule by hand, or editing [id]. */
+    @Serializable data class EditRule(val id: Long = 0) : Screen
+
+    /** What you changed about how transactions are filed, each with its undo. */
+    @Serializable data object History : Screen
 }

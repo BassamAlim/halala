@@ -189,8 +189,20 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   `ClassificationRepository.applyRules()` is idempotent and runs after every SMS run, every
   manual save and every rule change. A rule's use count is counted from the transactions it
   filed, not stored. Rule conditions and actions are JSON columns, so new kinds need no
-  migration. Yours beat learned, learned beat AI. Removing a category deletes the rules that
-  file under it and sends its transactions back to review.
+  migration; all that are set must hold. Yours beat learned, learned beat AI, then the rule with
+  more conditions, then the newer. Removing a category deletes the rules that file under it and
+  sends its transactions back to review.
+- **Undo**: everything you do to filing (an answer, "always", saving, switching or deleting a
+  rule, deleting a category) is one `AuditBatch`: `ClassificationRepository.audited` snapshots
+  categories, rules and every transaction's filing before and after, and stores the rows that
+  differ. `undo` puts each row back only where it still reads as the batch left it, so nothing
+  done since is overwritten. What rules file on their own as SMS arrive is not a batch (the
+  transaction names its rule). New mutations of categories, rules or filings go through
+  `audited`.
+- **Notifications**: only the review reminder (off by default; daily or weekly at a time, set in
+  Settings), which shows a count of merchants and never an amount, says nothing when the inbox
+  is empty, and can be put off an hour or a day. It is periodic WorkManager work, so it can run
+  late in Doze. Tapping it opens the app (lock, then Home), not Review directly.
 - **Every automated decision says why** (the spec's principle): Transaction detail's
   "How it got here" card names the source (added by you, a wallet count, or an SMS), and
   "Filed automatically" names the rule.
@@ -247,15 +259,16 @@ pipeline (`SmsIngest`: routing by last four, dedupe, pairing internal transfers,
 checkpoints) and back-import (`SmsImport`), plus **Onboarding** (the onboarding board).
 Amounts show the riyal sign for SAR (`Currency.kt`), the ISO code otherwise.
 
-**Phase 2 (classification and learning)** is started, the part that needs no network:
-categories and expense types (seeded; `Category`, `ExpenseType`), learned rules (`Rule`,
-`core/domain/Rules`, `ClassificationRepository`), the **Review** inbox (Review board: one card
-per merchant, biggest first, reached from Home's review pill), the **Rules** screen (Rules
-board; reached from Settings and from a transaction's "Filed automatically" card), and
-category and type on Transaction detail. **Categories** (Settings; no board: add with a
-name and optional type, tap to remove) is built. Still to come in Phase 2: renaming and
-two-level categories, rules
-written by hand and conditions beyond the merchant, the "applies to N past transactions"
-preview, the audit log with undo, merchants with aliases and fuzzy matching, review reminders,
-and AI classification with scrubbing (Groq's data-retention question in the spec is still
-open: nothing is sent until the owner settles it).
+**Phase 2 (classification and learning)** is built as far as it goes without a network:
+categories and expense types (seeded; `Category`, `ExpenseType`), rules (`Rule`,
+`core/domain/Rules`, `ClassificationRepository`), the history of changes with undo
+(`AuditBatch`, `AuditChange`), and the review reminder (`core/reminders`). Screens: **Review**
+(Review board: one card per merchant, biggest first, with the last answer's undo; reached from
+Home's review pill), **Rules** (Rules board; from Settings and from a transaction's "Filed
+automatically" card), category and type on Transaction detail, and, with no board, built from
+the system's components: **Categories** (add, tap to remove), **Rule** (the form: merchant is,
+description contains, account, amount range → category and type), **Recent changes** (each
+with Undo) and the reminder sheet in Settings. Still to come in Phase 2: renaming and two-level
+categories, merchants with aliases and fuzzy matching, the Review board's suggestion parts, and
+AI classification with scrubbing (Groq's data-retention question in the spec is still open:
+nothing is sent until the owner settles it).

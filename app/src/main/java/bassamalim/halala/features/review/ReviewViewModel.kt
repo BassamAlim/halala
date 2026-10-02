@@ -27,12 +27,14 @@ class ReviewViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val picking = MutableStateFlow<ReviewCard?>(null)
+    private val justFiled = MutableStateFlow<JustFiled?>(null)
 
     val uiState: StateFlow<ReviewUiState> = combine(
         domain.observeTransactions(),
         domain.observeCategories(),
-        picking
-    ) { transactions, categories, picking ->
+        picking,
+        justFiled
+    ) { transactions, categories, picking, justFiled ->
         val zone = domain.zone()
         val today = domain.today()
 
@@ -54,7 +56,8 @@ class ReviewViewModel @Inject constructor(
                 )
             },
             categories = categories.map { CategoryOption(it.id, it.name) },
-            picking = picking
+            picking = picking,
+            justFiled = justFiled
         )
     }.stateIn(
         scope = viewModelScope,
@@ -73,6 +76,15 @@ class ReviewViewModel @Inject constructor(
     fun onCategoryPick(category: CategoryOption) {
         val card = picking.value ?: return
         picking.update { null }
-        viewModelScope.launch { domain.learn(card.title, category.id) }
+        viewModelScope.launch {
+            val batchId = domain.learn(card.title, category.id)
+            justFiled.update { batchId?.let { JustFiled(it, card.title, category.name) } }
+        }
+    }
+
+    fun onUndoClick() {
+        val batchId = justFiled.value?.batchId ?: return
+        justFiled.update { null }
+        viewModelScope.launch { domain.undo(batchId) }
     }
 }

@@ -62,7 +62,10 @@ private object Migration1To2 : Migration(1, 2) {
     }
 }
 
-/** Phase 2: categories (seeded), rules, and what each transaction is filed under and by which rule. */
+/**
+ * Phase 2: categories (seeded), rules, what each transaction is filed under and by which rule,
+ * and the history of those changes.
+ */
 private object Migration2To3 : Migration(2, 3) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(
@@ -90,5 +93,18 @@ private object Migration2To3 : Migration(2, 3) {
         )
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_transactions_categoryId` ON `transactions` (`categoryId`)")
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_transactions_ruleId` ON `transactions` (`ruleId`)")
+
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `audit_batches` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`action` TEXT NOT NULL, `subject` TEXT NOT NULL, `detail` TEXT NOT NULL, " +
+                    "`at` INTEGER NOT NULL, `undoneAt` INTEGER)"
+        )
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `audit_changes` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`batchId` INTEGER NOT NULL, `entity` TEXT NOT NULL, `entityId` INTEGER NOT NULL, " +
+                    "`old` TEXT, `new` TEXT, " +
+                    "FOREIGN KEY(`batchId`) REFERENCES `audit_batches`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )"
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_audit_changes_batchId` ON `audit_changes` (`batchId`)")
     }
 }

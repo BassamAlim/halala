@@ -3,6 +3,7 @@ package bassamalim.halala.features.review
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -11,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -18,11 +20,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
 import bassamalim.halala.core.enums.AmountTone
+import bassamalim.halala.core.enums.AuditAction
 import bassamalim.halala.core.ui.components.ChoiceSheet
 import bassamalim.halala.core.ui.components.HalalaButton
 import bassamalim.halala.core.ui.components.HalalaCard
 import bassamalim.halala.core.ui.components.TopBar
 import bassamalim.halala.core.ui.components.TransactionRow
+import bassamalim.halala.core.ui.auditSentence
 import bassamalim.halala.core.ui.dayText
 import bassamalim.halala.core.ui.theme.HalalaColors
 import bassamalim.halala.core.ui.theme.HalalaType
@@ -50,6 +54,7 @@ fun ReviewScreen(viewModel: ReviewViewModel = hiltViewModel()) {
         if (state.isLoading) return@Column
 
         LazyColumn(
+            modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(Spacing.card),
             contentPadding = PaddingValues(top = Spacing.card, bottom = Spacing.section)
         ) {
@@ -90,6 +95,25 @@ fun ReviewScreen(viewModel: ReviewViewModel = hiltViewModel()) {
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
+            }
+        }
+
+        // The answer just given, one tap from being taken back.
+        state.justFiled?.let { filed ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = Spacing.sm),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+            ) {
+                Text(
+                    text = auditSentence(AuditAction.LEARNED, filed.merchant, filed.category),
+                    style = HalalaType.Label,
+                    color = HalalaColors.TextMuted,
+                    modifier = Modifier.weight(1f)
+                )
+                HalalaButton(text = stringResource(R.string.undo), onClick = viewModel::onUndoClick)
             }
         }
     }

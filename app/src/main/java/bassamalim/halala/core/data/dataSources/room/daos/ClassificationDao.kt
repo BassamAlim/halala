@@ -4,11 +4,17 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
+import bassamalim.halala.core.data.dataSources.room.entities.AuditBatch
+import bassamalim.halala.core.data.dataSources.room.entities.AuditChange
 import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
+import bassamalim.halala.core.data.dataSources.room.relations.BatchWithCount
 import bassamalim.halala.core.data.dataSources.room.relations.CategoryWithUse
+import bassamalim.halala.core.data.dataSources.room.relations.FilingRow
 import bassamalim.halala.core.data.dataSources.room.relations.RuleWithStats
+import bassamalim.halala.core.enums.ExpenseType
 import kotlinx.coroutines.flow.Flow
+import java.time.Instant
 
 /** Categories and the rules that file transactions under them. */
 @Dao
@@ -62,4 +68,58 @@ interface ClassificationDao {
 
     @Query("DELETE FROM rules WHERE id = :id")
     suspend fun deleteRule(id: Long)
+
+    @Update
+    suspend fun updateCategory(category: Category)
+
+    // The history of changes, and what undo needs.
+
+    @Query("SELECT id, categoryId, expenseType, ruleId FROM transactions")
+    suspend fun getFilings(): List<FilingRow>
+
+    /**
+     * Puts a transaction's filing back, only where it still reads as the batch left it, so undo
+     * never overwrites something you did since. Returns how many rows it changed.
+     */
+    @Query(
+        """
+        UPDATE transactions SET categoryId = :categoryId, expenseType = :expenseType, ruleId = :ruleId
+        WHERE id = :id AND categoryId IS :nowCategoryId AND expenseType IS :nowExpenseType AND ruleId IS :nowRuleId
+        """
+    )
+    suspend fun restoreFiling(
+        id: Long,
+        categoryId: Long?,
+        expenseType: ExpenseType?,
+        ruleId: Long?,
+        nowCategoryId: Long?,
+        nowExpenseType: ExpenseType?,
+        nowRuleId: Long?
+    ): Int
+
+    @Insert
+    suspend fun insertBatch(batch: AuditBatch): Long
+
+    @Insert
+    suspend fun insertChanges(changes: List<AuditChange>)
+
+    // ponytail: the log grows without bound and the screen shows the newest 200; prune by age
+    // if the table ever weighs on the database.
+    @Query(
+        """
+        SELECT b.*, (SELECT COUNT(*) FROM audit_changes c
+            WHERE c.batchId = b.id AND c.entity = 'TRANSACTION') AS transactions
+        FROM audit_batches b ORDER BY b.id DESC LIMIT 200
+        """
+    )
+    fun observeBatches(): Flow<List<BatchWithCount>>
+
+    @Query("SELECT * FROM audit_batches WHERE id = :id")
+    suspend fun getBatch(id: Long): AuditBatch?
+
+    @Query("SELECT * FROM audit_changes WHERE batchId = :batchId ORDER BY id")
+    suspend fun getChanges(batchId: Long): List<AuditChange>
+
+    @Query("UPDATE audit_batches SET undoneAt = :at WHERE id = :id")
+    suspend fun markUndone(id: Long, at: Instant)
 }

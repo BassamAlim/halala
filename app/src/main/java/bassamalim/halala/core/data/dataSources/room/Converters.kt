@@ -4,6 +4,8 @@ import androidx.room.TypeConverter
 import bassamalim.halala.core.enums.AccountType
 import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
 import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
+import bassamalim.halala.core.enums.AuditAction
+import bassamalim.halala.core.enums.AuditEntity
 import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.enums.ExpenseType
 import bassamalim.halala.core.enums.RuleSource
@@ -80,6 +82,20 @@ class Converters {
 
     @TypeConverter
     fun fromRuleActions(actions: RuleActions): String = lenientJson.encodeToString(actions)
+
+    @TypeConverter
+    fun toAuditAction(name: String): AuditAction =
+        AuditAction.entries.firstOrNull { it.name == name } ?: AuditAction.FILED
+
+    @TypeConverter
+    fun fromAuditAction(action: AuditAction): String = action.name
+
+    @TypeConverter
+    fun toAuditEntity(name: String): AuditEntity =
+        AuditEntity.entries.firstOrNull { it.name == name } ?: AuditEntity.TRANSACTION
+
+    @TypeConverter
+    fun fromAuditEntity(entity: AuditEntity): String = entity.name
 
     @TypeConverter
     fun toRawStatus(name: String): RawStatus =

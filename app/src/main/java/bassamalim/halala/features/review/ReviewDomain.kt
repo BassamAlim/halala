@@ -20,8 +20,10 @@ class ReviewDomain @Inject constructor(
 
     fun observeCategories(): Flow<List<Category>> = classificationRepository.observeCategories()
 
-    /** One answer for the merchant: a rule, applied to its past and to what comes. */
-    suspend fun learn(merchant: String, categoryId: Long) = classificationRepository.learn(merchant, categoryId)
+    /** One answer for the merchant: a rule, applied to its past and to what comes. Returns the batch to undo. */
+    suspend fun learn(merchant: String, categoryId: Long): Long? = classificationRepository.learn(merchant, categoryId)
+
+    suspend fun undo(batchId: Long) = classificationRepository.undo(batchId)
 
     fun zone(): ZoneId = clock.zone
 

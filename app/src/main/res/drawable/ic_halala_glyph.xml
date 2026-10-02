@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The design's glyph for under 32dp (coin and ه, no inner ring): the notification icon. One ink; the system tints it. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    <group
+        android:translateX="-22"
+        android:translateY="-22">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M22 54a32 32 0 1 0 64 0a32 32 0 1 0 -64 0ZM37 67.74V62.53H40.82Q39.91 61.7 39.32 60.2Q38.74 58.71 38.74 56.45Q38.74 55.19 39.06 53.99Q39.39 52.8 40.08 51.67Q41.43 49.46 43.73 48.18Q46.03 46.89 48.68 46.89Q51.63 46.89 53.83 48.11Q56.02 49.33 57.26 51.45Q58.49 53.58 58.49 56.36V62.53H64.53V54.49Q64.53 48.94 61.79 46Q59.06 43.07 53.89 43.07Q50.63 43.07 48.16 43.46Q45.68 43.85 43.34 44.72L41.86 39.77Q43.86 39.08 45.79 38.67Q47.73 38.25 49.72 38.06Q51.72 37.86 53.89 37.86Q62.45 37.86 66.72 41.99Q71 46.11 71 53.93V67.74ZM50.63 62.53H52.02V56.62Q52.02 54.36 51.24 53.34Q50.46 52.32 48.72 52.32Q47.25 52.32 46.31 53.56Q45.38 54.8 45.38 56.71Q45.38 58.62 45.97 59.92Q46.55 61.22 47.73 61.88Q48.9 62.53 50.63 62.53Z" />
+    </group>
+</vector>

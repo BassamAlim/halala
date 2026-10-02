@@ -224,13 +224,24 @@
     <string name="expense_variable_essential">Variable · Essential</string>
     <string name="expense_variable_discretionary">Variable · Discretionary</string>
     <string name="always_title">Always file %1$s under %2$s?</string>
-    <string name="always_body">Its other transactions are filed too, and new ones as they arrive. The ones you filed yourself stay as they are.</string>
+    <plurals name="always_body">
+        <item quantity="one">%d other transaction is filed too, and new ones as they arrive. The ones you filed yourself stay as they are.</item>
+        <item quantity="other">%d other transactions are filed too, and new ones as they arrive. The ones you filed yourself stay as they are.</item>
+    </plurals>
+    <string name="always_body_none">New ones are filed as they arrive.</string>
     <string name="always_confirm">Always</string>
     <string name="always_dismiss">Just this one</string>
     <string name="filed_automatically">Filed automatically</string>
     <string name="edit_rule">Edit rule</string>
-    <!-- "Merchant is Jahez → Delivery". -->
-    <string name="rule_sentence">Merchant is %1$s → %2$s</string>
+    <!-- "Merchant is Jahez · Amount up to 150.00 → Delivery". -->
+    <string name="rule_sentence">%1$s → %2$s</string>
+    <string name="separator">" · "</string>
+    <string name="rule_when_merchant">Merchant is %1$s</string>
+    <string name="rule_when_contains">Description contains %1$s</string>
+    <string name="rule_when_account">On %1$s</string>
+    <string name="rule_when_between">Amount %1$s–%2$s</string>
+    <string name="rule_when_from">Amount from %1$s</string>
+    <string name="rule_when_up_to">Amount up to %1$s</string>
     <plurals name="rule_used">
         <item quantity="one">used %d time</item>
         <item quantity="other">used %d times</item>
@@ -240,7 +251,6 @@
     <string name="rule_source_manual">Yours</string>
     <string name="rule_source_learned">Learned from you</string>
     <string name="rule_source_ai">AI suggestion you confirmed</string>
-    <string name="rule_change_category">Change category</string>
     <string name="rule_turn_off">Turn off</string>
     <string name="rule_turn_on">Turn on</string>
 
@@ -262,6 +272,53 @@
         <item quantity="one">%d transaction</item>
         <item quantity="other">%d transactions</item>
     </plurals>
+
+    <!-- Rule form -->
+    <string name="rule_new">New rule</string>
+    <string name="rule_when">When</string>
+    <string name="rule_then">Then file it under</string>
+    <string name="rule_merchant">Merchant is</string>
+    <string name="rule_merchant_hint">Branch numbers and capitals don\'t matter.</string>
+    <string name="rule_contains">Description contains</string>
+    <string name="rule_contains_hint">Any part of it, so one rule covers every branch and city.</string>
+    <string name="rule_account_hint">Any account, unless you pick one.</string>
+    <string name="rule_amount_from">Amount from</string>
+    <string name="rule_amount_to">Up to</string>
+    <string name="rule_condition_missing">Set at least one condition.</string>
+    <string name="rule_category_missing">Pick a category.</string>
+    <string name="rule_range_inverted">The first amount is the larger one.</string>
+
+    <!-- History -->
+    <string name="history">Recent changes</string>
+    <string name="settings_history_summary">Undo a filing, a rule or a deleted category</string>
+    <string name="history_empty">Nothing changed yet.</string>
+    <string name="undo">Undo</string>
+    <string name="undone">Undone</string>
+    <string name="audit_unnamed">(no name)</string>
+    <string name="audit_filed">Filed %1$s under %2$s</string>
+    <string name="audit_type_changed">Changed the type of %1$s</string>
+    <string name="audit_learned">Always file %1$s under %2$s</string>
+    <string name="audit_rule_saved">Saved the rule for %1$s → %2$s</string>
+    <string name="audit_rule_off">Turned off the rule for %1$s</string>
+    <string name="audit_rule_on">Turned on the rule for %1$s</string>
+    <string name="audit_rule_deleted">Deleted the rule for %1$s</string>
+    <string name="audit_category_deleted">Deleted the category %1$s</string>
+
+    <!-- Review reminder -->
+    <string name="settings_reminders">Reminders</string>
+    <string name="reminder_review">Review reminder</string>
+    <string name="reminder_hint">One notification with how many wait in your inbox. None when it\'s empty.</string>
+    <string name="reminder_off">Off</string>
+    <string name="reminder_daily">Daily</string>
+    <string name="reminder_weekly">Weekly</string>
+    <string name="reminder_daily_at">Daily at %1$s</string>
+    <!-- "Saturday at 20:00". -->
+    <string name="reminder_weekly_at">%1$s at %2$s</string>
+    <string name="reminder_blocked">Notifications are off for Halala in your phone\'s settings, so this won\'t show.</string>
+    <string name="reminder_channel">Review reminder</string>
+    <string name="reminder_text">Open Halala to file them.</string>
+    <string name="reminder_in_1_hour">In 1 hour</string>
+    <string name="reminder_tomorrow">Tomorrow</string>
 
     <!-- Review -->
     <string name="review">Review</string>

@@ -9,6 +9,9 @@
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.READ_SMS" />
 
+    <!-- The review reminder, and nothing per transaction. Asked for when you turn the reminder on. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <!--
         No Android backup at all: the database is encrypted with a key that never leaves this
         phone's Keystore, so a copy restored elsewhere could never be opened. Halala's own
@@ -47,6 +50,11 @@
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
         </receiver>
+
+        <!-- The reminder notification's "In 1 hour" and "Tomorrow". -->
+        <receiver
+            android:name=".core.reminders.ReviewReminders$SnoozeReceiver"
+            android:exported="false" />
 
         <!-- WorkManager is configured by App (it supplies Hilt's worker factory). -->
         <provider

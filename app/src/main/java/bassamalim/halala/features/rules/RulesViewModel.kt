@@ -2,8 +2,8 @@ package bassamalim.halala.features.rules
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import bassamalim.halala.core.models.CategoryOption
 import bassamalim.halala.core.nav.Navigator
+import bassamalim.halala.core.nav.Screen
 import bassamalim.halala.core.utils.dayLabel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,41 +23,36 @@ class RulesViewModel @Inject constructor(
 
     private val query = MutableStateFlow("")
     private val selectedId = MutableStateFlow<Long?>(null)
-    private val pickingCategory = MutableStateFlow(false)
 
     val uiState: StateFlow<RulesUiState> = combine(
         domain.observeRules(),
-        domain.observeCategories(),
         query,
-        selectedId,
-        pickingCategory
-    ) { rules, categories, query, selectedId, picking ->
+        selectedId
+    ) { rules, query, selectedId ->
         val zone = domain.zone()
         val today = domain.today()
-        val items = rules.map { (rule, categoryName, hits, lastHitAt) ->
+        val items = rules.map { (stats, words) ->
             RuleItem(
-                id = rule.id,
-                merchant = rule.conditions.merchant.orEmpty(),
-                categoryId = rule.actions.categoryId,
-                category = categoryName.orEmpty(),
-                expenseType = rule.actions.expenseType,
-                source = rule.source,
-                enabled = rule.enabled,
-                hits = hits,
-                lastHit = lastHitAt?.let { dayLabel(it.atZone(zone).toLocalDate(), today) }
+                id = stats.rule.id,
+                words = words,
+                category = stats.categoryName.orEmpty(),
+                expenseType = stats.rule.actions.expenseType,
+                source = stats.rule.source,
+                enabled = stats.rule.enabled,
+                hits = stats.hits,
+                lastHit = stats.lastHitAt?.let { dayLabel(it.atZone(zone).toLocalDate(), today) }
             )
         }
+        val wanted = query.trim()
 
         RulesUiState(
             isLoading = false,
             query = query,
-            rules = items.filter {
-                it.merchant.contains(query.trim(), ignoreCase = true) ||
-                        it.category.contains(query.trim(), ignoreCase = true)
+            rules = items.filter { rule ->
+                listOfNotNull(rule.words.merchant, rule.words.contains, rule.words.account, rule.category)
+                    .any { it.contains(wanted, ignoreCase = true) }
             },
-            categories = categories.map { CategoryOption(it.id, it.name) },
-            selected = items.firstOrNull { it.id == selectedId },
-            isPickingCategory = picking
+            selected = items.firstOrNull { it.id == selectedId }
         )
     }.stateIn(
         scope = viewModelScope,
@@ -71,17 +66,14 @@ class RulesViewModel @Inject constructor(
 
     fun onRuleClick(id: Long) = selectedId.update { id }
 
-    fun onSheetDismiss() {
-        selectedId.update { null }
-        pickingCategory.update { false }
-    }
+    fun onSheetDismiss() = selectedId.update { null }
 
-    fun onChangeCategoryClick() = pickingCategory.update { true }
+    fun onAddClick() = navigator.navigate(Screen.EditRule())
 
-    fun onCategoryPick(category: CategoryOption) {
+    fun onEditClick() {
         val id = selectedId.value ?: return
         onSheetDismiss()
-        viewModelScope.launch { domain.retarget(id, category.id) }
+        navigator.navigate(Screen.EditRule(id))
     }
 
     fun onToggleClick() {
