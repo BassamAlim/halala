@@ -28,7 +28,7 @@ data class RetirementForm(
     val retireAt: String = "60",
     val start: String = "",
     val monthly: String = "",
-    val returnPercent: String = "6",
+    val returnPercent: String = "5",
     val inflationPercent: String = "2.5",
     val wanted: String = ""
 )

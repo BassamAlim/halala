@@ -49,7 +49,7 @@ import javax.inject.Inject
 data class CompoundForm(
     val principal: String = "",
     val monthly: String = "",
-    val returnPercent: String = "6",
+    val returnPercent: String = "5",
     /** Compounding periods a year: 12, 4 or 1. */
     val perYear: Int = 12,
     val years: String = "10"
