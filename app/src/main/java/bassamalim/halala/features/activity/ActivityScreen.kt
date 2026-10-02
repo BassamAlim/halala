@@ -1,5 +1,6 @@
 package bassamalim.halala.features.activity
 
+import bassamalim.halala.core.ui.components.SkeletonRows
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
@@ -174,6 +175,8 @@ private fun ActivityContent(
                 )
             }
         }
+
+        if (state.isLoading) item { SkeletonRows() }
 
         state.groups.forEach { group ->
             item(key = "day-${group.items.first().date}") { GroupLabel(dayText(group.day)) }

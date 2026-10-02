@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import bassamalim.halala.core.domain.DigestKind
+import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.models.BackupEvery
 import bassamalim.halala.core.models.BackupSettings
 import bassamalim.halala.core.models.ReminderMode
@@ -97,6 +98,14 @@ class PreferencesRepository @Inject constructor(
         dataStore.edit { it[BACKUP_LAST_AT] = at.toEpochMilli() }
     }
 
+    /** Hide amounts. [Money.masked] is kept in step, since formatting can't wait on a flow. */
+    fun observeHideAmounts(): Flow<Boolean> = dataStore.data.map { it[HIDE_AMOUNTS] ?: false }
+
+    suspend fun setHideAmounts(hide: Boolean) {
+        dataStore.edit { it[HIDE_AMOUNTS] = hide }
+        Money.masked = hide
+    }
+
     /** Whether location was asked for once, after onboarding (the map asks again on its own). */
     fun observeLocationAsked(): Flow<Boolean> = dataStore.data.map { it[LOCATION_ASKED] ?: false }
 
@@ -142,6 +151,7 @@ class PreferencesRepository @Inject constructor(
         private val REVIEW_MINUTE = intPreferencesKey("review_reminder_minute")
         private val ONBOARDED = booleanPreferencesKey("onboarded")
         private val LOCK_TIMEOUT_SECONDS = intPreferencesKey("lock_timeout_seconds")
+        private val HIDE_AMOUNTS = booleanPreferencesKey("hide_amounts")
         private val LOCATION_ASKED = booleanPreferencesKey("location_asked")
         private val TAG_DISMISSED = stringSetPreferencesKey("tag_suggestions_dismissed")
         private val PEOPLE_SAME = stringSetPreferencesKey("people_same")

@@ -5,6 +5,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.enums.Direction
+import bassamalim.halala.core.enums.IdentifiedBy
 import bassamalim.halala.core.enums.RawStatus
 import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.enums.TransactionSource
@@ -55,6 +56,8 @@ class AnomaliesTest {
         val abroad = tx("2026-10-10T10:00:00Z", 5_000, original = "USD")
         val declined = RawMessage(id = 9, sender = "AlRajhiBank", body = "Declined", receivedAt = Instant.parse("2026-10-11T10:00:00Z"), hash = "h", status = RawStatus.DECLINED, parserVersion = 1)
         assertEquals(listOf("declined:h", "foreign:${abroad.transaction.id}"), find(listOf(abroad), messages = listOf(declined)).map { it.key })
+        val known = tx("2026-10-10T11:00:00Z", 7_500, original = "USD").copy(merchantIdentifiedBy = IdentifiedBy.LIST)
+        assertEquals(emptyList<Anomaly>(), find(listOf(known)))
     }
 
     @Test

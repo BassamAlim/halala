@@ -1,5 +1,7 @@
 package bassamalim.halala.core.export
 
+import bassamalim.halala.core.data.dataSources.definitions.DefinitionsFile
+import androidx.test.core.app.ApplicationProvider
 import bassamalim.halala.core.data.dataSources.room.AppDatabase
 import bassamalim.halala.core.data.dataSources.room.Seed
 import bassamalim.halala.core.data.dataSources.room.entities.Account
@@ -179,7 +181,7 @@ class ImporterTest {
         InstitutionsRepository(db.institutionsDao()),
         AccountsRepository(db.accountsDao(), TEST_CLOCK),
         TransactionsRepository(db.transactionsDao(), db.accountsDao(), TEST_CLOCK),
-        ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), db.peopleDao(), TEST_CLOCK),
+        ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), db.peopleDao(), DefinitionsFile(ApplicationProvider.getApplicationContext()), TEST_CLOCK),
         SmsRepository(db.smsDao()),
         PeopleRepository(db.peopleDao()),
         LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK),

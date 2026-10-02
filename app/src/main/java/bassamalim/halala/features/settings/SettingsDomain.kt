@@ -33,5 +33,9 @@ class SettingsDomain @Inject constructor(
         dueReminders.ensureScheduled()
     }
 
+    fun observeHideAmounts(): Flow<Boolean> = preferencesRepository.observeHideAmounts()
+
+    suspend fun setHideAmounts(hide: Boolean) = preferencesRepository.setHideAmounts(hide)
+
     fun observeAccounts(): Flow<List<AccountWithBalance>> = accountsRepository.observeAll()
 }

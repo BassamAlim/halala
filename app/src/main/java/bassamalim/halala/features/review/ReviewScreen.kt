@@ -1,5 +1,6 @@
 package bassamalim.halala.features.review
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -60,7 +61,10 @@ fun ReviewScreen(viewModel: ReviewViewModel = hiltViewModel()) {
     ) {
         TopBar(title = stringResource(R.string.review), onBack = viewModel::onBackClick)
 
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         LazyColumn(
             modifier = Modifier.weight(1f),

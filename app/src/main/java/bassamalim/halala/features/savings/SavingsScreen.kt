@@ -1,5 +1,6 @@
 package bassamalim.halala.features.savings
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -60,7 +61,10 @@ fun SavingsScreen(viewModel: SavingsViewModel = hiltViewModel()) {
         verticalArrangement = Arrangement.spacedBy(Spacing.card)
     ) {
         TopBar(title = stringResource(R.string.wealth_savings), onBack = viewModel::onBackClick)
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
             Text(text = stringResource(R.string.savings_in), style = HalalaType.Label, color = HalalaColors.TextMuted)
@@ -151,7 +155,10 @@ fun SavingsTermsScreen(viewModel: SavingsTermsViewModel = hiltViewModel()) {
             actionEnabled = !state.isLoading,
             onAction = viewModel::onSaveClick
         )
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         FormField(label = stringResource(R.string.recurring_kind)) {
             ChoiceChips(

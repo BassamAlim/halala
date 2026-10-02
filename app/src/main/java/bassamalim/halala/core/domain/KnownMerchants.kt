@@ -1,20 +1,70 @@
 package bassamalim.halala.core.domain
 
 import bassamalim.halala.core.enums.BusinessType
+import bassamalim.halala.core.enums.ExpenseType
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 /**
  * Well-known merchants, shipped with the app: they are identified on the phone, with no call, so
  * the AI is only ever asked about the long tail. Each is matched by any of its spellings, as
  * `Merchants.key` reads them, at the start of a key ("PANDA RETAIL CO 1042" is Panda).
+ *
+ * The owner adds to it without a new build: a definitions file on the phone ([parse]) names more
+ * merchants, which beat these, and may send one straight to a category of its own.
  */
 object KnownMerchants {
 
-    data class Known(val name: String, val type: BusinessType)
+    /** [category], only ever set by the definitions file, is the category it files under whatever its type. */
+    data class Known(val name: String, val type: BusinessType, val category: String? = null)
 
-    /** What [keys] (a merchant's aliases) name: the longest spelling that matches wins. */
-    fun identify(keys: Collection<String>): Known? = keys.firstNotNullOfOrNull { key ->
+    /** What the definitions file says: categories to have (name → expense type) and more spellings. */
+    class Defined(
+        val categories: Map<String, ExpenseType?> = emptyMap(),
+        val spellings: List<Pair<String, Known>> = emptyList()
+    )
+
+    /**
+     * What [keys] (a merchant's aliases) name: the longest spelling that matches wins, and what
+     * is [defined] in the file beats the bundled list.
+     */
+    fun identify(keys: Collection<String>, defined: Defined = Defined()): Known? =
+        keys.firstNotNullOfOrNull { match(it, defined.spellings) } ?: keys.firstNotNullOfOrNull { match(it, SPELLINGS) }
+
+    /**
+     * Reads a definitions file; throws when it isn't one, so a typo never half-applies:
+     * `{"categories": [{"name": "Car Insurance", "expenseType": "FIXED_ESSENTIAL"}],
+     *   "merchants": [{"name": "Tameeni", "type": "INSURANCE", "category": "Car Insurance", "spellings": ["Tameeni Co"]}]}`
+     * Only a merchant's name is required. A category a merchant names is made even when not listed.
+     */
+    fun parse(text: String): Defined {
+        val file = json.decodeFromString<DefinitionsJson>(text)
+        val named = file.merchants.mapNotNull { it.category }.associateWith { null }
+        return Defined(
+            categories = named + file.categories.associate { it.name to it.expenseType },
+            spellings = longestFirst(file.merchants.flatMap { known(it.name, it.type, *it.spellings.toTypedArray(), category = it.category) })
+        )
+    }
+
+    @Serializable
+    private class DefinitionsJson(val categories: List<CategoryJson> = emptyList(), val merchants: List<MerchantJson> = emptyList())
+
+    @Serializable
+    private class CategoryJson(val name: String, val expenseType: ExpenseType? = null)
+
+    @Serializable
+    private class MerchantJson(
+        val name: String,
+        val type: BusinessType = BusinessType.UNKNOWN,
+        val category: String? = null,
+        val spellings: List<String> = emptyList()
+    )
+
+    private val json = Json { ignoreUnknownKeys = true }
+
+    private fun match(key: String, spellings: List<Pair<String, Known>>): Known? {
         val compact = key.replace(" ", "")
-        SPELLINGS.firstOrNull { (spelling, _) ->
+        return spellings.firstOrNull { (spelling, _) ->
             key == spelling || key.startsWith("$spelling ") ||
                     // Run together, as some banks write them: "HUNGERSTATION", "ALOTHAIM".
                     (spelling.length >= MIN_COMPACT && compact.startsWith(spelling.replace(" ", "")))
@@ -24,8 +74,8 @@ object KnownMerchants {
     /** Shorter run-together spellings only match exactly: "noon" mustn't take "noonday". */
     private const val MIN_COMPACT = 6
 
-    private fun known(name: String, type: BusinessType, vararg spellings: String) =
-        (spellings.toList() + name).map { Merchants.key(it) to Known(name, type) }
+    private fun known(name: String, type: BusinessType, vararg spellings: String, category: String? = null) =
+        (spellings.toList() + name).map { Merchants.key(it) to Known(name, type, category) }
 
     private val ALL = listOf(
         // Supermarkets and groceries.
@@ -76,6 +126,8 @@ object KnownMerchants {
         known("Yelo", BusinessType.CAR_RENTAL),
         known("Theeb", BusinessType.CAR_RENTAL, "Theeb Rent a Car"),
         known("Mawgif", BusinessType.PARKING),
+        known("Riyadh Parking", BusinessType.PARKING, "مواقف الرياض"),
+        known("Tameeni", BusinessType.INSURANCE, "تأميني"),
         // Getting around and travel.
         known("Careem", BusinessType.RIDE_HAILING),
         known("Uber", BusinessType.RIDE_HAILING),
@@ -139,6 +191,7 @@ object KnownMerchants {
         known("Google", BusinessType.SOFTWARE, "Google Play"),
         known("Microsoft", BusinessType.SOFTWARE),
         known("OpenAI", BusinessType.SOFTWARE, "ChatGPT"),
+        known("Anthropic", BusinessType.SOFTWARE, "Claude AI", "Claude"),
         known("PlayStation", BusinessType.GAMING, "PlayStation Network", "Sony PlayStation"),
         known("Steam", BusinessType.GAMING, "Steam Games"),
         known("Xbox", BusinessType.GAMING),
@@ -148,13 +201,16 @@ object KnownMerchants {
         known("AMC Cinemas", BusinessType.ENTERTAINMENT),
         known("Webook", BusinessType.ENTERTAINMENT),
         // Giving and sending money.
-        known("Ehsan", BusinessType.CHARITY),
+        known("Ehsan", BusinessType.CHARITY, "إحسان"),
+        known("Health Endowment Fund", BusinessType.CHARITY, "Health Endowment", "Health Endo Fund", "Health Indo Fund", "صندوق الوقف الصحي"),
         known("Enjaz", BusinessType.MONEY_TRANSFER),
         known("Western Union", BusinessType.MONEY_TRANSFER)
     ).flatten()
 
     /** Every spelling, longest first, so "stc pay" is tried before "stc". */
-    private val SPELLINGS: List<Pair<String, Known>> = ALL
+    private val SPELLINGS: List<Pair<String, Known>> = longestFirst(ALL)
+
+    private fun longestFirst(all: List<Pair<String, Known>>) = all
         .filter { (spelling, _) -> spelling.isNotBlank() }
         .distinctBy { it.first }
         .sortedByDescending { it.first.length }

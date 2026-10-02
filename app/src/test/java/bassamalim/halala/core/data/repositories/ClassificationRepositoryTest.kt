@@ -1,5 +1,7 @@
 package bassamalim.halala.core.data.repositories
 
+import bassamalim.halala.core.data.dataSources.definitions.DefinitionsFile
+import androidx.test.core.app.ApplicationProvider
 import bassamalim.halala.core.data.TEST_CLOCK
 import bassamalim.halala.core.data.dataSources.room.AppDatabase
 import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
@@ -22,6 +24,9 @@ import bassamalim.halala.features.merchant.MerchantDomain
 import bassamalim.halala.features.merchant.NameProblem
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import java.io.File
+import android.content.Context
+import bassamalim.halala.core.enums.ExpenseType
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -49,7 +54,7 @@ class ClassificationRepositoryTest {
     fun setUp() = runTest {
         db = testDatabase()
         transactions = TransactionsRepository(db.transactionsDao(), db.accountsDao(), TEST_CLOCK)
-        classification = ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), db.peopleDao(), TEST_CLOCK)
+        classification = ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), db.peopleDao(), DefinitionsFile(ApplicationProvider.getApplicationContext()), TEST_CLOCK)
         cash = db.accountsDao().getCashWallet()!!.id
         val categories = classification.getCategories().associate { it.name to it.id }
         groceries = categories.getValue("Groceries")
@@ -510,5 +515,33 @@ class ClassificationRepositoryTest {
 
         assertTrue(classification.toIdentify().isEmpty())
         assertEquals(IdentifiedBy.WITHHELD, classification.getMerchant(merchantOf(id)!!)!!.identifiedBy)
+    }
+
+    @Test
+    fun `the definitions file sends a merchant to a category of its own, over what the AI said`() = runTest {
+        val id = spend("TAMEENI 4")
+        val other = spend("ZZYZX 9")
+        classification.applyRules()
+        assertNull(transactions.get(id)!!.categoryId)
+        classification.recordIdentifications(mapOf(merchantOf(other)!! to IdentifiedAs("Zzyzx", BusinessType.CAFE, 95)))
+
+        val file = File(ApplicationProvider.getApplicationContext<Context>().getExternalFilesDir(null), DefinitionsFile.NAME)
+        file.writeText(
+            """{"categories": [{"name": "Car Insurance", "expenseType": "FIXED_ESSENTIAL"}],
+                "merchants": [{"name": "Tameeni", "category": "Car Insurance", "type": "INSURANCE"},
+                              {"name": "Zzyzx Motors", "type": "CAR_SERVICE", "spellings": ["ZZYZX"]}]}"""
+        )
+        try {
+            classification.applyRules()
+            classification.applyRules()
+
+            assertEquals(category("Car Insurance").id, transactions.get(id)!!.categoryId)
+            assertEquals(ExpenseType.FIXED_ESSENTIAL, transactions.get(id)!!.expenseType)
+            assertEquals(category("Transport").id, transactions.get(other)!!.categoryId)
+            assertEquals("Zzyzx Motors", classification.getMerchant(merchantOf(other)!!)!!.name)
+            assertEquals(2, classification.getRules().size)
+        } finally {
+            file.delete()
+        }
     }
 }

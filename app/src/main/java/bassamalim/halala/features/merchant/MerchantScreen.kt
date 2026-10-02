@@ -1,5 +1,6 @@
 package bassamalim.halala.features.merchant
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -70,7 +71,10 @@ fun MerchantScreen(viewModel: MerchantViewModel = hiltViewModel()) {
             onAction = viewModel::onRenameClick
         )
 
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         // Cards are a card's gap apart; the transactions under them run on like a feed.
         LazyColumn(

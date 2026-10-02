@@ -1,0 +1,8 @@
+{
+  "categories": [
+    {"name": "Car Insurance", "expenseType": "FIXED_ESSENTIAL"}
+  ],
+  "merchants": [
+    {"name": "Tameeni", "type": "INSURANCE", "category": "Car Insurance"}
+  ]
+}

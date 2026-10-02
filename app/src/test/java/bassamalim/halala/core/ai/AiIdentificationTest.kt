@@ -1,5 +1,7 @@
 package bassamalim.halala.core.ai
 
+import bassamalim.halala.core.data.dataSources.definitions.DefinitionsFile
+import androidx.test.core.app.ApplicationProvider
 import bassamalim.halala.core.data.TEST_CLOCK
 import bassamalim.halala.core.data.dataSources.room.AppDatabase
 import bassamalim.halala.core.data.repositories.AccountsRepository
@@ -56,7 +58,7 @@ class AiIdentificationTest {
     fun setUp() = runTest {
         db = testDatabase()
         transactions = TransactionsRepository(db.transactionsDao(), db.accountsDao(), TEST_CLOCK)
-        classification = ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), db.peopleDao(), TEST_CLOCK)
+        classification = ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), db.peopleDao(), DefinitionsFile(ApplicationProvider.getApplicationContext()), TEST_CLOCK)
         accounts = AccountsRepository(db.accountsDao(), TEST_CLOCK)
         val rajhi = db.institutionsDao().getAll().first { it.name == "Al Rajhi" }.id
         bank = accounts.create(AccountDraft(rajhi, "Salary", AccountType.CURRENT, "5521", "SAR", 0))

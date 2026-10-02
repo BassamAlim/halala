@@ -41,7 +41,7 @@ data class BottomNavItem(val label: String, @param:DrawableRes val icon: Int)
 
 /**
  * The five fixed tabs: surface fill, a line on top, 22dp icons over 11sp labels. The current
- * tab is accent and the others muted, with no indicator pill. The review count lives on Home,
+ * tab is accent and the others muted, with no indicator pill. What waits for you is counted inside the Inbox tab,
  * never as a badge here.
  */
 @Composable
@@ -102,9 +102,9 @@ private fun BottomNavPreview() = HalalaTheme {
         items = listOf(
             BottomNavItem("Home", R.drawable.ic_home),
             BottomNavItem("Activity", R.drawable.ic_activity),
+            BottomNavItem("Inbox", R.drawable.ic_inbox),
             BottomNavItem("Plan", R.drawable.ic_plan),
-            BottomNavItem("Wealth", R.drawable.ic_wealth),
-            BottomNavItem("Assistant", R.drawable.ic_assistant)
+            BottomNavItem("Wealth", R.drawable.ic_wealth)
         ),
         selectedIndex = 0,
         onSelect = {}

@@ -234,6 +234,16 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   identifies from the bundled list only). `IdentifyWorker` (online only, one at a time)
   runs after every SMS run and as the app opens, in batches of 40 names, the busiest first;
   what it says is recorded without a batch (the rule names why), and each merchant is asked once.
+- **The owner's definitions** (no board, no screen): Halala is the owner's first. Places anyone
+  pays at go in the bundled `KnownMerchants` list (a new build); the owner's own merchants and
+  categories go in `definitions.json` at the repository root, pushed to the phone with no
+  reinstall: `adb push definitions.json /sdcard/Android/data/bassamalim.halala/files/` (read by
+  `DefinitionsFile` each time `applyRules` runs, so on next opening). `categories` (name,
+  optional `expenseType`) are made when missing; each of `merchants` has a `name`, an optional
+  `type` (a `BusinessType`), `spellings`, and an optional `category` it files under whatever its
+  type (`KnownMerchants.parse`). The file beats the bundled list, the list beats the AI, and
+  neither beats what you said on the Merchant screen. A file that can't be read is ignored whole
+  (logcat tag `Halala`). A merchant the list or you identified raises no foreign-currency alert.
 - **People** (the spec's counterparties): a transfer's title (`People.KINDS`: transfers and the
   loan kinds, never a move between your own accounts) names a `Person`, found as merchants are,
   through a `PersonAlias` keyed by the transaction's `merchantKey`, so merging or splitting moves
@@ -401,6 +411,13 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   accepts any biometric plus credential). A phone with no screen lock opens straight through —
   you can never lock yourself out. `FLAG_SECURE` is always set (no screenshots, blank in
   recents); the spec's toggle for it comes with the security settings.
+- **Hide amounts** (Settings › Privacy, no board): `Money.masked` makes `Money.format` return
+  `••••` everywhere (screens, the widget, the assistant's answers), so the app can be shown to
+  someone. Turning it on is one tap; turning it off asks for the fingerprint (the lock's prompt).
+  It is a preference, so it survives a restart. Either way the app starts over from Home, since
+  screens hold amounts already formatted. Forms prefill amounts through `Money.input` (empty while
+  hidden); files (`Money.plain`: exports, backups) stay exact. An amount shown any other way than
+  `Money.format` isn't hidden: don't add one.
 - **Encryption at rest**: the whole Room database is SQLCipher. Its 32-byte random passphrase is
   stored only wrapped by an AES-256-GCM key in Android Keystore (`DatabaseKey`), in
   `noBackupFilesDir`. That Keystore key is **not** bound to user authentication, on purpose: the
@@ -444,13 +461,20 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   gold and fund prices, fetched with nothing of yours, only once you link an asset); and the
   spending map's OpenStreetMap tiles (the area you look at, never your purchases). Nothing about money goes
   in DataStore (it isn't encrypted).
-- **The assistant** (Assistant tab, Assistant board) is "tool calling" without the round trip:
-  `AssistantProtocol` asks Groq to read your question into one `Ask` (a tool from `AskTool`:
-  spending, income, bills, owed, afford, balance, or unsupported; your words for the topic,
-  the AI's business type for it, the days, an amount), under a strict schema. The phone runs it
-  (`AssistantDomain`, `core/domain/Answers`: your topic matches your categories, then merchants,
-  then merchants of that business type) and words the answer; no figure, category or name of
-  yours goes back to the AI. The conversation lives in memory only.
+- **The assistant** ("Ask", from the icon beside Home's gear; the Assistant board without the
+  conversation, and no tab) is text-to-SQL: `AssistantProtocol` gives Groq your question, today's
+  date and the columns of `tx`, and gets one SELECT back under a strict schema. `tx`
+  (`core/domain/Asking.VIEW`, prepended to every query) is the ledger read flat with its rules
+  applied: `flow` (spent / income / moved, as `countsInTotals` and paired moves say),
+  `amount_minor` (your share of a split), merchant and person by alias, local day, month,
+  weekday and hour, tags. The query runs on the phone on its own **read-only** SQLCipher
+  connection (`LedgerQueryRepository`), at most 50 rows; one SQLite refuses goes back once with
+  SQLite's reason (the query's own words). No row, figure, category or name of yours goes to
+  the AI. Columns named `…_minor` are money and go through `Money.format`; while amounts are
+  hidden every figure is. Headings are the query's own column names (the one place words on
+  screen aren't string resources), and "How this was worked out" shows the query. Only the
+  latest answer is kept, in memory. A new ledger rule that changes what counts must be put in
+  `Asking.VIEW` too; `AskingTest` checks it against `inOut`.
 - The spec's global quick-add is a flat jade `QuickAddButton` on Home and Activity (the boards
   don't draw one). It opens the transaction form on the cash wallet: Out / In / Move, amount,
   account, kind, where or who, when, note.
@@ -463,7 +487,7 @@ archive, several per bank by last four), manual transactions and moves, the cash
 count, CSV/JSON export, and the CI and release workflows.
 
 Screens and where they come from: **Home** (Home board: mark and wordmark, wallet and banks in the
-summary-card grid, Recent; the balance card waits for budgets, the review pill for the inbox),
+summary-card grid, Recent; the balance card waits for budgets; the board's review pill is gone, replaced by the Inbox tab),
 **Activity** (Activity board: search, account filter chips, month In/Out, rows by day; Money flow
 waits for Phase 6), **Transaction** (Transaction detail board, minus category, tags, location
 and SMS), **Settings** (Settings board, only the rows that are true today; reached from a gear
@@ -486,7 +510,7 @@ history of changes with undo (`AuditBatch`, `AuditChange`), the review reminder
 (`core/reminders`), and merchant identification (business types, the bundled list, Groq in
 `core/ai`). Screens: **Review** (Review board: one card per merchant, biggest first, with what it
 was identified as, the chosen category to confirm for the ones sure enough, the All / Suggested /
-Needs you filter, and the last answer's undo; reached from Home's review pill), **Rules** (Rules
+Needs you filter, and the last answer's undo; reached from the Inbox tab), **Rules** (Rules
 board; from Settings and from a transaction's "Filed automatically" card), category and type on
 Transaction detail, and, with no board, built from the system's components:
 **Categories** (add; tap to rename, change the type and the business types it takes, or
@@ -527,7 +551,7 @@ Canvas, left over each month with the dip's biggest payments, and "Can I afford 
 (no board: the Plan board's budget rows full size, and the form), the Plan board's **goal
 cards** and **Savings goal** (no board: the form), **Alerts** (no board: a card per alert with
 Open, Normal for it and Dismiss), **Digest** (Digest board, minus net worth) and **Digests**
-(the archive, from the Assistant tab and Settings' Digests sheet).
+(the archive, from Settings' Digests sheet).
 
 **Phase 5 (wealth)** is built: the **Wealth** tab is the Net worth board (total, this month and
 year, the timeline over 3M/1Y/All, the breakdown, then Accounts, Assets, People and Zakat),
@@ -545,7 +569,7 @@ for a month and an account, salary or what came in, a Sankey (`Sankey` component
 `core/domain/MoneyFlow`) of moves to each of your accounts, what was spent from it and what
 stayed; a leg the bank called a move with no other side is "no match": "It went to someone"
 makes it a plain transfer, "Pick the account" records the other leg there and pairs them) and
-the **Assistant** (Assistant board, with the Digests link; see the product rule),
+the **Assistant** (see the product rule; first built as a fifth tab, now Ask behind Home's icon), the **Inbox** tab in its place (no board: one row for each kind of thing waiting for your say, with its count, opening where it is answered: merchants to file → Review, alerts → Alerts, a subscription found, missed or dearer → Subscriptions and bills, "Same person?" → People, trips to tag → Tags; `InboxDomain` counts what those screens would show and stores nothing; no badge on the tab, as the design system says),
 **Encrypted backups** (see the product rule), and the **home-screen widget** (`core/widget`,
 no board: this cycle's spending against the total budget with its state colour, the Review
 count, and "+ Cash", which opens the lock as always and then the form on the wallet

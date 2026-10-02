@@ -77,7 +77,7 @@ class EditTransactionDomain @Inject constructor(
 
             return TransactionForm(
                 mode = EntryMode.MOVE,
-                amount = Money.plain(outLeg.amountMinor, outLeg.currency),
+                amount = Money.input(outLeg.amountMinor, outLeg.currency),
                 accountId = outLeg.accountId,
                 toAccountId = inLeg.accountId,
                 kind = outLeg.kind,
@@ -90,7 +90,7 @@ class EditTransactionDomain @Inject constructor(
 
         return TransactionForm(
             mode = if (tx.direction == Direction.DEBIT) EntryMode.OUT else EntryMode.IN,
-            amount = Money.plain(tx.amountMinor, tx.currency),
+            amount = Money.input(tx.amountMinor, tx.currency),
             accountId = tx.accountId,
             kind = tx.kind,
             title = tx.title,

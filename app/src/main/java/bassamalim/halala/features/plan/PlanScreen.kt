@@ -1,5 +1,6 @@
 package bassamalim.halala.features.plan
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -52,7 +53,10 @@ fun PlanScreen(viewModel: PlanViewModel = hiltViewModel()) {
         ScreenTitle(stringResource(R.string.tab_plan)) {
             if (state.cycle.isNotEmpty()) HalalaChip(label = state.cycle)
         }
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         HalalaCard(modifier = Modifier.fillMaxWidth(), onClick = viewModel::onBudgetsClick) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {

@@ -96,7 +96,7 @@ class ReviewReminders @Inject constructor(
                     .build()
             )
 
-            // Opens the app on its lock, then Home, where the review pill is one tap away.
+            // Opens the app on its lock, then Home; Review is in the Inbox tab.
             val open = PendingIntent.getActivity(
                 context,
                 0,

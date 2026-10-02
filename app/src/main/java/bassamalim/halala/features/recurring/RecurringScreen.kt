@@ -1,5 +1,6 @@
 package bassamalim.halala.features.recurring
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -65,7 +66,10 @@ fun RecurringScreen(viewModel: RecurringViewModel = hiltViewModel()) {
             onAction = viewModel::onAddClick
         )
 
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         LazyColumn(
             modifier = Modifier.weight(1f),

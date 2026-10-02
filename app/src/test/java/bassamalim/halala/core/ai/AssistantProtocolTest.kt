@@ -1,6 +1,5 @@
 package bassamalim.halala.core.ai
 
-import bassamalim.halala.core.enums.BusinessType
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonArray
@@ -10,7 +9,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.math.BigDecimal
 import java.time.LocalDate
 
 class AssistantProtocolTest {
@@ -29,34 +27,23 @@ class AssistantProtocolTest {
         // The instructions are the same for every question and person, but for the date.
         val other = Json.parseToJsonElement(AssistantProtocol.request("x", today)).jsonObject.getValue("messages").jsonArray[0]
         assertEquals(other, messages[0])
-        assertTrue(messages[0].jsonObject.getValue("content").jsonPrimitive.content.endsWith("Today is 2026-10-02."))
-
-        val schema = request.getValue("response_format").jsonObject.getValue("json_schema").jsonObject
-        assertTrue(schema.getValue("strict").jsonPrimitive.boolean)
-        val tools = schema.getValue("schema").jsonObject.getValue("properties").jsonObject.getValue("tool").jsonObject
-            .getValue("enum").jsonArray.map { it.jsonPrimitive.content }
-        assertEquals(AskTool.entries.map { it.name }, tools)
+        assertTrue(messages[0].jsonObject.getValue("content").jsonPrimitive.content.endsWith("Today is 2026-10-02, a Friday."))
+        assertTrue(request.getValue("response_format").jsonObject.getValue("json_schema").jsonObject.getValue("strict").jsonPrimitive.boolean)
     }
 
     @Test
-    fun `a query is read, and what can't be read is left out`() {
-        val ask = AssistantProtocol.parse(
-            body("""{"tool":"SPENDING","topic":" coffee ","businessType":"CAFE","from":"2026-06-01","to":null,"amount":null,"on":"soon","monthly":null}""")
-        )
-        assertEquals(Ask(AskTool.SPENDING, topic = "coffee", businessType = BusinessType.CAFE, from = LocalDate.of(2026, 6, 1)), ask)
+    fun `a refused query goes back with what SQLite said`() {
+        val failed = FailedQuery("SELECT total FROM tx", "no such column: total")
+        val messages = Json.parseToJsonElement(AssistantProtocol.request("q", today, failed)).jsonObject.getValue("messages").jsonArray
+        assertEquals(4, messages.size)
+        assertEquals("""{"sql":"SELECT total FROM tx"}""", messages[2].jsonObject.getValue("content").jsonPrimitive.content)
+        assertTrue("no such column: total" in messages[3].jsonObject.getValue("content").jsonPrimitive.content)
+    }
 
-        val afford = AssistantProtocol.parse(
-            body("""{"tool":"AFFORD","topic":null,"businessType":"UNKNOWN","from":null,"to":null,"amount":"12000","on":"2026-11-01","monthly":false}""")
-        )
-        assertEquals(BigDecimal("12000"), afford.amount)
-        assertEquals(LocalDate.of(2026, 11, 1), afford.on)
-        assertNull(afford.businessType)
-
-        val odd = AssistantProtocol.parse(
-            body("""{"tool":"WEATHER","topic":"","businessType":null,"from":null,"to":null,"amount":"-5","on":null,"monthly":true}""")
-        )
-        assertEquals(AskTool.UNSUPPORTED, odd.tool)
-        assertNull(odd.topic)
-        assertNull(odd.amount)
+    @Test
+    fun `the query is read, and none is null`() {
+        assertEquals("SELECT 1", AssistantProtocol.parse(body("""{"sql":" SELECT 1 "}""")))
+        assertNull(AssistantProtocol.parse(body("""{"sql":null}""")))
+        assertNull(AssistantProtocol.parse(body("""{"sql":""}""")))
     }
 }

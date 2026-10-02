@@ -35,7 +35,7 @@ class EditGoalDomain @Inject constructor(
     fun today(): LocalDate = LocalDate.now(clock)
 
     suspend fun load(id: Long): GoalForm? = goalsRepository.get(id)?.let {
-        GoalForm(it.name, Money.plain(it.targetMinor, it.currency), it.targetDate, it.accountIds, it.currency, it.uid, it.createdAt)
+        GoalForm(it.name, Money.input(it.targetMinor, it.currency), it.targetDate, it.accountIds, it.currency, it.uid, it.createdAt)
     }
 
     suspend fun save(id: Long, form: GoalForm): Set<GoalProblem> {

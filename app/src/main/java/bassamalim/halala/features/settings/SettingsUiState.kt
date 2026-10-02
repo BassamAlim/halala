@@ -14,5 +14,7 @@ data class SettingsUiState(
     val isPickingReminderTime: Boolean = false,
     /** The digests you are told about. */
     val digests: Set<DigestKind> = emptySet(),
-    val isEditingDigests: Boolean = false
+    val isEditingDigests: Boolean = false,
+    /** Every amount reads as dots until you show them again, which asks who you are. */
+    val hideAmounts: Boolean = false
 )

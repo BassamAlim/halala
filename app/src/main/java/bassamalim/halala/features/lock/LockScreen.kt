@@ -120,10 +120,10 @@ private val AUTHENTICATORS =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) BIOMETRIC_STRONG or DEVICE_CREDENTIAL
     else BIOMETRIC_WEAK or DEVICE_CREDENTIAL
 
-private fun FragmentActivity.canAuthenticate() =
+internal fun FragmentActivity.canAuthenticate() =
     BiometricManager.from(this).canAuthenticate(AUTHENTICATORS) == BiometricManager.BIOMETRIC_SUCCESS
 
-private fun FragmentActivity.promptForUnlock(title: String, onSuccess: () -> Unit) {
+internal fun FragmentActivity.promptForUnlock(title: String, onSuccess: () -> Unit) {
     val prompt = BiometricPrompt(
         this,
         ContextCompat.getMainExecutor(this),
@@ -143,7 +143,7 @@ private fun FragmentActivity.promptForUnlock(title: String, onSuccess: () -> Uni
     )
 }
 
-private tailrec fun Context.findFragmentActivity(): FragmentActivity? = when (this) {
+internal tailrec fun Context.findFragmentActivity(): FragmentActivity? = when (this) {
     is FragmentActivity -> this
     is ContextWrapper -> baseContext.findFragmentActivity()
     else -> null

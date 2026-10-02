@@ -42,7 +42,7 @@ class EditBudgetDomain @Inject constructor(
             categoryId = it.categoryId,
             expenseType = it.expenseType,
             merchantId = it.merchantId,
-            amount = Money.plain(it.amountMinor, it.currency),
+            amount = Money.input(it.amountMinor, it.currency),
             rollover = it.rollover,
             currency = it.currency,
             uid = it.uid,

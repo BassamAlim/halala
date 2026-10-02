@@ -1,5 +1,6 @@
 package bassamalim.halala.features.transaction
 
+import bassamalim.halala.core.ui.components.Skeleton
 import bassamalim.halala.core.ui.components.currencyInlineContent
 import bassamalim.halala.core.ui.components.appendCurrency
 import androidx.compose.foundation.clickable
@@ -102,7 +103,10 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
             onAction = viewModel::onEditClick
         )
 
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         val title = state.title.ifBlank { kindLabel(state.kind) }
 

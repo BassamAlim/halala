@@ -34,8 +34,9 @@ class SettingsViewModel @Inject constructor(
         domain.observeAccounts(),
         domain.observeReviewSchedule(),
         combine(editingReminder, pickingReminderTime, editingDigests, ::Triple),
-        domain.observeDigests()
-    ) { accounts, reminder, (editingReminder, pickingReminderTime, editingDigests), digests ->
+        domain.observeDigests(),
+        domain.observeHideAmounts()
+    ) { accounts, reminder, (editingReminder, pickingReminderTime, editingDigests), digests, hideAmounts ->
         val active = accounts.filter { !it.account.archived }
 
         SettingsUiState(
@@ -47,7 +48,8 @@ class SettingsViewModel @Inject constructor(
             isEditingReminder = editingReminder,
             isPickingReminderTime = pickingReminderTime,
             digests = digests,
-            isEditingDigests = editingDigests
+            isEditingDigests = editingDigests,
+            hideAmounts = hideAmounts
         )
     }.stateIn(
         scope = viewModelScope,
@@ -89,6 +91,19 @@ class SettingsViewModel @Inject constructor(
     private fun setReminder(change: (ReviewSchedule) -> ReviewSchedule) {
         val changed = change(uiState.value.reminder)
         viewModelScope.launch { domain.setReviewSchedule(changed) }
+    }
+
+    /**
+     * The screen has already asked who you are before showing amounts again. Every screen holds
+     * amounts already turned into words, so the app starts over from Home with fresh ones.
+     */
+    fun onHideAmounts(hide: Boolean) {
+        viewModelScope.launch {
+            domain.setHideAmounts(hide)
+            navigator.navigate(Screen.Main) {
+                popUpTo<Screen.Main> { inclusive = true }
+            }
+        }
     }
 
     fun onBackClick() = navigator.popBackStack()

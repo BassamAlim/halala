@@ -37,7 +37,7 @@ object Sizes {
     val icon = 22.dp
     val iconSmall = 18.dp
     val chip = 32.dp
-    /** Home's review pill. */
+    /** A pill's height (the widget's review count). */
     val pill = 36.dp
     val border = 1.dp
     val progress = 4.dp
@@ -54,6 +54,8 @@ object Sizes {
     val lockMark = 64.dp
     /** The mark beside the wordmark on Home (the board's size). */
     val logo = 26.dp
+    /** The card-shaped block a loading screen starts with. */
+    val skeletonCard = 88.dp
 }
 
 /** Component insets from the boards that are not on the spacing scale. */

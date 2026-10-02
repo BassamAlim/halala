@@ -1,5 +1,6 @@
 package bassamalim.halala.features.rules
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -66,7 +67,10 @@ fun RulesScreen(viewModel: RulesViewModel = hiltViewModel()) {
             onAction = viewModel::onAddClick
         )
 
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         SearchField(
             value = state.query,

@@ -1,5 +1,6 @@
 package bassamalim.halala.features.alerts
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -47,7 +48,10 @@ fun AlertsScreen(viewModel: AlertsViewModel = hiltViewModel()) {
         verticalArrangement = Arrangement.spacedBy(Spacing.card)
     ) {
         TopBar(title = stringResource(R.string.alerts), onBack = viewModel::onBackClick)
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
         if (state.alerts.isEmpty()) Text(text = stringResource(R.string.alerts_empty), style = HalalaType.Body, color = HalalaColors.TextMuted)
 
         state.alerts.forEach { alert ->

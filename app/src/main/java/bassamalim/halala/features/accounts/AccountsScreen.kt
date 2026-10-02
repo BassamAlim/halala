@@ -1,5 +1,6 @@
 package bassamalim.halala.features.accounts
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -53,7 +54,10 @@ fun AccountsScreen(viewModel: AccountsViewModel = hiltViewModel()) {
             onAction = viewModel::onAddClick
         )
 
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         AccountList(state.active, onClick = viewModel::onAccountClick)
 

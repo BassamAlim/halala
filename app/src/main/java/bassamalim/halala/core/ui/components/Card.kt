@@ -88,7 +88,8 @@ fun SummaryCard(
             },
             style = HalalaNumbers.AmountLg,
             color = amountColor,
-            inlineContent = currencyInlineContent(amountColor)
+            inlineContent = currencyInlineContent(amountColor),
+            modifier = if (amount.isEmpty()) Modifier.fillMaxWidth(0.6f).clip(Radius.xs).shimmer() else Modifier
         )
         if (caption != null)
             Text(text = caption, style = HalalaType.Caption, color = captionColor)

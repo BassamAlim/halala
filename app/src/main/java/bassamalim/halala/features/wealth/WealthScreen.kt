@@ -1,5 +1,6 @@
 package bassamalim.halala.features.wealth
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -73,7 +74,10 @@ fun WealthScreen(viewModel: WealthViewModel = hiltViewModel()) {
                 }
             }
         }
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
             Text(

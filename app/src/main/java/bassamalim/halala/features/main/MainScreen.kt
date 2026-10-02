@@ -30,8 +30,8 @@ import androidx.compose.material3.Text
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.core.ui.theme.HalalaColors
 import bassamalim.halala.features.activity.ActivityScreen
-import bassamalim.halala.features.assistant.AssistantScreen
 import bassamalim.halala.features.home.HomeScreen
+import bassamalim.halala.features.inbox.InboxScreen
 import bassamalim.halala.features.plan.PlanScreen
 import bassamalim.halala.features.wealth.WealthScreen
 
@@ -81,9 +81,9 @@ fun MainScreen(viewModel: MainViewModel = hiltViewModel()) {
             when (selected) {
                 MainTab.HOME -> HomeScreen(onSeeAllClick = { selected = MainTab.ACTIVITY })
                 MainTab.ACTIVITY -> ActivityScreen()
+                MainTab.INBOX -> InboxScreen()
                 MainTab.PLAN -> PlanScreen()
                 MainTab.WEALTH -> WealthScreen()
-                MainTab.ASSISTANT -> AssistantScreen()
             }
         }
     }
@@ -92,7 +92,7 @@ fun MainScreen(viewModel: MainViewModel = hiltViewModel()) {
 enum class MainTab(@param:StringRes val label: Int, @param:DrawableRes val icon: Int) {
     HOME(R.string.tab_home, R.drawable.ic_home),
     ACTIVITY(R.string.tab_activity, R.drawable.ic_activity),
+    INBOX(R.string.tab_inbox, R.drawable.ic_inbox),
     PLAN(R.string.tab_plan, R.drawable.ic_plan),
-    WEALTH(R.string.tab_wealth, R.drawable.ic_wealth),
-    ASSISTANT(R.string.tab_assistant, R.drawable.ic_assistant)
+    WEALTH(R.string.tab_wealth, R.drawable.ic_wealth)
 }

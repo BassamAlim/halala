@@ -69,7 +69,7 @@ class EditAccountViewModel @Inject constructor(
                         currency = account.currency,
                         openingBalance =
                             if (account.openingBalanceMinor == 0L) ""
-                            else Money.plain(account.openingBalanceMinor, account.currency)
+                            else Money.input(account.openingBalanceMinor, account.currency)
                     )
                 )
             }

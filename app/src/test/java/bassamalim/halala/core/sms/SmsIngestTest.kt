@@ -1,5 +1,7 @@
 package bassamalim.halala.core.sms
 
+import bassamalim.halala.core.data.dataSources.definitions.DefinitionsFile
+import androidx.test.core.app.ApplicationProvider
 import bassamalim.halala.core.data.TEST_CLOCK
 import bassamalim.halala.core.data.dataSources.room.AppDatabase
 import bassamalim.halala.core.data.repositories.AccountsRepository
@@ -49,7 +51,7 @@ class SmsIngestTest {
             transactions,
             accounts,
             InstitutionsRepository(db.institutionsDao()),
-            ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), db.peopleDao(), TEST_CLOCK),
+            ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), db.peopleDao(), DefinitionsFile(ApplicationProvider.getApplicationContext()), TEST_CLOCK),
             TEST_CLOCK
         )
         val banks = db.institutionsDao().getAll().associate { it.name to it.id }

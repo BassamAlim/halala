@@ -33,16 +33,17 @@ private val Context.preferencesDataStore: DataStore<Preferences> by preferencesD
 @Module @InstallIn(SingletonComponent::class)
 object DataSourceModule {
 
-    private const val DATABASE_NAME = "halala.db"
+    const val DATABASE_NAME = "halala.db"
 
     @Provides @Singleton
-    fun provideAppDatabase(application: Application, clock: Clock): AppDatabase {
-        System.loadLibrary("sqlcipher")
+    fun provideDatabaseKey(application: Application) = DatabaseKey(
+        wrappedKeyFile = File(application.noBackupFilesDir, "halala.db.key"),
+        databaseFile = application.getDatabasePath(DATABASE_NAME)
+    )
 
-        val key = DatabaseKey(
-            wrappedKeyFile = File(application.noBackupFilesDir, "halala.db.key"),
-            databaseFile = application.getDatabasePath(DATABASE_NAME)
-        )
+    @Provides @Singleton
+    fun provideAppDatabase(application: Application, key: DatabaseKey, clock: Clock): AppDatabase {
+        System.loadLibrary("sqlcipher")
 
         return Room.databaseBuilder(application, AppDatabase::class.java, DATABASE_NAME)
             .openHelperFactory(SupportOpenHelperFactory(key.passphrase()))

@@ -3,14 +3,10 @@ package bassamalim.halala.features.assistant
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import bassamalim.halala.core.Globals
+import bassamalim.halala.core.domain.Asking
 import bassamalim.halala.core.domain.Money
-import bassamalim.halala.core.domain.Owed
-import bassamalim.halala.core.domain.Topic
-import bassamalim.halala.core.enums.BusinessType
+import bassamalim.halala.core.models.QueryResult
 import bassamalim.halala.core.nav.Navigator
-import bassamalim.halala.core.nav.Screen
-import bassamalim.halala.core.utils.initialOf
-import bassamalim.halala.core.utils.shortDateLabel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -19,55 +15,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.LocalDate
-import java.time.format.TextStyle
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.util.Locale
 import javax.inject.Inject
-
-/** What the spending was about, for its chip. */
-sealed interface AboutLabel {
-    data object All : AboutLabel
-    data class Category(val name: String) : AboutLabel
-    data class Merchant(val name: String) : AboutLabel
-    data class Type(val type: BusinessType) : AboutLabel
-}
-
-/** The days an answer covers: since a day (up to today), or from one day to another. */
-data class Period(val from: String, val to: String?)
-
-data class Bar(val label: String, val fraction: Float)
-
-data class OwedRow(val initial: String, val name: String, val due: String?, val since: String?, val amount: String)
-
-/** An answer, already worded and formatted; amounts summary style, in [currency]. */
-sealed interface Reply {
-    data object Thinking : Reply
-    data class Problem(val problem: AskProblem) : Reply
-    data class Spending(
-        val total: String,
-        val count: Int,
-        val about: AboutLabel,
-        val unknown: String?,
-        val period: Period,
-        val bars: List<Bar>,
-        val top: Pair<String, Int>?,
-        val highest: String?
-    ) : Reply
-    data class Income(val total: String, val count: Int, val period: Period) : Reply
-    data class Bills(val rows: List<Pair<String, String>>, val period: Period) : Reply
-    data class Owing(val toYou: List<OwedRow>, val byYou: List<OwedRow>) : Reply
-    data class Afford(val ok: Boolean, val amount: String, val on: String, val monthly: Boolean, val lowest: String, val lowestOn: String) : Reply
-    data class Balance(val total: String, val accounts: Int) : Reply
-}
-
-data class Exchange(val id: Int, val question: String, val reply: Reply)
-
-data class AssistantUiState(
-    val exchanges: List<Exchange> = emptyList(),
-    val draft: String = "",
-    val currency: String = Globals.PRIMARY_CURRENCY,
-    val busy: Boolean = false
-)
 
 @HiltViewModel
 class AssistantViewModel @Inject constructor(
@@ -75,14 +26,14 @@ class AssistantViewModel @Inject constructor(
     private val navigator: Navigator
 ) : ViewModel() {
 
-    private val exchanges = MutableStateFlow<List<Exchange>>(emptyList())
+    private val exchange = MutableStateFlow<Exchange?>(null)
     private val draft = MutableStateFlow("")
 
-    val uiState: StateFlow<AssistantUiState> = combine(exchanges, draft) { exchanges, draft ->
-        AssistantUiState(exchanges = exchanges, draft = draft, busy = exchanges.any { it.reply == Reply.Thinking })
+    val uiState: StateFlow<AssistantUiState> = combine(exchange, draft) { exchange, draft ->
+        AssistantUiState(exchange = exchange, draft = draft, busy = exchange?.reply == Reply.Thinking)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AssistantUiState())
 
-    fun onDigestsClick() = navigator.navigate(Screen.Digests)
+    fun onBackClick() = navigator.popBackStack()
 
     fun onDraftChange(text: String) = draft.update { text }
 
@@ -92,70 +43,51 @@ class AssistantViewModel @Inject constructor(
 
     private fun ask(text: String) {
         val question = text.trim()
-        if (question.isEmpty() || uiState.value.busy) return
-        val id = (exchanges.value.maxOfOrNull { it.id } ?: 0) + 1
+        if (question.isEmpty() || exchange.value?.reply == Reply.Thinking) return
         draft.update { "" }
-        exchanges.update { it + Exchange(id, question, Reply.Thinking) }
+        exchange.update { Exchange(question, Reply.Thinking) }
         viewModelScope.launch {
-            val reply = word(domain.answer(question), domain.today())
-            exchanges.update { list -> list.map { if (it.id == id) it.copy(reply = reply) else it } }
+            val reply = when (val found = domain.answer(question)) {
+                is Found.Problem -> Reply.Problem(found.problem)
+                is Found.Rows -> table(found.sql, found.result)
+            }
+            exchange.update { Exchange(question, reply) }
         }
     }
 
-    private fun word(found: Found, today: LocalDate): Reply {
-        val c = Globals.PRIMARY_CURRENCY
-        fun f(minor: Long) = Money.format(minor, c, decimals = false)
-        fun period(from: LocalDate, to: LocalDate) = Period(shortDateLabel(from, today), shortDateLabel(to, today).takeIf { to != today })
-        return when (found) {
-            is Found.Problem -> Reply.Problem(found.problem)
-            is Found.Spending -> {
-                val max = found.answer.months.maxOfOrNull { it.second }?.coerceAtLeast(1) ?: 1
-                Reply.Spending(
-                    total = f(found.answer.totalMinor),
-                    count = found.answer.count,
-                    about = when (val t = found.topic) {
-                        Topic.All, is Topic.Unknown -> AboutLabel.All
-                        is Topic.InCategory -> AboutLabel.Category(t.category.name)
-                        is Topic.AtMerchants -> AboutLabel.Merchant(t.name)
-                        is Topic.OfType -> AboutLabel.Type(t.type)
-                    },
-                    unknown = (found.topic as? Topic.Unknown)?.words,
-                    period = period(found.from, found.to),
-                    bars = found.answer.months.takeLast(MAX_BARS).takeIf { it.size > 1 }.orEmpty().map { (month, minor) ->
-                        Bar(month.month.getDisplayName(TextStyle.SHORT, Locale.US), minor.toFloat() / max)
-                    },
-                    top = found.answer.top,
-                    highest = found.answer.highest?.month?.getDisplayName(TextStyle.FULL, Locale.US)
-                )
-            }
-            is Found.Income -> Reply.Income(f(found.totalMinor), found.count, period(found.from, found.to))
-            is Found.Bills -> Reply.Bills(found.rows.map { (name, minor) -> name to f(minor) }, period(found.from, found.to))
-            is Found.Owing -> {
-                fun rows(list: List<Owed>) = list.map {
-                    val name = found.names[it.personId].orEmpty()
-                    OwedRow(
-                        initial = initialOf(name),
-                        name = name,
-                        due = it.dueOn?.let { day -> shortDateLabel(day, today) },
-                        since = it.since?.let { day -> shortDateLabel(day, today) },
-                        amount = Money.format(it.amountMinor, c)
-                    )
-                }
-                Reply.Owing(rows(found.toYou), rows(found.byYou))
-            }
-            is Found.Afford -> Reply.Afford(
-                ok = found.result.affordable,
-                amount = f(found.amountMinor),
-                on = shortDateLabel(found.on, today),
-                monthly = found.monthly,
-                lowest = f(found.result.lowestMinor),
-                lowestOn = shortDateLabel(found.result.lowestOn, today)
+    companion object {
+        /**
+         * The rows as text. A `…_minor` column is money, in the row's own `currency` when the
+         * query selected one; while amounts are hidden every figure is, since nothing says a
+         * plain number isn't one.
+         */
+        fun table(sql: String, result: QueryResult): Reply.Table {
+            val currencyAt = result.columns.indexOfFirst { it.equals("currency", ignoreCase = true) }
+            return Reply.Table(
+                headings = result.columns.map(Asking::heading),
+                rows = result.rows.map { row ->
+                    val currency = (row.getOrNull(currencyAt) as? String) ?: Globals.PRIMARY_CURRENCY
+                    row.mapIndexed { i, value ->
+                        val money = Asking.isMoney(result.columns[i])
+                        when {
+                            value == null -> Cell(EMPTY)
+                            value is String -> Cell(value)
+                            money -> Cell(Money.format(minor(value), currency), number = true, money = true, currency = currency)
+                            Money.masked -> Cell(Money.MASK, number = true)
+                            value is Long -> Cell(String.format(Locale.US, "%,d", value), number = true)
+                            else -> Cell(String.format(Locale.US, "%,.2f", value), number = true)
+                        }
+                    }
+                },
+                sql = sql,
+                more = result.more
             )
-            is Found.Balance -> Reply.Balance(f(found.totalMinor), found.accounts)
         }
-    }
 
-    private companion object {
-        const val MAX_BARS = 6
+        /** A money cell in minor units; SQLite's own averages come back as fractions, rounded half up here. */
+        private fun minor(value: Any): Long =
+            value as? Long ?: BigDecimal.valueOf(value as Double).setScale(0, RoundingMode.HALF_UP).toLong()
+
+        private const val EMPTY = "–"
     }
 }

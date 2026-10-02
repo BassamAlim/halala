@@ -15,7 +15,7 @@ sealed interface Screen {
      */
     @Serializable data class Lock(val resumable: Boolean = false) : Screen
 
-    /** The five-tab shell: Home, Activity, Plan, Wealth, Assistant. */
+    /** The five-tab shell: Home, Activity, Inbox, Plan, Wealth. */
     @Serializable data object Main : Screen
 
     @Serializable data object Accounts : Screen
@@ -83,6 +83,9 @@ sealed interface Screen {
 
     /** Every past digest. */
     @Serializable data object Digests : Screen
+
+    /** Ask: a question about your transactions, read into a query by the AI. */
+    @Serializable data object Ask : Screen
 
     /** Funds, gold and other things you own. */
     @Serializable data object Assets : Screen

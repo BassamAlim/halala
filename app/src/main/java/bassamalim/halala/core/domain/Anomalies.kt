@@ -4,6 +4,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.enums.Direction
+import bassamalim.halala.core.enums.IdentifiedBy
 import bassamalim.halala.core.enums.RawStatus
 import java.time.Duration
 import java.time.Instant
@@ -65,6 +66,8 @@ object Anomalies {
     private const val LARGE_FLOOR_MINOR = 10_000L
     private const val LARGE_HISTORY = 4
 
+    private val KNOWN = setOf(IdentifiedBy.LIST, IdentifiedBy.YOU)
+
     /** A key that quiets every "unusually large" for a merchant: "this is normal for it". */
     fun normalFor(merchantId: Long) = "large-merchant:$merchantId"
 
@@ -104,7 +107,10 @@ object Anomalies {
             if (amount > typical * LARGE_FACTOR && amount - typical >= LARGE_FLOOR_MINOR) Anomaly.Large(detail, typical) else null
         }
 
-        val foreign = recent.filter { it.transaction.originalCurrency != null }.map { Anomaly.Foreign(it) }
+        // A merchant the list or you identified is known: its foreign charges are expected.
+        val foreign = recent
+            .filter { it.transaction.originalCurrency != null && it.merchantIdentifiedBy !in KNOWN }
+            .map { Anomaly.Foreign(it) }
 
         val declined = messages.filter { it.status == RawStatus.DECLINED && it.receivedAt.isAfter(since) }.map { Anomaly.Declined(it) }
 

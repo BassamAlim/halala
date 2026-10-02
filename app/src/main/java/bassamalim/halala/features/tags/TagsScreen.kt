@@ -1,5 +1,6 @@
 package bassamalim.halala.features.tags
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -56,7 +57,10 @@ fun TagsScreen(viewModel: TagsViewModel = hiltViewModel()) {
             actionLabel = stringResource(R.string.tag_new),
             onAction = viewModel::onNewClick
         )
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         state.suggestions.forEach { s ->
             val name = stringResource(R.string.tag_trip_to, s.place)
@@ -117,7 +121,10 @@ fun EditTagScreen(viewModel: EditTagViewModel = hiltViewModel()) {
             actionEnabled = !state.isLoading,
             onAction = viewModel::onSaveClick
         )
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         FormField(label = stringResource(R.string.tag_name), error = stringResource(R.string.merchant_name_missing).takeIf { state.nameMissing }) {
             HalalaTextField(value = form.name, onValueChange = viewModel::onNameChange, isError = state.nameMissing, capitalization = KeyboardCapitalization.Words)

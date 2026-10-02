@@ -32,6 +32,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
+import bassamalim.halala.features.lock.canAuthenticate
+import bassamalim.halala.features.lock.findFragmentActivity
+import bassamalim.halala.features.lock.promptForUnlock
 import androidx.compose.foundation.layout.FlowRow
 import bassamalim.halala.core.ui.components.HalalaChip
 import bassamalim.halala.core.ui.components.ChipStyle
@@ -55,6 +58,8 @@ import bassamalim.halala.core.ui.theme.Spacing
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val activity = LocalContext.current.findFragmentActivity()
+    val showAmountsTitle = stringResource(R.string.settings_show_amounts)
 
     Column(
         modifier = Modifier
@@ -139,6 +144,21 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 title = stringResource(R.string.export_title),
                 subtitle = stringResource(R.string.settings_export_summary),
                 onClick = viewModel::onExportClick
+            )
+            ListRow(
+                title = stringResource(R.string.settings_hide_amounts),
+                subtitle = stringResource(
+                    if (state.hideAmounts) R.string.settings_hide_amounts_on else R.string.settings_hide_amounts_off
+                ),
+                divider = true,
+                onClick = {
+                    when {
+                        !state.hideAmounts -> viewModel.onHideAmounts(true)
+                        // No screen lock at all: as with the lock, you can never lock yourself out.
+                        activity == null || !activity.canAuthenticate() -> viewModel.onHideAmounts(false)
+                        else -> activity.promptForUnlock(showAmountsTitle) { viewModel.onHideAmounts(false) }
+                    }
+                }
             )
         }
 

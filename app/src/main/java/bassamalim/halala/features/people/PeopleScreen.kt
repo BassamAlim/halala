@@ -1,5 +1,6 @@
 package bassamalim.halala.features.people
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -52,7 +53,10 @@ fun PeopleScreen(viewModel: PeopleViewModel = hiltViewModel()) {
     ) {
         TopBar(title = stringResource(R.string.people), onBack = viewModel::onBackClick)
 
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         Row(horizontalArrangement = Arrangement.spacedBy(Insets.grid)) {
             SummaryCard(

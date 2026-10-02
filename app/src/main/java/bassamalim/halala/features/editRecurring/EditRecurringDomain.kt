@@ -55,7 +55,7 @@ class EditRecurringDomain @Inject constructor(
         return SeriesForm(
             name = series.name,
             kind = series.kind,
-            amount = Money.plain(state.raisedTo ?: series.amountMinor, series.currency),
+            amount = Money.input(state.raisedTo ?: series.amountMinor, series.currency),
             every = series.every.toString(),
             unit = series.unit,
             nextDue = state.nextDue ?: series.anchor,

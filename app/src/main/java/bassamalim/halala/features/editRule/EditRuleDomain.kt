@@ -58,8 +58,8 @@ class EditRuleDomain @Inject constructor(
             merchantName = merchant?.name.orEmpty(),
             contains = conditions.contains.orEmpty(),
             accountId = conditions.accountId,
-            min = conditions.minMinor?.let { Money.plain(it, currency) }.orEmpty(),
-            max = conditions.maxMinor?.let { Money.plain(it, currency) }.orEmpty(),
+            min = conditions.minMinor?.let { Money.input(it, currency) }.orEmpty(),
+            max = conditions.maxMinor?.let { Money.input(it, currency) }.orEmpty(),
             categoryId = rule.actions.categoryId,
             expenseType = rule.actions.expenseType
         )
