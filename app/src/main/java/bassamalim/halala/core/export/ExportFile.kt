@@ -57,10 +57,12 @@ data class ExportFile(
     val tags: List<ExportTag> = emptyList(),
     val transactionTags: List<ExportTransactionTag> = emptyList(),
     /** Since schema 18: where purchases were made, while you had it remembered. */
-    val places: List<ExportPlace> = emptyList()
+    val places: List<ExportPlace> = emptyList(),
+    /** Since schema 19: term deposits, each on its own. */
+    val deposits: List<ExportDeposit> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 18
+        const val SCHEMA_VERSION = 19
     }
 }
 
@@ -327,6 +329,18 @@ data class ExportSavingsTerms(
     val startDate: String?,
     val tenorMonths: Int?,
     val maturityChoice: String?
+)
+
+/** A term deposit: the leg that arrived (its amount and start), the goal it is for, its terms, the day it was paid out. */
+@Serializable
+data class ExportDeposit(
+    val uid: String,
+    val transactionUid: String,
+    val goalUid: String?,
+    val ratePercent: String?,
+    val tenorMonths: Int?,
+    val maturityChoice: String?,
+    val closedOn: String?
 )
 
 /** A tag: its days as ISO dates, and whether it takes everything in them. */

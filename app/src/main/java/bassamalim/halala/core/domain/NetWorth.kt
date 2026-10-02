@@ -25,7 +25,7 @@ data class NetWorthNow(val parts: Map<WealthClass, Long>, val totalMinor: Long)
 object NetWorth {
 
     fun classOf(type: AccountType): WealthClass = when (type) {
-        AccountType.SAVINGS -> WealthClass.SAVINGS
+        AccountType.SAVINGS, AccountType.DEPOSIT -> WealthClass.SAVINGS
         AccountType.INVESTMENT -> WealthClass.FUNDS
         else -> WealthClass.ACCOUNTS
     }

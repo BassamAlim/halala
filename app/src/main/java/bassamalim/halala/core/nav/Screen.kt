@@ -111,6 +111,9 @@ sealed interface Screen {
     /** The terms of savings account [accountId]. */
     @Serializable data class SavingsTerms(val accountId: Long) : Screen
 
+    /** One term deposit: its terms, what it is for, and paying it out. */
+    @Serializable data class Deposit(val id: Long) : Screen
+
     /** The retirement planner. */
     @Serializable data object Retirement : Screen
 

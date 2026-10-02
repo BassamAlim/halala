@@ -42,7 +42,7 @@ class ActivityViewModel @Inject constructor(
             query = filters.query,
             selectedAccountId = filters.accountId,
             accountFilters = accounts
-                .filter { !it.account.archived }
+                .filter { !it.account.archived && it.account.type.listed }
                 .map { AccountFilter(it.account.id, accountLabel(it.institutionName, it.account.nickname)) },
             monthIn = Money.format(month.inMinor, Globals.PRIMARY_CURRENCY, decimals = false, showPlus = true),
             monthOut = Money.format(-month.outMinor, Globals.PRIMARY_CURRENCY, decimals = false),

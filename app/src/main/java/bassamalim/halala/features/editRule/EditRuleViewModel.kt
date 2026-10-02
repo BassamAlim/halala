@@ -47,7 +47,7 @@ class EditRuleViewModel @Inject constructor(
         form,
         problems
     ) { accounts, categories, form, problems ->
-        val active = accounts.filter { !it.account.archived || it.account.id == form?.accountId }
+        val active = accounts.filter { (!it.account.archived && it.account.type.listed) || it.account.id == form?.accountId }
         currencies = accounts.associate { it.account.id to it.account.currency }
         categoryTypes = categories.associate { it.id to it.expenseType }
 

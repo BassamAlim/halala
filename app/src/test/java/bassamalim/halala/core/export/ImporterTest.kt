@@ -24,6 +24,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
+import bassamalim.halala.core.data.dataSources.room.entities.Deposit
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsTerms
 import bassamalim.halala.core.data.dataSources.room.entities.Tag
 import bassamalim.halala.core.data.dataSources.room.entities.TransactionTag
@@ -162,7 +163,11 @@ class ImporterTest {
             Tag(2, "tag-wedding", "Wedding", createdAt = at)
         ),
         transactionTags = listOf(TransactionTag(31, 1), TransactionTag(31, 2), TransactionTag(34, 1, removed = true)),
-        places = listOf(TransactionPlace(31, 247_136_400, 466_753_100, 25))
+        places = listOf(TransactionPlace(31, 247_136_400, 466_753_100, 25)),
+        deposits = listOf(
+            Deposit(1, "dep-car", 31, goalId = 182, ratePercent = "4.40", tenorMonths = 6, maturityChoice = MaturityChoice.PAY_OUT),
+            Deposit(2, "dep-done", 34, closedOn = LocalDate.parse("2026-08-01"))
+        )
     )
 
     private val json = Exporter.json(snapshot, appVersion = "0.2.0", now = at)
@@ -187,11 +192,11 @@ class ImporterTest {
         LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK),
         RecurringRepository(db.recurringDao(), db.transactionsDao(), TEST_CLOCK),
         BudgetsRepository(db.budgetsDao(), db.transactionsDao(), TEST_CLOCK),
-        GoalsRepository(db.goalsDao(), db.accountsDao(), db.transactionsDao(), TEST_CLOCK),
+        GoalsRepository(db.goalsDao(), db.accountsDao(), db.transactionsDao(), db.savingsDao(), TEST_CLOCK),
         AssetsRepository(db.assetsDao(), TEST_CLOCK),
         ZakatRepository(db.zakatDao(), db.accountsDao(), db.assetsDao(), LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK), TEST_CLOCK),
         PlannerRepository(db.scenariosDao(), db.accountsDao(), db.assetsDao(), db.transactionsDao(), LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK), TEST_CLOCK),
-        SavingsRepository(db.savingsDao(), db.accountsDao(), db.transactionsDao(), TEST_CLOCK),
+        SavingsRepository(db.savingsDao(), db.accountsDao(), db.transactionsDao(), db.goalsDao(), TransactionsRepository(db.transactionsDao(), db.accountsDao(), TEST_CLOCK), TEST_CLOCK),
         TagsRepository(db.tagsDao(), db.transactionsDao(), TEST_CLOCK),
         PlacesRepository(db.placesDao()),
         TEST_CLOCK

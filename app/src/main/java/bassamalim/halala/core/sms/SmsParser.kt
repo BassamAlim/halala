@@ -36,10 +36,11 @@ data class Template(
     val direction: Direction? = null,
     val declined: Boolean = false,
     /**
-     * The bank's own product the money goes into, when the SMS quotes no number for it: an
-     * "Awaeed" term deposit. It is kept as one account of yours under that name.
+     * The bank's own product on the other side, when the SMS quotes no number for it: an
+     * "Awaeed" term deposit, opened (money out) or paid out (money in). Each is a `Deposit`, in
+     * one hidden holding account under that name.
      */
-    val into: String? = null,
+    val product: String? = null,
     /**
      * The institution the other side is at, when the SMS says it is your own account there
      * ("from your Al Rajhi Capital account"): if that bank sends no SMS of its own, the other
@@ -79,8 +80,8 @@ sealed interface ParsedSms {
         val originalMinor: Long? = null,
         val originalCurrency: String? = null,
         val balanceMinor: Long? = null,
-        /** See [Template.into]. */
-        val into: String? = null,
+        /** See [Template.product]. */
+        val product: String? = null,
         /** See [Template.farBank]. */
         val farBank: String? = null
     ) : ParsedSms
@@ -181,7 +182,7 @@ object SmsParser {
             originalMinor = stated.first.takeIf { foreign },
             originalCurrency = stated.second.takeIf { foreign },
             balanceMinor = moneyOf(Role.BALANCE, charged.second)?.takeIf { it.second == charged.second }?.first,
-            into = template.into,
+            product = template.product,
             farBank = template.farBank
         )
     }

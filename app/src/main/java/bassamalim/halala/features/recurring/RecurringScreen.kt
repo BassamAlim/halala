@@ -78,8 +78,8 @@ fun RecurringScreen(viewModel: RecurringViewModel = hiltViewModel()) {
         ) {
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(Insets.grid)) {
-                    SummaryCard(stringResource(R.string.recurring_monthly), state.monthly, Modifier.weight(1f))
-                    SummaryCard(stringResource(R.string.recurring_yearly), state.yearly, Modifier.weight(1f))
+                    SummaryCard(stringResource(R.string.recurring_monthly), state.monthly, Modifier.weight(1f), currency = state.currency)
+                    SummaryCard(stringResource(R.string.recurring_yearly), state.yearly, Modifier.weight(1f), currency = state.currency)
                 }
             }
 

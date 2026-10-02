@@ -74,9 +74,9 @@ class WealthViewModel @Inject constructor(
         combine(accountsRepository.observeAll(), assetsRepository.observeAll(), ::Pair),
         loansRepository.observeStates(),
         transactionsRepository.observeAll(),
-        combine(assetsRepository.observeSnapshots(), savingsRepository.observe(), ::Pair),
+        combine(assetsRepository.observeSnapshots(), savingsRepository.observe(), savingsRepository.observeDeposits(), ::Triple),
         range
-    ) { (accounts, assets), loans, details, (snapshots, savings), range ->
+    ) { (accounts, assets), loans, details, (snapshots, savings, deposits), range ->
         val today = LocalDate.now(clock)
         val currency = Globals.PRIMARY_CURRENCY
         val now = NetWorth.now(accounts, assets, loans, currency, today)
@@ -123,16 +123,17 @@ class WealthViewModel @Inject constructor(
                     }
                 )
             },
-            accountCount = included.size,
+            accountCount = included.count { it.account.type.listed },
             assetCount = assets.size,
-            maturing = savings.mapNotNull { saved -> saved.term?.let { saved to it } }
+            maturing = (savings.mapNotNull { saved -> saved.term?.let { Triple(saved.terms?.tenorMonths ?: 0, it, saved.account.account.currency) } } +
+                    deposits.mapNotNull { held -> held.term?.let { Triple(held.deposit.tenorMonths ?: 0, it, held.currency) } })
                 .filter { (_, term) -> !term.maturity.isAfter(today.plusDays(MATURING_DAYS)) }
                 .minByOrNull { (_, term) -> term.maturity }
-                ?.let { (saved, term) ->
+                ?.let { (months, term, termCurrency) ->
                     Triple(
-                        saved.terms?.tenorMonths ?: 0,
+                        months,
                         shortDateLabel(term.maturity, today),
-                        Money.format(term.expectedProfitMinor, saved.account.account.currency, decimals = false, showPlus = true)
+                        Money.format(term.expectedProfitMinor, termCurrency, decimals = false, showPlus = true)
                     )
                 }
         )

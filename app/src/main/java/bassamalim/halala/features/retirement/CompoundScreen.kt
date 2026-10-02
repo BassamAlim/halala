@@ -145,8 +145,8 @@ fun CompoundScreen(viewModel: CompoundViewModel = hiltViewModel()) {
         state.final?.let { final ->
             SummaryCard(label = stringResource(R.string.compound_final), amount = final, currency = Globals.PRIMARY_CURRENCY)
             Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(Insets.grid)) {
-                SummaryCard(stringResource(R.string.compound_put_in), state.contributed, Modifier.weight(1f).fillMaxHeight())
-                SummaryCard(stringResource(R.string.compound_returns), state.returns, Modifier.weight(1f).fillMaxHeight(), amountColor = HalalaColors.Income)
+                SummaryCard(stringResource(R.string.compound_put_in), state.contributed, Modifier.weight(1f).fillMaxHeight(), currency = Globals.PRIMARY_CURRENCY)
+                SummaryCard(stringResource(R.string.compound_returns), state.returns, Modifier.weight(1f).fillMaxHeight(), amountColor = HalalaColors.Income, currency = Globals.PRIMARY_CURRENCY)
             }
             LineChart(
                 values = state.curve,

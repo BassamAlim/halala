@@ -24,7 +24,7 @@ class AccountsViewModel @Inject constructor(
 
     val uiState: StateFlow<AccountsUiState> = domain.observeAccounts()
         .map { accounts ->
-            val (archived, active) = accounts.partition { it.account.archived }
+            val (archived, active) = accounts.filter { it.account.type.listed }.partition { it.account.archived }
             AccountsUiState(
                 isLoading = false,
                 active = active.map { it.toRow() },

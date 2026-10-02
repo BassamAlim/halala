@@ -7,6 +7,7 @@ import androidx.navigation.toRoute
 import bassamalim.halala.core.Globals
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsTerms
 import bassamalim.halala.core.data.repositories.AccountsRepository
+import bassamalim.halala.core.data.repositories.GoalsRepository
 import bassamalim.halala.core.data.repositories.SavingsRepository
 import bassamalim.halala.core.domain.Assets
 import bassamalim.halala.core.domain.Money
@@ -22,7 +23,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -34,6 +34,8 @@ import javax.inject.Inject
 /** One savings account as the board shows it; figures summary style, labels already words. */
 data class SavingsCard(
     val accountId: Long,
+    /** Set for a term deposit, which opens its own form. */
+    val depositId: Long? = null,
     val name: String,
     val kind: SavingsKind?,
     val rate: String?,
@@ -47,7 +49,9 @@ data class SavingsCard(
     val choice: MaturityChoice? = null,
     /** Hasad: the month's lowest balance and next month's profit on it, paid on [profitOn]. */
     val lowest: String? = null,
-    val profitOn: String? = null
+    val profitOn: String? = null,
+    /** A deposit: the goal it is for. */
+    val goal: String? = null
 )
 
 data class SavingsUiState(val isLoading: Boolean = true, val total: String = "", val cards: List<SavingsCard> = emptyList())
@@ -59,13 +63,33 @@ class SavingsViewModel @Inject constructor(
     private val clock: Clock
 ) : ViewModel() {
 
-    val uiState: StateFlow<SavingsUiState> = savingsRepository.observe().map { accounts ->
+    val uiState: StateFlow<SavingsUiState> = combine(savingsRepository.observe(), savingsRepository.observeDeposits()) { accounts, deposits ->
         val today = LocalDate.now(clock)
         val c = Globals.PRIMARY_CURRENCY
         SavingsUiState(
             isLoading = false,
-            total = Money.format(Money.sum(accounts.filter { it.account.account.currency == c }.map { it.account.balanceMinor }), c, decimals = false),
-            cards = accounts.map { saved ->
+            total = Money.format(
+                Money.sum(accounts.filter { it.account.account.currency == c }.map { it.account.balanceMinor } + deposits.filter { it.currency == c }.map { it.amountMinor }),
+                c,
+                decimals = false
+            ),
+            cards = deposits.map { held ->
+                SavingsCard(
+                    accountId = 0,
+                    depositId = held.deposit.id,
+                    name = "",
+                    kind = SavingsKind.AWAEED,
+                    rate = held.deposit.ratePercent,
+                    balance = Money.format(held.amountMinor, held.currency, decimals = false),
+                    tenorMonths = held.deposit.tenorMonths,
+                    maturity = held.term?.maturity?.let { shortDateLabel(it, today) },
+                    started = shortDateLabel(held.term?.start ?: held.start, today),
+                    progress = held.term?.elapsed ?: 0f,
+                    profit = held.term?.takeIf { held.deposit.ratePercent != null }?.let { Money.format(it.expectedProfitMinor, held.currency, decimals = false) },
+                    choice = held.deposit.maturityChoice,
+                    goal = held.goalName
+                )
+            } + accounts.map { saved ->
                 val account = saved.account
                 val currency = account.account.currency
                 val terms = saved.terms
@@ -94,7 +118,8 @@ class SavingsViewModel @Inject constructor(
 
     fun onBackClick() = navigator.popBackStack()
 
-    fun onCardClick(accountId: Long) = navigator.navigate(Screen.SavingsTerms(accountId))
+    fun onCardClick(card: SavingsCard) =
+        navigator.navigate(card.depositId?.let { Screen.Deposit(it) } ?: Screen.SavingsTerms(card.accountId))
 }
 
 /** The terms of one savings account, as the form holds them. */
@@ -204,5 +229,101 @@ class SavingsTermsViewModel @Inject constructor(
     companion object {
         /** Al Rajhi's Awaeed runs from one to 36 months. */
         val TENORS = listOf(1, 3, 6, 12, 24, 36)
+    }
+}
+
+/** One term deposit, as its form holds it. An empty rate is one you haven't given yet. */
+data class DepositForm(
+    val rate: String = "",
+    val tenorMonths: Int? = null,
+    val choice: MaturityChoice? = null,
+    val goalId: Long? = null
+)
+
+data class DepositUiState(
+    val isLoading: Boolean = true,
+    val amount: String = "",
+    val started: String = "",
+    val form: DepositForm = DepositForm(),
+    /** Your goals to file it under; a null id is "none". */
+    val goals: List<Pair<Long?, String>> = emptyList(),
+    val rateInvalid: Boolean = false,
+    val confirmingPayOut: Boolean = false
+)
+
+@HiltViewModel
+class DepositViewModel @Inject constructor(
+    private val savingsRepository: SavingsRepository,
+    goalsRepository: GoalsRepository,
+    private val navigator: Navigator,
+    private val clock: Clock,
+    savedStateHandle: SavedStateHandle
+) : ViewModel() {
+
+    private val id = savedStateHandle.toRoute<Screen.Deposit>().id
+    private val form = MutableStateFlow<DepositForm?>(null)
+    private val invalid = MutableStateFlow(false)
+    private val confirming = MutableStateFlow(false)
+
+    init {
+        viewModelScope.launch {
+            form.value = savingsRepository.getDeposit(id)?.let { DepositForm(it.ratePercent.orEmpty(), it.tenorMonths, it.maturityChoice, it.goalId) }
+        }
+    }
+
+    val uiState: StateFlow<DepositUiState> = combine(
+        form, invalid, confirming, savingsRepository.observeDeposits(), goalsRepository.observeStates()
+    ) { form, invalid, confirming, deposits, goals ->
+        val held = deposits.firstOrNull { it.deposit.id == id }
+        DepositUiState(
+            isLoading = form == null || held == null,
+            amount = held?.let { Money.format(it.amountMinor, it.currency, decimals = false) }.orEmpty(),
+            started = held?.let { shortDateLabel(it.start, LocalDate.now(clock)) }.orEmpty(),
+            form = form ?: DepositForm(),
+            goals = listOf<Pair<Long?, String>>(null to "") + goals.map { it.goal.id to it.goal.name },
+            rateInvalid = invalid,
+            confirmingPayOut = confirming
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DepositUiState())
+
+    private fun edit(change: (DepositForm) -> DepositForm) {
+        form.update { it?.let(change) }
+        invalid.update { false }
+    }
+
+    fun onBackClick() = navigator.popBackStack()
+    fun onRateChange(text: String) = edit { it.copy(rate = text) }
+    fun onTenorClick(months: Int) = edit { it.copy(tenorMonths = months) }
+    fun onChoiceClick(choice: MaturityChoice) = edit { it.copy(choice = choice) }
+    fun onGoalClick(goalId: Long?) = edit { it.copy(goalId = goalId) }
+    fun onNewGoalClick() = navigator.navigate(Screen.EditGoal())
+    fun onPayOutClick() = confirming.update { true }
+    fun onPayOutDismiss() = confirming.update { false }
+
+    fun onSaveClick() {
+        val current = form.value ?: return
+        val rate = current.rate.trim().takeIf { it.isNotEmpty() }?.let { text ->
+            Assets.decimal(text)?.takeIf { it <= BigDecimal(100) } ?: return invalid.update { true }
+        }
+        viewModelScope.launch {
+            savingsRepository.getDeposit(id)?.let {
+                savingsRepository.saveDeposit(
+                    it.copy(
+                        ratePercent = rate?.stripTrailingZeros()?.toPlainString(),
+                        tenorMonths = current.tenorMonths,
+                        maturityChoice = current.choice,
+                        goalId = current.goalId
+                    )
+                )
+            }
+            navigator.popBackStack()
+        }
+    }
+
+    fun onPayOutConfirm() {
+        viewModelScope.launch {
+            savingsRepository.payOut(id)
+            navigator.popBackStack()
+        }
     }
 }

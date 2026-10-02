@@ -20,6 +20,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
+import bassamalim.halala.core.data.dataSources.room.entities.Deposit
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsTerms
 import bassamalim.halala.core.data.dataSources.room.entities.Tag
 import bassamalim.halala.core.data.dataSources.room.entities.TransactionTag
@@ -84,7 +85,8 @@ data class LedgerSnapshot(
     val savingsTerms: List<SavingsTerms> = emptyList(),
     val tags: List<Tag> = emptyList(),
     val transactionTags: List<TransactionTag> = emptyList(),
-    val places: List<TransactionPlace> = emptyList()
+    val places: List<TransactionPlace> = emptyList(),
+    val deposits: List<Deposit> = emptyList()
 ) {
     /** The merchant each transaction's title names, by transaction id. */
     fun merchantOf(): Map<Long, Merchant> {
@@ -147,7 +149,8 @@ class Exporter @Inject constructor(
         savingsTerms = savingsRepository.getAll(),
         tags = tagsRepository.getAll(),
         transactionTags = tagsRepository.getRows(),
-        places = placesRepository.getAll()
+        places = placesRepository.getAll(),
+        deposits = savingsRepository.getDeposits()
     )
 
     fun fileStem(): String = "halala-${clock.instant().atZone(clock.zone).toLocalDate()}"
@@ -396,6 +399,14 @@ class Exporter @Inject constructor(
                         accountUids.getValue(it.accountId), it.kind.name, it.ratePercent, it.startDate?.toString(),
                         it.tenorMonths, it.maturityChoice?.name
                     )
+                },
+                deposits = snapshot.goals.associate { it.id to it.uid }.let { goalUids ->
+                    snapshot.deposits.map {
+                        ExportDeposit(
+                            it.uid, transactionUids.getValue(it.transactionId), it.goalId?.let(goalUids::get), it.ratePercent,
+                            it.tenorMonths, it.maturityChoice?.name, it.closedOn?.toString()
+                        )
+                    }
                 },
                 tags = snapshot.tags.map {
                     ExportTag(it.uid, it.name, it.startsOn?.toString(), it.endsOn?.toString(), it.auto, it.createdAt.toString())

@@ -93,7 +93,7 @@ fun perLabel(every: Int, unit: CadenceUnit): String = if (every == 1) stringReso
 fun accountTypeLabel(type: AccountType): String = stringResource(
     when (type) {
         AccountType.CURRENT -> R.string.account_type_current
-        AccountType.SAVINGS -> R.string.account_type_savings
+        AccountType.SAVINGS, AccountType.DEPOSIT -> R.string.account_type_savings
         AccountType.CARD -> R.string.account_type_card
         AccountType.WALLET -> R.string.account_type_wallet
         AccountType.INVESTMENT -> R.string.account_type_investment

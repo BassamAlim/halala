@@ -30,6 +30,10 @@ interface SmsDao {
     @Query("SELECT id FROM raw_messages WHERE status IN (:statuses) ORDER BY receivedAt, id")
     suspend fun getRawIds(statuses: List<RawStatus>): List<Long>
 
+    /** Messages an older parser couldn't read: nothing was recorded for them, so a newer one may try. */
+    @Query("SELECT id FROM raw_messages WHERE status = 'UNRECOGNISED' AND parserVersion < :parserVersion ORDER BY receivedAt, id")
+    suspend fun getUnreadRawIds(parserVersion: Int): List<Long>
+
     @Query(
         "UPDATE raw_messages SET status = :status, parserVersion = :parserVersion, " +
                 "unroutedRefs = :unroutedRefs WHERE id = :id"

@@ -88,8 +88,7 @@ fun EditGoalScreen(viewModel: EditGoalViewModel = hiltViewModel()) {
         )
         FormField(
             label = stringResource(R.string.goal_accounts),
-            hint = stringResource(R.string.goal_accounts_hint),
-            error = stringResource(R.string.goal_accounts_missing).takeIf { GoalProblem.AccountsMissing in state.problems }
+            hint = stringResource(R.string.goal_accounts_hint)
         ) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 state.accounts.forEach { account ->

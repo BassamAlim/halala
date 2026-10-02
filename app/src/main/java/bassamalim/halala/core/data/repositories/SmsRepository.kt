@@ -27,6 +27,8 @@ class SmsRepository @Inject constructor(
 
     suspend fun getRawIds(statuses: List<RawStatus>): List<Long> = smsDao.getRawIds(statuses)
 
+    suspend fun getUnreadRawIds(parserVersion: Int): List<Long> = smsDao.getUnreadRawIds(parserVersion)
+
     suspend fun setStatus(id: Long, status: RawStatus, parserVersion: Int, unroutedRefs: String? = null) =
         smsDao.setStatus(id, status, parserVersion, unroutedRefs)
 

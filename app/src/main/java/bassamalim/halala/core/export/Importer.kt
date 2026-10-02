@@ -22,6 +22,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
+import bassamalim.halala.core.data.dataSources.room.entities.Deposit
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsTerms
 import bassamalim.halala.core.data.dataSources.room.entities.Tag
 import bassamalim.halala.core.data.dataSources.room.entities.TransactionTag
@@ -76,7 +77,8 @@ class Importer @Inject constructor(
         savingsTerms = snapshot.savingsTerms,
         tags = snapshot.tags,
         transactionTags = snapshot.transactionTags,
-        places = snapshot.places
+        places = snapshot.places,
+        deposits = snapshot.deposits
     )
 
     companion object {
@@ -433,6 +435,14 @@ class Importer @Inject constructor(
                 },
                 places = file.places.map {
                     TransactionPlace(transactionIds.named(it.transactionUid, "transaction"), it.latitudeE7, it.longitudeE7, it.accuracyMeters)
+                },
+                deposits = goals.associate { it.uid to it.id }.let { goalIds ->
+                    file.deposits.mapIndexed { index, it ->
+                        Deposit(
+                            index + 1L, it.uid, transactionIds.named(it.transactionUid, "transaction"), it.goalUid?.let { uid -> goalIds.named(uid, "goal") },
+                            it.ratePercent, it.tenorMonths, converters.toMaturityChoice(it.maturityChoice), it.closedOn?.let(LocalDate::parse)
+                        )
+                    }
                 }
             )
         }

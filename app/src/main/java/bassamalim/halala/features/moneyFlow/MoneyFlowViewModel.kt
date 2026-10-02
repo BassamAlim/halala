@@ -86,7 +86,7 @@ class MoneyFlowViewModel @Inject constructor(
         val zone = clock.zone
         val today = LocalDate.now(clock)
         val month = picks.month ?: YearMonth.from(today)
-        val open = accounts.filter { !it.account.archived }
+        val open = accounts.filter { !it.account.archived && it.account.type.listed }
         val accountId = picks.accountId?.takeIf { id -> open.any { it.account.id == id } }
             ?: MoneyFlow.startingAccount(details, month, zone)
             ?: open.firstOrNull()?.account?.id

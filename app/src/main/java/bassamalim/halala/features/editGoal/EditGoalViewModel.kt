@@ -47,7 +47,7 @@ class EditGoalViewModel @Inject constructor(
             form = form ?: GoalForm(),
             dateLabel = form?.targetDate?.let(::monthYearLabel),
             accounts = accounts
-                .filter { !it.account.archived || it.account.id in form?.accountIds.orEmpty() }
+                .filter { (!it.account.archived && it.account.type.listed) || it.account.id in form?.accountIds.orEmpty() }
                 .map { AccountChoice(it.account.id, accountLabel(it.institutionName, it.account.nickname)) },
             problems = problems,
             pickingDate = picking,

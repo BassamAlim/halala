@@ -64,7 +64,7 @@ class HomeDomain @Inject constructor(
 
         fun bankAccounts(accounts: List<AccountWithBalance>): List<AccountWithBalance> =
             accounts.filter {
-                !it.account.archived && it.account.type != AccountType.CASH &&
+                !it.account.archived && it.account.type != AccountType.CASH && it.account.type.listed &&
                         it.account.currency == Globals.PRIMARY_CURRENCY
             }
 

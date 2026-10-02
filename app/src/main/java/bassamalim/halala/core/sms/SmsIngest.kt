@@ -8,6 +8,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.InstitutionsRepository
+import bassamalim.halala.core.data.repositories.SavingsRepository
 import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
 import bassamalim.halala.core.enums.AccountType
@@ -40,6 +41,7 @@ class SmsIngest @Inject constructor(
     private val accounts: AccountsRepository,
     private val institutions: InstitutionsRepository,
     private val classification: ClassificationRepository,
+    private val savings: SavingsRepository,
     private val clock: Clock
 ) {
 
@@ -69,7 +71,8 @@ class SmsIngest @Inject constructor(
         do {
             val known = sms.getRefs().size
             val waiting = sms.getRawIds(listOf(RawStatus.UNROUTED)).size
-            for (id in sms.getRawIds(statuses)) process(id)
+            // What an older parser couldn't read goes first (once: processing stamps the version).
+            for (id in sms.getUnreadRawIds(BankFormats.PARSER_VERSION) + sms.getRawIds(statuses)) process(id)
             val progressed = sms.getRefs().size > known || sms.getRawIds(listOf(RawStatus.UNROUTED)).size < waiting
         } while (retry && progressed)
         recordUnsentLegs()
@@ -221,18 +224,28 @@ class SmsIngest @Inject constructor(
         val implied = if (named != null || parsed.kind != TransactionKind.INTERNAL_TRANSFER || parsed.partyRefs.isNotEmpty()) null
         else all.filter { it.institutionId == account.institutionId && it.id != account.id && it.currency == account.currency && it.last4 != null }
             .let { siblings -> sms.inUseBy(siblings.map(Account::id), at).singleOrNull()?.let { id -> siblings.first { it.id == id } } }
-        val product = parsed.into?.let { productAccount(it, account, all, learned) }
+        val product = parsed.product?.let { productAccount(it, account, all, learned) }
         val stated = named ?: product
         val otherSide = stated ?: implied
+        // A product paying out ends the deposit it was. What came back above what went in is
+        // its profit: income, like the bank's own profit SMS, and no part of the move.
+        val profit = if (stated === product && product != null && parsed.direction == Direction.CREDIT)
+            savings.closePaid(product.id, parsed.amountMinor, at)?.let { parsed.amountMinor - it } ?: 0
+        else 0
 
         val legId = if (otherSide != null) {
+            val leg = leg.copy(amountMinor = leg.amountMinor - profit)
+            if (profit > 0) transactions.addParsed(leg.copy(uid = UUID.randomUUID().toString(), amountMinor = profit, kind = TransactionKind.OTHER))
             val far = leg.copy(
                 uid = UUID.randomUUID().toString(),
                 accountId = otherSide.id,
                 direction = if (parsed.direction == Direction.DEBIT) Direction.CREDIT else Direction.DEBIT
             )
             val (sent, arrived) = if (leg.direction == Direction.DEBIT) leg to far else far to leg
-            if (stated != null) transactions.addParsedPair(sent, arrived)
+            if (stated != null) transactions.addParsedPair(sent, arrived).also { sentId ->
+                // Each amount put into a bank's product is a deposit of its own.
+                if (stated === product && parsed.direction == Direction.DEBIT) transactions.getTransferFor(sentId)?.let { savings.addDeposit(it.inTransactionId) }
+            }
             else transactions.addParsed(sent).also { transactions.pair(it, transactions.addParsed(arrived), IMPLIED_CONFIDENCE) }
         } else {
             transactions.addParsed(leg).also { id ->
@@ -332,8 +345,9 @@ class SmsIngest @Inject constructor(
     }
 
     /**
-     * Your account for a bank product an SMS names without a number ("Awaeed"), made the first
-     * time money goes into it. It is found again by a learned ref, so renaming it is safe.
+     * Where a bank product an SMS names without a number ("Awaeed") sits in the ledger: one
+     * hidden holding account a bank, made the first time money goes into it and found again by a
+     * learned ref. What you see is each deposit in it.
      */
     private suspend fun productAccount(name: String, beside: Account, all: List<Account>, learned: List<AccountRef>): Account? {
         val institutionId = beside.institutionId ?: return null
@@ -342,7 +356,7 @@ class SmsIngest @Inject constructor(
             ?.let { hit -> all.firstOrNull { it.id == hit.accountId } }
             ?.let { return it }
 
-        val id = accounts.create(AccountDraft(institutionId, name, AccountType.SAVINGS, null, beside.currency, 0))
+        val id = accounts.create(AccountDraft(institutionId, name, AccountType.DEPOSIT, null, beside.currency, 0))
         sms.addRef(institutionId, ref, id)
         return accounts.get(id)
     }

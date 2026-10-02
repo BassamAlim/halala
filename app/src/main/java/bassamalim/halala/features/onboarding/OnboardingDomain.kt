@@ -48,7 +48,7 @@ class OnboardingDomain @Inject constructor(
 
     /** The bank accounts in use, to check their balances against the banks. */
     fun observeAccounts(): Flow<List<AccountWithBalance>> = accountsRepository.observeAll()
-        .map { accounts -> accounts.filter { !it.account.archived && it.account.type != AccountType.CASH } }
+        .map { accounts -> accounts.filter { !it.account.archived && it.account.type != AccountType.CASH && it.account.type.listed } }
 
     /**
      * What you say each account holds right now, by account id: a checkpoint the balance counts

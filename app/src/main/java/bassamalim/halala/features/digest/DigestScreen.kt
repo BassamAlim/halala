@@ -26,6 +26,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
+import bassamalim.halala.core.Globals
 import bassamalim.halala.core.domain.DigestKind
 import bassamalim.halala.core.ui.components.GroupLabel
 import bassamalim.halala.core.ui.components.HalalaCard
@@ -96,11 +97,13 @@ fun DigestScreen(viewModel: DigestViewModel = hiltViewModel()) {
                 label = stringResource(R.string.digest_saved),
                 amount = state.saved,
                 amountColor = if (state.savedNegative) HalalaColors.Text else HalalaColors.Income,
+                currency = Globals.PRIMARY_CURRENCY,
                 modifier = Modifier.weight(1f).fillMaxHeight()
             )
             SummaryCard(
                 label = stringResource(R.string.people_owed_to_you),
                 amount = state.owedToYou,
+                currency = Globals.PRIMARY_CURRENCY,
                 modifier = Modifier.weight(1f).fillMaxHeight()
             )
         }

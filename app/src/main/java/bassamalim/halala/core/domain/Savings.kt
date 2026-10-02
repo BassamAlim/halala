@@ -27,14 +27,18 @@ object Savings {
      * The term [today] falls in: the one that started on [SavingsTerms.startDate], or, once it
      * matured and renews, the term after (and so on). Null without a start and tenor.
      */
-    fun termOf(terms: SavingsTerms, balanceMinor: Long, today: LocalDate): Term? {
-        var start = terms.startDate ?: return null
-        val months = terms.tenorMonths?.takeIf { it > 0 } ?: return null
-        val renews = terms.maturityChoice != MaturityChoice.PAY_OUT
+    fun termOf(terms: SavingsTerms, balanceMinor: Long, today: LocalDate): Term? =
+        termOf(terms.startDate, terms.tenorMonths, terms.ratePercent, terms.maturityChoice, balanceMinor, today)
+
+    /** The same for one deposit, whose start is its transfer's day. */
+    fun termOf(startDate: LocalDate?, tenorMonths: Int?, ratePercent: String?, choice: MaturityChoice?, balanceMinor: Long, today: LocalDate): Term? {
+        var start = startDate ?: return null
+        val months = tenorMonths?.takeIf { it > 0 } ?: return null
+        val renews = choice != MaturityChoice.PAY_OUT
         while (renews && !start.plusMonths(months.toLong()).isAfter(today)) start = start.plusMonths(months.toLong())
         val maturity = start.plusMonths(months.toLong())
         val days = ChronoUnit.DAYS.between(start, maturity).coerceAtLeast(1)
-        val rate = Assets.decimal(terms.ratePercent) ?: BigDecimal.ZERO
+        val rate = ratePercent?.let(Assets::decimal) ?: BigDecimal.ZERO
         val profit = BigDecimal.valueOf(balanceMinor) * rate.divide(BigDecimal(100), MC) * BigDecimal(months).divide(BigDecimal(12), MC)
         return Term(
             start = start,

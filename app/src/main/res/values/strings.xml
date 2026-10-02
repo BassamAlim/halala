@@ -620,8 +620,7 @@
     <string name="goal_no_date">No date</string>
     <string name="goal_clear_date">No date</string>
     <string name="goal_accounts">Saved in</string>
-    <string name="goal_accounts_hint">Their balances are what is saved.</string>
-    <string name="goal_accounts_missing">Choose at least one account</string>
+    <string name="goal_accounts_hint">Their balances are what is saved. An Awaeed deposit is filed under a goal on Savings.</string>
     <string name="goal_delete_title">Delete %1$s?</string>
     <string name="goal_delete_body">The accounts and their money stay as they are.</string>
     <string name="goal_by_date">by %1$s</string>
@@ -843,6 +842,14 @@
     <string name="savings_maturity">At maturity</string>
     <string name="savings_clear">Remove the terms</string>
     <string name="savings_awaeed_months">Awaeed · %1$s</string>
+    <string name="deposit_title">Awaeed deposit</string>
+    <string name="deposit_for">What it is for</string>
+    <string name="deposit_for_hint">It counts toward that goal while it runs.</string>
+    <string name="deposit_no_goal">No goal</string>
+    <string name="deposit_for_goal">For %1$s</string>
+    <string name="deposit_pay_out">It was paid out</string>
+    <string name="deposit_pay_out_title">Paid out?</string>
+    <string name="deposit_pay_out_body">What went in moves back to the account it came from, dated today. The profit arrives as its own message.</string>
     <string name="savings_matures">Matures %1$s · about %2$s profit</string>
     <string name="due_maturing_title">%1$s matures soon</string>
     <string name="due_maturing_text">On %1$s. Check what happens at maturity.</string>

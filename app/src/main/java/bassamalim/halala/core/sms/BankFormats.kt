@@ -14,6 +14,7 @@ import bassamalim.halala.core.enums.TransactionKind.PURCHASE
 import bassamalim.halala.core.enums.TransactionKind.REFUND
 import bassamalim.halala.core.enums.TransactionKind.SALARY
 import bassamalim.halala.core.enums.TransactionKind.SAVINGS_DEPOSIT
+import bassamalim.halala.core.enums.TransactionKind.SAVINGS_WITHDRAWAL
 import bassamalim.halala.core.enums.TransactionKind.TRANSFER_IN
 import bassamalim.halala.core.enums.TransactionKind.TRANSFER_OUT
 import bassamalim.halala.core.sms.Role.ACCOUNT
@@ -34,7 +35,7 @@ import bassamalim.halala.core.sms.Role.TOTAL
  */
 object BankFormats {
 
-    const val PARSER_VERSION = 1
+    const val PARSER_VERSION = 2
 
     private fun out(header: String, kind: TransactionKind) = Template(header, kind, DEBIT)
     private fun into(header: String, kind: TransactionKind) = Template(header, kind, CREDIT)
@@ -67,8 +68,10 @@ object BankFormats {
             into("ايداع:الأرباح", OTHER),
             out("سحب:صراف", ATM_WITHDRAWAL),
             out("تحويل Urpay", TRANSFER_OUT),
-            // Each Awaeed deposit is its own numberless account at the bank; they are kept as one.
-            out("انشاء حساب عوائد", SAVINGS_DEPOSIT).copy(into = "Awaeed"),
+            // Each Awaeed deposit is its own numberless account at the bank: a Deposit here.
+            out("انشاء حساب عوائد", SAVINGS_DEPOSIT).copy(product = "Awaeed"),
+            // Its end: what went in comes back with its profit, in one amount.
+            into("اقفال حساب عوائد", SAVINGS_WITHDRAWAL).copy(product = "Awaeed"),
             out("تحويل الى حساب الراجحي المالية", TRANSFER_OUT).copy(farBank = "Al Rajhi Capital"),
             into("تحويل من حساب الراجحي المالية", TRANSFER_IN).copy(farBank = "Al Rajhi Capital"),
             out("مدفوعات", BILL_PAYMENT),

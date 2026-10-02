@@ -21,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
+import bassamalim.halala.core.Globals
 import bassamalim.halala.core.domain.People
 import bassamalim.halala.core.ui.components.GroupLabel
 import bassamalim.halala.core.ui.components.HalalaButton
@@ -62,12 +63,14 @@ fun PeopleScreen(viewModel: PeopleViewModel = hiltViewModel()) {
             SummaryCard(
                 label = stringResource(R.string.people_owed_to_you),
                 amount = state.owedToYou,
+                currency = Globals.PRIMARY_CURRENCY,
                 amountColor = HalalaColors.Income,
                 modifier = Modifier.weight(1f)
             )
             SummaryCard(
                 label = stringResource(R.string.people_you_owe),
                 amount = state.youOwe,
+                currency = Globals.PRIMARY_CURRENCY,
                 modifier = Modifier.weight(1f)
             )
         }

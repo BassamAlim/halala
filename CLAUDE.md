@@ -315,9 +315,24 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   whether it breaks this cycle's Everything budget. Months ahead: salary − scheduled − a
   month at the median rate. All in exact integers.
 - **Savings goals** (`SavingsGoal`, `Goals`): a target, an optional date and the accounts it is
-  saved in; what is saved is their balances. A month's saving needed = what is left over the
+  saved in (none is fine: a goal can be held in deposits alone); what is saved is their balances
+  plus the running term deposits filed under it. A month's saving needed = what is left over the
   months to the target month (rounded up); "you averaged" = the net flow into those accounts
   over the last three months, a third of it.
+- **Term deposits** (`Deposit`, no board): an Awaeed isn't an account of yours. The bank opens
+  a numberless one per deposit, so each creation SMS is one `Deposit`, linked to the leg that
+  arrived (its amount and start are that transaction's, as a loan event's are). The ledger
+  still needs somewhere for the money: one holding account a bank (`AccountType.DEPOSIT`, found
+  by the `product:` ref), counted as savings in net worth and **never listed, chosen or edited**
+  (`AccountType.listed`; filter any new account list by it). The SMS gives no terms: rate,
+  tenor and what happens at maturity are yours to add on the Deposit form, with its purpose,
+  which is a savings goal (`goalId`). Al Rajhi's closing SMS ("اقفال حساب عوائد", one amount,
+  naming no deposit) ends the running deposit it fits (`SavingsRepository.closePaid`: the
+  largest that went in before, at 80% or more of what came back): what went in moves back, and
+  the rest is profit (an `OTHER` credit, so income). "It was paid out" does the same by hand,
+  without profit, for a bank that sends none. Messages an older parser couldn't read are tried
+  again once after `BankFormats.PARSER_VERSION` is bumped. Savings accounts you make yourself
+  keep `SavingsTerms`.
 - **Anomaly alerts** (`Anomalies`, last 30 days, found in the ledger, never stored): the same
   merchant, amount and account twice within a day; a charge over three times the merchant's
   median (four or more before it) and at least 100 above it; a foreign-currency charge; a
@@ -437,7 +452,7 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   6 people with their aliases, 7 loans with their events, 8 subscriptions and bills, 9 a loan's
   split purchase, 10 budgets, 11 savings goals, 12 assets and their snapshots, 13 the zakat
   method, 14 retirement scenarios, 15 savings terms, 16 tags and the transactions carrying them,
-  17 an asset's price source, 18 the places of purchases),
+  17 an asset's price source, 18 the places of purchases, 19 term deposits),
   keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
 - **Encrypted backups** (Backup and export › Encrypted backups, no board): a `.halala` file
   (`core/backup/BackupFile`) is the JSON export zipped and sealed with AES-256-GCM under a key
@@ -501,7 +516,8 @@ exist.
 **Phase 1 (SMS core)** is built in `core/sms`: the receiver and worker (`SmsReceiver`,
 `SmsWorker`), per-bank parsers (`BankFormats`, `SmsParser`) with fixture tests, the ingest
 pipeline (`SmsIngest`: routing by last four, dedupe, pairing internal transfers, balance
-checkpoints) and back-import (`SmsImport`), plus **Onboarding** (the onboarding board).
+checkpoints) and back-import (`SmsImport`; run again on every opening while READ_SMS is
+allowed, so SMS missed without the permission come in; kept ones are skipped by hash), plus **Onboarding** (the onboarding board).
 Amounts show the riyal sign for SAR (`Currency.kt`), the ISO code otherwise.
 
 **Phase 2 (classification and learning)** is built: categories and expense types (seeded;
@@ -557,7 +573,8 @@ Open, Normal for it and Dismiss), **Digest** (Digest board, minus net worth) and
 year, the timeline over 3M/1Y/All, the breakdown, then Savings, Accounts and Assets),
 **Assets** and **Asset** (no board: the list and the form), and **Zakat** (Zakat board; reached
 from the Plan board's Zakat card), **Retirement** (Retirement board, with
-Scenarios), **Compound interest** (no board) and **Savings** (Savings board: terms attached to a
+Scenarios), **Compound interest** (no board) and **Savings** (Savings board: a card per Awaeed deposit (see Term deposits; its
+form, **Deposit**, has no board), and terms attached to a
 savings account, `SavingsTerms` and `core/domain/Savings`; Awaeed terms run from a start for a
 tenor and roll over when they renew, expected profit is simple on the balance; Hasad pays next
 month on this month's lowest balance, nothing under 5,000; a term maturing within a month shows

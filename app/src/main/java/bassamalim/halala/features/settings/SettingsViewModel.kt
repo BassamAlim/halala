@@ -37,7 +37,7 @@ class SettingsViewModel @Inject constructor(
         domain.observeDigests(),
         domain.observeHideAmounts()
     ) { accounts, reminder, (editingReminder, pickingReminderTime, editingDigests), digests, hideAmounts ->
-        val active = accounts.filter { !it.account.archived }
+        val active = accounts.filter { !it.account.archived && it.account.type.listed }
 
         SettingsUiState(
             accountCount = active.size,

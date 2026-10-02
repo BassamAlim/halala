@@ -48,7 +48,7 @@ class EditTransactionViewModel @Inject constructor(
         val today = domain.now().toLocalDate()
         // Archived accounts drop out of the choice, unless this transaction is already on one.
         val options = accounts
-            .filter { !it.account.archived || it.account.id == form.accountId || it.account.id == form.toAccountId }
+            .filter { (!it.account.archived && it.account.type.listed) || it.account.id == form.accountId || it.account.id == form.toAccountId }
             .map {
                 AccountOption(
                     id = it.account.id,
