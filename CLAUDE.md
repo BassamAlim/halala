@@ -478,3 +478,9 @@ tenor and roll over when they renew, expected profit is simple on the balance; H
 month on this month's lowest balance, nothing under 5,000; a term maturing within a month shows
 on Wealth and is reminded three days before; the terms form has no board). Not built: fetching
 fund and gold prices (an owner's decision, see Assets).
+
+**Phase 6 (delight)** has begun: **Money flow** (Money flow board, Activity's second segment:
+for a month and an account, salary or what came in, a Sankey (`Sankey` component,
+`core/domain/MoneyFlow`) of moves to each of your accounts, what was spent from it and what
+stayed; a leg the bank called a move with no other side is "no match": "It went to someone"
+makes it a plain transfer, "Pick the account" records the other leg there and pairs them).
