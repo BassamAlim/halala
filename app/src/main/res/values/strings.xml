@@ -464,14 +464,9 @@
         <item quantity="other">On · %1$d merchants waiting</item>
     </plurals>
     <string name="ai_hint">Halala sends Groq only a shop\'s name as your bank writes it, such as PANDA 1042 RIYADH, and asks what kind of business it is. Amounts, dates, accounts and people\'s names never leave your phone. Well-known shops are identified on the phone without asking.</string>
-    <string name="ai_key">Groq API key</string>
-    <string name="ai_key_hint">From console.groq.com. Kept encrypted on this phone.</string>
-    <string name="ai_key_saved">Key saved</string>
-    <string name="ai_key_missing">Add your Groq API key to turn this on.</string>
-    <string name="ai_save_key">Save key</string>
-    <string name="ai_forget_key">Forget key</string>
+    <string name="ai_key_missing">This build has no Groq key, so this can\'t be turned on.</string>
     <string name="ai_identify_now">Identify now</string>
-    <string name="ai_error_key">Groq refused the key. Check it and save it again.</string>
+    <string name="ai_error_key">Groq refused this build\'s key.</string>
     <string name="ai_error_network">Couldn\'t reach Groq. Halala tries again when you\'re online.</string>
     <string name="ai_error_rejected">Groq couldn\'t answer this time. Halala asks again later.</string>
     <string name="ai_error_limit">Groq\'s free limit was reached. Halala tries again later.</string>

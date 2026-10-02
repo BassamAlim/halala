@@ -7,13 +7,10 @@ import bassamalim.halala.core.data.dataSources.room.relations.AccountWithBalance
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.PreferencesRepository
-import bassamalim.halala.core.di.IoDispatcher
 import bassamalim.halala.core.models.ReviewSchedule
 import bassamalim.halala.core.reminders.ReviewReminders
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class SettingsDomain @Inject constructor(
@@ -22,8 +19,7 @@ class SettingsDomain @Inject constructor(
     private val classificationRepository: ClassificationRepository,
     private val reviewReminders: ReviewReminders,
     private val apiKeys: ApiKeys,
-    private val ai: AiScheduler,
-    @param:IoDispatcher private val io: CoroutineDispatcher
+    private val ai: AiScheduler
 ) {
 
     fun observeAiEnabled(): Flow<Boolean> = preferencesRepository.observeAiEnabled()
@@ -35,23 +31,8 @@ class SettingsDomain @Inject constructor(
     /** Merchants with spending nothing has filed that nobody has identified yet. */
     fun observeWaiting(): Flow<Int> = classificationRepository.observeToIdentifyCount()
 
-    suspend fun hasGroqKey(): Boolean = withContext(io) { apiKeys.hasGroq() }
-
-    /** Keeps the key, encrypted, and starts identifying if it is on. */
-    suspend fun saveGroqKey(key: String) {
-        val trimmed = key.trim()
-        if (trimmed.isEmpty()) return
-        withContext(io) { apiKeys.setGroq(trimmed) }
-        preferencesRepository.setAiProblem(null)
-        ai.request()
-    }
-
-    /** Forgets the key, and turns identifying off: it can't run without one. */
-    suspend fun forgetGroqKey() {
-        withContext(io) { apiKeys.setGroq(null) }
-        preferencesRepository.setAiEnabled(false)
-        preferencesRepository.setAiProblem(null)
-    }
+    /** Whether this build has Groq's key: identifying can't run without one. */
+    fun hasGroqKey(): Boolean = apiKeys.hasGroq()
 
     suspend fun setAiEnabled(enabled: Boolean) {
         preferencesRepository.setAiEnabled(enabled)

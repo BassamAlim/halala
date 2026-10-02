@@ -19,6 +19,11 @@ val envProperties = Properties().apply {
 }
 val hasReleaseKeystore = !envProperties.getProperty("KEYSTORE_PATH").isNullOrBlank()
 
+/** Groq's key is built in: from `.env` locally, from the `GROQ_API_KEY` secret in CI. */
+val groqApiKey = envProperties.getProperty("GROQ_API_KEY")
+    ?: providers.environmentVariable("GROQ_API_KEY").orNull
+    ?: ""
+
 android {
     namespace = "bassamalim.halala"
     compileSdk {
@@ -32,6 +37,8 @@ android {
         targetSdk = 37
         versionCode = 2
         versionName = "0.2.0"
+
+        buildConfigField("String", "GROQ_API_KEY", "\"$groqApiKey\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -61,7 +68,7 @@ android {
     }
     buildFeatures {
         compose = true
-        // Settings shows the version number.
+        // Settings shows the version number; Groq's key.
         buildConfig = true
     }
     sourceSets {

@@ -64,7 +64,7 @@ knows about Room.
 
 ```
 core/
-  ai/                         merchant identification: ApiKeys (Keystore-wrapped), GroqProtocol,
+  ai/                         merchant identification: ApiKeys (built in), GroqProtocol,
                               GroqIdentifier, AiIdentification and its worker
   data/dataSources/room/      entities, daos, relations, AppDatabase, Converters, Migrations, Seed
   data/dataSources/keystore/  DatabaseKey: the SQLCipher passphrase, wrapped by Android Keystore
@@ -226,8 +226,9 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   leaves the phone**, and never one holding your accounts' or cards' last four digits, ten or
   more digits, or an IBAN (`Identification.sendable`; those are `WITHHELD` for you). The AI is
   Groq (`qwen/qwen3.8-27b`, strict JSON schema, reasoning off), off by default, turned on in
-  Settings with your API key, which is stored wrapped by its own Android Keystore key
-  (`KeystoreApiKeys`, apart from the database's). `IdentifyWorker` (online only, one at a time)
+  Settings. Its key is built in, not typed: `BuildConfig.GROQ_API_KEY`, from `GROQ_API_KEY` in
+  `.env` locally or the repository secret of that name in CI (a build without it can't turn
+  identification on). `IdentifyWorker` (online only, one at a time)
   runs after every SMS run and as the app opens, in batches of 40 names, the busiest first;
   what it says is recorded without a batch (the rule names why), and each merchant is asked once.
 - **Undo**: everything you do to filing (an answer, "always", saving, switching or deleting a
@@ -310,7 +311,7 @@ was identified as, the chosen category to confirm for the ones sure enough, the 
 Needs you filter, and the last answer's undo; reached from Home's review pill), **Rules** (Rules
 board; from Settings and from a transaction's "Filed automatically" card), category and type on
 Transaction detail, the AI row and sheet in Settings (Settings board's AI section: on or off,
-the key, what went wrong), and, with no board, built from the system's components:
+what went wrong), and, with no board, built from the system's components:
 **Categories** (add; tap to rename, change the type and the business types it takes, or
 delete), **Rule** (the form: merchant is, description contains, account, amount range →
 category and type), **Recent changes** (each with Undo), the reminder sheet in Settings, and

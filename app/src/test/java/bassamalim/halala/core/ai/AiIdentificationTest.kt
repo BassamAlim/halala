@@ -48,11 +48,7 @@ class AiIdentificationTest {
     }
 
     private class FakeKeys(var key: String? = "gsk_test") : ApiKeys {
-        override fun hasGroq() = key != null
         override fun groq() = key
-        override fun setGroq(key: String?) {
-            this.key = key
-        }
     }
 
     private lateinit var db: AppDatabase

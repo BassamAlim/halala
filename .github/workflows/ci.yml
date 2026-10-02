@@ -25,6 +25,8 @@ jobs:
 
       - name: Build debug APK
         run: ./gradlew :app:assembleDebug
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4

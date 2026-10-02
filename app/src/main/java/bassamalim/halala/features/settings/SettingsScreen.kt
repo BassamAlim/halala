@@ -44,10 +44,6 @@ import bassamalim.halala.core.ui.theme.HalalaType
 import bassamalim.halala.core.ui.theme.Insets
 import bassamalim.halala.core.ui.theme.Sizes
 import bassamalim.halala.core.ui.theme.Spacing
-import androidx.compose.ui.text.input.ImeAction
-import bassamalim.halala.core.ui.components.HalalaTextField
-import bassamalim.halala.core.ui.components.FormField
-import bassamalim.halala.core.ui.components.ButtonKind
 import bassamalim.halala.core.ai.IdentifyProblem
 
 /**
@@ -178,8 +174,8 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
 }
 
 /**
- * Merchant identification: on or off, the Groq key, and what went wrong last. It can only be
- * turned on with a key; forgetting the key turns it off.
+ * Merchant identification: on or off, and what went wrong last. It can only be turned on in a
+ * build that has Groq's key.
  */
 @Composable
 private fun AiSheet(ai: AiSettings, viewModel: SettingsViewModel) {
@@ -194,33 +190,6 @@ private fun AiSheet(ai: AiSettings, viewModel: SettingsViewModel) {
             onSelect = viewModel::onAiEnabledPick,
             enabled = ai.hasKey
         )
-
-        FormField(
-            label = stringResource(R.string.ai_key),
-            hint = stringResource(if (ai.hasKey) R.string.ai_key_saved else R.string.ai_key_hint)
-        ) {
-            HalalaTextField(
-                value = ai.keyDraft.orEmpty(),
-                onValueChange = viewModel::onKeyChange,
-                secret = true,
-                imeAction = ImeAction.Done
-            )
-        }
-        HalalaButton(
-            text = stringResource(R.string.ai_save_key),
-            onClick = viewModel::onSaveKeyClick,
-            kind = ButtonKind.Primary,
-            enabled = !ai.keyDraft.isNullOrBlank(),
-            modifier = Modifier.fillMaxWidth()
-        )
-        if (ai.hasKey) {
-            HalalaButton(
-                text = stringResource(R.string.ai_forget_key),
-                onClick = viewModel::onForgetKeyClick,
-                destructive = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
 
         if (ai.enabled && ai.waiting > 0) {
             HalalaButton(
