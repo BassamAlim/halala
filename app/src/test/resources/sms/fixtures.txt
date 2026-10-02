@@ -710,6 +710,13 @@ expect: TRANSFER_OUT DEBIT 10.00 SAR own=- party=3200 title=SARA KHALID
 ===
 sender: barq app
 Barq wallet transfer
+Amount: 80.00 SAR
+To: OMAR SALEH**
+2025-07-18 16:20
+expect: TRANSFER_OUT DEBIT 80.00 SAR own=- title=OMAR SALEH
+===
+sender: barq app
+Barq wallet transfer
 Amount: 40.00 SAR
 From: OMAR SALEH**
 2025-07-17 16:07

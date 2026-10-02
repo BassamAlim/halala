@@ -238,7 +238,8 @@ object BankFormats {
         senders = setOf("barq app"),
         templates = listOf(
             into("Money Added", TRANSFER_IN),
-            into("Barq wallet transfer", TRANSFER_IN),
+            // The same header both ways: "From: …" arrived, "To: …" left.
+            transfer("Barq wallet transfer"),
             out("Debit Transfer", TRANSFER_OUT)
         ),
         labels = mapOf(

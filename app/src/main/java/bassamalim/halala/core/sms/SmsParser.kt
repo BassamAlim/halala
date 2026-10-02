@@ -131,8 +131,13 @@ object SmsParser {
         fun moneyOf(role: Role, currency: String) =
             fields[role].orEmpty().firstNotNullOfOrNull { money(it) ?: bare(it, currency) }
 
-        val direction = template.direction
-            ?: if (refsOf(Role.TO).isNotEmpty() && refsOf(Role.FROM).isEmpty()) Direction.CREDIT else Direction.DEBIT
+        // No direction in the header: it came in when only your side has a number ("to ••1111,
+        // from a name"), or when the SMS says who it is from and not who it is to.
+        val direction = template.direction ?: when {
+            refsOf(Role.TO).isNotEmpty() && refsOf(Role.FROM).isEmpty() -> Direction.CREDIT
+            Role.FROM in fields && Role.TO !in fields -> Direction.CREDIT
+            else -> Direction.DEBIT
+        }
         val kind = when {
             template.direction != null || templateKind == TransactionKind.INTERNAL_TRANSFER -> templateKind
             direction == Direction.CREDIT -> TransactionKind.TRANSFER_IN
