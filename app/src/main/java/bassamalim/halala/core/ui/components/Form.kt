@@ -7,7 +7,11 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Text
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import bassamalim.halala.core.ui.theme.HalalaColors
 import bassamalim.halala.core.ui.theme.HalalaType
@@ -25,7 +29,16 @@ fun FormField(
     hint: String? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+    val bringIntoView = remember { BringIntoViewRequester() }
+    // Problems appear on Save; one scrolled out of sight is brought back to you.
+    LaunchedEffect(error) { if (error != null) bringIntoView.bringIntoView() }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .bringIntoViewRequester(bringIntoView),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs)
+    ) {
         CardLabel(label)
         content()
         when {
@@ -51,7 +64,8 @@ fun <T> ChoiceChips(
             HalalaChip(
                 label = label(option),
                 style = if (option == selected) ChipStyle.On else ChipStyle.Outline,
-                onClick = if (enabled) ({ onSelect(option) }) else null
+                enabled = enabled,
+                onClick = { onSelect(option) }
             )
         }
     }

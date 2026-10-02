@@ -36,7 +36,7 @@ object Sizes {
     /** Nav icons; inline icons use [iconSmall]. */
     val icon = 22.dp
     val iconSmall = 18.dp
-    val chip = 28.dp
+    val chip = 32.dp
     val border = 1.dp
     val progress = 4.dp
     /** The balance card's own track, thicker than a [progress] bar. */

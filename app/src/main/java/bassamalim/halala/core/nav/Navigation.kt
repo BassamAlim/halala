@@ -1,6 +1,14 @@
 package bassamalim.halala.core.nav
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.navigation.NavGraphBuilder
 import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -47,24 +55,33 @@ fun NavGraph(navController: NavHostController, startDestination: Screen) {
         popEnterTransition = inFromLeft,
         popExitTransition = outToRight
     ) {
-        composable<Screen.Lock> { LockScreen() }
+        screen<Screen.Lock> { LockScreen() }
 
         composable<Screen.Main> { MainScreen() }
 
-        composable<Screen.Accounts> { AccountsScreen() }
+        screen<Screen.Accounts> { AccountsScreen() }
 
-        composable<Screen.EditAccount> { EditAccountScreen() }
+        screen<Screen.EditAccount> { EditAccountScreen() }
 
-        composable<Screen.Transaction> { TransactionScreen() }
+        screen<Screen.Transaction> { TransactionScreen() }
 
-        composable<Screen.EditTransaction> { EditTransactionScreen() }
+        screen<Screen.EditTransaction> { EditTransactionScreen() }
 
-        composable<Screen.ReconcileCash> { ReconcileCashScreen() }
+        screen<Screen.ReconcileCash> { ReconcileCashScreen() }
 
-        composable<Screen.Settings> { SettingsScreen() }
+        screen<Screen.Settings> { SettingsScreen() }
 
-        composable<Screen.Export> { ExportScreen() }
+        screen<Screen.Export> { ExportScreen() }
 
-        composable<Screen.Onboarding> { OnboardingScreen() }
+        screen<Screen.Onboarding> { OnboardingScreen() }
     }
 }
+
+/**
+ * A destination that stops above the gesture bar and the keyboard. [Screen.Main] is the one
+ * that doesn't: its nav draws behind the gesture bar and stays put under the keyboard.
+ */
+private inline fun <reified T : Any> NavGraphBuilder.screen(noinline content: @Composable () -> Unit) =
+    composable<T> {
+        Box(Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))) { content() }
+    }

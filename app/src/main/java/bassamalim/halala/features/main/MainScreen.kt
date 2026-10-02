@@ -3,6 +3,8 @@ package bassamalim.halala.features.main
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -55,6 +57,9 @@ fun MainScreen(viewModel: MainViewModel = hiltViewModel()) {
             Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                // The keyboard covers the nav; only the content makes room for it.
+                .consumeWindowInsets(innerPadding)
+                .imePadding()
         ) {
             when (selected) {
                 MainTab.HOME -> HomeScreen(onSeeAllClick = { selected = MainTab.ACTIVITY })

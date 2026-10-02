@@ -5,47 +5,29 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.slideOutVertically
 import androidx.navigation.NavBackStackEntry
 
-val inFromBottom = { _: AnimatedContentTransitionScope<NavBackStackEntry> ->
-    slideInVertically(initialOffsetY = { 500 }, animationSpec = tween(300)) +
-            fadeIn(animationSpec = tween(200))
-}
+/*
+ * A push: the new screen slides in by the full width while the old one slides out by the full
+ * width, both in the same time, so it looks the same on every phone. Offsets are in layout
+ * direction, so Arabic mirrors it.
+ */
 
-val outToBottom = { _: AnimatedContentTransitionScope<NavBackStackEntry> ->
-    slideOutVertically(targetOffsetY = { -500 }, animationSpec = tween(300)) +
-            fadeOut(animationSpec = tween(200))
-}
-
-val inFromTop = { _: AnimatedContentTransitionScope<NavBackStackEntry> ->
-    slideInVertically(initialOffsetY = { -500 }, animationSpec = tween(300)) +
-            fadeIn(animationSpec = tween(200))
-}
-
-val outToTop = { _: AnimatedContentTransitionScope<NavBackStackEntry> ->
-    slideOutVertically(targetOffsetY = { 500 }, animationSpec = tween(300)) +
-            fadeOut(animationSpec = tween(200))
-}
+private const val DURATION = 300
 
 val inFromRight = { _: AnimatedContentTransitionScope<NavBackStackEntry> ->
-    slideInHorizontally(initialOffsetX = { 1000 }, animationSpec = tween(300)) +
-            fadeIn(animationSpec = tween(300))
+    slideInHorizontally(tween(DURATION)) { it } + fadeIn(tween(DURATION))
 }
 
 val outToLeft = { _: AnimatedContentTransitionScope<NavBackStackEntry> ->
-    slideOutHorizontally(targetOffsetX = { -500 }, animationSpec = tween(300)) +
-            fadeOut(animationSpec = tween(300))
+    slideOutHorizontally(tween(DURATION)) { -it } + fadeOut(tween(DURATION))
 }
 
 val inFromLeft = { _: AnimatedContentTransitionScope<NavBackStackEntry> ->
-    slideInHorizontally(initialOffsetX = { -1000 }, animationSpec = tween(300)) +
-            fadeIn(animationSpec = tween(100))
+    slideInHorizontally(tween(DURATION)) { -it } + fadeIn(tween(DURATION))
 }
 
 val outToRight = { _: AnimatedContentTransitionScope<NavBackStackEntry> ->
-    slideOutHorizontally(targetOffsetX = { 500 }, animationSpec = tween(300)) +
-            fadeOut(animationSpec = tween(300))
+    slideOutHorizontally(tween(DURATION)) { it } + fadeOut(tween(DURATION))
 }

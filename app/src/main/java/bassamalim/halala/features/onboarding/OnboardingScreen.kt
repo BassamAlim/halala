@@ -1,5 +1,6 @@
 package bassamalim.halala.features.onboarding
 
+import bassamalim.halala.core.ui.components.CurrencyText
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -221,7 +222,7 @@ private fun ColumnScope.HistoryStep(
                         isError = row.isInvalid,
                         modifier = Modifier.width(Sizes.onboardingBalance)
                     )
-                    Text(row.currency, style = HalalaType.Caption, color = HalalaColors.TextMuted)
+                    CurrencyText(row.currency, HalalaType.Caption, HalalaColors.TextMuted)
                 }
             }
         }

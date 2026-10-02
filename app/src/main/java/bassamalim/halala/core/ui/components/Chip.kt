@@ -3,6 +3,8 @@ package bassamalim.halala.core.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -10,9 +12,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
@@ -45,21 +50,24 @@ enum class ChipStyle {
 }
 
 /**
- * A 28dp pill in caption text. When [onClick] is set its hit area is padded out to a touch
- * target, while the pill itself stays 28dp.
+ * A 32dp pill in label text. When [onClick] is set its hit area is padded out to a touch
+ * target, while the pill itself stays 32dp. A disabled chip keeps its size and is dimmed.
  */
 @Composable
 fun HalalaChip(
     label: String,
     modifier: Modifier = Modifier,
     style: ChipStyle = ChipStyle.Plain,
+    enabled: Boolean = true,
     onClick: (() -> Unit)? = null
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
     val pill = @Composable {
         Box(
             modifier = Modifier
                 .height(Sizes.chip)
                 .clip(Radius.pill)
+                .then(if (onClick != null) Modifier.indication(interactionSource, ripple()) else Modifier)
                 .background(
                     when (style) {
                         ChipStyle.Plain -> HalalaColors.Surface2
@@ -81,8 +89,8 @@ fun HalalaChip(
         ) {
             Text(
                 text = label,
-                style = if (style == ChipStyle.On) HalalaType.Caption.copy(fontWeight = FontWeight(600))
-                else HalalaType.Caption,
+                style = if (style == ChipStyle.On) HalalaType.Label.copy(fontWeight = FontWeight(600))
+                else HalalaType.Label,
                 color = when (style) {
                     ChipStyle.On -> HalalaColors.OnAccent
                     ChipStyle.Accent -> HalalaColors.Accent
@@ -101,7 +109,14 @@ fun HalalaChip(
             modifier = modifier
                 .heightIn(min = Sizes.touchTarget)
                 .semantics { selected = style == ChipStyle.On || style == ChipStyle.Accent }
-                .clickable(role = Role.Button, onClick = onClick),
+                .alpha(if (enabled) 1f else DISABLED_ALPHA)
+                .clickable(
+                    enabled = enabled,
+                    interactionSource = interactionSource,
+                    indication = null,
+                    role = Role.Button,
+                    onClick = onClick
+                ),
             contentAlignment = Alignment.Center
         ) { pill() }
     }

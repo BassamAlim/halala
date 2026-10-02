@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -66,25 +68,24 @@ fun AccountsScreen(viewModel: AccountsViewModel = hiltViewModel()) {
 
 @Composable
 private fun AccountList(rows: List<AccountRow>, onClick: (Long) -> Unit, muted: Boolean = false) {
+    // An archived account is muted whole: name and balance, not just the figure.
     ListCard(Modifier.fillMaxWidth()) {
-        rows.forEachIndexed { index, row ->
-            val type = accountTypeLabel(row.type)
-            val where = listOfNotNull(row.institution, row.last4).joinToString(" ")
+        CompositionLocalProvider(LocalContentColor provides if (muted) HalalaColors.TextMuted else HalalaColors.Text) {
+            rows.forEachIndexed { index, row ->
+                val type = accountTypeLabel(row.type)
+                val where = listOfNotNull(row.institution, row.last4).joinToString(" ")
 
-            ListRow(
-                title = row.name,
-                subtitle = if (where.isEmpty()) type else stringResource(R.string.meta_pair, where, type),
-                divider = index > 0,
-                leading = { Avatar(initial = row.initial, tone = AmountTone.Spending) },
-                trailing = {
-                    Text(
-                        text = row.balance,
-                        style = HalalaNumbers.Amount,
-                        color = if (muted) HalalaColors.TextMuted else HalalaColors.Text
-                    )
-                },
-                onClick = { onClick(row.id) }
-            )
+                ListRow(
+                    title = row.name,
+                    subtitle = if (where.isEmpty()) type else stringResource(R.string.meta_pair, where, type),
+                    divider = index > 0,
+                    leading = { Avatar(initial = row.initial, tone = AmountTone.Spending) },
+                    trailing = {
+                        Text(text = row.balance, style = HalalaNumbers.Amount)
+                    },
+                    onClick = { onClick(row.id) }
+                )
+            }
         }
     }
 }

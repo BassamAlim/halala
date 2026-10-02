@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -38,7 +39,7 @@ import bassamalim.halala.core.ui.theme.Spacing
 
 /**
  * One transaction in a list: avatar, title and caption metadata, and the amount right-aligned.
- * The consumer provides the already-signed [amount] string. [divider] draws the 1dp line above
+ * The consumer provides the already-signed [amount] string; [currency] follows it. [divider] draws the 1dp line above
  * it; the first row in a group has none.
  */
 @Composable
@@ -49,6 +50,7 @@ fun TransactionRow(
     tone: AmountTone,
     initial: String,
     modifier: Modifier = Modifier,
+    currency: String? = null,
     autoLabel: String? = null,
     divider: Boolean = false,
     onClick: (() -> Unit)? = null
@@ -59,6 +61,7 @@ fun TransactionRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .clip(Radius.sm)
                 .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
                 .padding(vertical = Insets.row),
             verticalAlignment = Alignment.CenterVertically,
@@ -91,14 +94,19 @@ fun TransactionRow(
                 )
             }
 
+            val amountColor = when (tone) {
+                AmountTone.Spending -> HalalaColors.Text
+                AmountTone.Income -> HalalaColors.Income
+                AmountTone.Internal -> HalalaColors.TextMuted
+            }
             Text(
-                text = amount,
+                text = buildAnnotatedString {
+                    append(amount)
+                    if (currency != null) appendCurrency(currency)
+                },
                 style = HalalaNumbers.Amount,
-                color = when (tone) {
-                    AmountTone.Spending -> HalalaColors.Text
-                    AmountTone.Income -> HalalaColors.Income
-                    AmountTone.Internal -> HalalaColors.TextMuted
-                }
+                color = amountColor,
+                inlineContent = currencyInlineContent(amountColor)
             )
         }
     }
@@ -169,7 +177,7 @@ fun GroupLabel(text: String, modifier: Modifier = Modifier) {
 @Composable
 private fun TransactionRowPreview() = HalalaTheme {
     Column(Modifier.padding(Spacing.screen)) {
-        TransactionRow("Panda", "Groceries · Al Rajhi – Salary", "−214.50", AmountTone.Spending, "P", autoLabel = "Auto")
+        TransactionRow("Panda", "Groceries · Al Rajhi – Salary", "−214.50", AmountTone.Spending, "P", currency = "SAR", autoLabel = "Auto")
         TransactionRow("Salary → Awaeed", "Between your accounts · not spending", "5,000.00", AmountTone.Internal, "", divider = true)
         TransactionRow("Salary", "Al Rajhi – Salary", "+18,000.00", AmountTone.Income, "S", divider = true)
     }

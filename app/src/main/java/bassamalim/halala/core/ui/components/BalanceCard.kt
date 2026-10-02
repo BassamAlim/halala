@@ -80,10 +80,11 @@ fun BalanceCard(
         Text(
             text = buildAnnotatedString {
                 append(spent)
-                withStyle(SpanStyle(fontSize = CURRENCY_SIZE, letterSpacing = 0.em)) { append(" $currency") }
+                withStyle(SpanStyle(fontSize = CURRENCY_SIZE, letterSpacing = 0.em)) { appendCurrency(currency) }
             },
             style = HalalaNumbers.AmountHero,
-            color = HalalaColors.OnAccent
+            color = HalalaColors.OnAccent,
+            inlineContent = currencyInlineContent(HalalaColors.OnAccent)
         )
 
         Box(

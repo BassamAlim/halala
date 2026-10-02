@@ -11,6 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -119,7 +121,8 @@ private fun EditAccountContent(
                 value = form.name,
                 onValueChange = onNameChange,
                 placeholder = stringResource(R.string.account_name_placeholder),
-                isError = AccountProblem.NameMissing in problems
+                isError = AccountProblem.NameMissing in problems,
+                capitalization = KeyboardCapitalization.Words
             )
         }
 
@@ -164,7 +167,8 @@ private fun EditAccountContent(
                     value = form.currency,
                     onValueChange = onCurrencyChange,
                     placeholder = stringResource(R.string.account_currency_placeholder),
-                    isError = AccountProblem.CurrencyInvalid in problems
+                    isError = AccountProblem.CurrencyInvalid in problems,
+                    capitalization = KeyboardCapitalization.Characters
                 )
             }
         }
@@ -179,7 +183,8 @@ private fun EditAccountContent(
                 onValueChange = onOpeningBalanceChange,
                 placeholder = "0.00",
                 numeric = true,
-                isError = AccountProblem.OpeningBalanceInvalid in problems
+                isError = AccountProblem.OpeningBalanceInvalid in problems,
+                imeAction = ImeAction.Done
             )
         }
 
@@ -194,7 +199,8 @@ private fun EditAccountContent(
                 onValueChange = onBalanceNowChange,
                 placeholder = "0.00",
                 numeric = true,
-                isError = AccountProblem.BalanceNowInvalid in problems
+                isError = AccountProblem.BalanceNowInvalid in problems,
+                imeAction = ImeAction.Done
             )
         }
 

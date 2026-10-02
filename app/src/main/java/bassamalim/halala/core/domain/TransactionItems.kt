@@ -1,6 +1,5 @@
 package bassamalim.halala.core.domain
 
-import bassamalim.halala.core.Globals
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.enums.AmountTone
 import bassamalim.halala.core.enums.Direction
@@ -20,16 +19,14 @@ fun toneOf(detail: TransactionDetail): AmountTone = when {
 }
 
 /**
- * The amount as a row shows it: "−214.50", "+18,000.00", "5,000.00" for a move, with the
- * currency after it when it isn't SAR ("−12.00 USD").
+ * The amount as a row shows it: "−214.50", "+18,000.00", "5,000.00" for a move. The currency
+ * is set beside it by the UI.
  */
 fun signedAmount(detail: TransactionDetail, decimals: Boolean = true): String {
     val tx = detail.transaction
     val tone = toneOf(detail)
     val signed = if (tone == AmountTone.Spending) -tx.amountMinor else tx.amountMinor
-    val text = Money.format(signed, tx.currency, decimals = decimals, showPlus = tone == AmountTone.Income)
-
-    return if (tx.currency == Globals.PRIMARY_CURRENCY) text else "$text ${tx.currency}"
+    return Money.format(signed, tx.currency, decimals = decimals, showPlus = tone == AmountTone.Income)
 }
 
 /**
@@ -55,6 +52,7 @@ fun TransactionDetail.toItem(zone: ZoneId, today: LocalDate): TransactionItem {
         accountLabel = accountLabel(institutionName, accountNickname),
         isMove = isInternalTransfer,
         amount = signedAmount(this),
+        currency = transaction.currency,
         tone = toneOf(this),
         initial = initialOf(title),
         date = date,

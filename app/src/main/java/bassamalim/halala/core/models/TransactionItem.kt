@@ -16,6 +16,7 @@ data class TransactionItem(
     val accountLabel: String,
     val isMove: Boolean,
     val amount: String,
+    val currency: String,
     val tone: AmountTone,
     val initial: String,
     val date: LocalDate,

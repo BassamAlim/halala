@@ -59,6 +59,7 @@
 
     <!-- Activity -->
     <string name="activity_search">Search transactions</string>
+    <string name="clear_search">Clear search</string>
     <string name="activity_in">In this month</string>
     <string name="activity_out">Out this month</string>
     <string name="activity_empty">No transactions yet.</string>

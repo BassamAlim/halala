@@ -1,6 +1,9 @@
 package bassamalim.halala.features.transaction
 
+import bassamalim.halala.core.ui.components.currencyInlineContent
+import bassamalim.halala.core.ui.components.appendCurrency
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -84,10 +87,17 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
                 text = buildAnnotatedString {
                     append(state.amount)
                     withStyle(SpanStyle(fontSize = HalalaType.Title.fontSize, letterSpacing = 0.em, color = HalalaColors.TextMuted)) {
-                        append(" ${state.currency}")
+                        appendCurrency(state.currency)
                     }
                 },
                 style = HalalaNumbers.AmountXl,
+                inlineContent = currencyInlineContent(HalalaColors.TextMuted),
+                maxLines = 1,
+                // A long figure shrinks to fit the width rather than wrapping.
+                autoSize = TextAutoSize.StepBased(
+                    minFontSize = HalalaNumbers.AmountLg.fontSize,
+                    maxFontSize = HalalaNumbers.AmountXl.fontSize
+                ),
                 color = when (state.tone) {
                     AmountTone.Income -> HalalaColors.Income
                     AmountTone.Internal -> HalalaColors.TextMuted
