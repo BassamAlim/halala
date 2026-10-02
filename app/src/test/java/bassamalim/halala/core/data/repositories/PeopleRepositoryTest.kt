@@ -3,6 +3,7 @@ package bassamalim.halala.core.data.repositories
 import bassamalim.halala.core.data.TEST_CLOCK
 import bassamalim.halala.core.data.dataSources.room.AppDatabase
 import bassamalim.halala.core.data.dataSources.room.entities.Account
+import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.testDatabase
 import bassamalim.halala.core.domain.titleOf
 import bassamalim.halala.core.enums.AccountType
@@ -105,5 +106,28 @@ class PeopleRepositoryTest {
         assertEquals(khalid.id, personOf(a).personId)
         // The last spelling can't be taken out: it is the person.
         assertNull(people.split(db.peopleDao().getAliases().single { it.personId == khalid.id }.id))
+    }
+
+    @Test
+    fun `the digits a bank quoted for someone are read from their transfers' SMS`() = runTest {
+        val latin = transfer("AHMED ALI", Direction.CREDIT)
+        val arabic = transfer("أحمد علي")
+        transfer("KHALID SALEH")
+        classification.applyRules()
+        val bodies = mapOf(
+            latin to "حوالة محلية واردة بـSR 3000\nلـ1111\nمن7700;AHMED null ALI\n26/10/1 21:34",
+            arabic to "حوالة محلية صادرة بـSR 2500\nمن2222\nلـ7700;أحمد علي\nرسوم:SR 0.58\n26/9/24 04:28"
+        )
+        for ((id, body) in bodies) {
+            val raw = db.smsDao().insertRaw(RawMessage(sender = "AlRajhiBank", body = body, receivedAt = TEST_CLOCK.instant(), hash = "h$id"))
+            db.openHelper.writableDatabase.execSQL("UPDATE transactions SET rawMessageId = $raw WHERE id = $id")
+        }
+
+        val refs = people.observeAccountRefs().first()
+
+        assertEquals(
+            mapOf(personOf(latin).personId to setOf("7700"), personOf(arabic).personId to setOf("7700")),
+            refs
+        )
     }
 }

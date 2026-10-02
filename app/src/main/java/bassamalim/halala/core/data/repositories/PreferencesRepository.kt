@@ -14,6 +14,7 @@ import bassamalim.halala.core.models.BackupSettings
 import bassamalim.halala.core.models.ReminderMode
 import bassamalim.halala.core.models.ReviewSchedule
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.time.DayOfWeek
 import java.time.Instant
@@ -110,6 +111,29 @@ class PreferencesRepository @Inject constructor(
         dataStore.edit { it[TAG_DISMISSED] = it[TAG_DISMISSED].orEmpty() + key }
     }
 
+    /**
+     * Pairs of people the AI read as one, and pairs you said aren't, by `People.pairKey` (their
+     * uids, never a name).
+     */
+    fun observePeopleSame(): Flow<Set<String>> = dataStore.data.map { it[PEOPLE_SAME].orEmpty() }
+
+    fun observePeopleDismissed(): Flow<Set<String>> = dataStore.data.map { it[PEOPLE_DISMISSED].orEmpty() }
+
+    suspend fun dismissPeoplePair(key: String) {
+        dataStore.edit { it[PEOPLE_DISMISSED] = it[PEOPLE_DISMISSED].orEmpty() + key }
+    }
+
+    /** The people (uids) the AI has already been asked about. */
+    suspend fun peopleAsked(): Set<String> = dataStore.data.first()[PEOPLE_ASKED].orEmpty()
+
+    /** [asked] is everyone the AI has now seen, [same] the pairs it found among them. */
+    suspend fun recordPeopleMatches(asked: Set<String>, same: Set<String>) {
+        dataStore.edit {
+            it[PEOPLE_ASKED] = asked
+            it[PEOPLE_SAME] = it[PEOPLE_SAME].orEmpty() + same
+        }
+    }
+
     private fun digestKey(kind: DigestKind) = booleanPreferencesKey("digest_${kind.name.lowercase()}")
 
     companion object {
@@ -120,6 +144,9 @@ class PreferencesRepository @Inject constructor(
         private val LOCK_TIMEOUT_SECONDS = intPreferencesKey("lock_timeout_seconds")
         private val LOCATION_ASKED = booleanPreferencesKey("location_asked")
         private val TAG_DISMISSED = stringSetPreferencesKey("tag_suggestions_dismissed")
+        private val PEOPLE_SAME = stringSetPreferencesKey("people_same")
+        private val PEOPLE_DISMISSED = stringSetPreferencesKey("people_merge_dismissed")
+        private val PEOPLE_ASKED = stringSetPreferencesKey("people_asked")
         private val BACKUP_FOLDER = stringPreferencesKey("backup_folder")
         private val BACKUP_EVERY = stringPreferencesKey("backup_every")
         private val BACKUP_KEEP = intPreferencesKey("backup_keep")

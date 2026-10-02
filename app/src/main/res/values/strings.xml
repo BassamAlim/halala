@@ -382,6 +382,13 @@
     <string name="people_empty">No one yet. People appear as transfers to and from them arrive.</string>
     <string name="people_hint">Each name a bank writes is someone new. If two are the same person, open one and choose who they are.</string>
     <string name="people_last">last %1$s</string>
+    <string name="people_same_title">Same person?</string>
+    <string name="people_same_pair">%1$s and %2$s</string>
+    <string name="people_same_spelling">Spelled the same, apart from spacing. Merged, they are %1$s.</string>
+    <string name="people_same_account">Both have an account ending %2$s. Merged, they are %1$s.</string>
+    <string name="people_same_ai">The AI reads these as one name. Merged, they are %1$s.</string>
+    <string name="people_same_merge">Merge</string>
+    <string name="people_same_not">Not the same</string>
     <plurals name="people_count">
         <item quantity="one">%1$d person</item>
         <item quantity="other">%1$d people</item>

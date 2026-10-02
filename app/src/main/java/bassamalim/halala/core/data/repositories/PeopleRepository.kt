@@ -6,7 +6,10 @@ import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.relations.PersonAliasWithCount
 import bassamalim.halala.core.data.dataSources.room.relations.PersonWithStats
 import bassamalim.halala.core.domain.People
+import bassamalim.halala.core.sms.ParsedSms
+import bassamalim.halala.core.sms.SmsParser
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -26,6 +29,19 @@ class PeopleRepository @Inject constructor(
     fun observePerson(id: Long): Flow<Person?> = peopleDao.observePerson(id)
 
     fun observeAliases(personId: Long): Flow<List<PersonAliasWithCount>> = peopleDao.observeAliases(personId)
+
+    fun observeAllAliases(): Flow<List<PersonAlias>> = peopleDao.observeAllAliases()
+
+    /**
+     * The last four digits banks quoted for each person's account (by person id), read again
+     * from their transfers' SMS: they aren't kept anywhere else.
+     */
+    fun observeAccountRefs(): Flow<Map<Long, Set<String>>> = peopleDao.observeTransferMessages().map { messages ->
+        messages.groupBy({ it.personId }) { message ->
+            val parsed = SmsParser.bankFor(message.sender)?.let { SmsParser.parse(it, message.body) }
+            (parsed as? ParsedSms.Movement)?.partyRefs.orEmpty().filter { it.length == 4 }
+        }.mapValues { (_, refs) -> refs.flatten().toSet() }
+    }
 
     suspend fun getPeople(): List<Person> = peopleDao.getPeople()
 

@@ -1,5 +1,6 @@
 package bassamalim.halala.features.people
 
+import bassamalim.halala.core.domain.People
 import bassamalim.halala.core.enums.AmountTone
 
 /** The People board's two views: loans, and everyone you transfer with. */
@@ -17,7 +18,22 @@ data class PeopleUiState(
     /** Whether there are any at all, so an empty search isn't mistaken for none yet. */
     val hasAny: Boolean = false,
     val currency: String = "",
-    val people: List<PersonRow> = emptyList()
+    val people: List<PersonRow> = emptyList(),
+    val suggestions: List<MergeRow> = emptyList()
+)
+
+/**
+ * Two people who may be one: merging makes [goesName] another spelling of [keepName]. [ref] is
+ * the last four digits they share, when that is the [reason].
+ */
+data class MergeRow(
+    val key: String,
+    val keepId: Long,
+    val goesId: Long,
+    val keepName: String,
+    val goesName: String,
+    val reason: People.MergeReason,
+    val ref: String? = null
 )
 
 /**

@@ -67,6 +67,20 @@ interface PeopleDao {
     @Query("SELECT * FROM person_aliases ORDER BY id")
     suspend fun getAliases(): List<PersonAlias>
 
+    @Query("SELECT * FROM person_aliases ORDER BY id")
+    fun observeAllAliases(): Flow<List<PersonAlias>>
+
+    /** Each person's transfers that came by SMS, as the bank wrote them: they quote the other side's digits. */
+    @Query(
+        """
+        SELECT DISTINCT a.personId, r.sender, r.body FROM transactions t
+        JOIN person_aliases a ON a.aliasKey = t.merchantKey
+        JOIN raw_messages r ON r.id = t.rawMessageId
+        WHERE $PERSON_TRANSFER
+        """
+    )
+    fun observeTransferMessages(): Flow<List<TransferMessage>>
+
     @Query("SELECT * FROM person_aliases WHERE id = :id")
     suspend fun getAlias(id: Long): PersonAlias?
 
@@ -102,3 +116,6 @@ interface PeopleDao {
 
 /** A transfer's title as the bank wrote it, and its key. */
 data class TransferName(val title: String, val merchantKey: String)
+
+/** The SMS behind one of a person's transfers. */
+data class TransferMessage(val personId: Long, val sender: String, val body: String)

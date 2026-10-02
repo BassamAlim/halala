@@ -227,7 +227,7 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   category, one tap to confirm, which learns as usual); the rest is **Ask**. `applyRules`
   identifies from the bundled list first, with no call; the AI only sees merchants still unknown
   that have unfiled spending. **Only a merchant's name, as the bank wrote it (digits kept), ever
-  leaves the phone** for identification (the assistant sends your question, see below), and never one holding your accounts' or cards' last four digits, ten or
+  leaves the phone** for identification (the assistant sends your question, and people's names go to find one person under two names, see below and People), and never one holding your accounts' or cards' last four digits, ten or
   more digits, or an IBAN (`Identification.sendable`; those are `WITHHELD` for you). The AI is
   Groq (`qwen/qwen3.8-27b`, strict JSON schema, reasoning off), always on, with no setting. Its key is built in, not typed: `BuildConfig.GROQ_API_KEY`, from `GROQ_API_KEY` in
   `.env` locally or the repository secret of that name in CI (a build without it
@@ -242,7 +242,18 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   joins a look-alike ("Ahmed Ali" and "Ahmed Saleh" are two people). Feeds show the person's
   name. You rename, merge ("Same as another person") and split ("Not this one") on the Person
   screen; these aren't audited (nothing is filed by them, and each can be taken back by hand).
-  Known IBANs and phone contacts aren't linked yet.
+  **Halala suggests merges and never makes one** (a merge moves loans): People shows "Same
+  person?" cards (no board) for pairs `People.suggest` finds, the surest reason first: spelled
+  the same (`People.canonical`: spaces and the ways an Arabic letter is written dropped, never
+  a fuzzy score, since siblings share two names of three), the same last four digits quoted for
+  their account (banks quote no more than four, so no IBAN; read again from the transfers' SMS,
+  `PeopleRepository.observeAccountRefs`), or the AI read the names as one (another language, an
+  initial, a name cut short). `PeopleMatching` runs after merchant identification in
+  `IdentifyWorker`, only when someone new has appeared, and sends every person's names as banks
+  wrote them (`Identification.sendable` ones, at most 300 people) and nothing else. Merging keeps
+  the one you named, else the one with more transfers; "Not the same" is remembered. What the AI
+  said and what you dismissed are in DataStore by `People.pairKey` (uids, never a name). Phone
+  contacts aren't linked yet.
 - **Loans** are only ever made by your say. Marking a plain transfer to or from someone
   (`Loans.MARKABLE`, never a paired move) as lent or borrowed opens a `Loan` with that person
   (optional due date); marking a transfer back as repaying it pays it down; forgiving lets go of
@@ -427,7 +438,8 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   A new table or column that matters must be added to `ExportFile`, `Exporter` and `Importer`
   together; `ImporterTest` checks that a restored export exports again as the same file.
 - **Privacy**: no analytics, no crash reporter. Network use: Groq (HTTPS, always on in a build
-  with the key) for merchant identification (merchants' names and nothing else) and the
+  with the key) for merchant identification (merchants' names and nothing else), for finding
+  one person under two names (the names banks wrote for people you transfer with, nothing else) and the
   assistant (the question you type and today's date, nothing else); and market prices (public
   gold and fund prices, fetched with nothing of yours, only once you link an asset); and the
   spending map's OpenStreetMap tiles (the area you look at, never your purchases). Nothing about money goes

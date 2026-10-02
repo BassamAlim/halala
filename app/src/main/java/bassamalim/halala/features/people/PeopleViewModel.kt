@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
@@ -94,6 +95,20 @@ class PeopleViewModel @Inject constructor(
                 )
             }
         )
+    }.combine(domain.observeSuggestions()) { state, offers ->
+        state.copy(
+            suggestions = offers.map { offer ->
+                MergeRow(
+                    key = offer.suggestion.key,
+                    keepId = offer.keep.id,
+                    goesId = offer.goes.id,
+                    keepName = offer.keep.name,
+                    goesName = offer.goes.name,
+                    reason = offer.suggestion.reason,
+                    ref = offer.suggestion.ref
+                )
+            }
+        )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -107,4 +122,12 @@ class PeopleViewModel @Inject constructor(
     fun onViewChange(index: Int) = view.update { PeopleView.entries[index] }
 
     fun onPersonClick(id: Long) = navigator.navigate(Screen.Person(id))
+
+    fun onMerge(row: MergeRow) {
+        viewModelScope.launch { domain.merge(fromId = row.goesId, intoId = row.keepId) }
+    }
+
+    fun onNotSame(row: MergeRow) {
+        viewModelScope.launch { domain.dismiss(row.key) }
+    }
 }
