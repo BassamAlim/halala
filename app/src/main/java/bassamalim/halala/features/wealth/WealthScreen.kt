@@ -1,6 +1,8 @@
 package bassamalim.halala.features.wealth
 
 import bassamalim.halala.core.ui.components.Skeleton
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -112,7 +114,13 @@ fun WealthScreen(viewModel: WealthViewModel = hiltViewModel()) {
         if (state.parts.isNotEmpty()) HalalaCard(modifier = Modifier.fillMaxWidth()) {
             state.parts.forEachIndexed { index, part ->
                 if (index > 0) HorizontalDivider(thickness = Sizes.border, color = HalalaColors.Line)
-                Column(Modifier.padding(vertical = Spacing.sm), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                val owed = part.kind == WealthClass.OWED_TO_YOU || part.kind == WealthClass.YOU_OWE
+                Column(
+                    modifier = Modifier
+                        .clickable(enabled = owed, role = Role.Button, onClick = viewModel::onPeopleClick)
+                        .padding(vertical = Spacing.sm),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.xs)
+                ) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
                         Text(text = stringResource(labelOf(part.kind)), style = HalalaType.Body)
                         Text(text = part.amount, style = HalalaNumbers.Amount)
@@ -147,18 +155,6 @@ fun WealthScreen(viewModel: WealthViewModel = hiltViewModel()) {
                 else pluralStringResource(R.plurals.asset_count, state.assetCount, state.assetCount),
                 divider = true,
                 onClick = viewModel::onAssetsClick
-            )
-            ListRow(
-                title = stringResource(R.string.people),
-                subtitle = pluralStringResource(R.plurals.people_count, state.peopleCount, state.peopleCount),
-                divider = true,
-                onClick = viewModel::onPeopleClick
-            )
-            ListRow(
-                title = stringResource(R.string.zakat),
-                subtitle = stringResource(R.string.zakat_summary),
-                divider = true,
-                onClick = viewModel::onZakatClick
             )
         }
         Text(text = stringResource(R.string.net_worth_hint), style = HalalaType.Caption, color = HalalaColors.TextMuted)

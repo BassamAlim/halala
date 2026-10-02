@@ -48,7 +48,6 @@ class HomeViewModel @Inject constructor(
             recent = feedOf(transactions)
                 .take(HomeDomain.RECENT_COUNT)
                 .map { it.toItem(domain.zone(), today) },
-            hasLoans = loans.isNotEmpty(),
             owedToYou = Money.format(Loans.owed(loans, Globals.PRIMARY_CURRENCY).first, Globals.PRIMARY_CURRENCY, decimals = false),
             youOwe = Money.format(Loans.owed(loans, Globals.PRIMARY_CURRENCY).second, Globals.PRIMARY_CURRENCY, decimals = false),
             comingUp = RecurringDomain.upcoming(recurring)

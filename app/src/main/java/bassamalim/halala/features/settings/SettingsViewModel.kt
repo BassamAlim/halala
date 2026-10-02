@@ -114,13 +114,9 @@ class SettingsViewModel @Inject constructor(
 
     fun onCategoriesClick() = navigator.navigate(Screen.Categories)
 
-    fun onTagsClick() = navigator.navigate(Screen.Tags)
-
     fun onHistoryClick() = navigator.navigate(Screen.History)
 
     fun onRulesClick() = navigator.navigate(Screen.Rules)
-
-    fun onMerchantsClick() = navigator.navigate(Screen.Merchants)
 
     fun onMessagesClick() = navigator.navigate(Screen.Onboarding(fromSettings = true))
 }

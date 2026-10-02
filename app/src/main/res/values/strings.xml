@@ -379,7 +379,6 @@
     <!-- Merchants -->
     <string name="merchants">Merchants</string>
     <string name="merchant">Merchant</string>
-    <string name="settings_merchants_summary">Each business, however its bank spells it</string>
     <string name="merchants_search">Search merchants</string>
     <string name="merchants_empty">No merchants yet. They appear as purchases arrive.</string>
     <string name="merchants_hint">A new spelling joins the merchant it reads like. If one joined the wrong merchant, open it and take that spelling out.</string>
@@ -421,10 +420,6 @@
     <string name="people_same_ai">The AI reads these as one name. Merged, they are %1$s.</string>
     <string name="people_same_merge">Merge</string>
     <string name="people_same_not">Not the same</string>
-    <plurals name="people_count">
-        <item quantity="one">%1$d person</item>
-        <item quantity="other">%1$d people</item>
-    </plurals>
     <plurals name="transfer_count">
         <item quantity="one">%1$d transfer</item>
         <item quantity="other">%1$d transfers</item>
@@ -550,6 +545,7 @@
     <string name="recurring_plan_next">Next: %1$s, %2$s</string>
     <string name="recurring_per_month">%1$s / mo</string>
     <string name="home_coming_up">Coming up</string>
+    <string name="home_coming_up_empty">Nothing due in the next month. Add a subscription or bill.</string>
     <string name="home_people_owe">People owe you</string>
     <string name="home_you_owe">You owe %1$s</string>
     <string name="due_channel">Bills and loans</string>
@@ -740,7 +736,6 @@
     <string name="asset_percent_invalid">Enter a percentage from 0 to 100</string>
     <string name="asset_delete_body">Net worth drops by its value. Its history stays in past snapshots.</string>
     <string name="zakat">Zakat</string>
-    <string name="zakat_summary">What is due, on your Hijri date</string>
     <string name="zakat_due">Zakat due</string>
     <string name="zakat_method">2.5%% of %1$s.</string>
     <string name="zakat_below_nisab">%1$s is below the nisab, so none is due.</string>
@@ -806,8 +801,9 @@
     <string name="retirement_save">Save as a scenario</string>
     <string name="retirement_no_scenarios">No scenarios yet. Save one to compare.</string>
     <string name="retirement_scenario_detail">%1$d to %2$d at %3$s%%</string>
-    <string name="retirement_plan_card">Plan it</string>
+    <string name="retirement_summary">What you will have, and what it pays you</string>
     <string name="compound">Compound interest</string>
+    <string name="compound_summary">What a sum grows to</string>
     <string name="compound_principal">Starting sum</string>
     <string name="compound_years">Years</string>
     <string name="compound_frequency">Compounded</string>
@@ -937,7 +933,6 @@
         <item quantity="other">%1$d to review</item>
     </plurals>
     <string name="tags">Tags</string>
-    <string name="settings_tags_summary">Trips and occasions, across categories</string>
     <string name="tags_empty">No tags yet. Tag a trip or an occasion to see what it cost.</string>
     <string name="tags_explain">A tag with days can take everything in them by itself, until it ends. Trips are suggested from runs of spending in another currency, worked out on the phone.</string>
     <string name="tags_none_yet">No tags yet. Name one below.</string>

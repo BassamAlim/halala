@@ -130,5 +130,7 @@ class PlanViewModel @Inject constructor(
 
     fun onRetirementClick() = navigator.navigate(Screen.Retirement)
 
+    fun onCompoundClick() = navigator.navigate(Screen.Compound)
+
     fun onAddBudgetClick() = navigator.navigate(Screen.EditBudget())
 }

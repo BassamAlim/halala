@@ -488,7 +488,7 @@ count, CSV/JSON export, and the CI and release workflows.
 
 Screens and where they come from: **Home** (Home board: mark and wordmark, wallet and banks in the
 summary-card grid, Recent; the balance card waits for budgets; the board's review pill is gone, replaced by the Inbox tab),
-**Activity** (Activity board: search, account filter chips, month In/Out, rows by day; Money flow
+**Activity** (Activity board: search, a row of plain chips to browse by (Merchants, People, Where you spend, Tags, Digests; no board), account filter chips, month In/Out, rows by day; Money flow
 waits for Phase 6), **Transaction** (Transaction detail board, minus category, tags, location
 and SMS), **Settings** (Settings board, only the rows that are true today; reached from a gear
 on Home, since the boards don't show where Settings lives), and **Plan**, **Wealth**,
@@ -516,7 +516,7 @@ Transaction detail, and, with no board, built from the system's components:
 **Categories** (add; tap to rename, change the type and the business types it takes, or
 delete), **Rule** (the form: merchant is, description contains, account, amount range →
 category and type), **Recent changes** (each with Undo), the reminder sheet in Settings, and
-**Merchants** (from Settings: every merchant, busiest first, with search) and **Merchant** (from
+**Merchants** (from Activity: every merchant, busiest first, with search) and **Merchant** (from
 Transaction detail's Merchant row, a Review card for many, or the list: rename, what was spent,
 what it is (tap to say), how the bank writes it with how each spelling joined, "Not this one",
 "Same as another merchant", its transactions). Still to come in Phase 2: web search for
@@ -526,7 +526,7 @@ the usage cap in Settings, and merchant logos and locations.
 **Phase 3 (people and recurring)** has begun: people (`Person`, `PersonAlias`, `PeopleRepository`,
 found by `applyRules`) and loans (`Loan`, `LoanEvent`, `LoansRepository`, `core/domain/Loans`).
 Screens: **People** (People board: owed to you and you owe, then Loans, open and settled, or All
-transfers, everyone the latest first with what came back less what went; reached from Wealth),
+transfers, everyone the latest first with what came back less what went; reached from Activity, Home and the loan lines of Wealth's breakdown),
 **Person** (Person board: each open loan with what is still owed, its caption and progress,
 "Send reminder" (the share sheet, so WhatsApp or SMS, with a polite message) and "Record
 repayment" (choose their transfer, or forgive what is left), "This loan" with its due date and
@@ -537,26 +537,26 @@ buttons), **Subscriptions and bills** (Recurring board: a month and a year, aler
 price rise, a missed charge and what was found, Next 30 days and Later, each with its badges;
 reached from the Plan tab's card and Home's Coming up), **Subscription or bill** (no board: the
 form, from the list or its + Add), Home's **People owe you** and **Coming up** cards (Home
-board), and the Plan tab's Subscriptions and bills card (Plan board; the rest of Plan comes with
+board; always shown, so they are a way in even when empty), and the Plan tab's Subscriptions and bills card (Plan board; the rest of Plan comes with
 Phase 4), and Transaction detail's **Split** card and sheet (no board). Still to come in
 Phase 3: the Review board's one-tap loan/split/subscription marks, linking people to IBANs and
 contacts.
 
 **Phase 4 (planning)** is built: pay cycles, budgets, savings goals, the forecast, anomaly
 alerts and digests. Screens: the **Plan** tab (Plan board:
-the cycle chip, Budgets this cycle, savings goals, Subscriptions and bills, Forecast; calculators come
+the cycle chip, Subscriptions and bills and Forecast first, Budgets this cycle, savings goals, Zakat, then Retirement and Compound interest as list rows; calculators come
 with Phase 5), Home's **balance card** (Home board and its warn/over states, with the forecast's
 "End ≈"), **Forecast** (Forecast board: the end figure and band, the balance chart drawn on a
 Canvas, left over each month with the dip's biggest payments, and "Can I afford it?"), **Budgets** and **Budget**
 (no board: the Plan board's budget rows full size, and the form), the Plan board's **goal
 cards** and **Savings goal** (no board: the form), **Alerts** (no board: a card per alert with
 Open, Normal for it and Dismiss), **Digest** (Digest board, minus net worth) and **Digests**
-(the archive, from Settings' Digests sheet).
+(the archive, from Activity and Settings' Digests sheet).
 
 **Phase 5 (wealth)** is built: the **Wealth** tab is the Net worth board (total, this month and
-year, the timeline over 3M/1Y/All, the breakdown, then Accounts, Assets, People and Zakat),
+year, the timeline over 3M/1Y/All, the breakdown, then Savings, Accounts and Assets),
 **Assets** and **Asset** (no board: the list and the form), and **Zakat** (Zakat board; reached
-from Wealth and the Plan board's Zakat card), **Retirement** (Retirement board, with
+from the Plan board's Zakat card), **Retirement** (Retirement board, with
 Scenarios), **Compound interest** (no board) and **Savings** (Savings board: terms attached to a
 savings account, `SavingsTerms` and `core/domain/Savings`; Awaeed terms run from a start for a
 tenor and roll over when they renew, expected profit is simple on the balance; Hasad pays next
@@ -574,7 +574,7 @@ the **Assistant** (see the product rule; first built as a fifth tab, now Ask beh
 no board: this cycle's spending against the total budget with its state colour, the Review
 count, and "+ Cash", which opens the lock as always and then the form on the wallet
 (`QuickAddRequest`); refreshed when the app goes to the background and after each SMS run),
-**Tags** (from Settings; a tag's form with what carries it; the Tags row on Transaction
+**Tags** (from Activity; a tag's form with what carries it; the Tags row on Transaction
 detail; no board draws them), and **Where you spend** (see the product rule).
 The widget shows amounts outside the lock: it is there only if you add it. The board's
 "See 52 transactions" link waits for a filtered feed.

@@ -69,5 +69,13 @@ class ActivityViewModel @Inject constructor(
 
     fun onMapClick() = navigator.navigate(Screen.SpendingMap)
 
+    fun onMerchantsClick() = navigator.navigate(Screen.Merchants)
+
+    fun onPeopleClick() = navigator.navigate(Screen.People)
+
+    fun onTagsClick() = navigator.navigate(Screen.Tags)
+
+    fun onDigestsClick() = navigator.navigate(Screen.Digests)
+
     private data class Filters(val query: String = "", val accountId: Long? = null)
 }

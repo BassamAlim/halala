@@ -201,7 +201,7 @@ private fun HomeContent(
             )
         }
 
-        if (state.hasLoans) SummaryCard(
+        SummaryCard(
             label = stringResource(R.string.home_people_owe),
             amount = state.owedToYou,
             currency = Globals.PRIMARY_CURRENCY,
@@ -210,7 +210,12 @@ private fun HomeContent(
             modifier = Modifier.fillMaxWidth()
         )
 
-        if (state.comingUp.isNotEmpty()) HalalaCard(label = stringResource(R.string.home_coming_up), onClick = onComingUpClick) {
+        HalalaCard(label = stringResource(R.string.home_coming_up), onClick = onComingUpClick) {
+            if (!state.isLoading && state.comingUp.isEmpty()) Text(
+                text = stringResource(R.string.home_coming_up_empty),
+                style = HalalaType.Label,
+                color = HalalaColors.TextMuted
+            )
             state.comingUp.forEach { item ->
                 Row(
                     modifier = Modifier
