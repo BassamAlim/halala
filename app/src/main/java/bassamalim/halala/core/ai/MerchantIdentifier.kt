@@ -35,12 +35,23 @@ enum class IdentifyProblem(val retry: Boolean) {
 class IdentifyFailure(val problem: IdentifyProblem, cause: Throwable? = null) : Exception(problem.name, cause)
 
 /** Groq, over HTTPS. Sends the names in [GroqProtocol.request] and nothing else. */
-class GroqIdentifier @Inject constructor(
+class GroqIdentifier @Inject constructor(private val groq: GroqHttp) : MerchantIdentifier {
+
+    override suspend fun identify(names: List<String>): List<IdentifiedAs?> {
+        val body = groq.post(GroqProtocol.request(names))
+        return runCatching { GroqProtocol.parse(body, names.size) }
+            .getOrElse { throw IdentifyFailure(IdentifyProblem.REJECTED, it) }
+    }
+}
+
+/** One chat completion from Groq: [post] sends a request body and returns the response's. */
+class GroqHttp @Inject constructor(
     private val keys: ApiKeys,
     @param:IoDispatcher private val io: CoroutineDispatcher
-) : MerchantIdentifier {
+) {
 
-    override suspend fun identify(names: List<String>): List<IdentifiedAs?> = withContext(io) {
+    @Throws(IdentifyFailure::class)
+    suspend fun post(request: String): String = withContext(io) {
         val key = keys.groq()?.takeIf { it.isNotBlank() } ?: throw IdentifyFailure(IdentifyProblem.KEY)
         val connection = URL(GroqProtocol.ENDPOINT).openConnection() as HttpsURLConnection
         try {
@@ -50,7 +61,7 @@ class GroqIdentifier @Inject constructor(
             connection.readTimeout = READ_TIMEOUT
             connection.setRequestProperty("Authorization", "Bearer $key")
             connection.setRequestProperty("Content-Type", "application/json")
-            connection.outputStream.use { it.write(GroqProtocol.request(names).encodeToByteArray()) }
+            connection.outputStream.use { it.write(request.encodeToByteArray()) }
 
             when (val code = connection.responseCode) {
                 401, 403 -> throw IdentifyFailure(IdentifyProblem.KEY)
@@ -58,9 +69,7 @@ class GroqIdentifier @Inject constructor(
                 in 500..599 -> throw IdentifyFailure(IdentifyProblem.UNREACHABLE)
                 !in 200..299 -> throw IdentifyFailure(IdentifyProblem.REJECTED, IOException("HTTP $code"))
             }
-            val body = connection.inputStream.bufferedReader().use { it.readText() }
-            runCatching { GroqProtocol.parse(body, names.size) }
-                .getOrElse { throw IdentifyFailure(IdentifyProblem.REJECTED, it) }
+            connection.inputStream.bufferedReader().use { it.readText() }
         } catch (e: IOException) {
             throw IdentifyFailure(IdentifyProblem.UNREACHABLE, e)
         } finally {

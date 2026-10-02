@@ -66,9 +66,7 @@
     <string name="activity_no_match">Nothing matches.</string>
 
     <!-- Placeholders -->
-    <string name="wealth_placeholder">Net worth, savings, funds, gold and what people owe you will live here.</string>
     <string name="wealth_accounts">Accounts and cash</string>
-    <string name="assistant_placeholder">Ask about your money in plain words here.</string>
 
     <!-- Accounts -->
     <string name="accounts_archived">Archived</string>
@@ -836,6 +834,52 @@
     <string name="flow_pick_account">Pick the account</string>
     <string name="flow_month">Month</string>
     <string name="flow_account">Account</string>
+    <string name="assistant_intro">Ask about your money: what you spent, what came in, your biggest bills, who owes whom, or whether you can afford something. Only your question goes to the AI, to read what you mean; the answer is worked out on your phone.</string>
+    <string name="assistant_ask">Ask about your money</string>
+    <string name="assistant_send">Send</string>
+    <string name="assistant_thinking">Reading your question…</string>
+    <string name="assistant_suggest_afford">Can I afford 12,000 in Nov?</string>
+    <string name="assistant_suggest_bills">Biggest bills this year</string>
+    <string name="assistant_suggest_owed">Who owes me money?</string>
+    <string name="assistant_suggest_month">How much did I spend this month?</string>
+    <string name="assistant_no_key">The assistant needs the AI to read questions, and this build has no key for it.</string>
+    <string name="assistant_offline">Couldn\'t reach the AI. Check you\'re online and ask again.</string>
+    <string name="assistant_limited">The AI\'s free limit is used up for now. Ask again in a while.</string>
+    <string name="assistant_unreadable">That didn\'t come back as something Halala could read. Try asking another way.</string>
+    <string name="assistant_unsupported">I can answer what you spent, what came in, your biggest bills, who owes whom, your balance, and whether you can afford something.</string>
+    <string name="assistant_no_amount">How much would it be? Ask again with the amount.</string>
+    <string name="assistant_unknown_topic">Nothing of yours is called “%1$s”, so this is all spending.</string>
+    <plurals name="assistant_spent">
+        <item quantity="one">spent %2$s, %1$d purchase</item>
+        <item quantity="other">spent %2$s, %1$d purchases</item>
+    </plurals>
+    <plurals name="assistant_came_in">
+        <item quantity="one">came in %2$s, %1$d time</item>
+        <item quantity="other">came in %2$s, %1$d times</item>
+    </plurals>
+    <plurals name="assistant_balance">
+        <item quantity="one">in your %1$d account now</item>
+        <item quantity="other">across your %1$d accounts now</item>
+    </plurals>
+    <string name="assistant_since">since %1$s</string>
+    <string name="assistant_between">%1$s to %2$s</string>
+    <string name="assistant_all_spending">All spending</string>
+    <string name="assistant_category">Category: %1$s</string>
+    <string name="assistant_merchant">Merchant: %1$s</string>
+    <string name="assistant_type">Kind: %1$s</string>
+    <string name="assistant_top">%1$s is %2$d%% of it.</string>
+    <string name="assistant_highest">%1$s was your highest month.</string>
+    <string name="assistant_bills">Biggest bills %1$s</string>
+    <string name="assistant_no_bills">No bills paid in that time.</string>
+    <string name="assistant_no_one_owes">No one owes you.</string>
+    <string name="assistant_you_owe">You owe</string>
+    <string name="assistant_you_owe_no_one">You don’t owe anyone.</string>
+    <string name="assistant_due">Due %1$s</string>
+    <string name="assistant_afford_once">%1$s on %2$s</string>
+    <string name="assistant_afford_monthly">%1$s a month from %2$s</string>
+    <string name="assistant_afford_yes">Yes, you stay above zero.</string>
+    <string name="assistant_afford_no">Not without going below zero.</string>
+    <string name="assistant_afford_lowest">Your lowest balance would be %1$s, on %2$s, by the forecast.</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="cadence_daily">Daily</string>

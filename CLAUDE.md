@@ -225,7 +225,7 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   category, one tap to confirm, which learns as usual); the rest is **Ask**. `applyRules`
   identifies from the bundled list first, with no call; the AI only sees merchants still unknown
   that have unfiled spending. **Only a merchant's name, as the bank wrote it (digits kept), ever
-  leaves the phone**, and never one holding your accounts' or cards' last four digits, ten or
+  leaves the phone** for identification (the assistant sends your question, see below), and never one holding your accounts' or cards' last four digits, ten or
   more digits, or an IBAN (`Identification.sendable`; those are `WITHHELD` for you). The AI is
   Groq (`qwen/qwen3.8-27b`, strict JSON schema, reasoning off), always on, with no setting. Its key is built in, not typed: `BuildConfig.GROQ_API_KEY`, from `GROQ_API_KEY` in
   `.env` locally or the repository secret of that name in CI (a build without it
@@ -387,9 +387,17 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   replace, not a merge. The history of changes (undo) and DataStore settings aren't carried.
   A new table or column that matters must be added to `ExportFile`, `Exporter` and `Importer`
   together; `ImporterTest` checks that a restored export exports again as the same file.
-- **Privacy**: no analytics, no crash reporter. The only network use is merchant identification
-  (Groq, HTTPS, always on in a build with the key: merchants' names and nothing else). Nothing about money goes
+- **Privacy**: no analytics, no crash reporter. The only network use is Groq (HTTPS, always on
+  in a build with the key): merchant identification (merchants' names and nothing else) and the
+  assistant (the question you type and today's date, nothing else). Nothing about money goes
   in DataStore (it isn't encrypted).
+- **The assistant** (Assistant tab, Assistant board) is "tool calling" without the round trip:
+  `AssistantProtocol` asks Groq to read your question into one `Ask` (a tool from `AskTool`:
+  spending, income, bills, owed, afford, balance, or unsupported; your words for the topic,
+  the AI's business type for it, the days, an amount), under a strict schema. The phone runs it
+  (`AssistantDomain`, `core/domain/Answers`: your topic matches your categories, then merchants,
+  then merchants of that business type) and words the answer; no figure, category or name of
+  yours goes back to the AI. The conversation lives in memory only.
 - The spec's global quick-add is a flat jade `QuickAddButton` on Home and Activity (the boards
   don't draw one). It opens the transaction form on the cash wallet: Out / In / Move, amount,
   account, kind, where or who, when, note.
@@ -483,4 +491,6 @@ fund and gold prices (an owner's decision, see Assets).
 for a month and an account, salary or what came in, a Sankey (`Sankey` component,
 `core/domain/MoneyFlow`) of moves to each of your accounts, what was spent from it and what
 stayed; a leg the bank called a move with no other side is "no match": "It went to someone"
-makes it a plain transfer, "Pick the account" records the other leg there and pairs them).
+makes it a plain transfer, "Pick the account" records the other leg there and pairs them) and
+the **Assistant** (Assistant board, with the Digests link; see the product rule). The board's
+"See 52 transactions" link waits for a filtered feed.
