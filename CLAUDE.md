@@ -34,7 +34,8 @@ designs disagree, ask the owner.
   Preferences for settings that aren't money
 - Navigation Compose with **type-safe routes** (`@Serializable` destinations in `core/nav/Screen.kt`)
 - WorkManager (wired to Hilt in `App`), AndroidX Biometric, Glance for the home-screen widget,
-  Bouncy Castle only for Argon2id (the backup passphrase)
+  Bouncy Castle only for Argon2id (the backup passphrase), osmdroid for the spending map
+  (OpenStreetMap tiles: no Play services, no key)
 - kotlinx.serialization for the JSON export
 - Tests: JUnit 4, Robolectric for Room, kotlinx-coroutines-test
 - Version catalog: `gradle/libs.versions.toml`. Add dependencies there, never inline.
@@ -352,6 +353,15 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   months, are "Trip to <the country of that currency>?" ("Tag the trip" makes an automatic tag
   over those days; "Not a trip" is remembered in DataStore by its key). Budgets by tag and a
   feed filtered by tag aren't built yet.
+- **Where you spend** (the spec's heatmap; no board): with "Remember where you spend" on
+  (Settings; off by default; needs location all the time, since SMS arrive while the app is
+  closed), `SmsWorker` asks Android's own location (`PlaceCapture`, no Play services) for the
+  purchases its run recorded that happened in the last 30 minutes, and keeps it
+  (`TransactionPlace`, degrees × 10⁷, accuracy; nothing worse than 500 m) in the encrypted ledger.
+  History before it was on has no places. The map (`HeatMap`, osmdroid, tiles inverted for the
+  dark theme) shows a heat of your spending by period and category, and the top places (purchases
+  within about 200 m, named by their usual merchant; `core/domain/Places`). Reached from
+  Activity's "Where you spend" chip. Turning it off can forget every place.
 - **Undo**: everything you do to filing (an answer, "always", saving, switching or deleting a
   rule, editing or deleting a category, renaming, merging or splitting a merchant, saying what a
   merchant is) is one `AuditBatch`:
@@ -393,7 +403,8 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   a restore needs: raw bank messages, account refs, balance checkpoints, full rule conditions,
   6 people with their aliases, 7 loans with their events, 8 subscriptions and bills, 9 a loan's
   split purchase, 10 budgets, 11 savings goals, 12 assets and their snapshots, 13 the zakat
-  method, 14 retirement scenarios, 15 savings terms, 16 tags and the transactions carrying them),
+  method, 14 retirement scenarios, 15 savings terms, 16 tags and the transactions carrying them,
+  17 an asset's price source, 18 the places of purchases),
   keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
 - **Encrypted backups** (Backup and export › Encrypted backups, no board): a `.halala` file
   (`core/backup/BackupFile`) is the JSON export zipped and sealed with AES-256-GCM under a key
@@ -413,7 +424,8 @@ These are decided (mostly by the spec); don't re-litigate them in code.
 - **Privacy**: no analytics, no crash reporter. Network use: Groq (HTTPS, always on in a build
   with the key) for merchant identification (merchants' names and nothing else) and the
   assistant (the question you type and today's date, nothing else); and market prices (public
-  gold and fund prices, fetched with nothing of yours, only once you link an asset). Nothing about money goes
+  gold and fund prices, fetched with nothing of yours, only once you link an asset); and the
+  spending map's OpenStreetMap tiles (the area you look at, never your purchases). Nothing about money goes
   in DataStore (it isn't encrypted).
 - **The assistant** (Assistant tab, Assistant board) is "tool calling" without the round trip:
   `AssistantProtocol` asks Groq to read your question into one `Ask` (a tool from `AskTool`:
@@ -511,8 +523,7 @@ month on this month's lowest balance, nothing under 5,000; a term maturing withi
 on Wealth and is reminded three days before; the terms form has no board), and fetched fund
 and gold prices (see Assets).
 
-**Phase 6 (delight)** is built but for the spending heatmap (it needs a location for each
-transaction, which SMS don't carry, and map tiles from the network: an owner's decision): **Money flow** (Money flow board, Activity's second segment:
+**Phase 6 (delight)** is built: **Money flow** (Money flow board, Activity's second segment:
 for a month and an account, salary or what came in, a Sankey (`Sankey` component,
 `core/domain/MoneyFlow`) of moves to each of your accounts, what was spent from it and what
 stayed; a leg the bank called a move with no other side is "no match": "It went to someone"
@@ -522,7 +533,7 @@ the **Assistant** (Assistant board, with the Digests link; see the product rule)
 no board: this cycle's spending against the total budget with its state colour, the Review
 count, and "+ Cash", which opens the lock as always and then the form on the wallet
 (`QuickAddRequest`); refreshed when the app goes to the background and after each SMS run),
-and **Tags** (from Settings; a tag's form with what carries it; the Tags row on Transaction
-detail; no board draws them).
+**Tags** (from Settings; a tag's form with what carries it; the Tags row on Transaction
+detail; no board draws them), and **Where you spend** (see the product rule).
 The widget shows amounts outside the lock: it is there only if you add it. The board's
 "See 52 transactions" link waits for a filtered feed.

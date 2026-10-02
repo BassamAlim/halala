@@ -32,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
+import bassamalim.halala.features.spendingMap.PlacesSettingRow
 import androidx.compose.foundation.layout.FlowRow
 import bassamalim.halala.core.ui.components.HalalaChip
 import bassamalim.halala.core.ui.components.ChipStyle
@@ -94,6 +95,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 divider = true,
                 onClick = viewModel::onTagsClick
             )
+            PlacesSettingRow(divider = true)
             ListRow(
                 title = stringResource(R.string.merchants),
                 subtitle = stringResource(R.string.settings_merchants_summary),

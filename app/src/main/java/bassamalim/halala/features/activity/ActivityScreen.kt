@@ -81,7 +81,8 @@ fun ActivityScreen(viewModel: ActivityViewModel = hiltViewModel()) {
         state = state,
         onQueryChange = viewModel::onQueryChange,
         onAccountFilterClick = viewModel::onAccountFilterClick,
-        onTransactionClick = viewModel::onTransactionClick
+        onTransactionClick = viewModel::onTransactionClick,
+        onMapClick = viewModel::onMapClick
     )
 }
 
@@ -91,7 +92,8 @@ private fun ActivityContent(
     state: ActivityUiState,
     onQueryChange: (String) -> Unit,
     onAccountFilterClick: (Long?) -> Unit,
-    onTransactionClick: (Long) -> Unit
+    onTransactionClick: (Long) -> Unit,
+    onMapClick: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -119,6 +121,9 @@ private fun ActivityContent(
                 modifier = Modifier.padding(top = Spacing.xs),
                 horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
             ) {
+                item {
+                    HalalaChip(label = stringResource(R.string.map_title), style = ChipStyle.Outline, onClick = onMapClick)
+                }
                 item {
                     HalalaChip(
                         label = stringResource(R.string.all_accounts),

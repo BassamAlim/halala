@@ -283,6 +283,12 @@ class MigrationsTest {
         helper.runMigrationsAndValidate(DB, 18, true, *MIGRATIONS).close()
     }
 
+    @Test
+    fun `18 to 19 adds places and matches the schema`() {
+        helper.createDatabase(DB, 18).use { }
+        helper.runMigrationsAndValidate(DB, 19, true, *MIGRATIONS).close()
+    }
+
     private companion object {
         const val DB = "migration-test"
     }

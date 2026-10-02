@@ -90,6 +90,9 @@ sealed interface Screen {
     /** Adding an asset, or changing [id]. */
     @Serializable data class EditAsset(val id: Long = 0) : Screen
 
+    /** Where you spend: the map. */
+    @Serializable data object SpendingMap : Screen
+
     /** Tags, and what the spending suggests. */
     @Serializable data object Tags : Screen
 

@@ -104,6 +104,9 @@ object DataSourceModule {
     fun provideTagsDao(database: AppDatabase) = database.tagsDao()
 
     @Provides @Singleton
+    fun providePlacesDao(database: AppDatabase) = database.placesDao()
+
+    @Provides @Singleton
     fun provideRestoreDao(database: AppDatabase) = database.restoreDao()
 
     @Provides @Singleton

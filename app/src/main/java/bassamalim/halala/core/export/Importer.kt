@@ -25,6 +25,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsTerms
 import bassamalim.halala.core.data.dataSources.room.entities.Tag
 import bassamalim.halala.core.data.dataSources.room.entities.TransactionTag
+import bassamalim.halala.core.data.dataSources.room.entities.TransactionPlace
 import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
 import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
@@ -74,7 +75,8 @@ class Importer @Inject constructor(
         scenarios = snapshot.scenarios,
         savingsTerms = snapshot.savingsTerms,
         tags = snapshot.tags,
-        transactionTags = snapshot.transactionTags
+        transactionTags = snapshot.transactionTags,
+        places = snapshot.places
     )
 
     companion object {
@@ -428,6 +430,9 @@ class Importer @Inject constructor(
                 tags = tags,
                 transactionTags = file.transactionTags.map {
                     TransactionTag(transactionIds.named(it.transactionUid, "transaction"), tagIds.named(it.tagUid, "tag"), it.removed)
+                },
+                places = file.places.map {
+                    TransactionPlace(transactionIds.named(it.transactionUid, "transaction"), it.latitudeE7, it.longitudeE7, it.accuracyMeters)
                 }
             )
         }

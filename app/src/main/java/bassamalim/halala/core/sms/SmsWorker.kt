@@ -11,6 +11,8 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import bassamalim.halala.core.ai.AiScheduler
 import bassamalim.halala.core.data.repositories.TagsRepository
+import bassamalim.halala.core.places.PlaceCapture
+import java.time.Clock
 import bassamalim.halala.core.widget.HalalaWidget
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -29,7 +31,9 @@ class SmsWorker @AssistedInject constructor(
     @Assisted params: WorkerParameters,
     private val ingest: SmsIngest,
     private val ai: AiScheduler,
-    private val tags: TagsRepository
+    private val tags: TagsRepository,
+    private val placeCapture: PlaceCapture,
+    private val clock: Clock
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
@@ -39,10 +43,12 @@ class SmsWorker @AssistedInject constructor(
             ingest.store(sender, body, Instant.ofEpochMilli(inputData.getLong(KEY_RECEIVED_AT, 0)))
         if (inputData.getBoolean(KEY_IMPORT_INBOX, false)) importInbox()
 
+        val started = clock.instant()
         ingest.processPending(retry = inputData.getBoolean(KEY_RETRY, false))
         // New merchants the rules and the bundled list couldn't place go to the AI, when it is on.
         ai.request()
         tags.applyActive()
+        placeCapture.captureFor(started)
         HalalaWidget.refresh(applicationContext)
         return Result.success()
     }

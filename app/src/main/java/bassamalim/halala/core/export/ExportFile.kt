@@ -55,10 +55,12 @@ data class ExportFile(
     val savingsTerms: List<ExportSavingsTerms> = emptyList(),
     /** Since schema 16: tags, and which transactions carry them. */
     val tags: List<ExportTag> = emptyList(),
-    val transactionTags: List<ExportTransactionTag> = emptyList()
+    val transactionTags: List<ExportTransactionTag> = emptyList(),
+    /** Since schema 18: where purchases were made, while you had it remembered. */
+    val places: List<ExportPlace> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 17
+        const val SCHEMA_VERSION = 18
     }
 }
 
@@ -341,6 +343,10 @@ data class ExportTag(
 /** A transaction carries a tag; `removed` is one you took off a transaction its days cover. */
 @Serializable
 data class ExportTransactionTag(val transactionUid: String, val tagUid: String, val removed: Boolean)
+
+/** Where the phone was when a purchase's SMS arrived: degrees × 10⁷, and accuracy in metres. */
+@Serializable
+data class ExportPlace(val transactionUid: String, val latitudeE7: Int, val longitudeE7: Int, val accuracyMeters: Int)
 
 @Serializable
 data class ExportInternalTransfer(

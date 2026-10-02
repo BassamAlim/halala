@@ -26,6 +26,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsTerms
 import bassamalim.halala.core.data.dataSources.room.entities.Tag
 import bassamalim.halala.core.data.dataSources.room.entities.TransactionTag
+import bassamalim.halala.core.data.dataSources.room.entities.TransactionPlace
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.dataSources.room.entities.ZakatProfile
 
@@ -63,7 +64,8 @@ interface RestoreDao {
         scenarios: List<RetirementScenario>,
         savingsTerms: List<SavingsTerms>,
         tags: List<Tag>,
-        transactionTags: List<TransactionTag>
+        transactionTags: List<TransactionTag>,
+        places: List<TransactionPlace>
     ) {
         // What points at a row goes before the row. The history of changes names rows by the
         // ids they had, so it can't outlive them.
@@ -71,6 +73,7 @@ interface RestoreDao {
         clearAuditBatches()
         clearSavingsTerms()
         clearTransactionTags()
+        clearPlaces()
         clearTags()
         clearDismissedAlerts()
         clearLoanEvents()
@@ -121,6 +124,7 @@ interface RestoreDao {
         insertSavingsTerms(savingsTerms)
         insertTags(tags)
         insertTransactionTags(transactionTags)
+        insertPlaces(places)
     }
 
     @Query("DELETE FROM audit_changes") suspend fun clearAuditChanges()
@@ -147,6 +151,7 @@ interface RestoreDao {
     @Query("DELETE FROM savings_terms") suspend fun clearSavingsTerms()
     @Query("DELETE FROM transaction_tags") suspend fun clearTransactionTags()
     @Query("DELETE FROM tags") suspend fun clearTags()
+    @Query("DELETE FROM transaction_places") suspend fun clearPlaces()
     @Query("DELETE FROM person_aliases") suspend fun clearPersonAliases()
     @Query("DELETE FROM people") suspend fun clearPeople()
     @Query("DELETE FROM categories") suspend fun clearCategories()
@@ -178,4 +183,5 @@ interface RestoreDao {
     @Insert suspend fun insertSavingsTerms(rows: List<SavingsTerms>)
     @Insert suspend fun insertTags(rows: List<Tag>)
     @Insert suspend fun insertTransactionTags(rows: List<TransactionTag>)
+    @Insert suspend fun insertPlaces(rows: List<TransactionPlace>)
 }

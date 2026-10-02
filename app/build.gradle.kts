@@ -134,6 +134,8 @@ dependencies {
     implementation(libs.androidx.biometric)
     // The home-screen widget.
     implementation(libs.androidx.glance.appwidget)
+    // The spending map: OpenStreetMap tiles, no Play services, no key.
+    implementation(libs.osmdroid.android)
     // Argon2id for the encrypted backup's passphrase (nothing else of it is used).
     implementation(libs.bouncycastle.prov)
 

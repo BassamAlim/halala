@@ -25,6 +25,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsTerms
 import bassamalim.halala.core.data.dataSources.room.entities.Tag
 import bassamalim.halala.core.data.dataSources.room.entities.TransactionTag
+import bassamalim.halala.core.data.dataSources.room.entities.TransactionPlace
 import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
 import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
@@ -41,6 +42,7 @@ import bassamalim.halala.core.data.repositories.PlannerRepository
 import bassamalim.halala.core.data.repositories.RecurringRepository
 import bassamalim.halala.core.data.repositories.SavingsRepository
 import bassamalim.halala.core.data.repositories.TagsRepository
+import bassamalim.halala.core.data.repositories.PlacesRepository
 import bassamalim.halala.core.data.repositories.RestoreRepository
 import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
@@ -157,7 +159,8 @@ class ImporterTest {
             Tag(1, "tag-trip", "Trip to Türkiye", LocalDate.parse("2026-09-12"), LocalDate.parse("2026-09-19"), auto = true, createdAt = at),
             Tag(2, "tag-wedding", "Wedding", createdAt = at)
         ),
-        transactionTags = listOf(TransactionTag(31, 1), TransactionTag(31, 2), TransactionTag(34, 1, removed = true))
+        transactionTags = listOf(TransactionTag(31, 1), TransactionTag(31, 2), TransactionTag(34, 1, removed = true)),
+        places = listOf(TransactionPlace(31, 247_136_400, 466_753_100, 25))
     )
 
     private val json = Exporter.json(snapshot, appVersion = "0.2.0", now = at)
@@ -188,6 +191,7 @@ class ImporterTest {
         PlannerRepository(db.scenariosDao(), db.accountsDao(), db.assetsDao(), db.transactionsDao(), LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK), TEST_CLOCK),
         SavingsRepository(db.savingsDao(), db.accountsDao(), db.transactionsDao(), TEST_CLOCK),
         TagsRepository(db.tagsDao(), db.transactionsDao(), TEST_CLOCK),
+        PlacesRepository(db.placesDao()),
         TEST_CLOCK
     )
 

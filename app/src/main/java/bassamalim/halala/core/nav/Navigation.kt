@@ -41,6 +41,7 @@ import bassamalim.halala.features.savings.SavingsScreen
 import bassamalim.halala.features.backup.BackupScreen
 import bassamalim.halala.features.tags.EditTagScreen
 import bassamalim.halala.features.tags.TagsScreen
+import bassamalim.halala.features.spendingMap.SpendingMapScreen
 import bassamalim.halala.features.savings.SavingsTermsScreen
 import bassamalim.halala.features.retirement.RetirementScreen
 import bassamalim.halala.features.digest.DigestScreen
@@ -142,6 +143,8 @@ fun NavGraph(navController: NavHostController, startDestination: Screen) {
         screen<Screen.Backup> { BackupScreen() }
 
         screen<Screen.Tags> { TagsScreen() }
+
+        screen<Screen.SpendingMap> { SpendingMapScreen() }
 
         screen<Screen.EditTag> { EditTagScreen() }
 

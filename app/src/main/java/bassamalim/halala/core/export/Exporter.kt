@@ -23,6 +23,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsTerms
 import bassamalim.halala.core.data.dataSources.room.entities.Tag
 import bassamalim.halala.core.data.dataSources.room.entities.TransactionTag
+import bassamalim.halala.core.data.dataSources.room.entities.TransactionPlace
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.dataSources.room.entities.ZakatProfile
 import bassamalim.halala.core.data.repositories.AccountsRepository
@@ -38,6 +39,7 @@ import bassamalim.halala.core.data.repositories.RecurringRepository
 import bassamalim.halala.core.data.repositories.SavingsRepository
 import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.data.repositories.TagsRepository
+import bassamalim.halala.core.data.repositories.PlacesRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
 import bassamalim.halala.core.data.repositories.ZakatRepository
 import bassamalim.halala.core.domain.Money
@@ -81,7 +83,8 @@ data class LedgerSnapshot(
     val scenarios: List<RetirementScenario> = emptyList(),
     val savingsTerms: List<SavingsTerms> = emptyList(),
     val tags: List<Tag> = emptyList(),
-    val transactionTags: List<TransactionTag> = emptyList()
+    val transactionTags: List<TransactionTag> = emptyList(),
+    val places: List<TransactionPlace> = emptyList()
 ) {
     /** The merchant each transaction's title names, by transaction id. */
     fun merchantOf(): Map<Long, Merchant> {
@@ -113,6 +116,7 @@ class Exporter @Inject constructor(
     private val plannerRepository: PlannerRepository,
     private val savingsRepository: SavingsRepository,
     private val tagsRepository: TagsRepository,
+    private val placesRepository: PlacesRepository,
     private val clock: Clock
 ) {
 
@@ -142,7 +146,8 @@ class Exporter @Inject constructor(
         scenarios = plannerRepository.getScenarios(),
         savingsTerms = savingsRepository.getAll(),
         tags = tagsRepository.getAll(),
-        transactionTags = tagsRepository.getRows()
+        transactionTags = tagsRepository.getRows(),
+        places = placesRepository.getAll()
     )
 
     fun fileStem(): String = "halala-${clock.instant().atZone(clock.zone).toLocalDate()}"
@@ -399,6 +404,9 @@ class Exporter @Inject constructor(
                     snapshot.transactionTags
                         .sortedWith(compareBy({ it.transactionId }, { it.tagId }))
                         .map { ExportTransactionTag(transactionUids.getValue(it.transactionId), tagUids.getValue(it.tagId), it.removed) }
+                },
+                places = snapshot.places.sortedBy { it.transactionId }.map {
+                    ExportPlace(transactionUids.getValue(it.transactionId), it.latitudeE7, it.longitudeE7, it.accuracyMeters)
                 }
             )
 

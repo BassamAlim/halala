@@ -975,6 +975,33 @@
     <string name="asset_gold_market">Today\'s market price</string>
     <string name="asset_gold_mine">I\'ll type it</string>
     <string name="asset_gold_failed">Couldn\'t get today\'s gold price. Check you\'re online.</string>
+    <string name="map_title">Where you spend</string>
+    <string name="map_off">Halala doesn\'t know where you spend yet. Turn on Remember where you spend, and each purchase from then on is placed where your phone was when its SMS came.</string>
+    <string name="map_turn_on">Turn it on in Settings</string>
+    <string name="map_month">This month</string>
+    <string name="map_three_months">3 months</string>
+    <string name="map_year">A year</string>
+    <string name="map_all">All</string>
+    <string name="map_all_categories">All categories</string>
+    <string name="map_empty">No placed purchases here yet.</string>
+    <plurals name="map_summary">
+        <item quantity="one">%1$d purchase placed, %2$s</item>
+        <item quantity="other">%1$d purchases placed, %2$s</item>
+    </plurals>
+    <plurals name="map_visits">
+        <item quantity="one">%1$d purchase</item>
+        <item quantity="other">%1$d purchases</item>
+    </plurals>
+    <string name="map_privacy">Places stay on your phone. The map\'s tiles come from OpenStreetMap, which sees the area you look at, never your purchases.</string>
+    <string name="places_title">Remember where you spend</string>
+    <string name="places_on">On: purchases are placed as their SMS arrive</string>
+    <string name="places_off">Off</string>
+    <string name="places_explain">When a purchase\'s SMS arrives, Halala notes where your phone is, so you can see where you spend on a map. Only purchases from now on, and only those whose SMS come within half an hour. Places are kept in the encrypted ledger and never sent anywhere. Android asks to allow location all the time, because the SMS arrives while Halala is closed.</string>
+    <string name="places_denied">It needs location allowed all the time. You can allow it in the app\'s settings, then turn it on again.</string>
+    <string name="places_turn_on">Turn it on</string>
+    <string name="places_turn_off">Turn it off</string>
+    <string name="places_see_map">See the map</string>
+    <string name="places_forget">Turn off and forget every place</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="cadence_daily">Daily</string>
