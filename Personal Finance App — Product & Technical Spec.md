@@ -11,7 +11,7 @@ A single-user Android app that reads bank SMS, turns each one into a structured 
 - Near-zero manual entry: every SMS becomes a transaction automatically; only low-confidence items need a tap.
 - Never teach it twice: every correction becomes a rule that applies forward *and* backward over history.
 - One place for cash flow, loans, subscriptions, bills, savings, investments, gold and net worth.
-- Private by default: all data on-device; only minimal, scrubbed text leaves the phone for AI.
+- Private by default: all data on-device; for AI, only the names of shops, as your bank writes them, ever leave the phone.
 
 **Design principles**
 
@@ -63,7 +63,7 @@ One `LlmProvider` interface with implementations for Groq and Gemini, selectable
 
 | Provider / model | Free-tier limits | Privacy | Role in the app |
 | --- | --- | --- | --- |
-| Groq `qwen/qwen3.8-27b` | 30 requests/min, 1,000/day, 8K tokens/min, 200K tokens/day ([Groq docs](https://console.groq.com/docs/rate-limits)) | Check Groq's data policy before enabling (open question) | **Primary**: classification, merchant normalisation, assistant |
+| Groq `qwen/qwen3.8-27b` | 30 requests/min, 1,000/day, 8K tokens/min, 200K tokens/day ([Groq docs](https://console.groq.com/docs/rate-limits)) | Settled: only merchant names are sent, and Groq doesn't train on API inputs | **Primary**: classification, merchant normalisation, assistant |
 | Gemini Flash-Lite (3.1 / 3.5) | Free tier available; free-tier content **is** used to improve Google's products ([Gemini pricing](https://ai.google.dev/gemini-api/docs/pricing)) | Free tier: shared with Google; paid tier: not shared | **Fallback** when Groq is rate-limited or down; optional merchant lookup with Google Search/Maps grounding |
 
 **Web search**: Tavily (free plan, 1,000 credits a month) for identifying unknown merchants, with its own key and monthly credit counter in settings.
@@ -73,7 +73,7 @@ One `LlmProvider` interface with implementations for Groq and Gemini, selectable
 - If free tiers disappear, Gemini 3.1 Flash-Lite paid costs US$0.25 per million input tokens and US$1.50 per million output tokens, which keeps this app far below US$5/month.
 - A monthly token counter and hard cap are shown in settings.
 
-**What leaves the phone:** merchant descriptor, amount, currency, date, bank, and (optionally) city. Never: account or card numbers, balances, names of people, OTPs. A scrubber masks digit runs of 4+ and known name fields before any call.
+**What leaves the phone:** only a merchant's name as the bank wrote it ("PANDA 1042 RIYADH"), for purchases, refunds and bills. Its digits are kept: they are part of how the bank names the shop. Never: amounts, dates, accounts, balances, your categories, names of people (a transfer's title), OTPs, whole SMS. As a safeguard against a parser capturing too much, a name holding one of your accounts' last four digits or an IBAN is never sent.
 
 ## Data model
 
@@ -86,10 +86,10 @@ Everything hangs off two tables: **RawMessage** (the untouched SMS, kept forever
 | RawMessage | sender, body, received time, hash, parse status, parser version | Source of truth; re-parsable |
 | Transaction | account, direction (debit/credit), amount, currency, SAR amount, time, kind, merchant, counterparty, category, expense type, tags, note, location, confidence, review state, raw message link | The core record |
 | Transaction kind | purchase, refund, transfer-out, transfer-in, internal-transfer, salary, ATM withdrawal, cash deposit, fee, bill payment, investment buy/sell, savings deposit/withdrawal, loan-given, loan-received, loan-repayment | Drives which screens and totals include it |
-| Merchant | canonical name, aliases (raw descriptors), default category, logo, website, location | "ABC TRDG EST 1234" and "ABC TRADING" both map to one merchant |
+| Merchant | canonical name, aliases (raw descriptors), business type (and who identified it: the bundled list, AI or you), logo, website, location | "ABC TRDG EST 1234" and "ABC TRADING" both map to one merchant |
 | Counterparty | display name, phone contact link, known IBANs / account names | People you transfer to or lend to |
 | InternalTransfer | out-leg transaction, in-leg transaction, match confidence | Pairs the two sides of a move between your own accounts |
-| Category | name, icon, colour | One level, e.g. Groceries |
+| Category | name, icon, colour, default expense type, business types it takes | One level, e.g. Groceries takes supermarkets |
 | ExpenseType | fixed / variable × essential / discretionary | Second axis, independent of category |
 | Tag | name, colour, active date range (optional) | e.g. "Trip to Istanbul", "Wedding" |
 | Rule | conditions (JSON), actions (JSON), source (manual, learned, AI), hit count, created from transaction, enabled | The learning memory; visible and editable |
@@ -114,11 +114,11 @@ Everything hangs off two tables: **RawMessage** (the untouched SMS, kept forever
 Every SMS runs through the same six stages whether it arrives live or from the back-import; only stage 6 differs (live items notify, historic items are batched).
 
 1. **Filter.** Keep only messages from known bank sender IDs. Drop OTPs, marketing and login alerts by keyword ("OTP", "رمز التحقق", "كلمة المرور"), but keep declined-transaction alerts as a separate type (useful for anomaly detection).
-2. **Parse.** A per-bank parser (regex templates, Arabic and English variants) extracts amount, currency, direction, account last-4, merchant descriptor, counterparty name/IBAN, balance, date and time. Unparseable messages go to the LLM with a strict JSON schema, and the result is saved as a *new template candidate* so the next similar SMS is parsed locally.
+2. **Parse.** A per-bank parser (regex templates, Arabic and English variants) extracts amount, currency, direction, account last-4, merchant descriptor, counterparty name/IBAN, balance, date and time. Unparseable messages are kept with a parse-failure status and never sent to the LLM (a whole SMS holds amounts and balances); the raw SMS stays, so they parse once a template for the new format is added.
 3. **Route.** Last-4 digits or IBAN suffix map to one of your named accounts. Unknown last-4 → prompt once: "Which account is ••1234?"
 4. **Deduplicate.** Same account + amount + time within 3 minutes + similar body = one transaction (banks sometimes send two SMS for one card purchase).
 5. **Pair internal transfers.** An outgoing transfer on one of your accounts and an incoming credit of the same amount on another of your accounts within 48 hours (tighter when names/IBANs match) are linked as one InternalTransfer. These are excluded from spending and income totals and shown only in the Money Flow view.
-6. **Classify.** Run the rule engine, then AI for what rules can't settle (see *AI & learning*). Assign merchant, category, expense type, tags, and kind (loan, subscription, bill, salary…).
+6. **Classify.** Run the rule engine, then identify the merchants rules can't settle (the bundled list, then AI) and file them by business type (see *AI & learning*). Assign merchant, category, expense type, tags, and kind (loan, subscription, bill, salary…).
 
 **Parser test suite.** Each bank parser ships with fixture SMS (masked real examples) and expected output, run in CI. This matters more than any other test in the project: banks change SMS formats without warning. A parse-failure rate above 5% for a sender in a week raises an in-app alert.
 
@@ -128,7 +128,7 @@ You will have thousands of historic SMS; nobody reviews those one by one. The pl
 
 1. **Import and parse everything** (stages 1–5). Parsing is deterministic and free, so all historic amounts, accounts and balances are correct immediately.
 2. **Cluster by merchant descriptor.** Group transactions by normalised descriptor (lowercase, strip branch numbers, terminal IDs and city suffixes). Thousands of transactions typically collapse into a few hundred merchants, and the top \~50 cover most of the volume.
-3. **Classify merchants, not transactions.** Send each *cluster* to the LLM once (descriptor, count, typical amount, time-of-day pattern), in batches of \~40 per request, to get a canonical name, category, expense type and confidence. That is a few dozen requests in total, well inside the free tier.
+3. **Identify merchants, not transactions.** Send each *cluster's* name to the LLM once, in batches of \~40 names per request, to get a canonical name, business type and confidence; the app turns the business type into a category and expense type itself. Well-known merchants are identified by the bundled list without a call. That is a few dozen requests in total, well inside the free tier.
 4. **Detect patterns in bulk.** Recurring amounts to the same merchant → subscription/bill candidates. Regular same-day credits → salary. Repeated transfers to the same person → counterparty.
 5. **Review by impact.** The review inbox shows *clusters*, sorted by total SAR affected: "Panda Retail — 214 transactions, SAR 18,400 → Groceries?" One tap confirms all 214 and creates a rule.
 6. **Retroactive propagation.** Any rule you create or edit, at any time in the future, offers: "Apply to 37 past transactions too?" (default yes, with a preview). History keeps getting better as you use the app.
@@ -150,32 +150,43 @@ Only low-confidence items reach you; each correction loops back as a rule, so th
 
 The rule engine is the memory; the LLM is the fallback. Over time the share of transactions needing AI should fall toward zero, which also keeps costs at zero.
 
+The AI only identifies: given a merchant's name, it says what the business is. Which of your categories that is, its expense type, and how sure the app is are decided on the phone, by code. A fact like "Panda is a supermarket" never goes out of date, so each merchant is asked about once, ever.
+
 ### Merchant resolution
 
 1. Normalise the descriptor and look it up in local Merchant aliases. Hit → done.
 2. Fuzzy match (token similarity ≥ 0.85) against known merchants, boosted if the stored location is within 300 m of that merchant's past locations.
-3. LLM call with descriptor, amount, time, city: returns canonical name, likely business type, category, confidence. If the LLM's confidence is below 0.80, it gets a web search tool (Tavily) and looks the descriptor up online before answering (see below).
-4. The result becomes a new alias, so the same descriptor never costs another call.
+3. A new merchant is looked up in a bundled list of well-known Saudi merchants (Panda, Tamimi, Othaim, Jahez, HungerStation, STC, Aldrees, Nahdi, Jarir…), which gives its name and business type with no call.
+4. Otherwise, an LLM call with the merchant's name alone: returns canonical name, business type (one of the app's list, or unknown) and confidence. If the LLM's confidence is below 0.80, it gets a web search tool (Tavily) and looks the name up online before answering (see below).
+5. The result is kept on the merchant, so the same merchant never costs another call.
+
+### Business types and categories
+
+- A fixed list of business types (supermarket, restaurant, café, food delivery, fuel station, pharmacy, clinic, telecom, utility, government service, airline, hotel, ride-hailing, online marketplace, electronics, clothing, …, unknown). The LLM must answer from it (a strict JSON schema).
+- Each category takes some business types (seeded: supermarket → Groceries, café → Restaurants, food delivery → Delivery, fuel station → Fuel, …). A type belongs to one category at most; you move types between categories on the Categories screen.
+- The expense type is the category's own.
+- A mixed type (department store, online marketplace) or unknown never files on its own: it is asked.
+- You can correct a merchant's business type on its screen; it then files as you said.
 
 ### Web search for unknown stores
 
 When a descriptor is cryptic ("ALMTRF TRDG EST 0412"), the AI searches the web to find out what the business actually is.
 
 - **Provider**: Tavily Search API behind a `WebSearchProvider` interface. A basic search costs 1 credit and the free plan includes 1,000 credits a month; pay-as-you-go is US$0.008 per credit ([Tavily docs](https://docs.tavily.com/documentation/api-credits)).
-- **How it runs**: the LLM calls `webSearch(query)` as a tool. The app builds queries from the cleaned descriptor plus city and "Saudi Arabia", in English and in Arabic where the descriptor suggests it (e.g. "مؤسسة المطرف للتجارة الرياض"). The LLM reads the top results and returns canonical name, business type, category, website and confidence.
+- **How it runs**: the LLM calls `webSearch(query)` as a tool. The app builds queries from the merchant's name plus "Saudi Arabia", in English and in Arabic where the name suggests it (e.g. "مؤسسة المطرف للتجارة الرياض"). The LLM reads the top results and returns canonical name, business type, website and confidence.
 - **Evidence shown**: the review card says "Found online: Al-Mutref Trading, a building-materials store in Riyadh" with the source link, so you can judge the match.
 - **Search once per merchant, ever**: the result is saved as a Merchant alias; later transactions from that descriptor never trigger another search.
 - **Budget**: live use is typically a handful of new merchants a week. For the back-import, clusters are searched in order of total SAR spent, capped at about 800 searches a month, and the rest queue for the next month's credits; small one-offs are never searched.
-- **Privacy**: only the cleaned descriptor and city are sent. No amounts, dates, account numbers or names of people.
+- **Privacy**: only the merchant's name is sent. No amounts, dates, account numbers or names of people.
 - **Fallback**: Gemini with Google Search/Maps grounding can be enabled as a second option (off by default, because free-tier Gemini content is used to improve Google's products).
 
 ### Confidence tiers
 
 | Tier | Condition | Behaviour |
 | --- | --- | --- |
-| Auto | Matched by a user-confirmed rule, or AI confidence ≥ 0.90 and the merchant is already known | Filed silently; visible in the feed with a small "auto" badge |
-| Suggest | AI confidence 0.60–0.90, or a new merchant | Filed provisionally, added to the review inbox with the suggestion pre-selected |
-| Ask | Confidence < 0.60, or a kind the app cannot infer (loan, split, reimbursable) | Added to the inbox with no default |
+| Auto | Matched by a rule; or identified by the bundled list, or by AI at ≥ 0.90, as a business type a category takes | Filed by an AI rule ("Merchant is Panda → Groceries"); visible in the feed with a small "auto" badge, and the rule can be turned off |
+| Suggest | Identified by AI at 0.60–0.90 as a type a category takes | Added to the review inbox with the category pre-selected and the evidence ("Identified as a supermarket") |
+| Ask | Confidence < 0.60, unknown, a mixed type, a type no category takes, or a kind the app cannot infer (loan, split, reimbursable) | Added to the inbox with no default |
 
 Thresholds are adjustable in settings. The app tracks how often you accept each tier's suggestions and nudges thresholds to keep the inbox small without losing accuracy.
 
@@ -373,7 +384,7 @@ Build the ledger core first and make it trustworthy; every later feature reads f
 
 1. **Phase 0 — Foundations.** Repo, GitHub Actions (build, test, signed release), Room + SQLCipher, biometric lock, accounts screen, manual transactions, cash wallet, CSV/JSON export.
 2. **Phase 1 — SMS core.** Live SMS receiver, parsers and fixture tests for all five banks plus Al Rajhi Capital, account routing by last-4, dedupe, internal transfer pairing, balance checkpoints, transactions feed, back-import.
-3. **Phase 2 — Classification & learning.** Categories and expense types, rule engine, Groq integration with scrubbing, merchant clustering and cluster review, review inbox with confidence tiers, review reminders with snooze, rules screen, retroactive rule application, audit log.
+3. **Phase 2 — Classification & learning.** Categories and expense types, rule engine, business types, Groq merchant identification (names only), merchant clustering and cluster review, review inbox with confidence tiers, review reminders with snooze, rules screen, retroactive rule application, audit log.
 4. **Phase 3 — People & recurring.** Counterparties, transfers ledger, loans and repayments, splits, subscription detection, bills with custom durations and reminders.
 5. **Phase 4 — Planning.** Pay-cycle detection, budgets and savings goals, forecasting and "can I afford", anomaly alerts, weekly/monthly/yearly digests.
 6. **Phase 5 — Wealth.** Fund holdings and NAV fetcher, gold with daily price, other assets, net worth snapshots and timeline, zakat calculator, compound interest and retirement planner.
@@ -383,7 +394,7 @@ Later ideas: receipt OCR, email receipts, bank statement PDF import, warranty va
 
 **Open questions**
 
-- [ ] Groq data-retention policy: confirm it is acceptable before sending any SMS-derived text.
+- [ ] Groq data-retention policy: decided, acceptable. Only merchant names are sent, so retention doesn't matter, and Groq doesn't train on API inputs ([Your data in GroqCloud](https://console.groq.com/docs/your-data)).
 - [ ] Zakat year: decided, Hijri.
 - [ ] App name: decided, Halala · هللة. Icon: a single coin.
 - [ ] Exact SMS formats per bank: left to the development agent, collected from the phone's inbox during Phase 1.
@@ -392,7 +403,7 @@ Later ideas: receipt OCR, email receipts, bank statement PDF import, warranty va
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
-| Banks change SMS formats | Missed or misread transactions | Fixture tests in CI, parse-failure alerts, LLM fallback that proposes new templates, balance-mismatch detection |
+| Banks change SMS formats | Missed or misread transactions | Fixture tests in CI, parse-failure alerts, raw SMS kept for re-parsing once a template is added, balance-mismatch detection |
 | Free AI tiers shrink or vanish | Classification stops | Provider interface with fallback, rules handle most traffic, paid Flash-Lite stays well under US$5/month |
 | Fund price scraping breaks | Stale portfolio value | Show price date, alert when stale over 7 days, manual entry fallback |
 | Android restricts SMS access further | Core intake breaks | Sideloading avoids Play policy; keep a notification-listener intake as a backup path |
