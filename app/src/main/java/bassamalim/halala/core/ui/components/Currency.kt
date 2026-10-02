@@ -15,6 +15,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.unit.em
 import bassamalim.halala.R
 import bassamalim.halala.core.Globals
@@ -68,3 +69,28 @@ fun currencyInlineContent(color: Color): Map<String, InlineTextContent> = mapOf(
 
 /** The sign's height against the font size: about a capital's, so it reads as a symbol, not a word. */
 private const val RIYAL_HEIGHT = 0.8f
+
+/** Where [MoneyText] puts the amount in a sentence: pass it as the string's money argument. */
+const val MONEY_MARK = "\u0000"
+
+/**
+ * A sentence quoting money, the amount set as numbers are and followed by its currency (the
+ * riyal sign for SAR): "Khalid owes you 1,000.00 ⃁ from 12 Sep." [text] holds [MONEY_MARK]
+ * where the amount goes.
+ */
+@Composable
+fun MoneyText(text: String, amount: String, currency: String, style: TextStyle, color: Color, modifier: Modifier = Modifier) {
+    val (before, after) = text.split(MONEY_MARK, limit = 2).let { it[0] to it.getOrElse(1) { "" } }
+    Text(
+        text = buildAnnotatedString {
+            append(before)
+            append(amount)
+            appendCurrency(currency)
+            append(after)
+        },
+        inlineContent = currencyInlineContent(color),
+        style = style,
+        color = color,
+        modifier = modifier
+    )
+}

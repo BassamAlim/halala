@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,6 +28,7 @@ import bassamalim.halala.core.enums.AmountTone
 import bassamalim.halala.core.ui.components.Avatar
 import bassamalim.halala.core.ui.components.ButtonKind
 import bassamalim.halala.core.ui.components.ConfirmSheet
+import bassamalim.halala.core.ui.components.DateDialog
 import bassamalim.halala.core.ui.components.FormField
 import bassamalim.halala.core.ui.components.GroupLabel
 import bassamalim.halala.core.ui.components.HalalaButton
@@ -45,8 +47,9 @@ import bassamalim.halala.core.ui.theme.Insets
 import bassamalim.halala.core.ui.theme.Spacing
 
 /**
- * One person: what you call them, all transfers with them (sent, received, net) and their
- * feed, from the Person board's transfers card; its loan card comes with loans. A spelling
+ * One person, from the Person board: each open loan (what is still owed, the reminder, recording
+ * a repayment, and what happened to it), settled ones, then all transfers with them (sent,
+ * received, net) and their feed. A spelling
  * that joined them by mistake is taken out from here, and someone who is another by a
  * different name is merged from here, as on the Merchant screen.
  */
@@ -85,6 +88,23 @@ fun PersonScreen(viewModel: PersonViewModel = hiltViewModel()) {
                     Avatar(initial = state.initial)
                     Text(text = state.name, style = HalalaType.Title, textAlign = TextAlign.Center)
                 }
+            }
+
+            val open = state.loans.filter { it.open }
+            val settled = state.loans.filterNot { it.open }
+            items(open, key = { "loan-${it.loanId}" }) { loan ->
+                Column(Modifier.padding(bottom = Spacing.card)) { OpenLoan(loan, state.name, viewModel) }
+            }
+            if (open.isNotEmpty()) item {
+                Text(
+                    text = stringResource(R.string.loan_hint, state.name),
+                    style = HalalaType.Caption,
+                    color = HalalaColors.TextMuted,
+                    modifier = Modifier.padding(bottom = Spacing.card)
+                )
+            }
+            items(settled, key = { "loan-${it.loanId}" }) { loan ->
+                Column(Modifier.padding(bottom = Spacing.card)) { SettledLoan(loan, viewModel) }
             }
 
             item {
@@ -224,6 +244,49 @@ fun PersonScreen(viewModel: PersonViewModel = hiltViewModel()) {
             onConfirm = viewModel::onMergeConfirm,
             onDismiss = viewModel::onSheetDismiss,
             destructive = false
+        )
+
+        is PersonSheet.Repay -> HalalaSheet(onDismiss = viewModel::onSheetDismiss) {
+            val loan = state.loans.firstOrNull { it.loanId == sheet.loanId }
+            Text(text = stringResource(R.string.loan_repay_title), style = HalalaType.Title)
+            if (loan == null || loan.candidates.isEmpty()) Text(
+                text = stringResource(
+                    if (loan?.lent != false) R.string.loan_repay_none_lent else R.string.loan_repay_none_borrowed,
+                    state.name
+                ),
+                style = HalalaType.Label,
+                color = HalalaColors.TextMuted
+            ) else Column {
+                loan.candidates.forEachIndexed { index, item ->
+                    TransactionItemRow(
+                        item = item,
+                        onClick = { viewModel.onRepayPick(item.id) },
+                        divider = index > 0,
+                        withDay = true
+                    )
+                }
+            }
+            HalalaButton(
+                text = stringResource(R.string.loan_forgive),
+                onClick = viewModel::onForgiveClick,
+                destructive = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        is PersonSheet.Forgive -> ConfirmSheet(
+            title = stringResource(R.string.loan_forgive_title),
+            body = stringResource(R.string.loan_forgive_body),
+            confirmLabel = stringResource(R.string.loan_forgive_confirm),
+            dismissLabel = stringResource(R.string.cancel),
+            onConfirm = viewModel::onForgiveConfirm,
+            onDismiss = viewModel::onSheetDismiss
+        )
+
+        is PersonSheet.Due -> DateDialog(
+            date = sheet.date,
+            onPicked = viewModel::onDuePicked,
+            onDismiss = viewModel::onSheetDismiss
         )
 
         null -> Unit

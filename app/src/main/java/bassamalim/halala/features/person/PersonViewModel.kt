@@ -5,12 +5,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import bassamalim.halala.core.Globals
+import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
+import bassamalim.halala.core.domain.LoanState
+import bassamalim.halala.core.domain.Loans
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.feedOf
 import bassamalim.halala.core.domain.toItem
 import bassamalim.halala.core.enums.AmountTone
+import bassamalim.halala.core.enums.LoanDirection
+import bassamalim.halala.core.enums.LoanEventType
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
+import bassamalim.halala.core.utils.accountLabel
+import bassamalim.halala.core.utils.dateLabel
 import bassamalim.halala.core.utils.initialOf
 import bassamalim.halala.features.people.PeopleDomain
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,6 +28,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import javax.inject.Inject
 
 @HiltViewModel
@@ -38,9 +48,9 @@ class PersonViewModel @Inject constructor(
         domain.observePerson(id),
         domain.observeAliases(id),
         domain.observePeople(),
-        domain.observeTransactions(),
+        combine(domain.observeTransactions(), domain.observeLoans(), ::Pair),
         sheet
-    ) { person, aliases, people, details, sheet ->
+    ) { person, aliases, people, (details, loans), sheet ->
         // Gone (merged into someone else): the screen stays as it was while it leaves.
         if (person == null) return@combine PersonUiState(isLoading = true)
 
@@ -64,6 +74,10 @@ class PersonViewModel @Inject constructor(
             spellings = aliases.map { SpellingRow(it.alias.id, it.alias.descriptor, it.transactions) },
             canSplit = aliases.size > 1,
             transactions = mine.map { it.toItem(zone, today) },
+            loans = loans
+                .filter { it.loan.personId == id }
+                .sortedWith(compareBy({ !it.isOpen }, { it.loan.dueOn ?: LocalDate.MAX }, { it.lentAt }))
+                .map { state -> loanOf(state, mine, zone, today) },
             mergeOptions = (sheet as? PersonSheet.Merge)
                 ?.let { PersonDomain.mergeOptions(people, id, it.query) }
                 ?.map { PersonOption(it.person.id, it.person.name, it.transactions) }
@@ -81,6 +95,36 @@ class PersonViewModel @Inject constructor(
     fun onTransactionClick(transactionId: Long) = navigator.navigate(Screen.Transaction(transactionId))
 
     fun onSheetDismiss() = sheet.update { null }
+
+    fun onRepayClick(loanId: Long) = sheet.update { PersonSheet.Repay(loanId) }
+
+    fun onRepayPick(transactionId: Long) {
+        val repay = sheet.value as? PersonSheet.Repay ?: return
+        sheet.update { null }
+        viewModelScope.launch { domain.repay(repay.loanId, transactionId) }
+    }
+
+    fun onForgiveClick() {
+        val repay = sheet.value as? PersonSheet.Repay ?: return
+        sheet.update { PersonSheet.Forgive(repay.loanId) }
+    }
+
+    fun onForgiveConfirm() {
+        val forgive = sheet.value as? PersonSheet.Forgive ?: return
+        sheet.update { null }
+        viewModelScope.launch { domain.forgive(forgive.loanId) }
+    }
+
+    fun onDueClick(loanId: Long) {
+        val loan = uiState.value.loans.firstOrNull { it.loanId == loanId } ?: return
+        sheet.update { PersonSheet.Due(loanId, loan.pickDueFrom) }
+    }
+
+    fun onDuePicked(date: LocalDate) {
+        val due = sheet.value as? PersonSheet.Due ?: return
+        sheet.update { null }
+        viewModelScope.launch { domain.setDueOn(due.loanId, date) }
+    }
 
     fun onRenameClick() = sheet.update { PersonSheet.Rename(uiState.value.name) }
 
@@ -119,5 +163,57 @@ class PersonViewModel @Inject constructor(
             navigator.popBackStack()
             navigator.navigate(Screen.Person(into.id))
         }
+    }
+
+    private fun loanOf(state: LoanState, mine: List<TransactionDetail>, zone: ZoneId, today: LocalDate): PersonLoan {
+        val loan = state.loan
+        val lent = loan.direction == LoanDirection.LENT
+        fun day(at: Instant?) = at?.let { dateLabel(it.atZone(zone).toLocalDate(), today) }.orEmpty()
+
+        return PersonLoan(
+            loanId = loan.id,
+            lent = lent,
+            open = state.isOpen,
+            remaining = Money.format(state.remainingMinor, loan.currency),
+            currency = loan.currency,
+            lentTotal = Money.format(state.lentMinor, loan.currency, decimals = false),
+            lentOn = day(state.lentAt),
+            repaid = Money.format(state.repaidMinor, loan.currency, decimals = false),
+            hasRepaid = state.repaidMinor > 0,
+            dueLabel = loan.dueOn?.let { dateLabel(it, today) },
+            pickDueFrom = loan.dueOn ?: today.plusMonths(1),
+            progress = if (state.lentMinor == 0L) 0f
+            else (Math.subtractExact(state.lentMinor, state.remainingMinor).toDouble() / state.lentMinor).toFloat(),
+            settledLabel = state.settledAt?.let { day(it) },
+            forgiven = state.forgivenMinor > 0,
+            // The latest first, as the board lists them.
+            events = state.events.reversed().map { event ->
+                // Money in is income-toned and signed; money out plain with a minus; forgiving moves none.
+                val incoming = when (event.type) {
+                    LoanEventType.DISBURSEMENT -> !lent
+                    LoanEventType.REPAYMENT -> lent
+                    LoanEventType.FORGIVENESS -> null
+                }
+                LoanEventItem(
+                    transactionId = event.transactionId,
+                    type = event.type,
+                    day = day(event.at),
+                    kind = event.kind,
+                    accountLabel = event.accountNickname?.let { accountLabel(event.institutionName, it) },
+                    amount = Money.format(
+                        if (incoming == false) -event.amountMinor else event.amountMinor,
+                        loan.currency,
+                        showPlus = incoming == true
+                    ),
+                    tone = if (incoming == true) AmountTone.Income else AmountTone.Spending
+                )
+            },
+            candidates = if (!state.isOpen) emptyList() else mine
+                .filter {
+                    it.transaction.kind in Loans.MARKABLE && it.transaction.direction == loan.direction.repaying &&
+                            it.transaction.currency == loan.currency
+                }
+                .map { it.toItem(zone, today) }
+        )
     }
 }

@@ -6,6 +6,7 @@ import androidx.room.TypeConverters
 import bassamalim.halala.core.data.dataSources.room.daos.AccountsDao
 import bassamalim.halala.core.data.dataSources.room.daos.ClassificationDao
 import bassamalim.halala.core.data.dataSources.room.daos.InstitutionsDao
+import bassamalim.halala.core.data.dataSources.room.daos.LoansDao
 import bassamalim.halala.core.data.dataSources.room.daos.MerchantsDao
 import bassamalim.halala.core.data.dataSources.room.daos.PeopleDao
 import bassamalim.halala.core.data.dataSources.room.daos.RestoreDao
@@ -19,6 +20,8 @@ import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
 import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.entities.Institution
 import bassamalim.halala.core.data.dataSources.room.entities.InternalTransfer
+import bassamalim.halala.core.data.dataSources.room.entities.Loan
+import bassamalim.halala.core.data.dataSources.room.entities.LoanEvent
 import bassamalim.halala.core.data.dataSources.room.entities.Merchant
 import bassamalim.halala.core.data.dataSources.room.entities.MerchantAlias
 import bassamalim.halala.core.data.dataSources.room.entities.Person
@@ -43,9 +46,11 @@ import bassamalim.halala.core.data.dataSources.room.entities.Transaction
         Merchant::class,
         MerchantAlias::class,
         Person::class,
-        PersonAlias::class
+        PersonAlias::class,
+        Loan::class,
+        LoanEvent::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -57,5 +62,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun classificationDao(): ClassificationDao
     abstract fun merchantsDao(): MerchantsDao
     abstract fun peopleDao(): PeopleDao
+    abstract fun loansDao(): LoansDao
     abstract fun restoreDao(): RestoreDao
 }

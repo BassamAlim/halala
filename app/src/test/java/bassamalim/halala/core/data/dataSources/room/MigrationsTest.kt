@@ -174,6 +174,24 @@ class MigrationsTest {
         }
     }
 
+    @Test
+    fun `6 to 7 adds loans empty and matches the schema`() {
+        helper.createDatabase(DB, 6).use { db ->
+            db.execSQL("INSERT INTO people (id, uid, name) VALUES (1, 'p', 'Khalid')")
+        }
+
+        helper.runMigrationsAndValidate(DB, 7, true, *MIGRATIONS).use { db ->
+            db.query("SELECT COUNT(*) FROM loans").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+            db.query("SELECT name FROM people").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("Khalid", cursor.getString(0))
+            }
+        }
+    }
+
     private companion object {
         const val DB = "migration-test"
     }

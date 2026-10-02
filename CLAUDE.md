@@ -73,7 +73,7 @@ core/
   data/repositories/          the only way into storage; @Singleton + @Inject constructor
   di/                         Hilt modules for things Hilt can't construct itself
   domain/                     app-wide rules: Money, BudgetState, CashGap, Totals, TransactionItems,
-                              Rules, Merchants, People, Identification, KnownMerchants
+                              Rules, Merchants, People, Loans, Identification, KnownMerchants
   enums/                      shared enums (AccountType, Direction, TransactionKind, …)
   export/                     the CSV and JSON exports (Exporter, Csv, ExportFile)
   lock/                       LockManager: when the biometric lock asks again
@@ -241,6 +241,17 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   name. You rename, merge ("Same as another person") and split ("Not this one") on the Person
   screen; these aren't audited (nothing is filed by them, and each can be taken back by hand).
   Known IBANs and phone contacts aren't linked yet.
+- **Loans** are only ever made by your say. Marking a plain transfer to or from someone
+  (`Loans.MARKABLE`, never a paired move) as lent or borrowed opens a `Loan` with that person
+  (optional due date); marking a transfer back as repaying it pays it down; forgiving lets go of
+  the rest. A loan is its `LoanEvent`s (lent, repaid, forgiven): one linked to a transaction takes
+  that transaction's amount and time, so editing the transfer never leaves the loan behind; what
+  is owed is lent less repaid and forgiven, never below zero. A linked transfer's kind becomes
+  `LOAN_GIVEN`/`LOAN_RECEIVED`/`LOAN_REPAYMENT`, which count as **neither spending nor income**,
+  take no category, and survive editing; "Not part of a loan" (or deleting the transfer) makes it
+  a plain transfer again, and when it was all that was lent the loan goes and its repayments are
+  freed. Transaction detail asks whether a transfer repays the person's oldest open loan
+  (`Loans.repaidBy`) and offers marking it as a loan. Merging people moves their loans.
 - **Undo**: everything you do to filing (an answer, "always", saving, switching or deleting a
   rule, editing or deleting a category, renaming, merging or splitting a merchant, saying what a
   merchant is) is one `AuditBatch`:
@@ -280,7 +291,7 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   `ExportFile`, schema-versioned (`schemaVersion`, bump on any shape change; 2 added categories
   and rules, 3 merchants with their aliases, 4 business types on merchants and categories, 5 all
   a restore needs: raw bank messages, account refs, balance checkpoints, full rule conditions,
-  6 people with their aliases),
+  6 people with their aliases, 7 loans with their events),
   keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
 - **Restore** (same screen, "Restore from JSON"): `Importer.read` turns a schema-5 or later export into
   rows numbered afresh (pure; refuses older or newer schemas and dangling uids), you confirm,
@@ -340,9 +351,14 @@ cryptic names (Tavily), the Review board's swiping and its loan/split marks (wit
 the usage cap in Settings, and merchant logos and locations.
 
 **Phase 3 (people and recurring)** has begun: people (`Person`, `PersonAlias`, `PeopleRepository`,
-found by `applyRules`), **People** (the People board's "All transfers" view: everyone, the latest
-first, with what came back less what went; reached from Wealth) and **Person** (the Person
-board's transfers card: sent, received, net, then how the bank writes their name, "Same as
-another person" and their transfers, as the Merchant screen does; reached from People and from
-Transaction detail's Person row). Still to come: loans and repayments (the boards' Loans view,
-owed-to-you cards and loan card), splits, subscription detection and bills.
+found by `applyRules`) and loans (`Loan`, `LoanEvent`, `LoansRepository`, `core/domain/Loans`).
+Screens: **People** (People board: owed to you and you owe, then Loans, open and settled, or All
+transfers, everyone the latest first with what came back less what went; reached from Wealth),
+**Person** (Person board: each open loan with what is still owed, its caption and progress,
+"Send reminder" (the share sheet, so WhatsApp or SMS, with a polite message) and "Record
+repayment" (choose their transfer, or forgive what is left), "This loan" with its due date and
+events; settled loans; then all transfers with them, how the bank writes their name, "Same as
+another person" and their transfers; reached from People and from Transaction detail's Person
+row), and Transaction detail's **Loan** card (no board: built from the system's card and
+buttons). Still to come: due-date reminders, a Home "people owe you" card, splits,
+subscription detection and bills.

@@ -39,13 +39,15 @@ class PeopleRepository @Inject constructor(
         peopleDao.updatePerson(person.copy(name = trimmed, namedByYou = true))
     }
 
-    /** [fromId] is [intoId] by another name: their spellings, and so their transfers, become [intoId]'s. */
+    /**
+     * [fromId] is [intoId] by another name: their spellings, and so their transfers, and their
+     * loans become [intoId]'s.
+     */
     suspend fun merge(fromId: Long, intoId: Long) {
         if (fromId == intoId) return
         peopleDao.getPerson(fromId) ?: return
         peopleDao.getPerson(intoId) ?: return
-        peopleDao.moveAliases(fromId, intoId)
-        peopleDao.deletePerson(fromId)
+        peopleDao.merge(fromId, intoId)
     }
 
     /** "Not this person": one spelling becomes someone of their own. Returns the new person's id. */

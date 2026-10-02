@@ -2,8 +2,10 @@ package bassamalim.halala.features.people
 
 import bassamalim.halala.core.data.dataSources.room.relations.PersonWithStats
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
+import bassamalim.halala.core.data.repositories.LoansRepository
 import bassamalim.halala.core.data.repositories.PeopleRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
+import bassamalim.halala.core.domain.LoanState
 import bassamalim.halala.core.domain.People
 import kotlinx.coroutines.flow.Flow
 import java.time.Clock
@@ -14,8 +16,11 @@ import javax.inject.Inject
 class PeopleDomain @Inject constructor(
     private val peopleRepository: PeopleRepository,
     private val transactionsRepository: TransactionsRepository,
+    private val loansRepository: LoansRepository,
     private val clock: Clock
 ) {
+
+    fun observeLoans(): Flow<List<LoanState>> = loansRepository.observeStates()
 
     fun observePeople(): Flow<List<PersonWithStats>> = peopleRepository.observePeople()
 

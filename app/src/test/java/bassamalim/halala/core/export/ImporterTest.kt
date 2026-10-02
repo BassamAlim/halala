@@ -8,6 +8,8 @@ import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
 import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.entities.Institution
 import bassamalim.halala.core.data.dataSources.room.entities.InternalTransfer
+import bassamalim.halala.core.data.dataSources.room.entities.Loan
+import bassamalim.halala.core.data.dataSources.room.entities.LoanEvent
 import bassamalim.halala.core.data.dataSources.room.entities.Merchant
 import bassamalim.halala.core.data.dataSources.room.entities.MerchantAlias
 import bassamalim.halala.core.data.dataSources.room.entities.Person
@@ -20,6 +22,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.InstitutionsRepository
+import bassamalim.halala.core.data.repositories.LoansRepository
 import bassamalim.halala.core.data.repositories.PeopleRepository
 import bassamalim.halala.core.data.repositories.RestoreRepository
 import bassamalim.halala.core.data.repositories.SmsRepository
@@ -32,6 +35,8 @@ import bassamalim.halala.core.enums.BusinessType
 import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.enums.ExpenseType
 import bassamalim.halala.core.enums.IdentifiedBy
+import bassamalim.halala.core.enums.LoanDirection
+import bassamalim.halala.core.enums.LoanEventType
 import bassamalim.halala.core.enums.RawStatus
 import bassamalim.halala.core.enums.RuleSource
 import bassamalim.halala.core.enums.TransactionKind
@@ -45,6 +50,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.time.Instant
+import java.time.LocalDate
 
 /** An export, restored, must export again as the very same file: nothing lost, nothing made up. */
 @RunWith(RobolectricTestRunner::class)
@@ -64,7 +70,7 @@ class ImporterTest {
             Transaction(31, "tx-jahez", 22, Direction.DEBIT, 21_450, "SAR", at, TransactionKind.PURCHASE, "Jahez Olaya", "lunch", TransactionSource.SMS, at, rawMessageId = 61, originalAmountMinor = 5_720, originalCurrency = "USD", categoryId = 47, expenseType = ExpenseType.VARIABLE_DISCRETIONARY, ruleId = 59, merchantKey = "jahez olaya"),
             Transaction(32, "tx-out", 22, Direction.DEBIT, 50_000, "SAR", at, TransactionKind.ATM_WITHDRAWAL, "", "", TransactionSource.MANUAL, at),
             Transaction(33, "tx-in", 21, Direction.CREDIT, 50_000, "SAR", at, TransactionKind.ATM_WITHDRAWAL, "", "", TransactionSource.MANUAL, at),
-            Transaction(34, "tx-khalid", 22, Direction.DEBIT, 150_000, "SAR", at, TransactionKind.TRANSFER_OUT, "KHALID ALI", "", TransactionSource.SMS, at, merchantKey = "khalid ali")
+            Transaction(34, "tx-khalid", 22, Direction.DEBIT, 150_000, "SAR", at, TransactionKind.LOAN_GIVEN, "KHALID ALI", "", TransactionSource.SMS, at, merchantKey = "khalid ali")
         ),
         transfers = listOf(InternalTransfer(71, "pair-1", outTransactionId = 32, inTransactionId = 33, matchConfidence = 0.8)),
         categories = listOf(
@@ -88,7 +94,12 @@ class ImporterTest {
             BalanceCheckpoint(112, accountId = 22, balanceMinor = -300, at = at, rawMessageId = null)
         ),
         people = listOf(Person(121, "person-khalid", "Khalid A.", namedByYou = true)),
-        personAliases = listOf(PersonAlias(131, 121, "khalid ali", "KHALID ALI"))
+        personAliases = listOf(PersonAlias(131, 121, "khalid ali", "KHALID ALI")),
+        loans = listOf(Loan(141, "loan-khalid", 121, LoanDirection.LENT, "SAR", LocalDate.parse("2026-10-15"), at)),
+        loanEvents = listOf(
+            LoanEvent(151, "lent", 141, LoanEventType.DISBURSEMENT, transactionId = 34),
+            LoanEvent(152, "forgiven", 141, LoanEventType.FORGIVENESS, amountMinor = 50_000, at = at)
+        )
     )
 
     private val json = Exporter.json(snapshot, appVersion = "0.2.0", now = at)
@@ -110,6 +121,7 @@ class ImporterTest {
         ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), db.peopleDao(), TEST_CLOCK),
         SmsRepository(db.smsDao()),
         PeopleRepository(db.peopleDao()),
+        LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK),
         TEST_CLOCK
     )
 

@@ -80,6 +80,17 @@ interface PeopleDao {
     @Query("UPDATE person_aliases SET personId = :intoId WHERE personId = :fromId")
     suspend fun moveAliases(fromId: Long, intoId: Long)
 
+    @Query("UPDATE loans SET personId = :intoId WHERE personId = :fromId")
+    suspend fun moveLoans(fromId: Long, intoId: Long)
+
+    /** One person becomes another: their spellings and loans move, then they go, as one write. */
+    @androidx.room.Transaction
+    suspend fun merge(fromId: Long, intoId: Long) {
+        moveAliases(fromId, intoId)
+        moveLoans(fromId, intoId)
+        deletePerson(fromId)
+    }
+
     /** Each person transfer's title and key, oldest first: the first spelling names the person. */
     @Query("SELECT t.title, t.merchantKey FROM transactions t WHERE t.title != '' AND $PERSON_TRANSFER ORDER BY t.occurredAt, t.id")
     suspend fun getTransferNames(): List<TransferName>

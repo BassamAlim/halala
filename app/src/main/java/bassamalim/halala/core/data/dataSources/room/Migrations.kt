@@ -7,7 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * The phone is the only place the full ledger lives: every schema change is a migration, never
  * a destructive rebuild. Add each one here, in order, against the schemas in `app/schemas`.
  */
-val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6)
+val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6, Migration6To7)
 
 /** Phase 1: raw bank SMS, the digits learned per bank, reported balances, and SMS links. */
 private object Migration1To2 : Migration(1, 2) {
@@ -185,5 +185,35 @@ private object Migration5To6 : Migration(5, 6) {
         )
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_person_aliases_aliasKey` ON `person_aliases` (`aliasKey`)")
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_person_aliases_personId` ON `person_aliases` (`personId`)")
+    }
+}
+
+/**
+ * Phase 3: loans to and from people, and what happened to each (lent, repaid, forgiven). Both
+ * start empty: a loan is only ever made by your say.
+ */
+private object Migration6To7 : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `loans` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`uid` TEXT NOT NULL, `personId` INTEGER NOT NULL, `direction` TEXT NOT NULL, " +
+                    "`currency` TEXT NOT NULL, `dueOn` INTEGER, `createdAt` INTEGER NOT NULL, " +
+                    "FOREIGN KEY(`personId`) REFERENCES `people`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )"
+        )
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_loans_uid` ON `loans` (`uid`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_loans_personId` ON `loans` (`personId`)")
+
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `loan_events` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`uid` TEXT NOT NULL, `loanId` INTEGER NOT NULL, `type` TEXT NOT NULL, `transactionId` INTEGER, " +
+                    "`amountMinor` INTEGER, `at` INTEGER, " +
+                    "FOREIGN KEY(`loanId`) REFERENCES `loans`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , " +
+                    "FOREIGN KEY(`transactionId`) REFERENCES `transactions`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )"
+        )
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_loan_events_uid` ON `loan_events` (`uid`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_loan_events_loanId` ON `loan_events` (`loanId`)")
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_loan_events_transactionId` ON `loan_events` (`transactionId`)"
+        )
     }
 }

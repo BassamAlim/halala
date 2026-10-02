@@ -9,6 +9,8 @@ import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
 import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.entities.Institution
 import bassamalim.halala.core.data.dataSources.room.entities.InternalTransfer
+import bassamalim.halala.core.data.dataSources.room.entities.Loan
+import bassamalim.halala.core.data.dataSources.room.entities.LoanEvent
 import bassamalim.halala.core.data.dataSources.room.entities.Merchant
 import bassamalim.halala.core.data.dataSources.room.entities.MerchantAlias
 import bassamalim.halala.core.data.dataSources.room.entities.Person
@@ -39,12 +41,16 @@ interface RestoreDao {
         transfers: List<InternalTransfer>,
         checkpoints: List<BalanceCheckpoint>,
         people: List<Person>,
-        personAliases: List<PersonAlias>
+        personAliases: List<PersonAlias>,
+        loans: List<Loan>,
+        loanEvents: List<LoanEvent>
     ) {
         // What points at a row goes before the row. The history of changes names rows by the
         // ids they had, so it can't outlive them.
         clearAuditChanges()
         clearAuditBatches()
+        clearLoanEvents()
+        clearLoans()
         clearTransfers()
         clearCheckpoints()
         clearRefs()
@@ -72,6 +78,8 @@ interface RestoreDao {
         insertCheckpoints(checkpoints)
         insertPeople(people)
         insertPersonAliases(personAliases)
+        insertLoans(loans)
+        insertLoanEvents(loanEvents)
     }
 
     @Query("DELETE FROM audit_changes") suspend fun clearAuditChanges()
@@ -84,6 +92,8 @@ interface RestoreDao {
     @Query("DELETE FROM rules") suspend fun clearRules()
     @Query("DELETE FROM merchant_aliases") suspend fun clearAliases()
     @Query("DELETE FROM merchants") suspend fun clearMerchants()
+    @Query("DELETE FROM loan_events") suspend fun clearLoanEvents()
+    @Query("DELETE FROM loans") suspend fun clearLoans()
     @Query("DELETE FROM person_aliases") suspend fun clearPersonAliases()
     @Query("DELETE FROM people") suspend fun clearPeople()
     @Query("DELETE FROM categories") suspend fun clearCategories()
@@ -103,4 +113,6 @@ interface RestoreDao {
     @Insert suspend fun insertCheckpoints(rows: List<BalanceCheckpoint>)
     @Insert suspend fun insertPeople(rows: List<Person>)
     @Insert suspend fun insertPersonAliases(rows: List<PersonAlias>)
+    @Insert suspend fun insertLoans(rows: List<Loan>)
+    @Insert suspend fun insertLoanEvents(rows: List<LoanEvent>)
 }

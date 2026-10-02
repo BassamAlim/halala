@@ -47,6 +47,13 @@ import bassamalim.halala.core.ui.components.ConfirmSheet
 import bassamalim.halala.core.ui.components.HalalaButton
 import bassamalim.halala.core.ui.components.HalalaCard
 import bassamalim.halala.core.ui.components.HalalaChip
+import bassamalim.halala.core.ui.components.ButtonKind
+import bassamalim.halala.core.ui.components.DateDialog
+import bassamalim.halala.core.ui.components.HalalaSheet
+import bassamalim.halala.core.ui.components.ListCard
+import bassamalim.halala.core.ui.components.ListRow
+import bassamalim.halala.core.ui.components.MONEY_MARK
+import bassamalim.halala.core.ui.components.MoneyText
 import bassamalim.halala.core.ui.components.TopBar
 import bassamalim.halala.core.ui.expenseTypeLabel
 import bassamalim.halala.core.ui.kindLabel
@@ -171,6 +178,8 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
             }
         }
 
+        state.loan?.let { loan -> LoanCard(loan, viewModel) }
+
         state.filedBy?.let { rule ->
             HalalaCard {
                 Row(
@@ -292,7 +301,120 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
             onDismissClick = { viewModel.onJustThisOne(sheet.category) }
         )
 
+        is TransactionSheet.MarkLoan -> {
+            val open = state.loan as? LoanLink.Open
+            HalalaSheet(onDismiss = viewModel::onSheetDismiss) {
+                Text(
+                    text = stringResource(
+                        if (open?.lent != false) R.string.loan_mark_lent_title else R.string.loan_mark_borrowed_title,
+                        open?.person.orEmpty()
+                    ),
+                    style = HalalaType.Title
+                )
+                Text(
+                    text = stringResource(R.string.loan_mark_body),
+                    style = HalalaType.Label,
+                    color = HalalaColors.TextMuted
+                )
+                ListCard(Modifier.fillMaxWidth()) {
+                    ListRow(
+                        title = stringResource(R.string.loan_due),
+                        subtitle = sheet.dueLabel ?: stringResource(R.string.loan_due_none),
+                        onClick = viewModel::onDueClick
+                    )
+                }
+                HalalaButton(
+                    text = stringResource(R.string.loan_mark_confirm),
+                    onClick = viewModel::onMarkLoanConfirm,
+                    kind = ButtonKind.Primary,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            if (sheet.picking) DateDialog(
+                date = sheet.dueOn ?: sheet.pickFrom,
+                onPicked = viewModel::onDuePicked,
+                onDismiss = viewModel::onDuePickDismiss
+            )
+        }
+
+        TransactionSheet.Unlink -> ConfirmSheet(
+            title = stringResource(R.string.loan_unlink_title),
+            body = stringResource(R.string.loan_unlink_body),
+            confirmLabel = stringResource(R.string.loan_unlink_confirm),
+            dismissLabel = stringResource(R.string.cancel),
+            onConfirm = viewModel::onUnlinkConfirm,
+            onDismiss = viewModel::onSheetDismiss,
+            destructive = false
+        )
+
         null -> Unit
+    }
+}
+
+/**
+ * A transfer to or from someone and loans: one it would repay (asked, one tap to say yes),
+ * marking it as lending or borrowing, or the loan it is part of, which opens the person.
+ */
+@Composable
+private fun LoanCard(loan: LoanLink, viewModel: TransactionViewModel) {
+    when (loan) {
+        is LoanLink.Open -> HalalaCard(label = stringResource(R.string.loan)) {
+            loan.suggestion?.let { suggestion ->
+                MoneyText(
+                    text = stringResource(
+                        if (suggestion.lent) R.string.loan_suggest_lent else R.string.loan_suggest_borrowed,
+                        loan.person, MONEY_MARK, suggestion.lentOn
+                    ),
+                    amount = suggestion.remaining,
+                    currency = suggestion.currency,
+                    style = HalalaType.Body,
+                    color = HalalaColors.Text
+                )
+                HalalaButton(
+                    text = stringResource(R.string.loan_repays),
+                    onClick = viewModel::onRepaysClick,
+                    kind = ButtonKind.Primary,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = Spacing.xs)
+                )
+            }
+            HalalaButton(
+                text = stringResource(if (loan.lent) R.string.loan_mark_lent else R.string.loan_mark_borrowed, loan.person),
+                onClick = viewModel::onMarkLoanClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = Spacing.xs)
+            )
+        }
+
+        is LoanLink.Part -> HalalaCard(label = stringResource(R.string.loan), onClick = viewModel::onLoanClick) {
+            val what = stringResource(
+                when {
+                    loan.repays && loan.lent -> R.string.loan_part_repaid_to_you
+                    loan.repays -> R.string.loan_part_you_repaid
+                    loan.lent -> R.string.loan_part_lent
+                    else -> R.string.loan_part_borrowed
+                },
+                loan.person
+            )
+            Text(text = what, style = HalalaType.Body)
+            if (loan.settled) Text(text = stringResource(R.string.loan_settled), style = HalalaType.Label, color = HalalaColors.TextMuted)
+            else MoneyText(
+                text = stringResource(R.string.loan_still_owed, MONEY_MARK),
+                amount = loan.remaining,
+                currency = loan.currency,
+                style = HalalaType.Label,
+                color = HalalaColors.TextMuted
+            )
+            HalalaButton(
+                text = stringResource(R.string.loan_unlink),
+                onClick = viewModel::onUnlinkClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = Spacing.xs)
+            )
+        }
     }
 }
 

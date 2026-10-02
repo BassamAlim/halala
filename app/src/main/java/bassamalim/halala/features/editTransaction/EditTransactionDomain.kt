@@ -129,6 +129,16 @@ class EditTransactionDomain @Inject constructor(
         }
 
         /**
+         * Kinds the form doesn't offer but keeps when editing one that has them: only a loan
+         * gives these, and editing the amount or the day doesn't take a transfer out of its loan.
+         */
+        private fun keptKindsFor(mode: EntryMode): Set<TransactionKind> = when (mode) {
+            EntryMode.OUT -> setOf(TransactionKind.LOAN_GIVEN, TransactionKind.LOAN_REPAYMENT)
+            EntryMode.IN -> setOf(TransactionKind.LOAN_RECEIVED, TransactionKind.LOAN_REPAYMENT)
+            EntryMode.MOVE -> emptySet()
+        }
+
+        /**
          * The rules, without storage: an amount above zero in the (sending) account's currency;
          * an account; and for a move, a second, different account in the same currency (a
          * conversion needs a rate, which arrives with SMS parsing).
@@ -175,7 +185,8 @@ class EditTransactionDomain @Inject constructor(
                     direction = if (form.mode == EntryMode.OUT) Direction.DEBIT else Direction.CREDIT,
                     amountMinor = amount,
                     occurredAt = occurredAt,
-                    kind = form.kind.takeIf { it in kindsFor(form.mode) } ?: kindsFor(form.mode).first(),
+                    kind = form.kind.takeIf { it in kindsFor(form.mode) || it in keptKindsFor(form.mode) }
+                        ?: kindsFor(form.mode).first(),
                     title = form.title,
                     note = form.note
                 )

@@ -4,8 +4,10 @@ import bassamalim.halala.core.data.dataSources.room.entities.Person
 import bassamalim.halala.core.data.dataSources.room.relations.PersonAliasWithCount
 import bassamalim.halala.core.data.dataSources.room.relations.PersonWithStats
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
+import bassamalim.halala.core.data.repositories.LoansRepository
 import bassamalim.halala.core.data.repositories.PeopleRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
+import bassamalim.halala.core.domain.LoanState
 import kotlinx.coroutines.flow.Flow
 import java.time.Clock
 import java.time.LocalDate
@@ -17,8 +19,17 @@ enum class NameProblem { Missing }
 class PersonDomain @Inject constructor(
     private val peopleRepository: PeopleRepository,
     private val transactionsRepository: TransactionsRepository,
+    private val loansRepository: LoansRepository,
     private val clock: Clock
 ) {
+
+    fun observeLoans(): Flow<List<LoanState>> = loansRepository.observeStates()
+
+    suspend fun repay(loanId: Long, transactionId: Long) = loansRepository.repay(loanId, transactionId)
+
+    suspend fun forgive(loanId: Long) = loansRepository.forgive(loanId)
+
+    suspend fun setDueOn(loanId: Long, dueOn: LocalDate?) = loansRepository.setDueOn(loanId, dueOn)
 
     fun observePerson(id: Long): Flow<Person?> = peopleRepository.observePerson(id)
 

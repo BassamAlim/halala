@@ -74,6 +74,9 @@ object DataSourceModule {
     fun providePeopleDao(database: AppDatabase) = database.peopleDao()
 
     @Provides @Singleton
+    fun provideLoansDao(database: AppDatabase) = database.loansDao()
+
+    @Provides @Singleton
     fun provideRestoreDao(database: AppDatabase) = database.restoreDao()
 
     @Provides @Singleton

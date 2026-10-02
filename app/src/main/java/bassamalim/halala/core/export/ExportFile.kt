@@ -35,10 +35,12 @@ data class ExportFile(
     val rawMessages: List<ExportRawMessage> = emptyList(),
     val balanceCheckpoints: List<ExportCheckpoint> = emptyList(),
     /** Since schema 6: the people transfers go to and come from. */
-    val people: List<ExportPerson> = emptyList()
+    val people: List<ExportPerson> = emptyList(),
+    /** Since schema 7. */
+    val loans: List<ExportLoan> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 6
+        const val SCHEMA_VERSION = 7
     }
 }
 
@@ -155,6 +157,33 @@ data class ExportPerson(
 
 @Serializable
 data class ExportPersonAlias(val key: String, val descriptor: String)
+
+/**
+ * Money lent to (`LENT`) or borrowed from (`BORROWED`) a person, and what happened to it. An
+ * event with a transaction takes that transaction's amount and time; one without (`FORGIVENESS`)
+ * carries its own.
+ */
+@Serializable
+data class ExportLoan(
+    val uid: String,
+    val personUid: String,
+    val direction: String,
+    val currency: String,
+    /** ISO-8601 date, or null with no due date. */
+    val dueOn: String?,
+    val createdAt: String,
+    val events: List<ExportLoanEvent>
+)
+
+@Serializable
+data class ExportLoanEvent(
+    val uid: String,
+    /** `DISBURSEMENT`, `REPAYMENT` or `FORGIVENESS`. */
+    val type: String,
+    val transactionUid: String? = null,
+    val amountMinor: Long? = null,
+    val at: String? = null
+)
 
 @Serializable
 data class ExportInternalTransfer(

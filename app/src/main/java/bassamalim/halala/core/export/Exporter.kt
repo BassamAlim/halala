@@ -6,6 +6,8 @@ import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
 import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.entities.Institution
 import bassamalim.halala.core.data.dataSources.room.entities.InternalTransfer
+import bassamalim.halala.core.data.dataSources.room.entities.Loan
+import bassamalim.halala.core.data.dataSources.room.entities.LoanEvent
 import bassamalim.halala.core.data.dataSources.room.entities.Merchant
 import bassamalim.halala.core.data.dataSources.room.entities.MerchantAlias
 import bassamalim.halala.core.data.dataSources.room.entities.Person
@@ -16,6 +18,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.InstitutionsRepository
+import bassamalim.halala.core.data.repositories.LoansRepository
 import bassamalim.halala.core.data.repositories.PeopleRepository
 import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
@@ -48,7 +51,9 @@ data class LedgerSnapshot(
     val refs: List<AccountRef> = emptyList(),
     val checkpoints: List<BalanceCheckpoint> = emptyList(),
     val people: List<Person> = emptyList(),
-    val personAliases: List<PersonAlias> = emptyList()
+    val personAliases: List<PersonAlias> = emptyList(),
+    val loans: List<Loan> = emptyList(),
+    val loanEvents: List<LoanEvent> = emptyList()
 ) {
     /** The merchant each transaction's title names, by transaction id. */
     fun merchantOf(): Map<Long, Merchant> {
@@ -71,6 +76,7 @@ class Exporter @Inject constructor(
     private val classificationRepository: ClassificationRepository,
     private val smsRepository: SmsRepository,
     private val peopleRepository: PeopleRepository,
+    private val loansRepository: LoansRepository,
     private val clock: Clock
 ) {
 
@@ -88,7 +94,9 @@ class Exporter @Inject constructor(
         refs = smsRepository.getRefs(),
         checkpoints = smsRepository.getCheckpoints(),
         people = peopleRepository.getPeople(),
-        personAliases = peopleRepository.getAliases()
+        personAliases = peopleRepository.getAliases(),
+        loans = loansRepository.getLoans(),
+        loanEvents = loansRepository.getEvents()
     )
 
     fun fileStem(): String = "halala-${clock.instant().atZone(clock.zone).toLocalDate()}"
@@ -112,6 +120,7 @@ class Exporter @Inject constructor(
             val merchantUids = snapshot.merchants.associate { it.id to it.uid }
             val merchantOf = snapshot.merchantOf()
             val rawHashes = snapshot.rawMessages.associate { it.id to it.hash }
+            val personUids = snapshot.people.associate { it.id to it.uid }
 
             val file = ExportFile(
                 appVersion = appVersion,
@@ -234,6 +243,25 @@ class Exporter @Inject constructor(
                         aliases = snapshot.personAliases
                             .filter { it.personId == person.id }
                             .map { ExportPersonAlias(it.aliasKey, it.descriptor) }
+                    )
+                },
+                loans = snapshot.loans.map { loan ->
+                    ExportLoan(
+                        uid = loan.uid,
+                        personUid = personUids.getValue(loan.personId),
+                        direction = loan.direction.name,
+                        currency = loan.currency,
+                        dueOn = loan.dueOn?.toString(),
+                        createdAt = loan.createdAt.toString(),
+                        events = snapshot.loanEvents.filter { it.loanId == loan.id }.map { event ->
+                            ExportLoanEvent(
+                                uid = event.uid,
+                                type = event.type.name,
+                                transactionUid = event.transactionId?.let(transactionUids::getValue),
+                                amountMinor = event.amountMinor,
+                                at = event.at?.toString()
+                            )
+                        }
                     )
                 }
             )

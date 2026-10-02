@@ -53,6 +53,8 @@ fun TransactionRow(
     currency: String? = null,
     autoLabel: String? = null,
     divider: Boolean = false,
+    /** A figure that no longer stands (a settled loan's nothing owed): muted whatever its tone. */
+    muted: Boolean = false,
     onClick: (() -> Unit)? = null
 ) {
     Column(modifier.fillMaxWidth()) {
@@ -94,11 +96,7 @@ fun TransactionRow(
                 )
             }
 
-            val amountColor = when (tone) {
-                AmountTone.Spending -> HalalaColors.Text
-                AmountTone.Income -> HalalaColors.Income
-                AmountTone.Internal -> HalalaColors.TextMuted
-            }
+            val amountColor = if (muted) HalalaColors.TextMuted else toneColor(tone)
             Text(
                 text = buildAnnotatedString {
                     append(amount)
@@ -181,4 +179,10 @@ private fun TransactionRowPreview() = HalalaTheme {
         TransactionRow("Salary → Awaeed", "Between your accounts · not spending", "5,000.00", AmountTone.Internal, "", divider = true)
         TransactionRow("Salary", "Al Rajhi – Salary", "+18,000.00", AmountTone.Income, "S", divider = true)
     }
+}
+
+private fun toneColor(tone: AmountTone) = when (tone) {
+    AmountTone.Spending -> HalalaColors.Text
+    AmountTone.Income -> HalalaColors.Income
+    AmountTone.Internal -> HalalaColors.TextMuted
 }

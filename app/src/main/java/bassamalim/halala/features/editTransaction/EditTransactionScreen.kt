@@ -1,5 +1,6 @@
 package bassamalim.halala.features.editTransaction
 
+import bassamalim.halala.core.ui.components.DateDialog
 import bassamalim.halala.core.ui.components.CurrencyText
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,12 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,10 +37,8 @@ import bassamalim.halala.core.ui.theme.HalalaNumbers
 import bassamalim.halala.core.ui.theme.HalalaType
 import bassamalim.halala.core.ui.theme.Insets
 import bassamalim.halala.core.ui.theme.Spacing
-import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
-import java.time.ZoneOffset
 
 /**
  * Quick-add and edit. No board draws this form; it is built from the system's pieces: the
@@ -229,28 +223,3 @@ private val EntryMode.label
         EntryMode.MOVE -> R.string.mode_move
     }
 
-/**
- * Material's date picker speaks UTC midnights; the conversion to and from a [LocalDate] happens
- * here and nowhere else.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DateDialog(date: LocalDate, onPicked: (LocalDate) -> Unit, onDismiss: () -> Unit) {
-    val pickerState = rememberDatePickerState(
-        initialSelectedDateMillis = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
-    )
-
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(onClick = {
-                val millis = pickerState.selectedDateMillis
-                if (millis == null) onDismiss()
-                else onPicked(Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate())
-            }) { Text(stringResource(R.string.done)) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } }
-    ) {
-        DatePicker(state = pickerState)
-    }
-}

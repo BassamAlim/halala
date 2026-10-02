@@ -8,6 +8,8 @@ import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
 import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.entities.Institution
 import bassamalim.halala.core.data.dataSources.room.entities.InternalTransfer
+import bassamalim.halala.core.data.dataSources.room.entities.Loan
+import bassamalim.halala.core.data.dataSources.room.entities.LoanEvent
 import bassamalim.halala.core.data.dataSources.room.entities.Merchant
 import bassamalim.halala.core.data.dataSources.room.entities.MerchantAlias
 import bassamalim.halala.core.data.dataSources.room.entities.Person
@@ -20,8 +22,11 @@ import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.repositories.RestoreRepository
 import bassamalim.halala.core.domain.Merchants
 import bassamalim.halala.core.enums.Direction
+import bassamalim.halala.core.enums.LoanDirection
+import bassamalim.halala.core.enums.LoanEventType
 import kotlinx.serialization.json.Json
 import java.time.Instant
+import java.time.LocalDate
 import javax.inject.Inject
 
 /**
@@ -47,7 +52,9 @@ class Importer @Inject constructor(
         transfers = snapshot.transfers,
         checkpoints = snapshot.checkpoints,
         people = snapshot.people,
-        personAliases = snapshot.personAliases
+        personAliases = snapshot.personAliases,
+        loans = snapshot.loans,
+        loanEvents = snapshot.loanEvents
     )
 
     companion object {
@@ -244,6 +251,35 @@ class Importer @Inject constructor(
                     )
                 }
 
+            val loans = file.loans.mapIndexed { index, loan ->
+                Loan(
+                    id = index + 1L,
+                    uid = loan.uid,
+                    personId = personIds.named(loan.personUid, "person"),
+                    direction = LoanDirection.valueOf(loan.direction),
+                    currency = loan.currency,
+                    dueOn = loan.dueOn?.let(LocalDate::parse),
+                    createdAt = Instant.parse(loan.createdAt)
+                )
+            }
+            val loanIds = loans.associate { it.uid to it.id }
+            val loanEvents = file.loans
+                .flatMap { loan -> loan.events.map { loan.uid to it } }
+                .mapIndexed { index, (loanUid, event) ->
+                    require(event.transactionUid != null || (event.amountMinor ?: 0) > 0) {
+                        "Loan event ${event.uid} has neither a transaction nor an amount."
+                    }
+                    LoanEvent(
+                        id = index + 1L,
+                        uid = event.uid,
+                        loanId = loanIds.getValue(loanUid),
+                        type = LoanEventType.valueOf(event.type),
+                        transactionId = event.transactionUid?.let { transactionIds.named(it, "transaction") },
+                        amountMinor = event.amountMinor,
+                        at = event.at?.let(Instant::parse)
+                    )
+                }
+
             return LedgerSnapshot(
                 institutions = institutions,
                 accounts = accounts,
@@ -258,7 +294,9 @@ class Importer @Inject constructor(
                 refs = refs,
                 checkpoints = checkpoints,
                 people = people,
-                personAliases = personAliases
+                personAliases = personAliases,
+                loans = loans,
+                loanEvents = loanEvents
             )
         }
 

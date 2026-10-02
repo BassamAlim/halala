@@ -4,8 +4,10 @@ import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
+import bassamalim.halala.core.data.repositories.LoansRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
 import bassamalim.halala.core.domain.DescribedRule
+import bassamalim.halala.core.domain.LoanState
 import bassamalim.halala.core.domain.Rules
 import bassamalim.halala.core.enums.ExpenseType
 import kotlinx.coroutines.flow.Flow
@@ -19,13 +21,32 @@ class TransactionDomain @Inject constructor(
     private val transactionsRepository: TransactionsRepository,
     private val classificationRepository: ClassificationRepository,
     private val accountsRepository: AccountsRepository,
+    private val loansRepository: LoansRepository,
     private val clock: Clock
 ) {
 
+    fun observeLoans(): Flow<List<LoanState>> = loansRepository.observeStates()
+
+    /** It lent (or borrowed) money: a new loan with the person it names. */
+    suspend fun openLoan(id: Long, dueOn: LocalDate?) = loansRepository.open(id, dueOn)
+
+    /** It pays [loanId] back. */
+    suspend fun repay(loanId: Long, id: Long) = loansRepository.repay(loanId, id)
+
+    /** It is a plain transfer again (and, if it was all that was lent, the loan goes). */
+    suspend fun unlinkLoan(id: Long) = loansRepository.unlink(id)
+
+
     fun observe(id: Long): Flow<TransactionDetail?> = transactionsRepository.observe(id)
 
-    /** A move goes as a whole: both legs. */
-    suspend fun delete(id: Long) = transactionsRepository.delete(id)
+    /**
+     * A move goes as a whole: both legs. A transfer leaves its loan first, so a loan never
+     * outlives the money it lent (its repayments become plain transfers again).
+     */
+    suspend fun delete(id: Long) {
+        loansRepository.unlink(id)
+        transactionsRepository.delete(id)
+    }
 
     fun observeCategories(): Flow<List<Category>> = classificationRepository.observeCategories()
 

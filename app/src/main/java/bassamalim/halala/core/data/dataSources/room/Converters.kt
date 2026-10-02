@@ -11,19 +11,23 @@ import bassamalim.halala.core.enums.BusinessType
 import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.enums.ExpenseType
 import bassamalim.halala.core.enums.IdentifiedBy
+import bassamalim.halala.core.enums.LoanDirection
+import bassamalim.halala.core.enums.LoanEventType
 import bassamalim.halala.core.enums.RuleSource
 import bassamalim.halala.core.enums.RawStatus
 import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.enums.TransactionSource
 import kotlinx.serialization.json.Json
 import java.time.Instant
+import java.time.LocalDate
 
 private val lenientJson = Json { ignoreUnknownKeys = true }
 
 /**
  * Enums are stored by name. A name that no longer exists decays to a safe value rather than
- * throwing, so dropping an entry from a list can never crash anyone who stored one. (Direction
- * is two values that will never change, so it is read strictly.)
+ * throwing, so dropping an entry from a list can never crash anyone who stored one. (Direction,
+ * a loan's direction and what happened to a loan are values that will never change, so they are
+ * read strictly: no safe value could stand in for money.)
  */
 class Converters {
 
@@ -134,4 +138,23 @@ class Converters {
 
     @TypeConverter
     fun fromIdentifiedBy(by: IdentifiedBy?): String? = by?.name
+
+    /** A day, as days since 1970-01-01. */
+    @TypeConverter
+    fun toEpochDay(date: LocalDate?): Long? = date?.toEpochDay()
+
+    @TypeConverter
+    fun fromEpochDay(day: Long?): LocalDate? = day?.let(LocalDate::ofEpochDay)
+
+    @TypeConverter
+    fun toLoanDirection(name: String): LoanDirection = LoanDirection.valueOf(name)
+
+    @TypeConverter
+    fun fromLoanDirection(direction: LoanDirection): String = direction.name
+
+    @TypeConverter
+    fun toLoanEventType(name: String): LoanEventType = LoanEventType.valueOf(name)
+
+    @TypeConverter
+    fun fromLoanEventType(type: LoanEventType): String = type.name
 }

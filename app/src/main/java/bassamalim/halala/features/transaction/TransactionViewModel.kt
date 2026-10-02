@@ -4,12 +4,18 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
+import bassamalim.halala.core.domain.LoanState
+import bassamalim.halala.core.domain.Loans
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.Rules
 import bassamalim.halala.core.domain.titleOf
 import bassamalim.halala.core.domain.toneOf
 import bassamalim.halala.core.enums.AmountTone
+import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.enums.ExpenseType
+import bassamalim.halala.core.enums.LoanDirection
+import bassamalim.halala.core.enums.LoanEventType
 import bassamalim.halala.core.models.CategoryOption
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
@@ -25,6 +31,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import javax.inject.Inject
 import bassamalim.halala.core.enums.RuleSource
 
@@ -41,12 +48,12 @@ class TransactionViewModel @Inject constructor(
     private val sheet = MutableStateFlow<TransactionSheet?>(null)
 
     val uiState: StateFlow<TransactionUiState> = combine(
-        domain.observe(id),
+        combine(domain.observe(id), domain.observeLoans(), ::Pair),
         domain.observeCategories(),
         domain.observeRules(),
         confirmingDelete,
         sheet
-    ) { detail, categories, rules, confirming, sheet ->
+    ) { (detail, loans), categories, rules, confirming, sheet ->
         // Gone (deleted from here or elsewhere): the screen stays as it was while it leaves.
         if (detail == null) return@combine TransactionUiState(isLoading = true)
 
@@ -99,7 +106,8 @@ class TransactionViewModel @Inject constructor(
             merchantId = detail.merchantId,
             merchantName = detail.merchantName,
             personId = detail.personId,
-            personName = detail.personName
+            personName = detail.personName,
+            loan = loanLinkOf(detail, loans, today)
         )
     }.stateIn(
         scope = viewModelScope,
@@ -147,6 +155,39 @@ class TransactionViewModel @Inject constructor(
 
     fun onEditRuleClick() = navigator.navigate(Screen.Rules)
 
+    fun onMarkLoanClick() = sheet.update { TransactionSheet.MarkLoan(pickFrom = domain.today().plusMonths(1)) }
+
+    fun onDueClick() = sheet.update { (it as? TransactionSheet.MarkLoan)?.copy(picking = true) ?: it }
+
+    fun onDuePicked(date: LocalDate) = sheet.update {
+        (it as? TransactionSheet.MarkLoan)?.copy(dueOn = date, dueLabel = dateLabel(date, domain.today()), picking = false) ?: it
+    }
+
+    fun onDuePickDismiss() = sheet.update { (it as? TransactionSheet.MarkLoan)?.copy(picking = false) ?: it }
+
+    fun onMarkLoanConfirm() {
+        val mark = sheet.value as? TransactionSheet.MarkLoan ?: return
+        sheet.update { null }
+        viewModelScope.launch { domain.openLoan(id, mark.dueOn) }
+    }
+
+    fun onRepaysClick() {
+        val suggestion = (uiState.value.loan as? LoanLink.Open)?.suggestion ?: return
+        viewModelScope.launch { domain.repay(suggestion.loanId, id) }
+    }
+
+    fun onUnlinkClick() = sheet.update { TransactionSheet.Unlink }
+
+    fun onUnlinkConfirm() {
+        sheet.update { null }
+        viewModelScope.launch { domain.unlinkLoan(id) }
+    }
+
+    fun onLoanClick() {
+        val part = uiState.value.loan as? LoanLink.Part ?: return
+        navigator.navigate(Screen.Person(part.personId))
+    }
+
     fun onPersonClick() {
         val personId = uiState.value.personId ?: return
         navigator.navigate(Screen.Person(personId))
@@ -167,5 +208,41 @@ class TransactionViewModel @Inject constructor(
             domain.delete(id)
             navigator.popBackStack()
         }
+    }
+
+    private fun loanLinkOf(detail: TransactionDetail, loans: List<LoanState>, today: LocalDate): LoanLink? {
+        val tx = detail.transaction
+        val personId = detail.personId ?: return null
+        val person = detail.personName.orEmpty()
+
+        val part = loans.firstOrNull { state -> state.events.any { it.transactionId == tx.id } }
+        if (part != null) {
+            val event = part.events.first { it.transactionId == tx.id }
+            return LoanLink.Part(
+                lent = part.loan.direction == LoanDirection.LENT,
+                repays = event.type != LoanEventType.DISBURSEMENT,
+                person = person,
+                personId = part.loan.personId,
+                remaining = Money.format(part.remainingMinor, part.loan.currency),
+                currency = part.loan.currency,
+                settled = !part.isOpen
+            )
+        }
+        if (tx.kind !in Loans.MARKABLE) return null
+
+        val repaid = Loans.repaidBy(personId, tx.direction, tx.currency, tx.kind, loans)
+        return LoanLink.Open(
+            lent = tx.direction == Direction.DEBIT,
+            person = person,
+            suggestion = repaid?.let {
+                Suggestion(
+                    loanId = it.loan.id,
+                    lent = it.loan.direction == LoanDirection.LENT,
+                    remaining = Money.format(it.remainingMinor, it.loan.currency),
+                    currency = it.loan.currency,
+                    lentOn = it.lentAt?.let { at -> dateLabel(at.atZone(domain.zone()).toLocalDate(), today) }.orEmpty()
+                )
+            }
+        )
     }
 }

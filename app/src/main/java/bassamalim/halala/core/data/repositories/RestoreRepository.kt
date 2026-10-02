@@ -7,6 +7,8 @@ import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
 import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.entities.Institution
 import bassamalim.halala.core.data.dataSources.room.entities.InternalTransfer
+import bassamalim.halala.core.data.dataSources.room.entities.Loan
+import bassamalim.halala.core.data.dataSources.room.entities.LoanEvent
 import bassamalim.halala.core.data.dataSources.room.entities.Merchant
 import bassamalim.halala.core.data.dataSources.room.entities.MerchantAlias
 import bassamalim.halala.core.data.dataSources.room.entities.Person
@@ -35,9 +37,11 @@ class RestoreRepository @Inject constructor(
         transfers: List<InternalTransfer>,
         checkpoints: List<BalanceCheckpoint>,
         people: List<Person>,
-        personAliases: List<PersonAlias>
+        personAliases: List<PersonAlias>,
+        loans: List<Loan>,
+        loanEvents: List<LoanEvent>
     ) = restoreDao.replaceAll(
         institutions, accounts, refs, rawMessages, categories, rules, merchants, aliases,
-        transactions, transfers, checkpoints, people, personAliases
+        transactions, transfers, checkpoints, people, personAliases, loans, loanEvents
     )
 }
