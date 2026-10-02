@@ -294,6 +294,38 @@ class SmsIngestTest {
     }
 
     @Test
+    fun `an arrival from your own account at a bank that never reported it still leaves that account`() = runTest {
+        val days = 24 * 60L
+        receive("AlRajhiBank", """
+            حوالة محلية واردة بـSR 9000
+            لـ1111
+            من4444;أحمد علي
+            26/5/25 21:10
+        """, minutes = -10 * days)
+
+        assertEquals(900_000L, balance(rajhiMain))
+        assertEquals(-900_000L, balance(snb) - accounts.get(snb)!!.openingBalanceMinor)
+        assertEquals(SmsIngest.IMPLIED_CONFIDENCE, transactions.getAllTransfers().single().matchConfidence, 0.0)
+
+        // Running again doesn't record it twice.
+        ingest.processPending()
+        assertEquals(2, transactions.getAll().size)
+    }
+
+    @Test
+    fun `a one-time code for the amount that then arrives elsewhere shows where it left`() = runTest {
+        val broker = db.institutionsDao().getAll().first { it.name == "Al Rajhi Capital" }.id
+        val funds = accounts.create(AccountDraft(broker, "Funds", AccountType.INVESTMENT, "8888", "SAR", 0))
+        val days = 24 * 60L
+
+        receive("SNB-AlAhli", "لا تشارك رمز التفعيل 0000\n\u202C\u202Aتحويل لبنك محلي\nمبلغ \u202C\u202ASAR \u202C\u202A6300", minutes = -10 * days)
+        receive("ALRajhiCPTL", "Local transfer\nAmount6300.0\nTo: ARC account\nFrom: أحمد علي", minutes = -10 * days + 1)
+
+        assertEquals(630_000L, balance(funds))
+        assertEquals(-630_000L, balance(snb) - accounts.get(snb)!!.openingBalanceMinor)
+    }
+
+    @Test
     fun `fees are their own debit`() = runTest {
         receive("AlRajhiBank", """
             حوالة محلية صادرة بـSR 2500

@@ -66,7 +66,57 @@ class SmsIngest @Inject constructor(
             val known = sms.getRefs().size
             for (id in sms.getRawIds(statuses)) process(id)
         } while (retry && sms.getRefs().size > known)
+        recordUnsentLegs()
         floorOpeningBalances()
+    }
+
+    /**
+     * Money that arrived naming one of your accounts at another bank as its sender ("from
+     * ••4444") left that account, whether or not its bank said so. So did money that arrived
+     * minutes after another of your banks sent a one-time code for a transfer of that very
+     * amount. Once a day has passed with no sending leg to pair, the debit is recorded there,
+     * paired as implied.
+     */
+    // ponytail: re-reads every unpaired arrival on each run; keep a "checked" mark if it gets slow.
+    private suspend fun recordUnsentLegs() {
+        val all = accounts.getAll()
+        val learned = sms.getRefs()
+        for (arrival in sms.unpairedArrivals(clock.instant() - SETTLED_AFTER)) {
+            val parsed = arrival.rawMessageId?.let { sms.getRaw(it) }
+                ?.let { raw -> SmsParser.bankFor(raw.sender)?.let { SmsParser.parse(it, raw.body) } }
+                as? ParsedSms.Movement ?: continue
+            val here = all.firstOrNull { it.id == arrival.accountId } ?: continue
+            val sender = all.singleOrNull {
+                it.institutionId != null && it.institutionId != here.institutionId &&
+                    it.currency == arrival.currency && isLinked(parsed.partyRefs, it, learned)
+            } ?: codeSentFor(arrival, here, all, learned) ?: continue
+
+            val sentId = transactions.addParsed(
+                arrival.copy(
+                    id = 0,
+                    uid = UUID.randomUUID().toString(),
+                    accountId = sender.id,
+                    direction = Direction.DEBIT,
+                    kind = TransactionKind.TRANSFER_OUT
+                )
+            )
+            transactions.pair(sentId, arrival.id, IMPLIED_CONFIDENCE)
+        }
+    }
+
+    /**
+     * The account a transfer left, by the one-time code its bank sent for it: a code for exactly
+     * [arrival]'s amount, from another of your banks, in the minutes before it arrived. The code
+     * names no account, so it is the one that bank's digitless SMS go to.
+     */
+    private suspend fun codeSentFor(arrival: Transaction, here: Account, all: List<Account>, learned: List<AccountRef>): Account? {
+        val codes = sms.ignoredBetween(arrival.occurredAt - CODE_WINDOW, arrival.occurredAt)
+            .filter { SmsParser.oneTimeCodeAmount(it.body) == arrival.amountMinor to arrival.currency }
+        return codes.mapNotNull { raw ->
+            val institutionId = SmsParser.bankFor(raw.sender)?.let { institutionIdOf(it) } ?: return@mapNotNull null
+            if (institutionId == here.institutionId) return@mapNotNull null
+            route(emptyList(), all.filter { it.institutionId == institutionId }, learned.filter { it.institutionId == institutionId })
+        }.distinctBy { it.id }.singleOrNull()
     }
 
     /**
@@ -294,6 +344,9 @@ class SmsIngest @Inject constructor(
         /** Banks resend within seconds; three minutes is the spec's window. */
         val DUPLICATE_WINDOW: Duration = Duration.ofMinutes(3)
         val PAIR_WINDOW: Duration = Duration.ofHours(48)
+
+        /** How long before an arrival its sender's one-time code can have been sent. */
+        val CODE_WINDOW: Duration = Duration.ofMinutes(5)
 
         /** How old a day must be before its end-of-day balance is trusted as settled. */
         val SETTLED_AFTER: Duration = Duration.ofDays(1)

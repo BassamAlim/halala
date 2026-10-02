@@ -85,6 +85,18 @@ interface SmsDao {
     )
     suspend fun lowestDailyBalance(accountId: Long, until: Instant): Long?
 
+    /** Arrivals from SMS, up to [until], that no sending leg was ever paired with. */
+    @Query(
+        "SELECT t.* FROM transactions t WHERE t.kind = 'TRANSFER_IN' AND t.direction = 'CREDIT' " +
+                "AND t.rawMessageId IS NOT NULL AND t.occurredAt <= :until AND t.id NOT IN " +
+                "(SELECT inTransactionId FROM internal_transfers) ORDER BY t.occurredAt"
+    )
+    suspend fun unpairedArrivals(until: Instant): List<Transaction>
+
+    /** Messages that recorded nothing (OTPs among them) received in a span of time. */
+    @Query("SELECT * FROM raw_messages WHERE status = 'IGNORED' AND receivedAt BETWEEN :from AND :to")
+    suspend fun ignoredBetween(from: Instant, to: Instant): List<RawMessage>
+
     /** Which of [accountIds] already had a transaction by [at]: the accounts in use then. */
     @Query("SELECT DISTINCT accountId FROM transactions WHERE accountId IN (:accountIds) AND occurredAt <= :at")
     suspend fun inUseBy(accountIds: List<Long>, at: Instant): List<Long>

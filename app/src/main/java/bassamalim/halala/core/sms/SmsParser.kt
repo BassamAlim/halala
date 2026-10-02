@@ -181,6 +181,11 @@ object SmsParser {
         )
     }
 
+    /** The amount a one-time code is for ("transfer, SAR 6300"); null when [body] isn't one. */
+    fun oneTimeCodeAmount(body: String): Pair<Long, String>? =
+        if (!ONE_TIME_CODE.containsMatchIn(body)) null
+        else INVISIBLE.replace(body, "").lineSequence().firstNotNullOfOrNull(::money)
+
     /** The first amount with a currency in [text]: "SR 3000", "40.46 SAR", "100SR", "SAR 2,500.00". */
     fun money(text: String): Pair<Long, String>? = MONEY.findAll(text).firstNotNullOfOrNull { match ->
         val (codeBefore, numberAfter, numberBefore, codeAfter) = match.destructured

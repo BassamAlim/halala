@@ -52,6 +52,10 @@ class SmsRepository @Inject constructor(
     suspend fun lowestDailyBalance(accountId: Long, until: Instant): Long? =
         smsDao.lowestDailyBalance(accountId, until)
 
+    suspend fun unpairedArrivals(until: Instant): List<Transaction> = smsDao.unpairedArrivals(until)
+
+    suspend fun ignoredBetween(from: Instant, to: Instant): List<RawMessage> = smsDao.ignoredBetween(from, to)
+
     suspend fun inUseBy(accountIds: List<Long>, at: Instant): List<Long> = smsDao.inUseBy(accountIds, at)
 
     suspend fun findUnpaired(
