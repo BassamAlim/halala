@@ -287,6 +287,6 @@ with Undo), the reminder sheet in Settings, and **Merchants** (from Settings: ev
 busiest first, with search) and **Merchant** (from Transaction detail's Merchant row, a Review
 card for many, or the list: rename, what was spent, how the bank writes it with how each
 spelling joined, "Not this one", "Same as another merchant", its transactions). Still to come
-in Phase 2: renaming and two-level categories, the Review board's suggestion parts, merchant
+in Phase 2: renaming categories, the Review board's suggestion parts, merchant
 logos and locations, and AI classification with scrubbing (Groq's data-retention question in the spec is still open:
 nothing is sent until the owner settles it).

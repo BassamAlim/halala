@@ -89,7 +89,7 @@ Everything hangs off two tables: **RawMessage** (the untouched SMS, kept forever
 | Merchant | canonical name, aliases (raw descriptors), default category, logo, website, location | "ABC TRDG EST 1234" and "ABC TRADING" both map to one merchant |
 | Counterparty | display name, phone contact link, known IBANs / account names | People you transfer to or lend to |
 | InternalTransfer | out-leg transaction, in-leg transaction, match confidence | Pairs the two sides of a move between your own accounts |
-| Category | name, parent, icon, colour | Two levels, e.g. Food › Groceries |
+| Category | name, icon, colour | One level, e.g. Groceries |
 | ExpenseType | fixed / variable × essential / discretionary | Second axis, independent of category |
 | Tag | name, colour, active date range (optional) | e.g. "Trip to Istanbul", "Wedding" |
 | Rule | conditions (JSON), actions (JSON), source (manual, learned, AI), hit count, created from transaction, enabled | The learning memory; visible and editable |
@@ -190,7 +190,7 @@ Thresholds are adjustable in settings. The app tracks how often you accept each 
 
 Every correction proposes a rule, shown in plain language before saving:
 
-> When merchant is **Jahez** and amount < SAR 150 → category **Food › Delivery**, type **Variable · Discretionary**. Applies to 23 past transactions.
+> When merchant is **Jahez** and amount < SAR 150 → category **Delivery**, type **Variable · Discretionary**. Applies to 23 past transactions.
 
 - Conditions: merchant, descriptor contains/regex, account, amount range, day/time, counterparty, location radius, SMS sender.
 - Actions: set merchant, category, expense type, tags, kind, counterparty, note, exclude from budgets, mark as internal transfer.
@@ -243,7 +243,7 @@ Both use one RecurringSeries model.
 
 ### Categories, expense types and tags
 
-- Two-level categories with a sensible Saudi-context default set (Groceries, Restaurants, Delivery, Fuel, Transport, Utilities, Telecom, Rent, Housing, Health, Education, Family support, Charity, Travel, Entertainment, Shopping, Government fees, Fees & charges, Other).
+- Categories (one level) with a sensible Saudi-context default set (Groceries, Restaurants, Delivery, Fuel, Transport, Utilities, Telecom, Rent, Housing, Health, Education, Family support, Charity, Travel, Entertainment, Shopping, Government fees, Fees & charges, Other).
 - Expense type as a second, independent axis: fixed or variable, and essential or discretionary.
 - Tags cut across both and support AI suggestions (see *AI & learning*).
 
