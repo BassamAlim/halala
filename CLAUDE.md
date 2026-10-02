@@ -291,6 +291,10 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   amount on its day and reports the lowest balance from then to a month past the cycle, and
   whether it breaks this cycle's Everything budget. Months ahead: salary − scheduled − a
   month at the median rate. All in exact integers.
+- **Savings goals** (`SavingsGoal`, `Goals`): a target, an optional date and the accounts it is
+  saved in; what is saved is their balances. A month's saving needed = what is left over the
+  months to the target month (rounded up); "you averaged" = the net flow into those accounts
+  over the last three months, a third of it.
 - **Reminders for what is due** (`DueReminders`, daily at nine, periodic WorkManager work): a
   bill or subscription its lead time before it is due, a cancel reminder three days (or its lead
   time) before it renews, an open loan on its due day. Names and days, never an amount. Choosing a
@@ -335,7 +339,7 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   and rules, 3 merchants with their aliases, 4 business types on merchants and categories, 5 all
   a restore needs: raw bank messages, account refs, balance checkpoints, full rule conditions,
   6 people with their aliases, 7 loans with their events, 8 subscriptions and bills, 9 a loan's
-  split purchase, 10 budgets),
+  split purchase, 10 budgets, 11 savings goals),
   keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
 - **Restore** (same screen, "Restore from JSON"): `Importer.read` turns a schema-5 or later export into
   rows numbered afresh (pure; refuses older or newer schemas and dangling uids), you confirm,
@@ -414,8 +418,9 @@ Phase 3: the Review board's one-tap loan/split/subscription marks, linking peopl
 contacts.
 
 **Phase 4 (planning)** has begun: pay cycles and budgets. Screens: the **Plan** tab (Plan board:
-the cycle chip, Budgets this cycle, Subscriptions and bills, Forecast; goals and calculators to
-come), Home's **balance card** (Home board and its warn/over states, with the forecast's
+the cycle chip, Budgets this cycle, savings goals, Subscriptions and bills, Forecast; calculators come
+with Phase 5), Home's **balance card** (Home board and its warn/over states, with the forecast's
 "End ≈"), **Forecast** (Forecast board: the end figure and band, the balance chart drawn on a
 Canvas, left over each month with the dip's biggest payments, and "Can I afford it?"), **Budgets** and **Budget**
-(no board: the Plan board's budget rows full size, and the form).
+(no board: the Plan board's budget rows full size, and the form), the Plan board's **goal
+cards** and **Savings goal** (no board: the form).

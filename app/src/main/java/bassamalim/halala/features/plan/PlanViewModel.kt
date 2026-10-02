@@ -6,6 +6,9 @@ import bassamalim.halala.core.Globals
 import bassamalim.halala.core.data.repositories.BudgetsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.ForecastRepository
+import bassamalim.halala.core.data.repositories.GoalsRepository
+import bassamalim.halala.core.domain.BudgetState
+import bassamalim.halala.core.utils.monthYearLabel
 import bassamalim.halala.core.domain.Forecasts
 import bassamalim.halala.core.data.repositories.RecurringRepository
 import bassamalim.halala.core.domain.Money
@@ -35,7 +38,24 @@ data class PlanUiState(
     /** The next one due: its name and day ("Netflix", "3 Oct"). */
     val next: Pair<String, String>? = null,
     /** The forecast end of this cycle, summary style; null until there is one. */
-    val endAbout: String? = null
+    val endAbout: String? = null,
+    val goals: List<GoalCard> = emptyList()
+)
+
+/**
+ * The Plan board's goal card: "42,000 of 60,000", "by Mar 2027", how far, and "Save 3,000 a month
+ * to stay on track. You averaged 3,400." ([needed] null without a date; [reached] once there).
+ */
+data class GoalCard(
+    val id: Long,
+    val name: String,
+    val saved: String,
+    val target: String,
+    val by: String?,
+    val progress: Float,
+    val needed: String?,
+    val averaged: String,
+    val reached: Boolean
 )
 
 @HiltViewModel
@@ -44,17 +64,18 @@ class PlanViewModel @Inject constructor(
     budgetsRepository: BudgetsRepository,
     classificationRepository: ClassificationRepository,
     forecastRepository: ForecastRepository,
+    goalsRepository: GoalsRepository,
     private val navigator: Navigator,
     private val clock: Clock
 ) : ViewModel() {
 
     val uiState: StateFlow<PlanUiState> = combine(
-        recurringRepository.observeStates(),
+        combine(recurringRepository.observeStates(), goalsRepository.observeStates(), ::Pair),
         budgetsRepository.observeOverview(Globals.PRIMARY_CURRENCY),
         classificationRepository.observeCategories(),
         classificationRepository.observeAllMerchants(),
         forecastRepository.observeInputs(Globals.PRIMARY_CURRENCY)
-    ) { states, overview, categories, merchants, inputs ->
+    ) { (states, goals), overview, categories, merchants, inputs ->
         val today = LocalDate.now(clock)
         val currency = Globals.PRIMARY_CURRENCY
         PlanUiState(
@@ -63,7 +84,21 @@ class PlanViewModel @Inject constructor(
             budgets = BudgetRows.of(overview.statuses, categories, merchants),
             monthly = Money.format(RecurringDomain.totals(states, currency).first, currency, decimals = false),
             next = RecurringDomain.upcoming(states).firstOrNull()?.let { it.series.name to shortDateLabel(it.nextDue!!, today) },
-            endAbout = Forecasts.endOfCycle(inputs)?.let { Money.format(it.midMinor, currency, decimals = false) }
+            endAbout = Forecasts.endOfCycle(inputs)?.let { Money.format(it.midMinor, currency, decimals = false) },
+            goals = goals.map { goal ->
+                val c = goal.goal.currency
+                GoalCard(
+                    id = goal.goal.id,
+                    name = goal.goal.name,
+                    saved = Money.format(goal.savedMinor, c, decimals = false),
+                    target = Money.format(goal.goal.targetMinor, c, decimals = false),
+                    by = goal.goal.targetDate?.let(::monthYearLabel),
+                    progress = BudgetState.progress(goal.savedMinor, goal.goal.targetMinor),
+                    needed = goal.neededMonthlyMinor?.let { Money.format(it, c, decimals = false) },
+                    averaged = Money.format(goal.averageMonthlyMinor, c, decimals = false),
+                    reached = goal.reached
+                )
+            }
         )
     }.stateIn(
         scope = viewModelScope,
@@ -76,6 +111,10 @@ class PlanViewModel @Inject constructor(
     fun onBudgetsClick() = navigator.navigate(Screen.Budgets)
 
     fun onForecastClick() = navigator.navigate(Screen.Forecast)
+
+    fun onGoalClick(id: Long) = navigator.navigate(Screen.EditGoal(id))
+
+    fun onAddGoalClick() = navigator.navigate(Screen.EditGoal())
 
     fun onAddBudgetClick() = navigator.navigate(Screen.EditBudget())
 }

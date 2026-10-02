@@ -22,17 +22,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
 import bassamalim.halala.core.ui.components.HalalaCard
 import bassamalim.halala.core.ui.components.HalalaChip
+import bassamalim.halala.core.ui.components.ProgressBar
 import bassamalim.halala.core.ui.components.ScreenTitle
 import bassamalim.halala.core.ui.components.SummaryCard
 import bassamalim.halala.core.ui.theme.HalalaColors
+import bassamalim.halala.core.ui.theme.HalalaNumbers
 import bassamalim.halala.core.ui.theme.HalalaType
 import bassamalim.halala.core.ui.theme.Insets
 import bassamalim.halala.core.ui.theme.Spacing
 import bassamalim.halala.features.budgets.BudgetRowsList
 
 /**
- * The Plan board, as far as it is built: this pay cycle, its budgets, subscriptions and bills,
- * and the forecast. Savings goals and the calculators fill in the rest.
+ * The Plan board, as far as it is built: this pay cycle, its budgets, savings goals,
+ * subscriptions and bills, and the forecast. The calculators come with Phase 5.
  */
 @Composable
 fun PlanScreen(viewModel: PlanViewModel = hiltViewModel()) {
@@ -65,6 +67,33 @@ fun PlanScreen(viewModel: PlanViewModel = hiltViewModel()) {
                 style = HalalaType.Body,
                 color = HalalaColors.TextMuted
             ) else BudgetRowsList(state.budgets)
+        }
+
+        state.goals.forEach { goal ->
+            HalalaCard(modifier = Modifier.fillMaxWidth(), onClick = { viewModel.onGoalClick(goal.id) }, verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(text = goal.name, style = HalalaType.Label, color = HalalaColors.TextMuted)
+                    goal.by?.let { Text(text = stringResource(R.string.goal_by_date, it), style = HalalaType.Caption, color = HalalaColors.TextMuted) }
+                }
+                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                    Text(text = goal.saved, style = HalalaNumbers.AmountLg)
+                    Text(text = stringResource(R.string.goal_of, goal.target), style = HalalaType.Label, color = HalalaColors.TextMuted)
+                }
+                ProgressBar(progress = goal.progress)
+                Text(
+                    text = when {
+                        goal.reached -> stringResource(R.string.goal_reached)
+                        goal.needed != null -> stringResource(R.string.goal_needed, goal.needed, goal.averaged)
+                        else -> stringResource(R.string.goal_averaged, goal.averaged)
+                    },
+                    style = HalalaType.Caption,
+                    color = HalalaColors.TextMuted
+                )
+            }
+        }
+        HalalaCard(modifier = Modifier.fillMaxWidth(), onClick = viewModel::onAddGoalClick) {
+            Text(text = stringResource(R.string.goal_add), style = HalalaType.Body)
+            Text(text = stringResource(R.string.goal_add_hint), style = HalalaType.Caption, color = HalalaColors.TextMuted)
         }
 
         Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(Insets.grid)) {

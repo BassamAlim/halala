@@ -66,7 +66,7 @@
     <string name="activity_no_match">Nothing matches.</string>
 
     <!-- Placeholders -->
-    <string name="plan_placeholder">Savings goals, the forecast and the calculators will live here.</string>
+    <string name="plan_placeholder">The zakat and retirement calculators will live here.</string>
     <string name="wealth_placeholder">Net worth, savings, funds, gold and what people owe you will live here.</string>
     <string name="wealth_accounts">Accounts and cash</string>
     <string name="assistant_placeholder">Ask about your money in plain words, and read past digests, here.</string>
@@ -581,6 +581,24 @@
     <string name="forecast_afford_yes">Yes. Your lowest balance would be %1$s on %2$s.</string>
     <string name="forecast_afford_no">Not without going short: your balance would fall to %1$s on %2$s.</string>
     <string name="forecast_afford_budget">It takes you over this cycle\'s budget.</string>
+    <string name="goal">Savings goal</string>
+    <string name="goal_new">New savings goal</string>
+    <string name="goal_target">Target</string>
+    <string name="goal_by">By</string>
+    <string name="goal_no_date">No date</string>
+    <string name="goal_clear_date">No date</string>
+    <string name="goal_accounts">Saved in</string>
+    <string name="goal_accounts_hint">Their balances are what is saved.</string>
+    <string name="goal_accounts_missing">Choose at least one account</string>
+    <string name="goal_delete_title">Delete %1$s?</string>
+    <string name="goal_delete_body">The accounts and their money stay as they are.</string>
+    <string name="goal_by_date">by %1$s</string>
+    <string name="goal_of">of %1$s</string>
+    <string name="goal_needed">Save %1$s a month to stay on track. You averaged %2$s.</string>
+    <string name="goal_averaged">You averaged %1$s a month.</string>
+    <string name="goal_reached">Reached.</string>
+    <string name="goal_add">Add a savings goal</string>
+    <string name="goal_add_hint">A target and a date, in the accounts you save in.</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="cadence_daily">Daily</string>

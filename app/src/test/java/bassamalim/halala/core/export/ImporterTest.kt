@@ -18,12 +18,14 @@ import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
+import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
 import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.BudgetsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
+import bassamalim.halala.core.data.repositories.GoalsRepository
 import bassamalim.halala.core.data.repositories.InstitutionsRepository
 import bassamalim.halala.core.data.repositories.LoansRepository
 import bassamalim.halala.core.data.repositories.PeopleRepository
@@ -122,6 +124,10 @@ class ImporterTest {
             Budget(172, "bud-delivery", BudgetScope.CATEGORY, categoryId = 47, amountMinor = 60_000, currency = "SAR", rollover = true, createdAt = at),
             Budget(173, "bud-jahez", BudgetScope.MERCHANT, merchantId = 84, amountMinor = 30_000, currency = "SAR", createdAt = at),
             Budget(174, "bud-fun", BudgetScope.EXPENSE_TYPE, expenseType = ExpenseType.VARIABLE_DISCRETIONARY, amountMinor = 350_000, currency = "SAR", createdAt = at)
+        ),
+        goals = listOf(
+            SavingsGoal(181, "goal-fund", "Emergency fund", 6_000_000, "SAR", LocalDate.parse("2027-03-31"), listOf(22, 21), at),
+            SavingsGoal(182, "goal-car", "Car", 9_000_000, "SAR", null, emptyList(), at)
         )
     )
 
@@ -147,6 +153,7 @@ class ImporterTest {
         LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK),
         RecurringRepository(db.recurringDao(), db.transactionsDao(), TEST_CLOCK),
         BudgetsRepository(db.budgetsDao(), db.transactionsDao(), TEST_CLOCK),
+        GoalsRepository(db.goalsDao(), db.accountsDao(), db.transactionsDao(), TEST_CLOCK),
         TEST_CLOCK
     )
 

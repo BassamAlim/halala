@@ -187,4 +187,11 @@ class Converters {
 
     @TypeConverter
     fun fromBudgetScope(scope: BudgetScope): String = scope.name
+
+    /** A list of ids, as "3,7,12". */
+    @TypeConverter
+    fun toIds(text: String): List<Long> = text.split(',').mapNotNull { it.trim().toLongOrNull() }
+
+    @TypeConverter
+    fun fromIds(ids: List<Long>): String = ids.joinToString(",")
 }

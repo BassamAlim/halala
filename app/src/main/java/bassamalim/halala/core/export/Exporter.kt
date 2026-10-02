@@ -16,10 +16,12 @@ import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
+import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.BudgetsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
+import bassamalim.halala.core.data.repositories.GoalsRepository
 import bassamalim.halala.core.data.repositories.InstitutionsRepository
 import bassamalim.halala.core.data.repositories.LoansRepository
 import bassamalim.halala.core.data.repositories.PeopleRepository
@@ -59,7 +61,8 @@ data class LedgerSnapshot(
     val loans: List<Loan> = emptyList(),
     val loanEvents: List<LoanEvent> = emptyList(),
     val recurring: List<RecurringSeries> = emptyList(),
-    val budgets: List<Budget> = emptyList()
+    val budgets: List<Budget> = emptyList(),
+    val goals: List<SavingsGoal> = emptyList()
 ) {
     /** The merchant each transaction's title names, by transaction id. */
     fun merchantOf(): Map<Long, Merchant> {
@@ -85,6 +88,7 @@ class Exporter @Inject constructor(
     private val loansRepository: LoansRepository,
     private val recurringRepository: RecurringRepository,
     private val budgetsRepository: BudgetsRepository,
+    private val goalsRepository: GoalsRepository,
     private val clock: Clock
 ) {
 
@@ -106,7 +110,8 @@ class Exporter @Inject constructor(
         loans = loansRepository.getLoans(),
         loanEvents = loansRepository.getEvents(),
         recurring = recurringRepository.getAll(),
-        budgets = budgetsRepository.getAll()
+        budgets = budgetsRepository.getAll(),
+        goals = goalsRepository.getAll()
     )
 
     fun fileStem(): String = "halala-${clock.instant().atZone(clock.zone).toLocalDate()}"
@@ -306,6 +311,17 @@ class Exporter @Inject constructor(
                         currency = budget.currency,
                         rollover = budget.rollover,
                         createdAt = budget.createdAt.toString()
+                    )
+                },
+                goals = snapshot.goals.map { goal ->
+                    ExportGoal(
+                        uid = goal.uid,
+                        name = goal.name,
+                        targetMinor = goal.targetMinor,
+                        currency = goal.currency,
+                        targetDate = goal.targetDate?.toString(),
+                        accountUids = goal.accountIds.mapNotNull(accountUids::get),
+                        createdAt = goal.createdAt.toString()
                     )
                 }
             )

@@ -230,6 +230,17 @@ class MigrationsTest {
         }
     }
 
+    @Test
+    fun `10 to 11 adds savings goals empty and matches the schema`() {
+        helper.createDatabase(DB, 10).use { }
+        helper.runMigrationsAndValidate(DB, 11, true, *MIGRATIONS).use { db ->
+            db.query("SELECT COUNT(*) FROM savings_goals").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+        }
+    }
+
     private companion object {
         const val DB = "migration-test"
     }

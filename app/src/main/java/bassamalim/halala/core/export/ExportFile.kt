@@ -41,10 +41,12 @@ data class ExportFile(
     /** Since schema 8: subscriptions, bills and planned payments. */
     val recurring: List<ExportRecurring> = emptyList(),
     /** Since schema 10. */
-    val budgets: List<ExportBudget> = emptyList()
+    val budgets: List<ExportBudget> = emptyList(),
+    /** Since schema 11. */
+    val goals: List<ExportGoal> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 10
+        const val SCHEMA_VERSION = 11
     }
 }
 
@@ -227,6 +229,18 @@ data class ExportBudget(
     val amountMinor: Long,
     val currency: String,
     val rollover: Boolean,
+    val createdAt: String
+)
+
+/** A savings goal: a target, an optional date, and the accounts (by uid) it is saved in. */
+@Serializable
+data class ExportGoal(
+    val uid: String,
+    val name: String,
+    val targetMinor: Long,
+    val currency: String,
+    val targetDate: String?,
+    val accountUids: List<String>,
     val createdAt: String
 )
 

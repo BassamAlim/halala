@@ -18,6 +18,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
+import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
 import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
@@ -58,7 +59,8 @@ class Importer @Inject constructor(
         loans = snapshot.loans,
         loanEvents = snapshot.loanEvents,
         recurring = snapshot.recurring,
-        budgets = snapshot.budgets
+        budgets = snapshot.budgets,
+        goals = snapshot.goals
     )
 
     companion object {
@@ -324,6 +326,20 @@ class Importer @Inject constructor(
                 )
             }
 
+            val goals = file.goals.mapIndexed { index, goal ->
+                require(goal.targetMinor > 0) { "Goal ${goal.uid} has no positive target." }
+                SavingsGoal(
+                    id = index + 1L,
+                    uid = goal.uid,
+                    name = goal.name,
+                    targetMinor = goal.targetMinor,
+                    currency = goal.currency,
+                    targetDate = goal.targetDate?.let(LocalDate::parse),
+                    accountIds = goal.accountUids.map { accountIds.named(it, "account") },
+                    createdAt = Instant.parse(goal.createdAt)
+                )
+            }
+
             return LedgerSnapshot(
                 institutions = institutions,
                 accounts = accounts,
@@ -342,7 +358,8 @@ class Importer @Inject constructor(
                 loans = loans,
                 loanEvents = loanEvents,
                 recurring = recurring,
-                budgets = budgets
+                budgets = budgets,
+                goals = goals
             )
         }
 

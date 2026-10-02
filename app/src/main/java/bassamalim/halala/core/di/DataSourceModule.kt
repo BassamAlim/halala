@@ -83,6 +83,9 @@ object DataSourceModule {
     fun provideBudgetsDao(database: AppDatabase) = database.budgetsDao()
 
     @Provides @Singleton
+    fun provideGoalsDao(database: AppDatabase) = database.goalsDao()
+
+    @Provides @Singleton
     fun provideRestoreDao(database: AppDatabase) = database.restoreDao()
 
     @Provides @Singleton

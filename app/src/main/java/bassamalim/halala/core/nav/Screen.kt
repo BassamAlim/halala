@@ -72,6 +72,9 @@ sealed interface Screen {
     /** Where this cycle should end, the months ahead, and "Can I afford it?". */
     @Serializable data object Forecast : Screen
 
+    /** Adding a savings goal, or changing [id]. */
+    @Serializable data class EditGoal(val id: Long = 0) : Screen
+
     /** Every budget this pay cycle. */
     @Serializable data object Budgets : Screen
 
