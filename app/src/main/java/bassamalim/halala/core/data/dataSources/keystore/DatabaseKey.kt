@@ -1,14 +1,7 @@
 package bassamalim.halala.core.data.dataSources.keystore
 
-import android.security.keystore.KeyGenParameterSpec
-import android.security.keystore.KeyProperties
 import java.io.File
-import java.security.KeyStore
 import java.security.SecureRandom
-import javax.crypto.Cipher
-import javax.crypto.KeyGenerator
-import javax.crypto.SecretKey
-import javax.crypto.spec.GCMParameterSpec
 
 /**
  * The database passphrase: 32 random bytes, stored only wrapped (AES-256-GCM) by a key that lives
@@ -45,52 +38,14 @@ class DatabaseKey(
         return passphrase
     }
 
-    private fun wrap(plain: ByteArray): ByteArray {
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.ENCRYPT_MODE, wrappingKey())
-        val iv = cipher.iv
-        val sealed = cipher.doFinal(plain)
+    private val keystore = KeystoreWrap(KEY_ALIAS)
 
-        // [format version][iv length][iv][ciphertext + tag]
-        return byteArrayOf(FORMAT_VERSION, iv.size.toByte()) + iv + sealed
-    }
+    private fun wrap(plain: ByteArray) = keystore.wrap(plain)
 
-    private fun unwrap(stored: ByteArray): ByteArray {
-        check(stored.size > 2 && stored[0] == FORMAT_VERSION) { "Unknown database key format." }
-
-        val ivLength = stored[1].toInt()
-        val iv = stored.copyOfRange(2, 2 + ivLength)
-        val sealed = stored.copyOfRange(2 + ivLength, stored.size)
-
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.DECRYPT_MODE, wrappingKey(), GCMParameterSpec(TAG_BITS, iv))
-        return cipher.doFinal(sealed)
-    }
-
-    private fun wrappingKey(): SecretKey {
-        val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
-        (keyStore.getKey(KEY_ALIAS, null) as? SecretKey)?.let { return it }
-
-        val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
-        generator.init(
-            KeyGenParameterSpec.Builder(
-                KEY_ALIAS,
-                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
-            )
-                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                .setKeySize(256)
-                .build()
-        )
-        return generator.generateKey()
-    }
+    private fun unwrap(stored: ByteArray) = keystore.unwrap(stored)
 
     private companion object {
-        const val ANDROID_KEYSTORE = "AndroidKeyStore"
         const val KEY_ALIAS = "halala_database_key_wrap"
-        const val TRANSFORMATION = "AES/GCM/NoPadding"
-        const val TAG_BITS = 128
         const val PASSPHRASE_BYTES = 32
-        const val FORMAT_VERSION: Byte = 1
     }
 }

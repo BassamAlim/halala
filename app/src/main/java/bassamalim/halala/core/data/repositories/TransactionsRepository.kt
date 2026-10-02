@@ -159,6 +159,37 @@ class TransactionsRepository @Inject constructor(
         )
     }
 
+    /**
+     * The other side of a move that has only one: recorded on [accountId] (same amount, time and
+     * currency, the opposite direction) and paired with [legId].
+     */
+    suspend fun completeMove(legId: Long, accountId: Long) {
+        val leg = checkNotNull(transactionsDao.get(legId)) { "No transaction $legId" }
+        require(leg.accountId != accountId && transactionsDao.getTransferFor(legId) == null)
+        val outgoing = leg.direction == Direction.DEBIT
+        val otherId = addParsed(
+            leg.copy(
+                id = 0,
+                uid = UUID.randomUUID().toString(),
+                accountId = accountId,
+                direction = if (outgoing) Direction.CREDIT else Direction.DEBIT,
+                source = TransactionSource.MANUAL,
+                rawMessageId = null,
+                categoryId = null,
+                expenseType = null,
+                ruleId = null
+            )
+        )
+        if (outgoing) pair(legId, otherId, 1.0) else pair(otherId, legId, 1.0)
+    }
+
+    /** A leg called a move that went to (or came from) someone else: a plain transfer. */
+    suspend fun markExternal(legId: Long) {
+        val leg = checkNotNull(transactionsDao.get(legId)) { "No transaction $legId" }
+        val kind = if (leg.direction == Direction.DEBIT) TransactionKind.TRANSFER_OUT else TransactionKind.TRANSFER_IN
+        transactionsDao.update(leg.copy(kind = kind))
+    }
+
     private suspend fun check(transaction: Transaction) {
         require(transaction.amountMinor > 0) { "Amounts are positive; the direction carries the sign." }
         require(transaction.currency == currencyOf(transaction.accountId)) { "Not the account's currency." }
@@ -199,6 +230,6 @@ class TransactionsRepository @Inject constructor(
     /** The merchant key its title reads as. */
     private fun Transaction.keyed() = copy(merchantKey = Merchants.key(title))
 
-    private suspend fun currencyOf(accountId: Long): String =
+    suspend fun currencyOf(accountId: Long): String =
         checkNotNull(accountsDao.get(accountId)) { "No account $accountId" }.currency
 }

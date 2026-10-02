@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
@@ -52,7 +53,11 @@ fun TransactionRow(
     modifier: Modifier = Modifier,
     currency: String? = null,
     autoLabel: String? = null,
+    /** The badge's colour: jade for Auto; muted or amber for the subscriptions board's badges. */
+    badgeColor: Color = HalalaColors.Accent,
     divider: Boolean = false,
+    /** A figure that no longer stands (a settled loan's nothing owed): muted whatever its tone. */
+    muted: Boolean = false,
     onClick: (() -> Unit)? = null
 ) {
     Column(modifier.fillMaxWidth()) {
@@ -82,7 +87,7 @@ fun TransactionRow(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
                     )
-                    if (autoLabel != null) AutoBadge(autoLabel)
+                    if (autoLabel != null) AutoBadge(autoLabel, color = badgeColor)
                 }
 
                 Text(
@@ -94,11 +99,7 @@ fun TransactionRow(
                 )
             }
 
-            val amountColor = when (tone) {
-                AmountTone.Spending -> HalalaColors.Text
-                AmountTone.Income -> HalalaColors.Income
-                AmountTone.Internal -> HalalaColors.TextMuted
-            }
+            val amountColor = if (muted) HalalaColors.TextMuted else toneColor(tone)
             Text(
                 text = buildAnnotatedString {
                     append(amount)
@@ -181,4 +182,10 @@ private fun TransactionRowPreview() = HalalaTheme {
         TransactionRow("Salary → Awaeed", "Between your accounts · not spending", "5,000.00", AmountTone.Internal, "", divider = true)
         TransactionRow("Salary", "Al Rajhi – Salary", "+18,000.00", AmountTone.Income, "S", divider = true)
     }
+}
+
+private fun toneColor(tone: AmountTone) = when (tone) {
+    AmountTone.Spending -> HalalaColors.Text
+    AmountTone.Income -> HalalaColors.Income
+    AmountTone.Internal -> HalalaColors.TextMuted
 }

@@ -71,6 +71,45 @@ object DataSourceModule {
     fun provideMerchantsDao(database: AppDatabase) = database.merchantsDao()
 
     @Provides @Singleton
+    fun providePeopleDao(database: AppDatabase) = database.peopleDao()
+
+    @Provides @Singleton
+    fun provideLoansDao(database: AppDatabase) = database.loansDao()
+
+    @Provides @Singleton
+    fun provideRecurringDao(database: AppDatabase) = database.recurringDao()
+
+    @Provides @Singleton
+    fun provideBudgetsDao(database: AppDatabase) = database.budgetsDao()
+
+    @Provides @Singleton
+    fun provideGoalsDao(database: AppDatabase) = database.goalsDao()
+
+    @Provides @Singleton
+    fun provideAlertsDao(database: AppDatabase) = database.alertsDao()
+
+    @Provides @Singleton
+    fun provideAssetsDao(database: AppDatabase) = database.assetsDao()
+
+    @Provides @Singleton
+    fun provideZakatDao(database: AppDatabase) = database.zakatDao()
+
+    @Provides @Singleton
+    fun provideScenariosDao(database: AppDatabase) = database.scenariosDao()
+
+    @Provides @Singleton
+    fun provideSavingsDao(database: AppDatabase) = database.savingsDao()
+
+    @Provides @Singleton
+    fun provideTagsDao(database: AppDatabase) = database.tagsDao()
+
+    @Provides @Singleton
+    fun providePlacesDao(database: AppDatabase) = database.placesDao()
+
+    @Provides @Singleton
+    fun provideRestoreDao(database: AppDatabase) = database.restoreDao()
+
+    @Provides @Singleton
     fun providePreferencesDataStore(application: Application): DataStore<Preferences> =
         application.preferencesDataStore
 

@@ -57,6 +57,72 @@ sealed interface Screen {
     /** One merchant: its name, the ways its bank writes it, merging and splitting. */
     @Serializable data class Merchant(val id: Long) : Screen
 
+    /** Everyone you send money to or get it from. */
+    @Serializable data object People : Screen
+
+    /** One person: their transfers, the ways their bank writes them, merging and splitting. */
+    @Serializable data class Person(val id: Long) : Screen
+
+    /** Subscriptions, bills and planned payments: what they cost and when each is due. */
+    @Serializable data object Recurring : Screen
+
+    /** Adding one by hand, or changing [id]. */
+    @Serializable data class EditRecurring(val id: Long = 0) : Screen
+
+    /** Where this cycle should end, the months ahead, and "Can I afford it?". */
+    @Serializable data object Forecast : Screen
+
+    /** Adding a savings goal, or changing [id]. */
+    @Serializable data class EditGoal(val id: Long = 0) : Screen
+
+    /** Anomaly alerts: duplicates, unusual charges, declined cards, balances that don't add up. */
+    @Serializable data object Alerts : Screen
+
+    /** One digest: a week, month or year ([kind], a `DigestKind` name) starting on [startEpochDay]. */
+    @Serializable data class Digest(val kind: String, val startEpochDay: Long) : Screen
+
+    /** Every past digest. */
+    @Serializable data object Digests : Screen
+
+    /** Funds, gold and other things you own. */
+    @Serializable data object Assets : Screen
+
+    /** Adding an asset, or changing [id]. */
+    @Serializable data class EditAsset(val id: Long = 0) : Screen
+
+    /** Where you spend: the map. */
+    @Serializable data object SpendingMap : Screen
+
+    /** Tags, and what the spending suggests. */
+    @Serializable data object Tags : Screen
+
+    /** Adding (id 0) or changing a tag. */
+    @Serializable data class EditTag(val id: Long = 0) : Screen
+
+    /** Encrypted backups: passphrase, folder, schedule. */
+    @Serializable data object Backup : Screen
+
+    /** Savings: Awaeed terms and Hasad. */
+    @Serializable data object Savings : Screen
+
+    /** The terms of savings account [accountId]. */
+    @Serializable data class SavingsTerms(val accountId: Long) : Screen
+
+    /** The retirement planner. */
+    @Serializable data object Retirement : Screen
+
+    /** The compound interest calculator. */
+    @Serializable data object Compound : Screen
+
+    /** The zakat calculator. */
+    @Serializable data object Zakat : Screen
+
+    /** Every budget this pay cycle. */
+    @Serializable data object Budgets : Screen
+
+    /** Adding a budget, or changing [id]. */
+    @Serializable data class EditBudget(val id: Long = 0) : Screen
+
     /** Writing a rule by hand, or editing [id]. */
     @Serializable data class EditRule(val id: Long = 0) : Screen
 

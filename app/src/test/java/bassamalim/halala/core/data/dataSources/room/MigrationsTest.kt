@@ -131,6 +131,164 @@ class MigrationsTest {
         }
     }
 
+    @Test
+    fun `4 to 5 adds merchants to a database stamped 4 that never got them`() {
+        helper.createDatabase(DB, 3).use { db ->
+            db.execSQL("INSERT INTO categories (uid, name, expenseType) VALUES ('g', 'Groceries', 'VARIABLE_ESSENTIAL')")
+            db.version = 4
+        }
+
+        helper.runMigrationsAndValidate(DB, 5, true, *MIGRATIONS).use { db ->
+            db.query("SELECT COUNT(*) FROM merchants").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+        }
+    }
+
+    @Test
+    fun `5 to 6 adds people empty, keeps every transaction and matches the schema`() {
+        helper.createDatabase(DB, 5).use { db ->
+            db.execSQL(
+                "INSERT INTO accounts (id, uid, institutionId, nickname, type, last4, ibanSuffix, currency, " +
+                        "openingBalanceMinor, archived, createdAt) " +
+                        "VALUES (1, 'a', NULL, 'Cash', 'CASH', NULL, NULL, 'SAR', 0, 0, 0)"
+            )
+            db.execSQL(
+                "INSERT INTO transactions (uid, accountId, direction, amountMinor, currency, occurredAt, kind, " +
+                        "title, note, source, createdAt, merchantKey) " +
+                        "VALUES ('t', 1, 'DEBIT', 150000, 'SAR', 0, 'TRANSFER_OUT', 'KHALID ALI', '', 'MANUAL', 0, 'khalid ali')"
+            )
+        }
+
+        helper.runMigrationsAndValidate(DB, 6, true, *MIGRATIONS).use { db ->
+            db.query("SELECT amountMinor, merchantKey FROM transactions").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(150000L, cursor.getLong(0))
+                assertEquals("khalid ali", cursor.getString(1))
+            }
+            db.query("SELECT COUNT(*) FROM people").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+        }
+    }
+
+    @Test
+    fun `6 to 7 adds loans empty and matches the schema`() {
+        helper.createDatabase(DB, 6).use { db ->
+            db.execSQL("INSERT INTO people (id, uid, name) VALUES (1, 'p', 'Khalid')")
+        }
+
+        helper.runMigrationsAndValidate(DB, 7, true, *MIGRATIONS).use { db ->
+            db.query("SELECT COUNT(*) FROM loans").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+            db.query("SELECT name FROM people").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("Khalid", cursor.getString(0))
+            }
+        }
+    }
+
+    @Test
+    fun `7 to 8 adds subscriptions and bills empty and matches the schema`() {
+        helper.createDatabase(DB, 7).use { }
+
+        helper.runMigrationsAndValidate(DB, 8, true, *MIGRATIONS).use { db ->
+            db.query("SELECT COUNT(*) FROM recurring_series").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+        }
+    }
+
+    @Test
+    fun `8 to 9 lets a loan be a share of a split bill, and matches the schema`() {
+        helper.createDatabase(DB, 8).use { db ->
+            db.execSQL("INSERT INTO people (id, uid, name) VALUES (1, 'p', 'Khalid')")
+            db.execSQL("INSERT INTO loans (id, uid, personId, direction, currency, createdAt) VALUES (1, 'l', 1, 'LENT', 'SAR', 0)")
+        }
+
+        helper.runMigrationsAndValidate(DB, 9, true, *MIGRATIONS).use { db ->
+            db.query("SELECT splitOf FROM loans").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(true, cursor.isNull(0))
+            }
+        }
+    }
+
+    @Test
+    fun `9 to 10 adds budgets empty and matches the schema`() {
+        helper.createDatabase(DB, 9).use { }
+        helper.runMigrationsAndValidate(DB, 10, true, *MIGRATIONS).use { db ->
+            db.query("SELECT COUNT(*) FROM budgets").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+        }
+    }
+
+    @Test
+    fun `10 to 11 adds savings goals empty and matches the schema`() {
+        helper.createDatabase(DB, 10).use { }
+        helper.runMigrationsAndValidate(DB, 11, true, *MIGRATIONS).use { db ->
+            db.query("SELECT COUNT(*) FROM savings_goals").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+        }
+    }
+
+    @Test
+    fun `11 to 12 adds dismissed alerts and matches the schema`() {
+        helper.createDatabase(DB, 11).use { }
+        helper.runMigrationsAndValidate(DB, 12, true, *MIGRATIONS).close()
+    }
+
+    @Test
+    fun `12 to 13 adds assets and snapshots and matches the schema`() {
+        helper.createDatabase(DB, 12).use { }
+        helper.runMigrationsAndValidate(DB, 13, true, *MIGRATIONS).close()
+    }
+
+    @Test
+    fun `13 to 14 adds the zakat profile and matches the schema`() {
+        helper.createDatabase(DB, 13).use { }
+        helper.runMigrationsAndValidate(DB, 14, true, *MIGRATIONS).close()
+    }
+
+    @Test
+    fun `14 to 15 adds retirement scenarios and matches the schema`() {
+        helper.createDatabase(DB, 14).use { }
+        helper.runMigrationsAndValidate(DB, 15, true, *MIGRATIONS).close()
+    }
+
+    @Test
+    fun `15 to 16 adds savings terms and matches the schema`() {
+        helper.createDatabase(DB, 15).use { }
+        helper.runMigrationsAndValidate(DB, 16, true, *MIGRATIONS).close()
+    }
+
+    @Test
+    fun `16 to 17 adds tags and matches the schema`() {
+        helper.createDatabase(DB, 16).use { }
+        helper.runMigrationsAndValidate(DB, 17, true, *MIGRATIONS).close()
+    }
+
+    @Test
+    fun `17 to 18 lets an asset name its price source and matches the schema`() {
+        helper.createDatabase(DB, 17).use { }
+        helper.runMigrationsAndValidate(DB, 18, true, *MIGRATIONS).close()
+    }
+
+    @Test
+    fun `18 to 19 adds places and matches the schema`() {
+        helper.createDatabase(DB, 18).use { }
+        helper.runMigrationsAndValidate(DB, 19, true, *MIGRATIONS).close()
+    }
+
     private companion object {
         const val DB = "migration-test"
     }

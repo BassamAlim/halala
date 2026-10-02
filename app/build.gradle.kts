@@ -19,6 +19,11 @@ val envProperties = Properties().apply {
 }
 val hasReleaseKeystore = !envProperties.getProperty("KEYSTORE_PATH").isNullOrBlank()
 
+/** Groq's key is built in: from `.env` locally, from the `GROQ_API_KEY` secret in CI. */
+val groqApiKey = envProperties.getProperty("GROQ_API_KEY")
+    ?: providers.environmentVariable("GROQ_API_KEY").orNull
+    ?: ""
+
 android {
     namespace = "bassamalim.halala"
     compileSdk {
@@ -32,6 +37,8 @@ android {
         targetSdk = 37
         versionCode = 2
         versionName = "0.2.0"
+
+        buildConfigField("String", "GROQ_API_KEY", "\"$groqApiKey\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -48,6 +55,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // The owner's own key, so debug builds from here, from CI and the releases all
+            // install over each other. Without a `.env`, the machine's debug key as usual.
+            if (hasReleaseKeystore) signingConfig = signingConfigs.getByName("release")
+        }
         release {
             optimization {
                 enable = false
@@ -61,7 +73,7 @@ android {
     }
     buildFeatures {
         compose = true
-        // Settings shows the version number.
+        // Settings shows the version number; Groq's key.
         buildConfig = true
     }
     sourceSets {
@@ -120,6 +132,12 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.biometric)
+    // The home-screen widget.
+    implementation(libs.androidx.glance.appwidget)
+    // The spending map: OpenStreetMap tiles, no Play services, no key.
+    implementation(libs.osmdroid.android)
+    // Argon2id for the encrypted backup's passphrase (nothing else of it is used).
+    implementation(libs.bouncycastle.prov)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

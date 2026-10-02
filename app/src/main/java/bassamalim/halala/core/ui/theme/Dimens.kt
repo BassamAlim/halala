@@ -46,6 +46,10 @@ object Sizes {
     /** Settings-style rows inside a card. */
     val listRow = 52.dp
     val fab = 56.dp
+    /** A Sankey node's bar, and the least height a node is drawn at so its label fits. */
+    val sankeyBar = 8.dp
+    val sankeyNode = 22.dp
+    val sankeyMax = 300.dp
     /** The mark on the lock screen. */
     val lockMark = 64.dp
     /** The mark beside the wordmark on Home (the board's size). */

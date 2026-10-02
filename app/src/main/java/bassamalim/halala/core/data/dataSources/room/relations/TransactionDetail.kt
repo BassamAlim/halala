@@ -26,7 +26,15 @@ data class TransactionDetail(
     /** What its merchant was identified as, by whom, and how sure: why an automatic rule filed it. */
     val merchantType: BusinessType? = null,
     val merchantIdentifiedBy: IdentifiedBy? = null,
-    val merchantConfidence: Int? = null
+    val merchantConfidence: Int? = null,
+    /** The person a transfer's title names. */
+    val personId: Long? = null,
+    val personName: String? = null,
+    /** What others owe of it, when it was split: their shares. */
+    val sharedMinor: Long = 0
 ) {
     val isInternalTransfer get() = counterpartId != null
+
+    /** What of it is yours: the amount less what others owe of a split bill. */
+    val yourMinor get() = transaction.amountMinor - sharedMinor
 }

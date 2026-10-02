@@ -2,12 +2,15 @@ package bassamalim.halala.core.data.repositories
 
 import bassamalim.halala.core.data.dataSources.room.daos.ClassificationDao
 import bassamalim.halala.core.data.dataSources.room.daos.MerchantsDao
+import bassamalim.halala.core.data.dataSources.room.daos.PeopleDao
 import bassamalim.halala.core.data.dataSources.room.daos.TransactionsDao
 import bassamalim.halala.core.data.dataSources.room.entities.AuditBatch
 import bassamalim.halala.core.data.dataSources.room.entities.AuditChange
 import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.entities.Merchant
 import bassamalim.halala.core.data.dataSources.room.entities.MerchantAlias
+import bassamalim.halala.core.data.dataSources.room.entities.Person
+import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
 import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
@@ -22,6 +25,7 @@ import bassamalim.halala.core.domain.Identification
 import bassamalim.halala.core.domain.KnownMerchants
 import bassamalim.halala.core.domain.MerchantLookup
 import bassamalim.halala.core.domain.Merchants
+import bassamalim.halala.core.domain.People
 import bassamalim.halala.core.domain.Rules
 import bassamalim.halala.core.domain.Tier
 import bassamalim.halala.core.enums.AliasMatch
@@ -59,6 +63,7 @@ class ClassificationRepository @Inject constructor(
     private val classificationDao: ClassificationDao,
     private val merchantsDao: MerchantsDao,
     private val transactionsDao: TransactionsDao,
+    private val peopleDao: PeopleDao,
     private val clock: Clock
 ) {
 
@@ -225,12 +230,13 @@ class ClassificationRepository @Inject constructor(
     }
 
     /**
-     * Finds every new descriptor its merchant, then runs every enabled rule over everything a
+     * Finds every new descriptor its merchant and every new name its person, then runs every enabled rule over everything a
      * rule may file, and writes only what changes, so it can run after every SMS, every save,
      * and whenever the app opens.
      */
     suspend fun applyRules() = writing.withLock {
         resolveMerchants()
+        resolvePeople()
         identifyKnown()
         syncAutoRules()
         fileByRules()
@@ -333,6 +339,8 @@ class ClassificationRepository @Inject constructor(
                 merchantsDao.updateMerchant(
                     into.copy(businessType = from.businessType, identifiedBy = from.identifiedBy, confidence = from.confidence)
                 )
+            merchantsDao.moveSeries(fromId, intoId)
+            merchantsDao.moveBudgets(fromId, intoId)
             merchantsDao.deleteMerchant(fromId)
             syncAutoRules()
             fileByRules()
@@ -368,9 +376,6 @@ class ClassificationRepository @Inject constructor(
 
     /** Every merchant as it is, with what it was identified as. */
     fun observeAllMerchants(): Flow<List<Merchant>> = merchantsDao.observeAll()
-
-    /** How many merchants wait to be identified: ones with spending that nothing has filed. */
-    fun observeToIdentifyCount(): Flow<Int> = merchantsDao.observeToIdentifyCount()
 
     /** The merchants waiting to be identified, the busiest first, each with the name a bank wrote. */
     suspend fun toIdentify(): List<ToIdentify> = merchantsDao.getToIdentify()
@@ -515,6 +520,23 @@ class ClassificationRepository @Inject constructor(
                 )
             )
             aliases[key] = merchantId
+        }
+    }
+
+    /**
+     * Gives each name a transfer was written with, not seen before, its person: always a new
+     * one, never a look-alike (two people can share most of a name). Runs after
+     * [resolveMerchants], which keeps the keys in step with the titles.
+     */
+    private suspend fun resolvePeople() {
+        val known = peopleDao.getAliases().map { it.aliasKey }.toMutableSet()
+        for (name in peopleDao.getTransferNames()) {
+            if (name.merchantKey.isBlank() || name.merchantKey in known) continue
+            val personId = peopleDao.insertPerson(
+                Person(uid = UUID.randomUUID().toString(), name = People.nameOf(name.title))
+            )
+            peopleDao.insertAlias(PersonAlias(personId = personId, aliasKey = name.merchantKey, descriptor = name.title.trim()))
+            known += name.merchantKey
         }
     }
 

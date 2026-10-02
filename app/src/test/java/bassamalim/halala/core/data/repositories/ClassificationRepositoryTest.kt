@@ -49,7 +49,7 @@ class ClassificationRepositoryTest {
     fun setUp() = runTest {
         db = testDatabase()
         transactions = TransactionsRepository(db.transactionsDao(), db.accountsDao(), TEST_CLOCK)
-        classification = ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), TEST_CLOCK)
+        classification = ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), db.peopleDao(), TEST_CLOCK)
         cash = db.accountsDao().getCashWallet()!!.id
         val categories = classification.getCategories().associate { it.name to it.id }
         groceries = categories.getValue("Groceries")

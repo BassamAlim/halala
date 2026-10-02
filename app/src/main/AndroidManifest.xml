@@ -10,10 +10,18 @@
     <uses-permission android:name="android.permission.READ_SMS" />
 
     <!--
-        Only for merchant identification, when you turn it on: a shop's name goes to Groq over
-        HTTPS. Nothing else is ever sent.
+        Groq over HTTPS (a merchant's name to identify it, a question you ask the assistant),
+        public gold and fund prices, and the spending map's tiles. Nothing of your ledger is sent.
     -->
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
+        Only while "Remember where you spend" is on: where the phone is when a purchase's SMS
+        arrives (so in the background too). Kept in the encrypted ledger, never sent.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <!-- The review reminder, and nothing per transaction. Asked for when you turn the reminder on. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -61,6 +69,19 @@
         <receiver
             android:name=".core.reminders.ReviewReminders$SnoozeReceiver"
             android:exported="false" />
+
+        <!-- The home-screen widget (Glance). -->
+        <receiver
+            android:name=".core.widget.HalalaWidgetReceiver"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/halala_widget" />
+        </receiver>
 
         <!-- WorkManager is configured by App (it supplies Hilt's worker factory). -->
         <provider

@@ -8,17 +8,17 @@ data class InOut(val inMinor: Long, val outMinor: Long)
 
 /**
  * Income and spending in [currency]. Moves between your own accounts and wallet corrections
- * are neither, and amounts in other currencies aren't mixed in (that needs the SAR amount the
- * bank charged, which arrives with SMS parsing).
+ * are neither, a split bill counts only your share, and amounts in other currencies aren't
+ * mixed in (that needs the SAR amount the bank charged, which arrives with SMS parsing).
  */
 fun inOut(transactions: List<TransactionDetail>, currency: String): InOut {
     val counted = transactions
         .filter { !it.isInternalTransfer }
-        .map { it.transaction }
-        .filter { it.currency == currency && it.kind.countsInTotals }
+        .filter { it.transaction.currency == currency && it.transaction.kind.countsInTotals }
 
     return InOut(
-        inMinor = Money.sum(counted.filter { it.direction == Direction.CREDIT }.map { it.amountMinor }),
-        outMinor = Money.sum(counted.filter { it.direction == Direction.DEBIT }.map { it.amountMinor })
+        inMinor = Money.sum(counted.filter { it.transaction.direction == Direction.CREDIT }.map { it.transaction.amountMinor }),
+        // A split bill is your share only: the rest is owed to you (People tracks it).
+        outMinor = Money.sum(counted.filter { it.transaction.direction == Direction.DEBIT }.map { it.yourMinor })
     )
 }

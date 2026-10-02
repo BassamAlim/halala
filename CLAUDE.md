@@ -33,7 +33,9 @@ designs disagree, ask the owner.
 - Room over **SQLCipher** (`net.zetetic:sqlcipher-android`) for the ledger, DataStore
   Preferences for settings that aren't money
 - Navigation Compose with **type-safe routes** (`@Serializable` destinations in `core/nav/Screen.kt`)
-- WorkManager (wired to Hilt in `App`; workers arrive with later phases), AndroidX Biometric
+- WorkManager (wired to Hilt in `App`), AndroidX Biometric, Glance for the home-screen widget,
+  Bouncy Castle only for Argon2id (the backup passphrase), osmdroid for the spending map
+  (OpenStreetMap tiles: no Play services, no key)
 - kotlinx.serialization for the JSON export
 - Tests: JUnit 4, Robolectric for Room, kotlinx-coroutines-test
 - Version catalog: `gradle/libs.versions.toml`. Add dependencies there, never inline.
@@ -48,7 +50,9 @@ designs disagree, ask the owner.
 
 CI (`.github/workflows/ci.yml`) runs both on every push and PR to `main` (not `dev`), uploads
 the debug APK as a run artifact, and fails if the Room schema changed without its `app/schemas`
-JSON. A `v*` tag runs `release.yml`: unit
+JSON. Debug builds are signed with the release key whenever a `.env` is present (CI writes one
+from the same secrets), so CI's debug APK, an Android Studio build and the releases all install
+over each other. A `v*` tag runs `release.yml`: unit
 tests, a release APK signed from the `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` and
 `KEY_PASSWORD` secrets (unsigned, with a warning, if any is missing), attached to a GitHub
 Release with its SHA-256. It can also be run by hand from the Actions tab with a tag name: it
@@ -64,14 +68,14 @@ knows about Room.
 
 ```
 core/
-  ai/                         merchant identification: ApiKeys (Keystore-wrapped), GroqProtocol,
+  ai/                         merchant identification: ApiKeys (built in), GroqProtocol,
                               GroqIdentifier, AiIdentification and its worker
   data/dataSources/room/      entities, daos, relations, AppDatabase, Converters, Migrations, Seed
   data/dataSources/keystore/  DatabaseKey: the SQLCipher passphrase, wrapped by Android Keystore
   data/repositories/          the only way into storage; @Singleton + @Inject constructor
   di/                         Hilt modules for things Hilt can't construct itself
   domain/                     app-wide rules: Money, BudgetState, CashGap, Totals, TransactionItems,
-                              Rules, Merchants, Identification, KnownMerchants
+                              Rules, Merchants, People, Loans, Identification, KnownMerchants
   enums/                      shared enums (AccountType, Direction, TransactionKind, …)
   export/                     the CSV and JSON exports (Exporter, Csv, ExportFile)
   lock/                       LockManager: when the biometric lock asks again
@@ -223,13 +227,146 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   category, one tap to confirm, which learns as usual); the rest is **Ask**. `applyRules`
   identifies from the bundled list first, with no call; the AI only sees merchants still unknown
   that have unfiled spending. **Only a merchant's name, as the bank wrote it (digits kept), ever
-  leaves the phone**, and never one holding your accounts' or cards' last four digits, ten or
+  leaves the phone** for identification (the assistant sends your question, see below), and never one holding your accounts' or cards' last four digits, ten or
   more digits, or an IBAN (`Identification.sendable`; those are `WITHHELD` for you). The AI is
-  Groq (`qwen/qwen3.8-27b`, strict JSON schema, reasoning off), off by default, turned on in
-  Settings with your API key, which is stored wrapped by its own Android Keystore key
-  (`KeystoreApiKeys`, apart from the database's). `IdentifyWorker` (online only, one at a time)
+  Groq (`qwen/qwen3.8-27b`, strict JSON schema, reasoning off), always on, with no setting. Its key is built in, not typed: `BuildConfig.GROQ_API_KEY`, from `GROQ_API_KEY` in
+  `.env` locally or the repository secret of that name in CI (a build without it
+  identifies from the bundled list only). `IdentifyWorker` (online only, one at a time)
   runs after every SMS run and as the app opens, in batches of 40 names, the busiest first;
   what it says is recorded without a batch (the rule names why), and each merchant is asked once.
+- **People** (the spec's counterparties): a transfer's title (`People.KINDS`: transfers and the
+  loan kinds, never a move between your own accounts) names a `Person`, found as merchants are,
+  through a `PersonAlias` keyed by the transaction's `merchantKey`, so merging or splitting moves
+  aliases, never transactions. `applyRules` gives each name not seen before a new person
+  (`People.nameOf`: digits dropped, capitals put in title case); unlike merchants, a name never
+  joins a look-alike ("Ahmed Ali" and "Ahmed Saleh" are two people). Feeds show the person's
+  name. You rename, merge ("Same as another person") and split ("Not this one") on the Person
+  screen; these aren't audited (nothing is filed by them, and each can be taken back by hand).
+  Known IBANs and phone contacts aren't linked yet.
+- **Loans** are only ever made by your say. Marking a plain transfer to or from someone
+  (`Loans.MARKABLE`, never a paired move) as lent or borrowed opens a `Loan` with that person
+  (optional due date); marking a transfer back as repaying it pays it down; forgiving lets go of
+  the rest. A loan is its `LoanEvent`s (lent, repaid, forgiven): one linked to a transaction takes
+  that transaction's amount and time, so editing the transfer never leaves the loan behind; what
+  is owed is lent less repaid and forgiven, never below zero. A linked transfer's kind becomes
+  `LOAN_GIVEN`/`LOAN_RECEIVED`/`LOAN_REPAYMENT`, which count as **neither spending nor income**,
+  take no category, and survive editing; "Not part of a loan" (or deleting the transfer) makes it
+  a plain transfer again, and when it was all that was lent the loan goes and its repayments are
+  freed. **Splits**: spending you paid can be split with people (equally, the remainder staying
+  yours, or by amount, no more than the whole): each share is a loan owed to you with
+  `splitOf` the purchase and an event without a transfer, and only your share counts as
+  spending (`TransactionDetail.yourMinor`, used by `inOut` and a merchant's spent). Someone no
+  transfer names can be added by name to split with. Undoing a split drops its loans and frees
+  their repayments. Transaction detail asks whether a transfer repays the person's oldest open loan
+  (`Loans.repaidBy`) and offers marking it as a loan. Merging people moves their loans.
+- **Subscriptions, bills and planned payments** are one `RecurringSeries` (the spec's
+  RecurringSeries): kind (`SUBSCRIPTION`, `BILL`, `PLANNED` for family support and the like),
+  amount every N days/weeks/months/years from an `anchor` (occurrences count from the anchor, so
+  the 31st never drifts), auto-renew, an optional end date (a contract), an optional reminder lead
+  time. Charges aren't stored: they are its merchant's spending (or, for `PLANNED`, transfers to
+  its person), read from the ledger (`Charges`); each one from the anchor on (up to half a cadence
+  early) moves the next due date on, and a series with neither merchant nor person is taken as
+  paid when its day passes. A linked one whose charge is more than `Recurring.GRACE_DAYS` late is
+  "missed"; a last charge above the known price is a price rise ("Keep it" takes the new price,
+  "Remind me to cancel" also asks for a reminder before it renews). `Recurring.detect` proposes
+  (status `PROPOSED`) a payee charged three times or more at a steady week, month or year, the
+  last recently: a subscription when the amount barely moves (5%), a bill when it moves some
+  (50%), planned for a person; you add or dismiss it (dismissed stays dismissed). It runs on
+  opening and on the screen. Monthly and yearly totals are exact integers, rounded half up. Merging
+  merchants or people moves their series.
+- **Pay cycle** (`PayCycles`): salary to salary. Pay days are `SALARY` credits at least half the
+  usual salary (median of the last three) and 20 days apart (an allowance after it doesn't start
+  a cycle); the cycle ends a month after the last, and runs on while a salary is late. With no
+  salary in 45 days it is the calendar month.
+- **Budgets** (`Budget`, `core/domain/Budgets`): a limit each pay cycle on everything, a category,
+  an expense type or a merchant, optionally rolling over what was left last cycle. Spending is
+  money out that counts in totals, your share of it; never stored, read from the ledger.
+  `BudgetState` colours it, and spending further through the budget than through the cycle by
+  10% or more reads as "spending fast" (the warn look) even under 80%. The Everything budget
+  drives Home's balance card.
+- **Forecast** (`Forecasts`, inputs from `ForecastRepository`): spendable money is current,
+  card, wallet and cash accounts (savings and investments are left alone). Variable spending is
+  spending outside what active subscriptions and bills charge; its daily rate per recent cycle
+  (the last three, or this one so far after a week) gives the median and, from the slowest and
+  fastest, the band. End of cycle = balance − scheduled before the next salary − rate × days
+  left. A day-by-day path adds a salary on each expected pay day; "Can I afford it?" puts the
+  amount on its day and reports the lowest balance from then to a month past the cycle, and
+  whether it breaks this cycle's Everything budget. Months ahead: salary − scheduled − a
+  month at the median rate. All in exact integers.
+- **Savings goals** (`SavingsGoal`, `Goals`): a target, an optional date and the accounts it is
+  saved in; what is saved is their balances. A month's saving needed = what is left over the
+  months to the target month (rounded up); "you averaged" = the net flow into those accounts
+  over the last three months, a third of it.
+- **Anomaly alerts** (`Anomalies`, last 30 days, found in the ledger, never stored): the same
+  merchant, amount and account twice within a day; a charge over three times the merchant's
+  median (four or more before it) and at least 100 above it; a foreign-currency charge; a
+  declined card (a `DECLINED` message); a bank balance that isn't the one before plus what was
+  recorded between (a missed or doubled SMS). Only dismissals are stored (`dismissed_alerts`, by
+  key; "Normal for it" quiets a merchant's large ones); a restore clears them. Home shows a row
+  while any stand; the daily reminder work notifies a count of new ones, never what or how much.
+- **Digests** (`Digests`, `DigestRepository`): weekly (Sunday to Saturday, the Saudi week),
+  monthly and yearly, built from the ledger whenever one is opened, never stored (so "past
+  digests are kept" means every finished period can be opened). Spending against the period
+  before (whole percent), income less spending, what is owed to you, the top five categories,
+  and up to three observations: a category moved 25% and 100 or more against its average over
+  the three periods before, a price rise with the new monthly total, a loan due within two
+  weeks (rule-based; AI-written ones come with the assistant). Each kind is off until you turn
+  it on in Settings; the daily reminder work notifies the morning after a period with spending
+  ends. Net worth's change joins with Phase 5.
+- **Assets** (`Asset`, `Assets`): funds (units × unit price), gold (grams × karat/24 × the 24k
+  gram price, less a dealer's spread), and cars, property and the rest (a value you give, less a
+  yearly depreciation, compounded). Quantities and prices are exact decimal text; a value is
+  rounded once, half up, to minor units, and one that can't be read is worth nothing. **Prices
+  are fetched for linked assets** (`core/prices`, `Asset.priceSource`): gold from
+  `api.gold-api.com` (USD a troy ounce, turned into SAR a gram at the 3.75 peg, exactly), funds
+  from Mubasher's list of every Saudi fund (one request for the whole list, so nothing says which
+  you hold); linked on the Asset form ("Price from the market" for a fund, "Today's market price"
+  for gold). `PriceWorker` runs daily, online only, and right after you link one; it updates the
+  price and its day and takes a net worth snapshot. Anything not linked is priced as you type it.
+- **Net worth** (`NetWorth`): accounts by class (current/card/wallet/cash, savings, investment),
+  assets, owed to you, less what you owe people. The timeline is read back from the ledger (each
+  later day's money in and out of your accounts undone, loans as they stood), with assets from a
+  daily snapshot (`net_worth_snapshots`, taken on opening, by the daily work and on saving an
+  asset).
+- **Zakat** (`Zakat`, `ZakatProfile`): 2.5% of what you choose to count (accounts, savings,
+  funds, gold, owed to you) less debts due now (what you owe people plus any you add), when it
+  reaches the nisab of 85 g of gold at the price you give (else your gold's); due on your Hijri
+  day in the Umm al-Qura calendar (`java.time.chrono.HijrahDate`), the hawl the year before it.
+  "Mark as paid" records the Hijri year; a reminder two weeks before is optional.
+- **Retirement and compound interest** (`Planner`): exact decimals throughout (BigDecimal,
+  128-bit), saving compounding monthly at the yearly rate over twelve, inflation taken off by
+  the year, the income a pot supports at a 4% yearly withdrawal, and the extra monthly saving
+  that would close a gap; rounded to minor units once. The planner starts from your savings,
+  funds and gold and from what you saved a month over the last three; scenarios are kept
+  (`retirement_scenarios`) to compare. The board's illustration compounds yearly, so its
+  figures differ slightly from these.
+- **Reminders for what is due** (`DueReminders`, daily at nine, periodic WorkManager work): a
+  bill or subscription its lead time before it is due, a cancel reminder three days (or its lead
+  time) before it renews, an open loan on its due day. Names and days, never an amount. Choosing a
+  reminder or a due date asks for notification permission.
+- **Tags** cut across categories: a `Tag` has a name and optional days; with `auto` set it takes
+  every transaction in its days (to today while it has no end) as they arrive
+  (`TagsRepository.applyActive`, run as the app opens and after each SMS run). `TransactionTag`
+  rows carry them; taking a tag off a transaction its days cover marks the row `removed`, so it
+  stays off. Suggestions are worked out on the phone (`core/domain/Tags.suggest`, no AI call):
+  three or more purchases in another currency, no more than a week apart, in the last four
+  months, are "Trip to <the country of that currency>?" ("Tag the trip" makes an automatic tag
+  over those days; "Not a trip" is remembered in DataStore by its key). Budgets by tag and a
+  feed filtered by tag aren't built yet.
+- **Where you spend** (the spec's heatmap; no board). There is no setting: whenever location is
+  allowed all the time (it must be, since SMS arrive while the app is closed), `SmsWorker` asks
+  Android's own location (`PlaceCapture`, no Play services) for the purchases its run recorded
+  that happened in the last 30 minutes, and keeps it (`TransactionPlace`, degrees × 10⁷,
+  accuracy; nothing worse than 500 m) in the encrypted ledger. History from before has no
+  places. Location is asked for once, the first time in after onboarding (a sheet on the main
+  shell; "Not now" is remembered, `locationAsked`), and again from the map: without permission,
+  with it only while in use, or with location off, the map is `MapPlaceholder` (a drawn street
+  grid) saying why, with the button that fixes it (`rememberLocationRequest`, which opens
+  Halala's settings when Android won't ask again, or the location switch); it looks again on
+  resume. The map (`HeatMap`, osmdroid, tiles inverted for the dark theme) shows a heat of
+  your spending by period and category, and the top places (purchases within about 200 m,
+  named by their usual merchant; `core/domain/Places`). Reached from Activity's "Where you
+  spend" chip.
 - **Undo**: everything you do to filing (an answer, "always", saving, switching or deleting a
   rule, editing or deleting a category, renaming, merging or splitting a merchant, saying what a
   merchant is) is one `AuditBatch`:
@@ -248,7 +385,7 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   identified as, by whom and how sure).
 - **Lock**: `BiometricPrompt` on every cold start (the graph starts on `Screen.Lock`) and after
   a minute in the background (`LockManager`, monotonic clock; the minute is a preference,
-  `PreferencesRepository.lockTimeoutSeconds`, with no UI yet). Always on; strong (class 3)
+  `PreferencesRepository.lockTimeoutSeconds`, with no UI yet). Always on, so Settings has no row for it; strong (class 3)
   biometrics with the device credential as fallback (Android 10 can't combine those, so there it
   accepts any biometric plus credential). A phone with no screen lock opens straight through —
   you can never lock yourself out. `FLAG_SECURE` is always set (no screenshots, blank in
@@ -262,16 +399,46 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   is refused loudly, never replaced with an empty one.
 - **No Android backup**: `allowBackup="false"` and every domain excluded from cloud backup and
   device transfer — a copy could never be decrypted elsewhere. Data moves by Halala's own export
-  (and, in Phase 6, the encrypted `.halala` backup).
+  and the encrypted `.halala` backup.
 - **Exports** (Settings › Backup and export) are written to a file you pick (SAF). CSV: a zip of
   `accounts.csv` and `transactions.csv` (UTF-8 with BOM, CRLF, signed decimal amounts plus exact
   `amount_minor`, local times, text cells defused against spreadsheet formula injection). JSON:
   `ExportFile`, schema-versioned (`schemaVersion`, bump on any shape change; 2 added categories
-  and rules, 3 merchants with their aliases, 4 business types on merchants and categories),
+  and rules, 3 merchants with their aliases, 4 business types on merchants and categories, 5 all
+  a restore needs: raw bank messages, account refs, balance checkpoints, full rule conditions,
+  6 people with their aliases, 7 loans with their events, 8 subscriptions and bills, 9 a loan's
+  split purchase, 10 budgets, 11 savings goals, 12 assets and their snapshots, 13 the zakat
+  method, 14 retirement scenarios, 15 savings terms, 16 tags and the transactions carrying them,
+  17 an asset's price source, 18 the places of purchases),
   keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
-- **Privacy**: no analytics, no crash reporter. The only network use is merchant identification
-  (Groq, HTTPS, when you turn it on: merchants' names and nothing else). Nothing about money goes
+- **Encrypted backups** (Backup and export › Encrypted backups, no board): a `.halala` file
+  (`core/backup/BackupFile`) is the JSON export zipped and sealed with AES-256-GCM under a key
+  stretched from your passphrase by Argon2id (Bouncy Castle; the stretch and salt are in the
+  file's header, which is authenticated too). The passphrase is never stored: the key it makes is
+  kept wrapped by Keystore (`BackupKeyStore`, `noBackupFilesDir`) so scheduled backups run
+  unattended. `Backups` writes to a folder you grant (SAF tree, persisted), daily or weekly as
+  WorkManager work, keeping the last 5, 10 (default) or 20. Restoring a `.halala` asks for the
+  passphrase, then is the same full replace as JSON. Not yet: restoring from onboarding, and
+  the spec's passphrase hint and printed recovery key.
+- **Restore** (same screen, "Restore", a backup or a JSON export): `Importer.read` turns a schema-5 or later export into
+  rows numbered afresh (pure; refuses older or newer schemas and dangling uids), you confirm,
+  and `RestoreDao.replaceAll` replaces the whole ledger in one transaction. It is a full
+  replace, not a merge. The history of changes (undo) and DataStore settings aren't carried.
+  A new table or column that matters must be added to `ExportFile`, `Exporter` and `Importer`
+  together; `ImporterTest` checks that a restored export exports again as the same file.
+- **Privacy**: no analytics, no crash reporter. Network use: Groq (HTTPS, always on in a build
+  with the key) for merchant identification (merchants' names and nothing else) and the
+  assistant (the question you type and today's date, nothing else); and market prices (public
+  gold and fund prices, fetched with nothing of yours, only once you link an asset); and the
+  spending map's OpenStreetMap tiles (the area you look at, never your purchases). Nothing about money goes
   in DataStore (it isn't encrypted).
+- **The assistant** (Assistant tab, Assistant board) is "tool calling" without the round trip:
+  `AssistantProtocol` asks Groq to read your question into one `Ask` (a tool from `AskTool`:
+  spending, income, bills, owed, afford, balance, or unsupported; your words for the topic,
+  the AI's business type for it, the days, an amount), under a strict schema. The phone runs it
+  (`AssistantDomain`, `core/domain/Answers`: your topic matches your categories, then merchants,
+  then merchants of that business type) and words the answer; no figure, category or name of
+  yours goes back to the AI. The conversation lives in memory only.
 - The spec's global quick-add is a flat jade `QuickAddButton` on Home and Activity (the boards
   don't draw one). It opens the transaction form on the cash wallet: Out / In / Move, amount,
   account, kind, where or who, when, note.
@@ -309,8 +476,7 @@ history of changes with undo (`AuditBatch`, `AuditChange`), the review reminder
 was identified as, the chosen category to confirm for the ones sure enough, the All / Suggested /
 Needs you filter, and the last answer's undo; reached from Home's review pill), **Rules** (Rules
 board; from Settings and from a transaction's "Filed automatically" card), category and type on
-Transaction detail, the AI row and sheet in Settings (Settings board's AI section: on or off,
-the key, what went wrong), and, with no board, built from the system's components:
+Transaction detail, and, with no board, built from the system's components:
 **Categories** (add; tap to rename, change the type and the business types it takes, or
 delete), **Rule** (the form: merchant is, description contains, account, amount range →
 category and type), **Recent changes** (each with Undo), the reminder sheet in Settings, and
@@ -320,3 +486,59 @@ what it is (tap to say), how the bank writes it with how each spelling joined, "
 "Same as another merchant", its transactions). Still to come in Phase 2: web search for
 cryptic names (Tavily), the Review board's swiping and its loan/split marks (with Phase 3),
 the usage cap in Settings, and merchant logos and locations.
+
+**Phase 3 (people and recurring)** has begun: people (`Person`, `PersonAlias`, `PeopleRepository`,
+found by `applyRules`) and loans (`Loan`, `LoanEvent`, `LoansRepository`, `core/domain/Loans`).
+Screens: **People** (People board: owed to you and you owe, then Loans, open and settled, or All
+transfers, everyone the latest first with what came back less what went; reached from Wealth),
+**Person** (Person board: each open loan with what is still owed, its caption and progress,
+"Send reminder" (the share sheet, so WhatsApp or SMS, with a polite message) and "Record
+repayment" (choose their transfer, or forgive what is left), "This loan" with its due date and
+events; settled loans; then all transfers with them, how the bank writes their name, "Same as
+another person" and their transfers; reached from People and from Transaction detail's Person
+row), and Transaction detail's **Loan** card (no board: built from the system's card and
+buttons), **Subscriptions and bills** (Recurring board: a month and a year, alert cards for a
+price rise, a missed charge and what was found, Next 30 days and Later, each with its badges;
+reached from the Plan tab's card and Home's Coming up), **Subscription or bill** (no board: the
+form, from the list or its + Add), Home's **People owe you** and **Coming up** cards (Home
+board), and the Plan tab's Subscriptions and bills card (Plan board; the rest of Plan comes with
+Phase 4), and Transaction detail's **Split** card and sheet (no board). Still to come in
+Phase 3: the Review board's one-tap loan/split/subscription marks, linking people to IBANs and
+contacts.
+
+**Phase 4 (planning)** is built: pay cycles, budgets, savings goals, the forecast, anomaly
+alerts and digests. Screens: the **Plan** tab (Plan board:
+the cycle chip, Budgets this cycle, savings goals, Subscriptions and bills, Forecast; calculators come
+with Phase 5), Home's **balance card** (Home board and its warn/over states, with the forecast's
+"End ≈"), **Forecast** (Forecast board: the end figure and band, the balance chart drawn on a
+Canvas, left over each month with the dip's biggest payments, and "Can I afford it?"), **Budgets** and **Budget**
+(no board: the Plan board's budget rows full size, and the form), the Plan board's **goal
+cards** and **Savings goal** (no board: the form), **Alerts** (no board: a card per alert with
+Open, Normal for it and Dismiss), **Digest** (Digest board, minus net worth) and **Digests**
+(the archive, from the Assistant tab and Settings' Digests sheet).
+
+**Phase 5 (wealth)** is built: the **Wealth** tab is the Net worth board (total, this month and
+year, the timeline over 3M/1Y/All, the breakdown, then Accounts, Assets, People and Zakat),
+**Assets** and **Asset** (no board: the list and the form), and **Zakat** (Zakat board; reached
+from Wealth and the Plan board's Zakat card), **Retirement** (Retirement board, with
+Scenarios), **Compound interest** (no board) and **Savings** (Savings board: terms attached to a
+savings account, `SavingsTerms` and `core/domain/Savings`; Awaeed terms run from a start for a
+tenor and roll over when they renew, expected profit is simple on the balance; Hasad pays next
+month on this month's lowest balance, nothing under 5,000; a term maturing within a month shows
+on Wealth and is reminded three days before; the terms form has no board), and fetched fund
+and gold prices (see Assets).
+
+**Phase 6 (delight)** is built: **Money flow** (Money flow board, Activity's second segment:
+for a month and an account, salary or what came in, a Sankey (`Sankey` component,
+`core/domain/MoneyFlow`) of moves to each of your accounts, what was spent from it and what
+stayed; a leg the bank called a move with no other side is "no match": "It went to someone"
+makes it a plain transfer, "Pick the account" records the other leg there and pairs them) and
+the **Assistant** (Assistant board, with the Digests link; see the product rule),
+**Encrypted backups** (see the product rule), and the **home-screen widget** (`core/widget`,
+no board: this cycle's spending against the total budget with its state colour, the Review
+count, and "+ Cash", which opens the lock as always and then the form on the wallet
+(`QuickAddRequest`); refreshed when the app goes to the background and after each SMS run),
+**Tags** (from Settings; a tag's form with what carries it; the Tags row on Transaction
+detail; no board draws them), and **Where you spend** (see the product rule).
+The widget shows amounts outside the lock: it is there only if you add it. The board's
+"See 52 transactions" link waits for a filtered feed.

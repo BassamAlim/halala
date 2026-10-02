@@ -68,8 +68,7 @@ object GroqProtocol {
      * outside 0–100 is clamped; a business type it shouldn't have given reads as unknown.
      */
     fun parse(body: String, count: Int): List<IdentifiedAs?> {
-        val content = json.decodeFromString<Completion>(body).choices.firstOrNull()?.message?.content
-            ?: throw IllegalArgumentException("No answer in the response.")
+        val content = contentOf(body)
         val answers = json.decodeFromString<Answers>(content).items.associateBy { it.id.trim() }
 
         return (1..count).map { id ->
@@ -87,6 +86,10 @@ object GroqProtocol {
     private const val MAX_TOKENS = 4096
 
     private val json = Json { ignoreUnknownKeys = true }
+
+    /** The model's message in a chat completion [body]. */
+    fun contentOf(body: String): String = json.decodeFromString<Completion>(body).choices.firstOrNull()?.message?.content
+        ?: throw IllegalArgumentException("No answer in the response.")
 
     @Serializable
     private data class Completion(val choices: List<Choice> = emptyList())
@@ -130,7 +133,7 @@ object GroqProtocol {
     }
 
     /** What each business type covers, so the model can tell a bakery from a supermarket. */
-    private val MEANINGS = mapOf(
+    val MEANINGS = mapOf(
         BusinessType.SUPERMARKET to "supermarkets and hypermarkets",
         BusinessType.CONVENIENCE_STORE to "corner shops (baqala), mini markets",
         BusinessType.BAKERY to "bakeries and sweet shops",

@@ -23,8 +23,34 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # With a `.env`, debug builds are signed with the owner's own key (see app/build.gradle.kts),
+      # the same one as the releases and as Android Studio builds on the owner's machine, so all
+      # of them install over each other and the phone never has to uninstall (which would lose
+      # the ledger). Written as in release.yml. Without the secrets (a fork's PR), the build
+      # makes a throwaway debug key as usual.
+      - name: Provide signing config
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "::warning::Signing secrets are missing; this debug APK won't install over yours."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          {
+            printf 'KEYSTORE_PATH=%s\n' "$RUNNER_TEMP/release.jks"
+            printf 'KEYSTORE_PASSWORD=%s\n' "$KEYSTORE_PASSWORD"
+            printf 'KEY_ALIAS=%s\n' "$KEY_ALIAS"
+            printf 'KEY_PASSWORD=%s\n' "$KEY_PASSWORD"
+          } > .env
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
       - name: Build debug APK
         run: ./gradlew :app:assembleDebug
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
@@ -54,3 +80,7 @@ jobs:
         with:
           name: unit-test-reports
           path: app/build/reports/tests/testDebugUnitTest/
+
+      - name: Remove signing material
+        if: always()
+        run: rm -f .env "$RUNNER_TEMP/release.jks"

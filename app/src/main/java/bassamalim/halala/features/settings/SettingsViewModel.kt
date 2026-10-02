@@ -3,6 +3,7 @@ package bassamalim.halala.features.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import bassamalim.halala.BuildConfig
+import bassamalim.halala.core.domain.DigestKind
 import bassamalim.halala.core.models.ReminderMode
 import bassamalim.halala.core.models.ReviewSchedule
 import bassamalim.halala.core.nav.Navigator
@@ -28,42 +29,25 @@ class SettingsViewModel @Inject constructor(
 
     private val editingReminder = MutableStateFlow(false)
     private val pickingReminderTime = MutableStateFlow(false)
-    private val hasKey = MutableStateFlow(false)
-    private val keyDraft = MutableStateFlow<String?>(null)
-
-    private val ai = combine(
-        domain.observeAiEnabled(),
-        domain.observeAiProblem(),
-        domain.observeWaiting(),
-        hasKey,
-        keyDraft
-    ) { enabled, problem, waiting, hasKey, keyDraft ->
-        AiSettings(enabled && hasKey, hasKey, waiting, problem, keyDraft)
-    }
-
-    init {
-        viewModelScope.launch { hasKey.update { domain.hasGroqKey() } }
-    }
-
+    private val editingDigests = MutableStateFlow(false)
     val uiState: StateFlow<SettingsUiState> = combine(
-        combine(domain.observeAccounts(), domain.observeLockTimeoutSeconds(), ::Pair),
+        domain.observeAccounts(),
         domain.observeReviewSchedule(),
-        editingReminder,
-        pickingReminderTime,
-        ai
-    ) { (accounts, lockSeconds), reminder, editingReminder, pickingReminderTime, ai ->
+        combine(editingReminder, pickingReminderTime, editingDigests, ::Triple),
+        domain.observeDigests()
+    ) { accounts, reminder, (editingReminder, pickingReminderTime, editingDigests), digests ->
         val active = accounts.filter { !it.account.archived }
 
         SettingsUiState(
             accountCount = active.size,
             bankCount = active.mapNotNull { it.account.institutionId }.distinct().size,
-            lockMinutes = (lockSeconds / 60).coerceAtLeast(1),
             version = BuildConfig.VERSION_NAME,
             reminder = reminder,
             reminderTime = timeLabel(reminder.time),
             isEditingReminder = editingReminder,
             isPickingReminderTime = pickingReminderTime,
-            ai = ai
+            digests = digests,
+            isEditingDigests = editingDigests
         )
     }.stateIn(
         scope = viewModelScope,
@@ -72,6 +56,20 @@ class SettingsViewModel @Inject constructor(
     )
 
     fun onReminderClick() = editingReminder.update { true }
+
+    fun onDigestsClick() = editingDigests.update { true }
+
+    fun onDigestsDismiss() = editingDigests.update { false }
+
+    fun onDigestToggle(kind: DigestKind) {
+        val on = kind !in uiState.value.digests
+        viewModelScope.launch { domain.setDigest(kind, on) }
+    }
+
+    fun onPastDigestsClick() {
+        editingDigests.update { false }
+        navigator.navigate(Screen.Digests)
+    }
 
     fun onReminderDismiss() = editingReminder.update { false }
 
@@ -93,36 +91,6 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { domain.setReviewSchedule(changed) }
     }
 
-    fun onAiClick() = keyDraft.update { "" }
-
-    fun onAiDismiss() = keyDraft.update { null }
-
-    fun onKeyChange(key: String) = keyDraft.update { key }
-
-    fun onSaveKeyClick() {
-        val key = keyDraft.value ?: return
-        viewModelScope.launch {
-            domain.saveGroqKey(key)
-            hasKey.update { domain.hasGroqKey() }
-            keyDraft.update { "" }
-        }
-    }
-
-    fun onForgetKeyClick() {
-        viewModelScope.launch {
-            domain.forgetGroqKey()
-            hasKey.update { domain.hasGroqKey() }
-        }
-    }
-
-    fun onAiEnabledPick(enabled: Boolean) {
-        viewModelScope.launch { domain.setAiEnabled(enabled) }
-    }
-
-    fun onIdentifyNowClick() {
-        viewModelScope.launch { domain.identifyNow() }
-    }
-
     fun onBackClick() = navigator.popBackStack()
 
     fun onAccountsClick() = navigator.navigate(Screen.Accounts)
@@ -130,6 +98,8 @@ class SettingsViewModel @Inject constructor(
     fun onExportClick() = navigator.navigate(Screen.Export)
 
     fun onCategoriesClick() = navigator.navigate(Screen.Categories)
+
+    fun onTagsClick() = navigator.navigate(Screen.Tags)
 
     fun onHistoryClick() = navigator.navigate(Screen.History)
 

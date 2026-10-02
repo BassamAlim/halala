@@ -64,9 +64,6 @@ interface MerchantsDao {
     )
     suspend fun getToIdentify(): List<ToIdentify>
 
-    @Query("SELECT COUNT(*) FROM merchants m WHERE m.identifiedBy IS NULL AND $UNFILED")
-    fun observeToIdentifyCount(): Flow<Int>
-
     @Query("SELECT * FROM merchants WHERE id = :id")
     suspend fun getMerchant(id: Long): Merchant?
 
@@ -98,6 +95,14 @@ interface MerchantsDao {
 
     @Query("UPDATE merchant_aliases SET merchantId = :intoId WHERE merchantId = :fromId")
     suspend fun moveAliases(fromId: Long, intoId: Long)
+
+    /** Subscriptions and bills follow a merged merchant. */
+    @Query("UPDATE recurring_series SET merchantId = :intoId WHERE merchantId = :fromId")
+    suspend fun moveSeries(fromId: Long, intoId: Long)
+
+    /** And so do its budgets. */
+    @Query("UPDATE budgets SET merchantId = :intoId WHERE merchantId = :fromId")
+    suspend fun moveBudgets(fromId: Long, intoId: Long)
 
     @Query("SELECT id, title, merchantKey, kind, occurredAt FROM transactions ORDER BY occurredAt, id")
     suspend fun getKeyRows(): List<KeyRow>

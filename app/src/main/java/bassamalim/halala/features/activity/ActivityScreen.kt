@@ -1,6 +1,14 @@
 package bassamalim.halala.features.activity
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import bassamalim.halala.core.ui.components.SegmentedControl
+import bassamalim.halala.features.moneyFlow.MoneyFlowContent
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -37,26 +45,55 @@ import bassamalim.halala.core.ui.theme.Spacing
 
 /**
  * The transactions feed, from the Activity board: search, account filters, this month's in and
- * out, and the rows by day. Money flow (the board's second segment) arrives in Phase 6.
+ * out, and the rows by day; its second segment is Money flow.
  */
 @Composable
 fun ActivityScreen(viewModel: ActivityViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var segment by rememberSaveable { mutableIntStateOf(0) }
+    val title = @Composable {
+        ScreenTitle(stringResource(R.string.tab_activity)) {
+            SegmentedControl(
+                options = listOf(stringResource(R.string.activity_transactions), stringResource(R.string.activity_money_flow)),
+                selectedIndex = segment,
+                onSelect = { segment = it }
+            )
+        }
+    }
+
+    if (segment == 1) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Spacing.screen)
+                .padding(top = Insets.screenTop, bottom = Sizes.fab + Spacing.section),
+            verticalArrangement = Arrangement.spacedBy(Spacing.card)
+        ) {
+            title()
+            MoneyFlowContent()
+        }
+        return
+    }
 
     ActivityContent(
+        title = title,
         state = state,
         onQueryChange = viewModel::onQueryChange,
         onAccountFilterClick = viewModel::onAccountFilterClick,
-        onTransactionClick = viewModel::onTransactionClick
+        onTransactionClick = viewModel::onTransactionClick,
+        onMapClick = viewModel::onMapClick
     )
 }
 
 @Composable
 private fun ActivityContent(
+    title: @Composable () -> Unit,
     state: ActivityUiState,
     onQueryChange: (String) -> Unit,
     onAccountFilterClick: (Long?) -> Unit,
-    onTransactionClick: (Long) -> Unit
+    onTransactionClick: (Long) -> Unit,
+    onMapClick: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -68,7 +105,7 @@ private fun ActivityContent(
             bottom = Sizes.fab + Spacing.section
         )
     ) {
-        item { ScreenTitle(stringResource(R.string.tab_activity)) }
+        item { title() }
 
         item {
             SearchField(
@@ -84,6 +121,9 @@ private fun ActivityContent(
                 modifier = Modifier.padding(top = Spacing.xs),
                 horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
             ) {
+                item {
+                    HalalaChip(label = stringResource(R.string.map_title), style = ChipStyle.Outline, onClick = onMapClick)
+                }
                 item {
                     HalalaChip(
                         label = stringResource(R.string.all_accounts),

@@ -29,6 +29,28 @@ import bassamalim.halala.features.lock.LockScreen
 import bassamalim.halala.features.main.MainScreen
 import bassamalim.halala.features.merchant.MerchantScreen
 import bassamalim.halala.features.merchants.MerchantsScreen
+import bassamalim.halala.features.people.PeopleScreen
+import bassamalim.halala.features.budgets.BudgetsScreen
+import bassamalim.halala.features.forecast.ForecastScreen
+import bassamalim.halala.features.alerts.AlertsScreen
+import bassamalim.halala.features.assets.AssetsScreen
+import bassamalim.halala.features.editAsset.EditAssetScreen
+import bassamalim.halala.features.zakat.ZakatScreen
+import bassamalim.halala.features.retirement.CompoundScreen
+import bassamalim.halala.features.savings.SavingsScreen
+import bassamalim.halala.features.backup.BackupScreen
+import bassamalim.halala.features.tags.EditTagScreen
+import bassamalim.halala.features.tags.TagsScreen
+import bassamalim.halala.features.spendingMap.SpendingMapScreen
+import bassamalim.halala.features.savings.SavingsTermsScreen
+import bassamalim.halala.features.retirement.RetirementScreen
+import bassamalim.halala.features.digest.DigestScreen
+import bassamalim.halala.features.digest.DigestsScreen
+import bassamalim.halala.features.editGoal.EditGoalScreen
+import bassamalim.halala.features.editBudget.EditBudgetScreen
+import bassamalim.halala.features.recurring.RecurringScreen
+import bassamalim.halala.features.editRecurring.EditRecurringScreen
+import bassamalim.halala.features.person.PersonScreen
 import bassamalim.halala.features.onboarding.OnboardingScreen
 import bassamalim.halala.features.review.ReviewScreen
 import bassamalim.halala.features.rules.RulesScreen
@@ -91,6 +113,50 @@ fun NavGraph(navController: NavHostController, startDestination: Screen) {
         screen<Screen.Merchants> { MerchantsScreen() }
 
         screen<Screen.Merchant> { MerchantScreen() }
+
+        screen<Screen.People> { PeopleScreen() }
+
+        screen<Screen.Person> { PersonScreen() }
+
+        screen<Screen.Recurring> { RecurringScreen() }
+
+        screen<Screen.EditRecurring> { EditRecurringScreen() }
+
+        screen<Screen.Budgets> { BudgetsScreen() }
+
+        screen<Screen.Forecast> { ForecastScreen() }
+
+        screen<Screen.Alerts> { AlertsScreen() }
+
+        screen<Screen.Assets> { AssetsScreen() }
+
+        screen<Screen.EditAsset> { EditAssetScreen() }
+
+        screen<Screen.Zakat> { ZakatScreen() }
+
+        screen<Screen.Retirement> { RetirementScreen() }
+
+        screen<Screen.Compound> { CompoundScreen() }
+
+        screen<Screen.Savings> { SavingsScreen() }
+
+        screen<Screen.Backup> { BackupScreen() }
+
+        screen<Screen.Tags> { TagsScreen() }
+
+        screen<Screen.SpendingMap> { SpendingMapScreen() }
+
+        screen<Screen.EditTag> { EditTagScreen() }
+
+        screen<Screen.SavingsTerms> { SavingsTermsScreen() }
+
+        screen<Screen.Digest> { DigestScreen() }
+
+        screen<Screen.Digests> { DigestsScreen() }
+
+        screen<Screen.EditGoal> { EditGoalScreen() }
+
+        screen<Screen.EditBudget> { EditBudgetScreen() }
 
         screen<Screen.EditRule> { EditRuleScreen() }
 

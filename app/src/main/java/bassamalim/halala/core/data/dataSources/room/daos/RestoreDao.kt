@@ -1,0 +1,187 @@
+package bassamalim.halala.core.data.dataSources.room.daos
+
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.Query
+import bassamalim.halala.core.data.dataSources.room.entities.Account
+import bassamalim.halala.core.data.dataSources.room.entities.AccountRef
+import bassamalim.halala.core.data.dataSources.room.entities.Asset
+import bassamalim.halala.core.data.dataSources.room.entities.NetWorthSnapshot
+import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
+import bassamalim.halala.core.data.dataSources.room.entities.Budget
+import bassamalim.halala.core.data.dataSources.room.entities.Category
+import bassamalim.halala.core.data.dataSources.room.entities.Institution
+import bassamalim.halala.core.data.dataSources.room.entities.InternalTransfer
+import bassamalim.halala.core.data.dataSources.room.entities.Loan
+import bassamalim.halala.core.data.dataSources.room.entities.LoanEvent
+import bassamalim.halala.core.data.dataSources.room.entities.Merchant
+import bassamalim.halala.core.data.dataSources.room.entities.MerchantAlias
+import bassamalim.halala.core.data.dataSources.room.entities.Person
+import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
+import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
+import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
+import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
+import bassamalim.halala.core.data.dataSources.room.entities.Rule
+import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
+import bassamalim.halala.core.data.dataSources.room.entities.SavingsTerms
+import bassamalim.halala.core.data.dataSources.room.entities.Tag
+import bassamalim.halala.core.data.dataSources.room.entities.TransactionTag
+import bassamalim.halala.core.data.dataSources.room.entities.TransactionPlace
+import bassamalim.halala.core.data.dataSources.room.entities.Transaction
+import bassamalim.halala.core.data.dataSources.room.entities.ZakatProfile
+
+/**
+ * Restoring an export: the whole ledger is replaced by the rows given, which carry their own
+ * ids and point at each other by them. One transaction, so a file that turns out not to fit
+ * leaves the ledger exactly as it was.
+ */
+@Dao
+interface RestoreDao {
+
+    @androidx.room.Transaction
+    suspend fun replaceAll(
+        institutions: List<Institution>,
+        accounts: List<Account>,
+        refs: List<AccountRef>,
+        rawMessages: List<RawMessage>,
+        categories: List<Category>,
+        rules: List<Rule>,
+        merchants: List<Merchant>,
+        aliases: List<MerchantAlias>,
+        transactions: List<Transaction>,
+        transfers: List<InternalTransfer>,
+        checkpoints: List<BalanceCheckpoint>,
+        people: List<Person>,
+        personAliases: List<PersonAlias>,
+        loans: List<Loan>,
+        loanEvents: List<LoanEvent>,
+        recurring: List<RecurringSeries>,
+        budgets: List<Budget>,
+        goals: List<SavingsGoal>,
+        assets: List<Asset>,
+        snapshots: List<NetWorthSnapshot>,
+        zakat: ZakatProfile?,
+        scenarios: List<RetirementScenario>,
+        savingsTerms: List<SavingsTerms>,
+        tags: List<Tag>,
+        transactionTags: List<TransactionTag>,
+        places: List<TransactionPlace>
+    ) {
+        // What points at a row goes before the row. The history of changes names rows by the
+        // ids they had, so it can't outlive them.
+        clearAuditChanges()
+        clearAuditBatches()
+        clearSavingsTerms()
+        clearTransactionTags()
+        clearPlaces()
+        clearTags()
+        clearDismissedAlerts()
+        clearLoanEvents()
+        clearLoans()
+        clearRecurring()
+        clearBudgets()
+        clearGoals()
+        clearAssets()
+        clearSnapshots()
+        clearZakat()
+        clearScenarios()
+        clearTransfers()
+        clearCheckpoints()
+        clearRefs()
+        clearTransactions()
+        clearRawMessages()
+        clearRules()
+        clearAliases()
+        clearMerchants()
+        clearPersonAliases()
+        clearPeople()
+        clearCategories()
+        clearAccounts()
+        clearInstitutions()
+
+        insertInstitutions(institutions)
+        insertAccounts(accounts)
+        insertRefs(refs)
+        insertRawMessages(rawMessages)
+        insertCategories(categories)
+        insertRules(rules)
+        insertMerchants(merchants)
+        insertAliases(aliases)
+        insertTransactions(transactions)
+        insertTransfers(transfers)
+        insertCheckpoints(checkpoints)
+        insertPeople(people)
+        insertPersonAliases(personAliases)
+        insertLoans(loans)
+        insertLoanEvents(loanEvents)
+        insertRecurring(recurring)
+        insertBudgets(budgets)
+        insertGoals(goals)
+        insertAssets(assets)
+        insertSnapshots(snapshots)
+        zakat?.let { insertZakat(it) }
+        insertScenarios(scenarios)
+        insertSavingsTerms(savingsTerms)
+        insertTags(tags)
+        insertTransactionTags(transactionTags)
+        insertPlaces(places)
+    }
+
+    @Query("DELETE FROM audit_changes") suspend fun clearAuditChanges()
+    @Query("DELETE FROM audit_batches") suspend fun clearAuditBatches()
+    // Dismissed alerts name transactions by the ids they had: they go with them.
+    @Query("DELETE FROM dismissed_alerts") suspend fun clearDismissedAlerts()
+    @Query("DELETE FROM internal_transfers") suspend fun clearTransfers()
+    @Query("DELETE FROM balance_checkpoints") suspend fun clearCheckpoints()
+    @Query("DELETE FROM account_refs") suspend fun clearRefs()
+    @Query("DELETE FROM transactions") suspend fun clearTransactions()
+    @Query("DELETE FROM raw_messages") suspend fun clearRawMessages()
+    @Query("DELETE FROM rules") suspend fun clearRules()
+    @Query("DELETE FROM merchant_aliases") suspend fun clearAliases()
+    @Query("DELETE FROM merchants") suspend fun clearMerchants()
+    @Query("DELETE FROM loan_events") suspend fun clearLoanEvents()
+    @Query("DELETE FROM loans") suspend fun clearLoans()
+    @Query("DELETE FROM recurring_series") suspend fun clearRecurring()
+    @Query("DELETE FROM budgets") suspend fun clearBudgets()
+    @Query("DELETE FROM savings_goals") suspend fun clearGoals()
+    @Query("DELETE FROM assets") suspend fun clearAssets()
+    @Query("DELETE FROM net_worth_snapshots") suspend fun clearSnapshots()
+    @Query("DELETE FROM zakat_profile") suspend fun clearZakat()
+    @Query("DELETE FROM retirement_scenarios") suspend fun clearScenarios()
+    @Query("DELETE FROM savings_terms") suspend fun clearSavingsTerms()
+    @Query("DELETE FROM transaction_tags") suspend fun clearTransactionTags()
+    @Query("DELETE FROM tags") suspend fun clearTags()
+    @Query("DELETE FROM transaction_places") suspend fun clearPlaces()
+    @Query("DELETE FROM person_aliases") suspend fun clearPersonAliases()
+    @Query("DELETE FROM people") suspend fun clearPeople()
+    @Query("DELETE FROM categories") suspend fun clearCategories()
+    @Query("DELETE FROM accounts") suspend fun clearAccounts()
+    @Query("DELETE FROM institutions") suspend fun clearInstitutions()
+
+    @Insert suspend fun insertInstitutions(rows: List<Institution>)
+    @Insert suspend fun insertAccounts(rows: List<Account>)
+    @Insert suspend fun insertRefs(rows: List<AccountRef>)
+    @Insert suspend fun insertRawMessages(rows: List<RawMessage>)
+    @Insert suspend fun insertCategories(rows: List<Category>)
+    @Insert suspend fun insertRules(rows: List<Rule>)
+    @Insert suspend fun insertMerchants(rows: List<Merchant>)
+    @Insert suspend fun insertAliases(rows: List<MerchantAlias>)
+    @Insert suspend fun insertTransactions(rows: List<Transaction>)
+    @Insert suspend fun insertTransfers(rows: List<InternalTransfer>)
+    @Insert suspend fun insertCheckpoints(rows: List<BalanceCheckpoint>)
+    @Insert suspend fun insertPeople(rows: List<Person>)
+    @Insert suspend fun insertPersonAliases(rows: List<PersonAlias>)
+    @Insert suspend fun insertLoans(rows: List<Loan>)
+    @Insert suspend fun insertLoanEvents(rows: List<LoanEvent>)
+    @Insert suspend fun insertRecurring(rows: List<RecurringSeries>)
+    @Insert suspend fun insertBudgets(rows: List<Budget>)
+    @Insert suspend fun insertGoals(rows: List<SavingsGoal>)
+    @Insert suspend fun insertAssets(rows: List<Asset>)
+    @Insert suspend fun insertSnapshots(rows: List<NetWorthSnapshot>)
+    @Insert suspend fun insertZakat(row: ZakatProfile)
+    @Insert suspend fun insertScenarios(rows: List<RetirementScenario>)
+    @Insert suspend fun insertSavingsTerms(rows: List<SavingsTerms>)
+    @Insert suspend fun insertTags(rows: List<Tag>)
+    @Insert suspend fun insertTransactionTags(rows: List<TransactionTag>)
+    @Insert suspend fun insertPlaces(rows: List<TransactionPlace>)
+}

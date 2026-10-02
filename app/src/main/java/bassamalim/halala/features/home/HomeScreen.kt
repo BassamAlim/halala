@@ -33,10 +33,16 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
 import bassamalim.halala.core.Globals
+import bassamalim.halala.core.ui.components.BalanceCard
 import bassamalim.halala.core.ui.components.CardLabel
+import bassamalim.halala.core.domain.BudgetState
+import bassamalim.halala.core.ui.components.HalalaCard
+import bassamalim.halala.core.ui.components.ListCard
+import bassamalim.halala.core.ui.components.ListRow
 import bassamalim.halala.core.ui.components.SummaryCard
 import bassamalim.halala.core.ui.components.TransactionItemRow
 import bassamalim.halala.core.ui.theme.HalalaColors
+import bassamalim.halala.core.ui.theme.HalalaNumbers
 import bassamalim.halala.core.ui.theme.HalalaType
 import bassamalim.halala.core.ui.theme.Insets
 import bassamalim.halala.core.ui.theme.Radius
@@ -45,8 +51,9 @@ import bassamalim.halala.core.ui.theme.Spacing
 
 /**
  * Home, from the Home board as far as it can be filled: the mark and wordmark, the review pill
- * while anything waits in the inbox, the wallet and the banks in the two summary cards, and the
- * latest transactions. The balance card arrives with budgets.
+ * while anything waits in the inbox, the wallet and the banks in the two summary cards, what
+ * people owe you, what is coming up, and the latest transactions, under the balance card once
+ * there is a budget for everything.
  */
 @Composable
 fun HomeScreen(onSeeAllClick: () -> Unit, viewModel: HomeViewModel = hiltViewModel()) {
@@ -59,7 +66,10 @@ fun HomeScreen(onSeeAllClick: () -> Unit, viewModel: HomeViewModel = hiltViewMod
         onCashClick = viewModel::onCashClick,
         onAccountsClick = viewModel::onAccountsClick,
         onSeeAllClick = onSeeAllClick,
-        onTransactionClick = viewModel::onTransactionClick
+        onTransactionClick = viewModel::onTransactionClick,
+        onPeopleClick = viewModel::onPeopleClick,
+        onComingUpClick = viewModel::onComingUpClick,
+        onAlertsClick = viewModel::onAlertsClick
     )
 }
 
@@ -71,7 +81,10 @@ private fun HomeContent(
     onCashClick: () -> Unit,
     onAccountsClick: () -> Unit,
     onSeeAllClick: () -> Unit,
-    onTransactionClick: (Long) -> Unit
+    onTransactionClick: (Long) -> Unit,
+    onPeopleClick: () -> Unit = {},
+    onComingUpClick: () -> Unit = {},
+    onAlertsClick: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -122,6 +135,35 @@ private fun HomeContent(
             }
         }
 
+        if (state.alertCount > 0) ListCard(Modifier.fillMaxWidth()) {
+            ListRow(
+                title = pluralStringResource(R.plurals.alert_count, state.alertCount, state.alertCount),
+                subtitle = stringResource(R.string.alerts_hint),
+                onClick = onAlertsClick
+            )
+        }
+
+        state.balance?.let { balance ->
+            val days = pluralStringResource(R.plurals.home_days_left, balance.daysLeft, balance.daysLeft)
+            BalanceCard(
+                overline = stringResource(R.string.home_spent_cycle),
+                status = stringResource(
+                    when (balance.state) {
+                        BudgetState.OK -> R.string.home_on_track
+                        BudgetState.WARN -> R.string.home_spending_fast
+                        BudgetState.OVER -> R.string.home_over_budget
+                    }
+                ),
+                spent = balance.spent,
+                currency = Globals.PRIMARY_CURRENCY,
+                progress = balance.progress,
+                state = balance.state,
+                footStart = balance.over?.let { stringResource(R.string.home_over_amount, it, days) }
+                    ?: stringResource(R.string.home_of_budget, balance.limit, days),
+                footEnd = balance.endAbout?.let { stringResource(R.string.home_end_about, it) }.orEmpty()
+            )
+        }
+
         // While loading, the cards keep their shape with blank figures, so nothing jumps in.
         Row(
             modifier = Modifier.height(IntrinsicSize.Min),
@@ -145,6 +187,31 @@ private fun HomeContent(
                 onClick = onAccountsClick,
                 modifier = Modifier.weight(1f).fillMaxHeight()
             )
+        }
+
+        if (state.hasLoans) SummaryCard(
+            label = stringResource(R.string.home_people_owe),
+            amount = state.owedToYou,
+            currency = Globals.PRIMARY_CURRENCY,
+            caption = stringResource(R.string.home_you_owe, state.youOwe),
+            onClick = onPeopleClick,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        if (state.comingUp.isNotEmpty()) HalalaCard(label = stringResource(R.string.home_coming_up), onClick = onComingUpClick) {
+            state.comingUp.forEach { item ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = Spacing.xs),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = item.name, style = HalalaType.Label, modifier = Modifier.weight(1f))
+                    Text(text = "${item.due} · ", style = HalalaType.Label, color = HalalaColors.TextMuted)
+                    Text(text = item.amount, style = HalalaNumbers.Meta, color = HalalaColors.Text)
+                }
+            }
         }
 
         Column {

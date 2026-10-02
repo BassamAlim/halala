@@ -50,6 +50,12 @@ interface SmsDao {
     )
     fun observeStats(): Flow<SmsStats>
 
+    @Query("SELECT * FROM raw_messages ORDER BY id")
+    suspend fun getAllRaw(): List<RawMessage>
+
+    @Query("SELECT * FROM balance_checkpoints ORDER BY id")
+    suspend fun getCheckpoints(): List<BalanceCheckpoint>
+
     @Query("SELECT * FROM account_refs")
     suspend fun getRefs(): List<AccountRef>
 

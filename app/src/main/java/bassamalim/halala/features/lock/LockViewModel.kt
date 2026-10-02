@@ -7,6 +7,7 @@ import androidx.navigation.toRoute
 import bassamalim.halala.core.data.repositories.PreferencesRepository
 import bassamalim.halala.core.lock.LockManager
 import bassamalim.halala.core.nav.Navigator
+import bassamalim.halala.core.widget.QuickAddRequest
 import bassamalim.halala.core.nav.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.first
@@ -18,6 +19,7 @@ class LockViewModel @Inject constructor(
     private val lockManager: LockManager,
     private val navigator: Navigator,
     private val preferences: PreferencesRepository,
+    private val quickAdd: QuickAddRequest,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -28,15 +30,19 @@ class LockViewModel @Inject constructor(
 
         if (route.resumable) {
             navigator.popBackStack()
+            // The widget's "+ Cash", asked for while locked.
+            if (quickAdd.consume()) navigator.navigate(Screen.EditTransaction())
             return
         }
 
         viewModelScope.launch {
             // The first unlock sets up SMS reading; every one after opens the app.
-            val next = if (preferences.observeOnboarded().first()) Screen.Main else Screen.Onboarding()
+            val onboarded = preferences.observeOnboarded().first()
+            val next = if (onboarded) Screen.Main else Screen.Onboarding()
             navigator.navigate(next) {
                 popUpTo<Screen.Lock> { inclusive = true }
             }
+            if (quickAdd.consume() && onboarded) navigator.navigate(Screen.EditTransaction())
         }
     }
 }

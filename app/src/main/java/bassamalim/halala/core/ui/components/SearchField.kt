@@ -144,7 +144,9 @@ fun HalalaTextField(
     /** Next moves to the following field; the last single-line field in a form passes Done. */
     imeAction: ImeAction = if (singleLine) ImeAction.Next else ImeAction.Default,
     focusRequester: FocusRequester? = null,
-    secret: Boolean = false
+    secret: Boolean = false,
+    /** What the keyboard's action key does, when not just moving on (Send, in the assistant). */
+    onImeAction: (() -> Unit)? = null
 ) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
@@ -183,6 +185,7 @@ fun HalalaTextField(
                 keyboardType = if (secret) KeyboardType.Password else keyboardType,
                 imeAction = imeAction
             ),
+            keyboardActions = if (onImeAction != null) KeyboardActions(onAny = { onImeAction() }) else KeyboardActions.Default,
             visualTransformation = if (secret) PasswordVisualTransformation() else VisualTransformation.None,
             modifier = Modifier
                 .fillMaxWidth()

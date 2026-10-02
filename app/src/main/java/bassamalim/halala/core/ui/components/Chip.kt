@@ -124,13 +124,13 @@ fun HalalaChip(
 
 /** The small uppercase accent tag after a row title when the app filed it itself. */
 @Composable
-fun AutoBadge(label: String, modifier: Modifier = Modifier) {
+fun AutoBadge(label: String, modifier: Modifier = Modifier, color: Color = HalalaColors.Accent) {
     Text(
         text = label.uppercase(),
         style = HalalaType.Badge,
-        color = HalalaColors.Accent,
+        color = color,
         modifier = modifier
-            .border(Sizes.border, HalalaColors.Accent, Radius.xs)
+            .border(Sizes.border, if (color == HalalaColors.Accent) color else HalalaColors.Line, Radius.xs)
             .padding(horizontal = Insets.badgeX, vertical = Insets.badgeY)
     )
 }

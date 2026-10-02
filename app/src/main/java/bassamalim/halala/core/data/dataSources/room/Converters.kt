@@ -3,27 +3,38 @@ package bassamalim.halala.core.data.dataSources.room
 import androidx.room.TypeConverter
 import bassamalim.halala.core.enums.AccountType
 import bassamalim.halala.core.enums.AliasMatch
+import bassamalim.halala.core.enums.AssetType
 import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
 import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
 import bassamalim.halala.core.enums.AuditAction
 import bassamalim.halala.core.enums.AuditEntity
+import bassamalim.halala.core.enums.BudgetScope
 import bassamalim.halala.core.enums.BusinessType
+import bassamalim.halala.core.enums.CadenceUnit
 import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.enums.ExpenseType
 import bassamalim.halala.core.enums.IdentifiedBy
+import bassamalim.halala.core.enums.LoanDirection
+import bassamalim.halala.core.enums.LoanEventType
+import bassamalim.halala.core.enums.MaturityChoice
+import bassamalim.halala.core.enums.SavingsKind
 import bassamalim.halala.core.enums.RuleSource
 import bassamalim.halala.core.enums.RawStatus
+import bassamalim.halala.core.enums.RecurringKind
+import bassamalim.halala.core.enums.SeriesStatus
 import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.enums.TransactionSource
 import kotlinx.serialization.json.Json
 import java.time.Instant
+import java.time.LocalDate
 
 private val lenientJson = Json { ignoreUnknownKeys = true }
 
 /**
  * Enums are stored by name. A name that no longer exists decays to a safe value rather than
- * throwing, so dropping an entry from a list can never crash anyone who stored one. (Direction
- * is two values that will never change, so it is read strictly.)
+ * throwing, so dropping an entry from a list can never crash anyone who stored one. (Direction,
+ * a loan's direction and what happened to a loan are values that will never change, so they are
+ * read strictly: no safe value could stand in for money.)
  */
 class Converters {
 
@@ -134,4 +145,74 @@ class Converters {
 
     @TypeConverter
     fun fromIdentifiedBy(by: IdentifiedBy?): String? = by?.name
+
+    /** A day, as days since 1970-01-01. */
+    @TypeConverter
+    fun toEpochDay(date: LocalDate?): Long? = date?.toEpochDay()
+
+    @TypeConverter
+    fun fromEpochDay(day: Long?): LocalDate? = day?.let(LocalDate::ofEpochDay)
+
+    @TypeConverter
+    fun toLoanDirection(name: String): LoanDirection = LoanDirection.valueOf(name)
+
+    @TypeConverter
+    fun fromLoanDirection(direction: LoanDirection): String = direction.name
+
+    @TypeConverter
+    fun toLoanEventType(name: String): LoanEventType = LoanEventType.valueOf(name)
+
+    @TypeConverter
+    fun fromLoanEventType(type: LoanEventType): String = type.name
+
+    @TypeConverter
+    fun toRecurringKind(name: String): RecurringKind =
+        RecurringKind.entries.firstOrNull { it.name == name } ?: RecurringKind.BILL
+
+    @TypeConverter
+    fun fromRecurringKind(kind: RecurringKind): String = kind.name
+
+    @TypeConverter
+    fun toCadenceUnit(name: String): CadenceUnit = CadenceUnit.valueOf(name)
+
+    @TypeConverter
+    fun fromCadenceUnit(unit: CadenceUnit): String = unit.name
+
+    @TypeConverter
+    fun toSeriesStatus(name: String): SeriesStatus =
+        SeriesStatus.entries.firstOrNull { it.name == name } ?: SeriesStatus.PROPOSED
+
+    @TypeConverter
+    fun fromSeriesStatus(status: SeriesStatus): String = status.name
+
+    @TypeConverter
+    fun toBudgetScope(name: String): BudgetScope = BudgetScope.entries.firstOrNull { it.name == name } ?: BudgetScope.TOTAL
+
+    @TypeConverter
+    fun fromBudgetScope(scope: BudgetScope): String = scope.name
+
+    /** A list of ids, as "3,7,12". */
+    @TypeConverter
+    fun toIds(text: String): List<Long> = text.split(',').mapNotNull { it.trim().toLongOrNull() }
+
+    @TypeConverter
+    fun fromIds(ids: List<Long>): String = ids.joinToString(",")
+
+    @TypeConverter
+    fun toAssetType(name: String): AssetType = AssetType.entries.firstOrNull { it.name == name } ?: AssetType.OTHER
+
+    @TypeConverter
+    fun fromAssetType(type: AssetType): String = type.name
+
+    @TypeConverter
+    fun toSavingsKind(name: String): SavingsKind = SavingsKind.entries.firstOrNull { it.name == name } ?: SavingsKind.HASAD
+
+    @TypeConverter
+    fun fromSavingsKind(kind: SavingsKind): String = kind.name
+
+    @TypeConverter
+    fun toMaturityChoice(name: String?): MaturityChoice? = MaturityChoice.entries.firstOrNull { it.name == name }
+
+    @TypeConverter
+    fun fromMaturityChoice(choice: MaturityChoice?): String? = choice?.name
 }

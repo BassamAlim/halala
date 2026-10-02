@@ -13,7 +13,6 @@ import androidx.work.WorkerParameters
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.IdentifiedAs
-import bassamalim.halala.core.data.repositories.PreferencesRepository
 import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.domain.Identification
 import bassamalim.halala.core.enums.BusinessType
@@ -33,13 +32,12 @@ class AiIdentification @Inject constructor(
     private val classification: ClassificationRepository,
     private val accounts: AccountsRepository,
     private val sms: SmsRepository,
-    private val preferences: PreferencesRepository,
     private val keys: ApiKeys,
     private val identifier: MerchantIdentifier
 ) {
 
-    /** Whether it is on and has a key: nothing is sent otherwise. */
-    suspend fun isOn(): Boolean = preferences.observeAiEnabled().first() && keys.hasGroq()
+    /** It is always on, in a build that has Groq's key: nothing is sent otherwise. */
+    fun isOn(): Boolean = keys.hasGroq()
 
     @Throws(IdentifyFailure::class)
     suspend fun run() {
@@ -76,7 +74,7 @@ class AiIdentification @Inject constructor(
     }
 }
 
-/** Starts identifying in the background, when it is on: after SMS arrive, and as the app opens. */
+/** Starts identifying in the background, when the build has a key: after SMS arrive, and as the app opens. */
 class AiScheduler @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val identification: AiIdentification
@@ -87,21 +85,18 @@ class AiScheduler @Inject constructor(
     }
 }
 
-/** One run of [AiIdentification], online only. A problem is remembered for Settings to say. */
+/** One run of [AiIdentification], online only. A problem worth trying again is retried later. */
 @HiltWorker
 class IdentifyWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
-    private val identification: AiIdentification,
-    private val preferences: PreferencesRepository
+    private val identification: AiIdentification
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result = try {
         identification.run()
-        preferences.setAiProblem(null)
         Result.success()
     } catch (failure: IdentifyFailure) {
-        preferences.setAiProblem(failure.problem.name)
         if (failure.problem.retry) Result.retry() else Result.success()
     }
 

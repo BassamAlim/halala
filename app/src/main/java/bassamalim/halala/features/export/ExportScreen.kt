@@ -24,6 +24,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
+import androidx.compose.ui.text.input.ImeAction
+import bassamalim.halala.core.ui.components.ButtonKind
+import bassamalim.halala.core.ui.components.ConfirmSheet
+import bassamalim.halala.core.ui.components.FormField
+import bassamalim.halala.core.ui.components.HalalaButton
+import bassamalim.halala.core.ui.components.HalalaSheet
+import bassamalim.halala.core.ui.components.HalalaTextField
 import bassamalim.halala.core.ui.components.ListCard
 import bassamalim.halala.core.ui.components.ListRow
 import bassamalim.halala.core.ui.components.TopBar
@@ -34,8 +41,9 @@ import bassamalim.halala.core.ui.theme.Sizes
 import bassamalim.halala.core.ui.theme.Spacing
 
 /**
- * Backup and export. For now: CSV for spreadsheets and JSON for your own scripts, written to a
- * file you choose. Neither is encrypted, and the screen says so.
+ * Backup and export: encrypted backups (their own screen), CSV for spreadsheets and JSON for
+ * your own scripts, written to a file you choose, and restoring from a backup or a JSON export.
+ * Exports aren't encrypted, and the screen says so.
  */
 @Composable
 fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
@@ -44,6 +52,9 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
     val snackbarHostState = remember { SnackbarHostState() }
     val saved = stringResource(R.string.export_saved)
     val failed = stringResource(R.string.export_failed)
+    val unreadable = stringResource(R.string.export_unreadable)
+    val restored = stringResource(R.string.export_restored)
+    val restoreFailed = stringResource(R.string.export_restore_failed)
 
     val write = { uri: android.net.Uri ->
         { bytes: ByteArray ->
@@ -61,13 +72,23 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
         ActivityResultContracts.CreateDocument("application/json")
     ) { uri -> if (uri != null) viewModel.onJsonPicked(write(uri)) }
 
+    val restoreLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) viewModel.onRestorePicked {
+            runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
+        }
+    }
+
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {
-                is ExportEvent.Written -> {
-                    snackbarHostState.currentSnackbarData?.dismiss()
-                    snackbarHostState.showSnackbar(if (event.succeeded) saved else failed)
-                }
+                is ExportEvent.Written -> if (event.succeeded) saved else failed
+                ExportEvent.Unreadable -> unreadable
+                is ExportEvent.Restored -> if (event.succeeded) restored else restoreFailed
+            }.let { message ->
+                snackbarHostState.currentSnackbarData?.dismiss()
+                snackbarHostState.showSnackbar(message)
             }
         }
     }
@@ -88,6 +109,15 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
 
             ListCard(Modifier.fillMaxWidth()) {
                 ListRow(
+                    title = stringResource(R.string.backup_title),
+                    subtitle = stringResource(R.string.backup_summary),
+                    leading = { ExportIcon() },
+                    onClick = viewModel::onBackupsClick
+                )
+            }
+
+            ListCard(Modifier.fillMaxWidth()) {
+                ListRow(
                     title = stringResource(R.string.export_csv),
                     subtitle = stringResource(R.string.export_csv_summary),
                     leading = { ExportIcon() },
@@ -100,6 +130,14 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
                     leading = { ExportIcon() },
                     onClick = { if (!state.isWorking) jsonLauncher.launch(viewModel.jsonFileName()) }
                 )
+                ListRow(
+                    title = stringResource(R.string.export_restore),
+                    subtitle = stringResource(R.string.export_restore_summary),
+                    divider = true,
+                    leading = { ExportIcon() },
+                    // Some file pickers know a .json only as plain text or bytes.
+                    onClick = { if (!state.isWorking) restoreLauncher.launch(JSON_TYPES) }
+                )
             }
 
             Text(
@@ -109,7 +147,46 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
             )
         }
     }
+
+    state.passphrase?.let { ask ->
+        HalalaSheet(viewModel::onPassphraseDismiss) {
+            Text(text = stringResource(R.string.backup_open_title), style = HalalaType.Title)
+            FormField(
+                label = stringResource(R.string.backup_passphrase),
+                error = stringResource(R.string.backup_wrong).takeIf { ask.wrong }
+            ) {
+                HalalaTextField(
+                    value = ask.text,
+                    onValueChange = viewModel::onPassphraseChange,
+                    secret = true,
+                    isError = ask.wrong,
+                    imeAction = ImeAction.Done,
+                    onImeAction = viewModel::onPassphraseSubmit
+                )
+            }
+            HalalaButton(
+                text = stringResource(if (state.isWorking) R.string.backup_opening else R.string.backup_open),
+                onClick = viewModel::onPassphraseSubmit,
+                kind = ButtonKind.Primary,
+                enabled = !state.isWorking,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+
+    state.restore?.let { restore ->
+        ConfirmSheet(
+            title = stringResource(R.string.export_restore_title),
+            body = stringResource(R.string.export_restore_body, restore.transactions, restore.accounts),
+            confirmLabel = stringResource(R.string.export_restore_confirm),
+            dismissLabel = stringResource(R.string.cancel),
+            onConfirm = viewModel::onRestoreConfirm,
+            onDismiss = viewModel::onRestoreDismiss
+        )
+    }
 }
+
+private val JSON_TYPES = arrayOf("application/json", "text/plain", "application/octet-stream")
 
 @Composable
 private fun ExportIcon() {

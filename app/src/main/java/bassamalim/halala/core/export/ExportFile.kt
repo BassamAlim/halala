@@ -8,6 +8,11 @@ import kotlinx.serialization.Serializable
  * rather than duplicate. Amounts are integer minor units next to their ISO currency, exactly as
  * stored: `amountMinor: 21450, currency: "SAR"` is 214.50 SAR.
  *
+ * Since schema 5 it holds all that a restore needs ([Importer]): the bank messages as they
+ * arrived, the digits learned for each account and the balances the banks reported, so a
+ * restored phone reads its inbox again without recording anything twice. Only the history of
+ * changes (undo) is left out.
+ *
  * Bump [SCHEMA_VERSION] with any change to this shape; importers migrate older files forward.
  */
 @Serializable
@@ -25,10 +30,37 @@ data class ExportFile(
     val categories: List<ExportCategory> = emptyList(),
     val rules: List<ExportRule> = emptyList(),
     /** Since schema 3. */
-    val merchants: List<ExportMerchant> = emptyList()
+    val merchants: List<ExportMerchant> = emptyList(),
+    /** Since schema 5. */
+    val rawMessages: List<ExportRawMessage> = emptyList(),
+    val balanceCheckpoints: List<ExportCheckpoint> = emptyList(),
+    /** Since schema 6: the people transfers go to and come from. */
+    val people: List<ExportPerson> = emptyList(),
+    /** Since schema 7. */
+    val loans: List<ExportLoan> = emptyList(),
+    /** Since schema 8: subscriptions, bills and planned payments. */
+    val recurring: List<ExportRecurring> = emptyList(),
+    /** Since schema 10. */
+    val budgets: List<ExportBudget> = emptyList(),
+    /** Since schema 11. */
+    val goals: List<ExportGoal> = emptyList(),
+    /** Since schema 12: assets outside your accounts, and the daily worth of them. */
+    val assets: List<ExportAsset> = emptyList(),
+    val assetSnapshots: List<ExportSnapshot> = emptyList(),
+    /** Since schema 13: how you work out zakat, once you have set it. */
+    val zakat: ExportZakat? = null,
+    /** Since schema 14. */
+    val scenarios: List<ExportScenario> = emptyList(),
+    /** Since schema 15: the terms of savings accounts. */
+    val savingsTerms: List<ExportSavingsTerms> = emptyList(),
+    /** Since schema 16: tags, and which transactions carry them. */
+    val tags: List<ExportTag> = emptyList(),
+    val transactionTags: List<ExportTransactionTag> = emptyList(),
+    /** Since schema 18: where purchases were made, while you had it remembered. */
+    val places: List<ExportPlace> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 4
+        const val SCHEMA_VERSION = 18
     }
 }
 
@@ -46,8 +78,13 @@ data class ExportAccount(
     val currency: String,
     val openingBalanceMinor: Long,
     val archived: Boolean,
-    val createdAt: String
+    val createdAt: String,
+    /** Since schema 5: other digits its bank's SMS quote for it (a card on it). */
+    val refs: List<ExportAccountRef> = emptyList()
 )
+
+@Serializable
+data class ExportAccountRef(val institution: String, val ref: String)
 
 @Serializable
 data class ExportTransaction(
@@ -68,7 +105,11 @@ data class ExportTransaction(
     val expenseType: String? = null,
     val ruleUid: String? = null,
     /** Since schema 3: the merchant its title names, when it names one. */
-    val merchantUid: String? = null
+    val merchantUid: String? = null,
+    /** Since schema 5: a foreign charge before conversion, and the SMS it was read from. */
+    val originalAmountMinor: Long? = null,
+    val originalCurrency: String? = null,
+    val rawMessageHash: String? = null
 )
 
 @Serializable
@@ -91,7 +132,12 @@ data class ExportRule(
     val expenseType: String?,
     val source: String,
     val enabled: Boolean,
-    val createdAt: String
+    val createdAt: String,
+    /** Since schema 5: its other conditions (title holds, account, amount range). */
+    val contains: String? = null,
+    val accountUid: String? = null,
+    val minMinor: Long? = null,
+    val maxMinor: Long? = null
 )
 
 /**
@@ -106,12 +152,201 @@ data class ExportMerchant(
     val aliases: List<ExportAlias>,
     val businessType: String? = null,
     val identifiedBy: String? = null,
-    val confidence: Int? = null
+    val confidence: Int? = null,
+    /** Since schema 5: you named it; its automatic rule was already made. */
+    val namedByYou: Boolean = false,
+    val autoRuled: Boolean = false
 )
 
 /** One spelling: its key (lower case, letters only), as first written, and how it joined. */
 @Serializable
 data class ExportAlias(val key: String, val descriptor: String, val matchedBy: String)
+
+/**
+ * Someone you send money to or get it from, and every way a bank writes their name (each a key,
+ * as merchants' are, and the name as first written). A transfer is theirs when its title's key
+ * is one of them.
+ */
+@Serializable
+data class ExportPerson(
+    val uid: String,
+    val name: String,
+    val namedByYou: Boolean,
+    val aliases: List<ExportPersonAlias>
+)
+
+@Serializable
+data class ExportPersonAlias(val key: String, val descriptor: String)
+
+/**
+ * Money lent to (`LENT`) or borrowed from (`BORROWED`) a person, and what happened to it. An
+ * event with a transaction takes that transaction's amount and time; one without (`FORGIVENESS`)
+ * carries its own.
+ */
+@Serializable
+data class ExportLoan(
+    val uid: String,
+    val personUid: String,
+    val direction: String,
+    val currency: String,
+    /** ISO-8601 date, or null with no due date. */
+    val dueOn: String?,
+    val createdAt: String,
+    val events: List<ExportLoanEvent>,
+    /** Since schema 9: the purchase this is a share of, when a bill was split. */
+    val splitOfTransactionUid: String? = null
+)
+
+@Serializable
+data class ExportLoanEvent(
+    val uid: String,
+    /** `DISBURSEMENT`, `REPAYMENT` or `FORGIVENESS`. */
+    val type: String,
+    val transactionUid: String? = null,
+    val amountMinor: Long? = null,
+    val at: String? = null
+)
+
+/**
+ * A subscription, bill or planned payment: `amountMinor` every `every` `unit` (DAY, WEEK, MONTH,
+ * YEAR) from `anchor`, paid to its merchant or person (by uid) when it has one.
+ */
+@Serializable
+data class ExportRecurring(
+    val uid: String,
+    val kind: String,
+    val name: String,
+    val merchantUid: String?,
+    val personUid: String?,
+    val amountMinor: Long,
+    val currency: String,
+    val every: Int,
+    val unit: String,
+    /** ISO-8601 dates. */
+    val anchor: String,
+    val autoRenew: Boolean,
+    val endsOn: String?,
+    val reminderDays: Int?,
+    val cancelReminder: Boolean,
+    val status: String,
+    val createdAt: String
+)
+
+/** A limit on spending each pay cycle: `scope` TOTAL, CATEGORY, EXPENSE_TYPE or MERCHANT. */
+@Serializable
+data class ExportBudget(
+    val uid: String,
+    val scope: String,
+    val categoryUid: String?,
+    val expenseType: String?,
+    val merchantUid: String?,
+    val amountMinor: Long,
+    val currency: String,
+    val rollover: Boolean,
+    val createdAt: String
+)
+
+/** A savings goal: a target, an optional date, and the accounts (by uid) it is saved in. */
+@Serializable
+data class ExportGoal(
+    val uid: String,
+    val name: String,
+    val targetMinor: Long,
+    val currency: String,
+    val targetDate: String?,
+    val accountUids: List<String>,
+    val createdAt: String
+)
+
+/**
+ * An asset (`type` FUND, GOLD, VEHICLE, PROPERTY or OTHER). `quantity`, `unitPrice`,
+ * `spreadPercent` and `depreciationPercent` are exact decimal text; `valueMinor` and
+ * `costMinor` minor units.
+ */
+@Serializable
+data class ExportAsset(
+    val uid: String,
+    val type: String,
+    val name: String,
+    val quantity: String?,
+    val karat: Int?,
+    val unitPrice: String?,
+    val priceDate: String?,
+    val valueMinor: Long?,
+    val costMinor: Long?,
+    val spreadPercent: String?,
+    val depreciationPercent: String?,
+    val currency: String,
+    val createdAt: String,
+    /** Since schema 17: "gold", or "fund:<Mubasher id>", when its price is fetched. */
+    val priceSource: String? = null
+)
+
+/** What assets were worth on a day. */
+@Serializable
+data class ExportSnapshot(val date: String, val assetsMinor: Long, val currency: String)
+
+/** The zakat method: the Hijri day, today's gold price (decimal text), what counts, other debts, the year last paid. */
+@Serializable
+data class ExportZakat(
+    val hijriMonth: Int?,
+    val hijriDay: Int?,
+    val goldPricePerGram: String?,
+    val includeAccounts: Boolean,
+    val includeSavings: Boolean,
+    val includeFunds: Boolean,
+    val includeGold: Boolean,
+    val includeOwed: Boolean,
+    val otherDebtsMinor: Long,
+    val paidHijriYear: Int?,
+    val remind: Boolean
+)
+
+/** A retirement scenario: ages, amounts in minor units, rates as decimal text. */
+@Serializable
+data class ExportScenario(
+    val uid: String,
+    val name: String,
+    val ageNow: Int,
+    val retireAt: Int,
+    val startMinor: Long,
+    val monthlyMinor: Long,
+    val returnPercent: String,
+    val inflationPercent: String,
+    val wantedMinor: Long,
+    val currency: String,
+    val createdAt: String
+)
+
+/** A savings account's terms: `kind` AWAEED or HASAD, the rate as decimal text, a term's start, months and maturity choice. */
+@Serializable
+data class ExportSavingsTerms(
+    val accountUid: String,
+    val kind: String,
+    val ratePercent: String,
+    val startDate: String?,
+    val tenorMonths: Int?,
+    val maturityChoice: String?
+)
+
+/** A tag: its days as ISO dates, and whether it takes everything in them. */
+@Serializable
+data class ExportTag(
+    val uid: String,
+    val name: String,
+    val startsOn: String?,
+    val endsOn: String?,
+    val auto: Boolean,
+    val createdAt: String
+)
+
+/** A transaction carries a tag; `removed` is one you took off a transaction its days cover. */
+@Serializable
+data class ExportTransactionTag(val transactionUid: String, val tagUid: String, val removed: Boolean)
+
+/** Where the phone was when a purchase's SMS arrived: degrees × 10⁷, and accuracy in metres. */
+@Serializable
+data class ExportPlace(val transactionUid: String, val latitudeE7: Int, val longitudeE7: Int, val accuracyMeters: Int)
 
 @Serializable
 data class ExportInternalTransfer(
@@ -119,4 +354,26 @@ data class ExportInternalTransfer(
     val outTransactionUid: String,
     val inTransactionUid: String,
     val matchConfidence: Double
+)
+
+/** A bank SMS exactly as it arrived. [hash] is what transactions and balances point at. */
+@Serializable
+data class ExportRawMessage(
+    val sender: String,
+    val body: String,
+    /** ISO-8601 instant. */
+    val receivedAt: String,
+    val hash: String,
+    val status: String,
+    val parserVersion: Int,
+    val unroutedRefs: String? = null
+)
+
+/** A balance a bank reported, or one you gave (no message). */
+@Serializable
+data class ExportCheckpoint(
+    val accountUid: String,
+    val balanceMinor: Long,
+    val at: String,
+    val rawMessageHash: String? = null
 )

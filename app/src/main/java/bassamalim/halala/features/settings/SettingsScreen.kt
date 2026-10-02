@@ -9,10 +9,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,12 +27,16 @@ import bassamalim.halala.core.ui.components.TimeDialog
 import bassamalim.halala.core.ui.dayOfWeekLabel
 import java.time.DayOfWeek
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
+import androidx.compose.foundation.layout.FlowRow
+import bassamalim.halala.core.ui.components.HalalaChip
+import bassamalim.halala.core.ui.components.ChipStyle
+import bassamalim.halala.core.ui.components.rememberNotificationAsk
+import bassamalim.halala.core.domain.DigestKind
 import bassamalim.halala.core.ui.components.GroupLabel
 import bassamalim.halala.core.ui.components.ListCard
 import bassamalim.halala.core.ui.components.ListRow
@@ -42,18 +44,13 @@ import bassamalim.halala.core.ui.components.TopBar
 import bassamalim.halala.core.ui.theme.HalalaColors
 import bassamalim.halala.core.ui.theme.HalalaType
 import bassamalim.halala.core.ui.theme.Insets
-import bassamalim.halala.core.ui.theme.Sizes
 import bassamalim.halala.core.ui.theme.Spacing
-import androidx.compose.ui.text.input.ImeAction
-import bassamalim.halala.core.ui.components.HalalaTextField
-import bassamalim.halala.core.ui.components.FormField
-import bassamalim.halala.core.ui.components.ButtonKind
-import bassamalim.halala.core.ai.IdentifyProblem
 
 /**
  * Settings, from the Settings board, holding only the rows that are true today: accounts, bank
- * messages, categories, rules, recent changes, the review reminder, merchant identification,
- * backup and export, and the lock. Digests, web search and the usage cap join as they are built.
+ * messages, categories, rules, recent changes, the review reminder, and backup and export. What
+ * is always on (the lock, merchant identification) has no row. Digests, web search and the usage
+ * cap join as they are built.
  */
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
@@ -92,6 +89,12 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 onClick = viewModel::onCategoriesClick
             )
             ListRow(
+                title = stringResource(R.string.tags),
+                subtitle = stringResource(R.string.settings_tags_summary),
+                divider = true,
+                onClick = viewModel::onTagsClick
+            )
+            ListRow(
                 title = stringResource(R.string.merchants),
                 subtitle = stringResource(R.string.settings_merchants_summary),
                 divider = true,
@@ -122,17 +125,12 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 },
                 onClick = viewModel::onReminderClick
             )
-        }
-
-        Section(stringResource(R.string.settings_ai)) {
             ListRow(
-                title = stringResource(R.string.ai_identification),
-                subtitle = when {
-                    !state.ai.enabled -> stringResource(R.string.ai_off)
-                    state.ai.waiting > 0 -> pluralStringResource(R.plurals.ai_waiting, state.ai.waiting, state.ai.waiting)
-                    else -> stringResource(R.string.ai_on_groq)
-                },
-                onClick = viewModel::onAiClick
+                title = stringResource(R.string.digests),
+                subtitle = if (state.digests.isEmpty()) stringResource(R.string.reminder_off)
+                else DigestKind.entries.filter { it in state.digests }.map { stringResource(digestLabel(it)) }.joinToString(", "),
+                divider = true,
+                onClick = viewModel::onDigestsClick
             )
         }
 
@@ -141,19 +139,6 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 title = stringResource(R.string.export_title),
                 subtitle = stringResource(R.string.settings_export_summary),
                 onClick = viewModel::onExportClick
-            )
-            ListRow(
-                title = stringResource(R.string.settings_lock),
-                subtitle = pluralStringResource(R.plurals.settings_lock_summary, state.lockMinutes, state.lockMinutes),
-                divider = true,
-                leading = {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_lock),
-                        contentDescription = null,
-                        tint = HalalaColors.TextMuted,
-                        modifier = Modifier.size(Sizes.iconSmall)
-                    )
-                }
             )
         }
 
@@ -172,76 +157,41 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         )
     } else if (state.isEditingReminder) {
         ReminderSheet(state, viewModel)
-    } else if (state.ai.isEditing) {
-        AiSheet(state.ai, viewModel)
+    } else if (state.isEditingDigests) {
+        DigestsSheet(state, viewModel)
     }
 }
 
-/**
- * Merchant identification: on or off, the Groq key, and what went wrong last. It can only be
- * turned on with a key; forgetting the key turns it off.
- */
+private fun digestLabel(kind: DigestKind) = when (kind) {
+    DigestKind.WEEK -> R.string.digest_weekly
+    DigestKind.MONTH -> R.string.digest_monthly
+    DigestKind.YEAR -> R.string.digest_yearly
+}
+
+/** Which digests to be told about; each arrives the morning after its period ends. */
 @Composable
-private fun AiSheet(ai: AiSettings, viewModel: SettingsViewModel) {
-    HalalaSheet(onDismiss = viewModel::onAiDismiss) {
-        Text(text = stringResource(R.string.ai_identification), style = HalalaType.Title)
-        Text(text = stringResource(R.string.ai_hint), style = HalalaType.Body, color = HalalaColors.TextMuted)
-
-        ChoiceChips(
-            options = listOf(false, true),
-            selected = ai.enabled,
-            label = { stringResource(if (it) R.string.ai_on else R.string.ai_off) },
-            onSelect = viewModel::onAiEnabledPick,
-            enabled = ai.hasKey
-        )
-
-        FormField(
-            label = stringResource(R.string.ai_key),
-            hint = stringResource(if (ai.hasKey) R.string.ai_key_saved else R.string.ai_key_hint)
-        ) {
-            HalalaTextField(
-                value = ai.keyDraft.orEmpty(),
-                onValueChange = viewModel::onKeyChange,
-                secret = true,
-                imeAction = ImeAction.Done
-            )
-        }
-        HalalaButton(
-            text = stringResource(R.string.ai_save_key),
-            onClick = viewModel::onSaveKeyClick,
-            kind = ButtonKind.Primary,
-            enabled = !ai.keyDraft.isNullOrBlank(),
-            modifier = Modifier.fillMaxWidth()
-        )
-        if (ai.hasKey) {
-            HalalaButton(
-                text = stringResource(R.string.ai_forget_key),
-                onClick = viewModel::onForgetKeyClick,
-                destructive = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-
-        if (ai.enabled && ai.waiting > 0) {
-            HalalaButton(
-                text = stringResource(R.string.ai_identify_now),
-                onClick = viewModel::onIdentifyNowClick,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-
-        val note = when {
-            !ai.hasKey -> R.string.ai_key_missing
-            !ai.enabled -> null
-            else -> when (ai.problem) {
-                IdentifyProblem.KEY -> R.string.ai_error_key
-                IdentifyProblem.UNREACHABLE -> R.string.ai_error_network
-                IdentifyProblem.LIMITED -> R.string.ai_error_limit
-                IdentifyProblem.REJECTED -> R.string.ai_error_rejected
-                null -> null
+private fun DigestsSheet(state: SettingsUiState, viewModel: SettingsViewModel) {
+    val askToNotify = rememberNotificationAsk()
+    HalalaSheet(onDismiss = viewModel::onDigestsDismiss) {
+        Text(text = stringResource(R.string.digests), style = HalalaType.Title)
+        Text(text = stringResource(R.string.digests_settings_hint), style = HalalaType.Body, color = HalalaColors.TextMuted)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            DigestKind.entries.forEach { kind ->
+                HalalaChip(
+                    label = stringResource(digestLabel(kind)),
+                    style = if (kind in state.digests) ChipStyle.On else ChipStyle.Outline,
+                    onClick = {
+                        if (kind !in state.digests) askToNotify()
+                        viewModel.onDigestToggle(kind)
+                    }
+                )
             }
         }
-        note?.let { Text(text = stringResource(it), style = HalalaType.Caption, color = HalalaColors.Info) }
+        HalalaButton(
+            text = stringResource(R.string.digests_past),
+            onClick = viewModel::onPastDigestsClick,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
