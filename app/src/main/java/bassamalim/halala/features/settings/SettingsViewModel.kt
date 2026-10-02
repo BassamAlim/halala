@@ -28,14 +28,30 @@ class SettingsViewModel @Inject constructor(
 
     private val editingReminder = MutableStateFlow(false)
     private val pickingReminderTime = MutableStateFlow(false)
+    private val hasKey = MutableStateFlow(false)
+    private val keyDraft = MutableStateFlow<String?>(null)
+
+    private val ai = combine(
+        domain.observeAiEnabled(),
+        domain.observeAiProblem(),
+        domain.observeWaiting(),
+        hasKey,
+        keyDraft
+    ) { enabled, problem, waiting, hasKey, keyDraft ->
+        AiSettings(enabled && hasKey, hasKey, waiting, problem, keyDraft)
+    }
+
+    init {
+        viewModelScope.launch { hasKey.update { domain.hasGroqKey() } }
+    }
 
     val uiState: StateFlow<SettingsUiState> = combine(
-        domain.observeAccounts(),
-        domain.observeLockTimeoutSeconds(),
+        combine(domain.observeAccounts(), domain.observeLockTimeoutSeconds(), ::Pair),
         domain.observeReviewSchedule(),
         editingReminder,
-        pickingReminderTime
-    ) { accounts, lockSeconds, reminder, editingReminder, pickingReminderTime ->
+        pickingReminderTime,
+        ai
+    ) { (accounts, lockSeconds), reminder, editingReminder, pickingReminderTime, ai ->
         val active = accounts.filter { !it.account.archived }
 
         SettingsUiState(
@@ -46,7 +62,8 @@ class SettingsViewModel @Inject constructor(
             reminder = reminder,
             reminderTime = timeLabel(reminder.time),
             isEditingReminder = editingReminder,
-            isPickingReminderTime = pickingReminderTime
+            isPickingReminderTime = pickingReminderTime,
+            ai = ai
         )
     }.stateIn(
         scope = viewModelScope,
@@ -74,6 +91,36 @@ class SettingsViewModel @Inject constructor(
     private fun setReminder(change: (ReviewSchedule) -> ReviewSchedule) {
         val changed = change(uiState.value.reminder)
         viewModelScope.launch { domain.setReviewSchedule(changed) }
+    }
+
+    fun onAiClick() = keyDraft.update { "" }
+
+    fun onAiDismiss() = keyDraft.update { null }
+
+    fun onKeyChange(key: String) = keyDraft.update { key }
+
+    fun onSaveKeyClick() {
+        val key = keyDraft.value ?: return
+        viewModelScope.launch {
+            domain.saveGroqKey(key)
+            hasKey.update { domain.hasGroqKey() }
+            keyDraft.update { "" }
+        }
+    }
+
+    fun onForgetKeyClick() {
+        viewModelScope.launch {
+            domain.forgetGroqKey()
+            hasKey.update { domain.hasGroqKey() }
+        }
+    }
+
+    fun onAiEnabledPick(enabled: Boolean) {
+        viewModelScope.launch { domain.setAiEnabled(enabled) }
+    }
+
+    fun onIdentifyNowClick() {
+        viewModelScope.launch { domain.identifyNow() }
     }
 
     fun onBackClick() = navigator.popBackStack()

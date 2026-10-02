@@ -165,7 +165,7 @@ The AI only identifies: given a merchant's name, it says what the business is. W
 - A fixed list of business types (supermarket, restaurant, café, food delivery, fuel station, pharmacy, clinic, telecom, utility, government service, airline, hotel, ride-hailing, online marketplace, electronics, clothing, …, unknown). The LLM must answer from it (a strict JSON schema).
 - Each category takes some business types (seeded: supermarket → Groceries, café → Restaurants, food delivery → Delivery, fuel station → Fuel, …). A type belongs to one category at most; you move types between categories on the Categories screen.
 - The expense type is the category's own.
-- A mixed type (department store, online marketplace) or unknown never files on its own: it is asked.
+- A mixed type (department store, online marketplace) starts in no category, and unknown is in none, so they are asked until you give the type a category.
 - You can correct a merchant's business type on its screen; it then files as you said.
 
 ### Web search for unknown stores

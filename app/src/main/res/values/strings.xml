@@ -469,8 +469,10 @@
     <string name="ai_key_saved">Key saved</string>
     <string name="ai_key_missing">Add your Groq API key to turn this on.</string>
     <string name="ai_save_key">Save key</string>
+    <string name="ai_forget_key">Forget key</string>
     <string name="ai_identify_now">Identify now</string>
     <string name="ai_error_key">Groq refused the key. Check it and save it again.</string>
     <string name="ai_error_network">Couldn\'t reach Groq. Halala tries again when you\'re online.</string>
+    <string name="ai_error_rejected">Groq couldn\'t answer this time. Halala asks again later.</string>
     <string name="ai_error_limit">Groq\'s free limit was reached. Halala tries again later.</string>
 </resources>

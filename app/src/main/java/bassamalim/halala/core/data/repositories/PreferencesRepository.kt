@@ -55,7 +55,23 @@ class PreferencesRepository @Inject constructor(
         }
     }
 
+    /** Whether merchants are identified by AI (Groq). Off until you turn it on. */
+    fun observeAiEnabled(): Flow<Boolean> = dataStore.data.map { it[AI_ENABLED] ?: false }
+
+    suspend fun setAiEnabled(enabled: Boolean) {
+        dataStore.edit { it[AI_ENABLED] = enabled }
+    }
+
+    /** Why identifying last stopped short ("KEY", "UNREACHABLE", …); null when it last went through. */
+    fun observeAiProblem(): Flow<String?> = dataStore.data.map { it[AI_PROBLEM] }
+
+    suspend fun setAiProblem(problem: String?) {
+        dataStore.edit { if (problem == null) it.remove(AI_PROBLEM) else it[AI_PROBLEM] = problem }
+    }
+
     companion object {
+        private val AI_ENABLED = booleanPreferencesKey("ai_enabled")
+        private val AI_PROBLEM = stringPreferencesKey("ai_problem")
         private val REVIEW_MODE = stringPreferencesKey("review_reminder_mode")
         private val REVIEW_DAY = intPreferencesKey("review_reminder_day")
         private val REVIEW_MINUTE = intPreferencesKey("review_reminder_minute")

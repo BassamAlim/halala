@@ -9,6 +9,12 @@
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.READ_SMS" />
 
+    <!--
+        Only for merchant identification, when you turn it on: a shop's name goes to Groq over
+        HTTPS. Nothing else is ever sent.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!-- The review reminder, and nothing per transaction. Asked for when you turn the reminder on. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
