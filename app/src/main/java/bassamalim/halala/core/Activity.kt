@@ -1,5 +1,6 @@
 package bassamalim.halala.core
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.os.SystemClock
@@ -17,7 +18,11 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.ui.Modifier
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.lifecycleScope
 import bassamalim.halala.core.lock.LockManager
+import bassamalim.halala.core.widget.HalalaWidget
+import bassamalim.halala.core.widget.QuickAddRequest
+import kotlinx.coroutines.launch
 import bassamalim.halala.core.nav.Navigation
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
@@ -32,6 +37,7 @@ class Activity : FragmentActivity() {
 
     @Inject lateinit var navigator: Navigator
     @Inject lateinit var lockManager: LockManager
+    @Inject lateinit var quickAdd: QuickAddRequest
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // The app is dark-only, so the system bars are told so rather than asked.
@@ -41,6 +47,7 @@ class Activity : FragmentActivity() {
         )
 
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null && intent?.action == QuickAddRequest.ACTION) quickAdd.request()
 
         // No screenshots, and a blank card in recent apps: this is a ledger.
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
@@ -63,12 +70,20 @@ class Activity : FragmentActivity() {
         }
     }
 
+    /** The widget's "+ Cash" while the app is open: the form now, or after the lock. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (intent.action == QuickAddRequest.ACTION) quickAdd.request()
+    }
+
     override fun onStart() {
         super.onStart()
 
         if (lockManager.shouldLockOnResume(SystemClock.elapsedRealtime())) {
             lockManager.onLocked()
             navigator.navigate(Screen.Lock(resumable = true)) { launchSingleTop = true }
+        } else if (!lockManager.isLocked() && quickAdd.consume()) {
+            navigator.navigate(Screen.EditTransaction())
         }
     }
 
@@ -76,5 +91,6 @@ class Activity : FragmentActivity() {
         super.onStop()
 
         lockManager.onBackgrounded(SystemClock.elapsedRealtime())
+        lifecycleScope.launch { HalalaWidget.refresh(applicationContext) }
     }
 }

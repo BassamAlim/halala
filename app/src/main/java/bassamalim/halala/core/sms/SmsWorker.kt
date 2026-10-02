@@ -10,6 +10,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import bassamalim.halala.core.ai.AiScheduler
+import bassamalim.halala.core.widget.HalalaWidget
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.Flow
@@ -39,6 +40,7 @@ class SmsWorker @AssistedInject constructor(
         ingest.processPending(retry = inputData.getBoolean(KEY_RETRY, false))
         // New merchants the rules and the bundled list couldn't place go to the AI, when it is on.
         ai.request()
+        HalalaWidget.refresh(applicationContext)
         return Result.success()
     }
 

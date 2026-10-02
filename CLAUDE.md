@@ -33,7 +33,8 @@ designs disagree, ask the owner.
 - Room over **SQLCipher** (`net.zetetic:sqlcipher-android`) for the ledger, DataStore
   Preferences for settings that aren't money
 - Navigation Compose with **type-safe routes** (`@Serializable` destinations in `core/nav/Screen.kt`)
-- WorkManager (wired to Hilt in `App`; workers arrive with later phases), AndroidX Biometric
+- WorkManager (wired to Hilt in `App`), AndroidX Biometric, Glance for the home-screen widget,
+  Bouncy Castle only for Argon2id (the backup passphrase)
 - kotlinx.serialization for the JSON export
 - Tests: JUnit 4, Robolectric for Room, kotlinx-coroutines-test
 - Version catalog: `gradle/libs.versions.toml`. Add dependencies there, never inline.
@@ -501,6 +502,10 @@ for a month and an account, salary or what came in, a Sankey (`Sankey` component
 `core/domain/MoneyFlow`) of moves to each of your accounts, what was spent from it and what
 stayed; a leg the bank called a move with no other side is "no match": "It went to someone"
 makes it a plain transfer, "Pick the account" records the other leg there and pairs them) and
-the **Assistant** (Assistant board, with the Digests link; see the product rule), and
-**Encrypted backups** (see the product rule). The board's
+the **Assistant** (Assistant board, with the Digests link; see the product rule),
+**Encrypted backups** (see the product rule), and the **home-screen widget** (`core/widget`,
+no board: this cycle's spending against the total budget with its state colour, the Review
+count, and "+ Cash", which opens the lock as always and then the form on the wallet
+(`QuickAddRequest`); refreshed when the app goes to the background and after each SMS run).
+The widget shows amounts outside the lock: it is there only if you add it. The board's
 "See 52 transactions" link waits for a filtered feed.

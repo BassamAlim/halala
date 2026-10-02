@@ -132,6 +132,8 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.biometric)
+    // The home-screen widget.
+    implementation(libs.androidx.glance.appwidget)
     // Argon2id for the encrypted backup's passphrase (nothing else of it is used).
     implementation(libs.bouncycastle.prov)
 

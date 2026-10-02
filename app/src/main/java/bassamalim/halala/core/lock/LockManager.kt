@@ -33,6 +33,9 @@ class LockManager @Inject constructor(
         backgroundedAt = null
     }
 
+    /** Before the first unlock, or since the lock last came back. */
+    fun isLocked() = !unlocked
+
     fun onBackgrounded(now: Long) {
         if (unlocked) backgroundedAt = now
     }

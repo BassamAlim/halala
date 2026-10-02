@@ -918,6 +918,14 @@
     <string name="backup_open">Open</string>
     <string name="backup_opening">Opening…</string>
     <string name="backup_wrong">That passphrase doesn\'t open this backup.</string>
+    <string name="widget_description">This cycle\'s spending against your budget, what waits in Review, and a quick cash entry.</string>
+    <string name="widget_this_cycle">Spent this cycle</string>
+    <string name="widget_of">of %1$s %2$s</string>
+    <string name="widget_cash">+ Cash</string>
+    <plurals name="widget_to_review">
+        <item quantity="one">%1$d to review</item>
+        <item quantity="other">%1$d to review</item>
+    </plurals>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="cadence_daily">Daily</string>
