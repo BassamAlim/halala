@@ -64,9 +64,6 @@ interface MerchantsDao {
     )
     suspend fun getToIdentify(): List<ToIdentify>
 
-    @Query("SELECT COUNT(*) FROM merchants m WHERE m.identifiedBy IS NULL AND $UNFILED")
-    fun observeToIdentifyCount(): Flow<Int>
-
     @Query("SELECT * FROM merchants WHERE id = :id")
     suspend fun getMerchant(id: Long): Merchant?
 

@@ -369,9 +369,6 @@ class ClassificationRepository @Inject constructor(
     /** Every merchant as it is, with what it was identified as. */
     fun observeAllMerchants(): Flow<List<Merchant>> = merchantsDao.observeAll()
 
-    /** How many merchants wait to be identified: ones with spending that nothing has filed. */
-    fun observeToIdentifyCount(): Flow<Int> = merchantsDao.observeToIdentifyCount()
-
     /** The merchants waiting to be identified, the busiest first, each with the name a bank wrote. */
     suspend fun toIdentify(): List<ToIdentify> = merchantsDao.getToIdentify()
 

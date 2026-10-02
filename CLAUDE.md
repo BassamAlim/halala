@@ -48,7 +48,9 @@ designs disagree, ask the owner.
 
 CI (`.github/workflows/ci.yml`) runs both on every push and PR to `main` (not `dev`), uploads
 the debug APK as a run artifact, and fails if the Room schema changed without its `app/schemas`
-JSON. A `v*` tag runs `release.yml`: unit
+JSON. Debug builds are signed with the release key whenever a `.env` is present (CI writes one
+from the same secrets), so CI's debug APK, an Android Studio build and the releases all install
+over each other. A `v*` tag runs `release.yml`: unit
 tests, a release APK signed from the `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` and
 `KEY_PASSWORD` secrets (unsigned, with a warning, if any is missing), attached to a GitHub
 Release with its SHA-256. It can also be run by hand from the Actions tab with a tag name: it
@@ -225,10 +227,9 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   that have unfiled spending. **Only a merchant's name, as the bank wrote it (digits kept), ever
   leaves the phone**, and never one holding your accounts' or cards' last four digits, ten or
   more digits, or an IBAN (`Identification.sendable`; those are `WITHHELD` for you). The AI is
-  Groq (`qwen/qwen3.8-27b`, strict JSON schema, reasoning off), off by default, turned on in
-  Settings. Its key is built in, not typed: `BuildConfig.GROQ_API_KEY`, from `GROQ_API_KEY` in
-  `.env` locally or the repository secret of that name in CI (a build without it can't turn
-  identification on). `IdentifyWorker` (online only, one at a time)
+  Groq (`qwen/qwen3.8-27b`, strict JSON schema, reasoning off), always on, with no setting. Its key is built in, not typed: `BuildConfig.GROQ_API_KEY`, from `GROQ_API_KEY` in
+  `.env` locally or the repository secret of that name in CI (a build without it
+  identifies from the bundled list only). `IdentifyWorker` (online only, one at a time)
   runs after every SMS run and as the app opens, in batches of 40 names, the busiest first;
   what it says is recorded without a batch (the rule names why), and each merchant is asked once.
 - **Undo**: everything you do to filing (an answer, "always", saving, switching or deleting a
@@ -249,7 +250,7 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   identified as, by whom and how sure).
 - **Lock**: `BiometricPrompt` on every cold start (the graph starts on `Screen.Lock`) and after
   a minute in the background (`LockManager`, monotonic clock; the minute is a preference,
-  `PreferencesRepository.lockTimeoutSeconds`, with no UI yet). Always on; strong (class 3)
+  `PreferencesRepository.lockTimeoutSeconds`, with no UI yet). Always on, so Settings has no row for it; strong (class 3)
   biometrics with the device credential as fallback (Android 10 can't combine those, so there it
   accepts any biometric plus credential). A phone with no screen lock opens straight through —
   you can never lock yourself out. `FLAG_SECURE` is always set (no screenshots, blank in
@@ -268,10 +269,17 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   `accounts.csv` and `transactions.csv` (UTF-8 with BOM, CRLF, signed decimal amounts plus exact
   `amount_minor`, local times, text cells defused against spreadsheet formula injection). JSON:
   `ExportFile`, schema-versioned (`schemaVersion`, bump on any shape change; 2 added categories
-  and rules, 3 merchants with their aliases, 4 business types on merchants and categories),
+  and rules, 3 merchants with their aliases, 4 business types on merchants and categories, 5 all
+  a restore needs: raw bank messages, account refs, balance checkpoints, full rule conditions),
   keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
+- **Restore** (same screen, "Restore from JSON"): `Importer.read` turns a schema-5 export into
+  rows numbered afresh (pure; refuses older or newer schemas and dangling uids), you confirm,
+  and `RestoreDao.replaceAll` replaces the whole ledger in one transaction. It is a full
+  replace, not a merge. The history of changes (undo) and DataStore settings aren't carried.
+  A new table or column that matters must be added to `ExportFile`, `Exporter` and `Importer`
+  together; `ImporterTest` checks that a restored export exports again as the same file.
 - **Privacy**: no analytics, no crash reporter. The only network use is merchant identification
-  (Groq, HTTPS, when you turn it on: merchants' names and nothing else). Nothing about money goes
+  (Groq, HTTPS, always on in a build with the key: merchants' names and nothing else). Nothing about money goes
   in DataStore (it isn't encrypted).
 - The spec's global quick-add is a flat jade `QuickAddButton` on Home and Activity (the boards
   don't draw one). It opens the transaction form on the cash wallet: Out / In / Move, amount,
@@ -310,8 +318,7 @@ history of changes with undo (`AuditBatch`, `AuditChange`), the review reminder
 was identified as, the chosen category to confirm for the ones sure enough, the All / Suggested /
 Needs you filter, and the last answer's undo; reached from Home's review pill), **Rules** (Rules
 board; from Settings and from a transaction's "Filed automatically" card), category and type on
-Transaction detail, the AI row and sheet in Settings (Settings board's AI section: on or off,
-what went wrong), and, with no board, built from the system's components:
+Transaction detail, and, with no board, built from the system's components:
 **Categories** (add; tap to rename, change the type and the business types it takes, or
 delete), **Rule** (the form: merchant is, description contains, account, amount range →
 category and type), **Recent changes** (each with Undo), the reminder sheet in Settings, and

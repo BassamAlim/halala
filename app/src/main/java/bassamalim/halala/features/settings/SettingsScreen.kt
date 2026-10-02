@@ -9,10 +9,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,7 +27,6 @@ import bassamalim.halala.core.ui.components.TimeDialog
 import bassamalim.halala.core.ui.dayOfWeekLabel
 import java.time.DayOfWeek
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -42,14 +39,13 @@ import bassamalim.halala.core.ui.components.TopBar
 import bassamalim.halala.core.ui.theme.HalalaColors
 import bassamalim.halala.core.ui.theme.HalalaType
 import bassamalim.halala.core.ui.theme.Insets
-import bassamalim.halala.core.ui.theme.Sizes
 import bassamalim.halala.core.ui.theme.Spacing
-import bassamalim.halala.core.ai.IdentifyProblem
 
 /**
  * Settings, from the Settings board, holding only the rows that are true today: accounts, bank
- * messages, categories, rules, recent changes, the review reminder, merchant identification,
- * backup and export, and the lock. Digests, web search and the usage cap join as they are built.
+ * messages, categories, rules, recent changes, the review reminder, and backup and export. What
+ * is always on (the lock, merchant identification) has no row. Digests, web search and the usage
+ * cap join as they are built.
  */
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
@@ -120,36 +116,11 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             )
         }
 
-        Section(stringResource(R.string.settings_ai)) {
-            ListRow(
-                title = stringResource(R.string.ai_identification),
-                subtitle = when {
-                    !state.ai.enabled -> stringResource(R.string.ai_off)
-                    state.ai.waiting > 0 -> pluralStringResource(R.plurals.ai_waiting, state.ai.waiting, state.ai.waiting)
-                    else -> stringResource(R.string.ai_on_groq)
-                },
-                onClick = viewModel::onAiClick
-            )
-        }
-
         Section(stringResource(R.string.settings_privacy)) {
             ListRow(
                 title = stringResource(R.string.export_title),
                 subtitle = stringResource(R.string.settings_export_summary),
                 onClick = viewModel::onExportClick
-            )
-            ListRow(
-                title = stringResource(R.string.settings_lock),
-                subtitle = pluralStringResource(R.plurals.settings_lock_summary, state.lockMinutes, state.lockMinutes),
-                divider = true,
-                leading = {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_lock),
-                        contentDescription = null,
-                        tint = HalalaColors.TextMuted,
-                        modifier = Modifier.size(Sizes.iconSmall)
-                    )
-                }
             )
         }
 
@@ -168,49 +139,6 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         )
     } else if (state.isEditingReminder) {
         ReminderSheet(state, viewModel)
-    } else if (state.ai.isEditing) {
-        AiSheet(state.ai, viewModel)
-    }
-}
-
-/**
- * Merchant identification: on or off, and what went wrong last. It can only be turned on in a
- * build that has Groq's key.
- */
-@Composable
-private fun AiSheet(ai: AiSettings, viewModel: SettingsViewModel) {
-    HalalaSheet(onDismiss = viewModel::onAiDismiss) {
-        Text(text = stringResource(R.string.ai_identification), style = HalalaType.Title)
-        Text(text = stringResource(R.string.ai_hint), style = HalalaType.Body, color = HalalaColors.TextMuted)
-
-        ChoiceChips(
-            options = listOf(false, true),
-            selected = ai.enabled,
-            label = { stringResource(if (it) R.string.ai_on else R.string.ai_off) },
-            onSelect = viewModel::onAiEnabledPick,
-            enabled = ai.hasKey
-        )
-
-        if (ai.enabled && ai.waiting > 0) {
-            HalalaButton(
-                text = stringResource(R.string.ai_identify_now),
-                onClick = viewModel::onIdentifyNowClick,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-
-        val note = when {
-            !ai.hasKey -> R.string.ai_key_missing
-            !ai.enabled -> null
-            else -> when (ai.problem) {
-                IdentifyProblem.KEY -> R.string.ai_error_key
-                IdentifyProblem.UNREACHABLE -> R.string.ai_error_network
-                IdentifyProblem.LIMITED -> R.string.ai_error_limit
-                IdentifyProblem.REJECTED -> R.string.ai_error_rejected
-                null -> null
-            }
-        }
-        note?.let { Text(text = stringResource(it), style = HalalaType.Caption, color = HalalaColors.Info) }
     }
 }
 

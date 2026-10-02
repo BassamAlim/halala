@@ -28,37 +28,22 @@ class SettingsViewModel @Inject constructor(
 
     private val editingReminder = MutableStateFlow(false)
     private val pickingReminderTime = MutableStateFlow(false)
-    private val editingAi = MutableStateFlow(false)
-    private val hasKey = domain.hasGroqKey()
-
-    private val ai = combine(
-        domain.observeAiEnabled(),
-        domain.observeAiProblem(),
-        domain.observeWaiting(),
-        editingAi
-    ) { enabled, problem, waiting, editing ->
-        AiSettings(enabled && hasKey, hasKey, waiting, problem, editing)
-    }
-
     val uiState: StateFlow<SettingsUiState> = combine(
-        combine(domain.observeAccounts(), domain.observeLockTimeoutSeconds(), ::Pair),
+        domain.observeAccounts(),
         domain.observeReviewSchedule(),
         editingReminder,
-        pickingReminderTime,
-        ai
-    ) { (accounts, lockSeconds), reminder, editingReminder, pickingReminderTime, ai ->
+        pickingReminderTime
+    ) { accounts, reminder, editingReminder, pickingReminderTime ->
         val active = accounts.filter { !it.account.archived }
 
         SettingsUiState(
             accountCount = active.size,
             bankCount = active.mapNotNull { it.account.institutionId }.distinct().size,
-            lockMinutes = (lockSeconds / 60).coerceAtLeast(1),
             version = BuildConfig.VERSION_NAME,
             reminder = reminder,
             reminderTime = timeLabel(reminder.time),
             isEditingReminder = editingReminder,
-            isPickingReminderTime = pickingReminderTime,
-            ai = ai
+            isPickingReminderTime = pickingReminderTime
         )
     }.stateIn(
         scope = viewModelScope,
@@ -86,18 +71,6 @@ class SettingsViewModel @Inject constructor(
     private fun setReminder(change: (ReviewSchedule) -> ReviewSchedule) {
         val changed = change(uiState.value.reminder)
         viewModelScope.launch { domain.setReviewSchedule(changed) }
-    }
-
-    fun onAiClick() = editingAi.update { true }
-
-    fun onAiDismiss() = editingAi.update { false }
-
-    fun onAiEnabledPick(enabled: Boolean) {
-        viewModelScope.launch { domain.setAiEnabled(enabled) }
-    }
-
-    fun onIdentifyNowClick() {
-        viewModelScope.launch { domain.identifyNow() }
     }
 
     fun onBackClick() = navigator.popBackStack()

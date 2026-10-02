@@ -167,11 +167,6 @@
     <string name="settings_privacy">Privacy</string>
     <string name="settings_accounts_summary">%1$s at %2$s</string>
     <string name="settings_export_summary">CSV or JSON, to a file you choose</string>
-    <string name="settings_lock">Biometric lock</string>
-    <plurals name="settings_lock_summary">
-        <item quantity="one">Always on · locks after %d minute away</item>
-        <item quantity="other">Always on · locks after %d minutes away</item>
-    </plurals>
     <string name="settings_version">Halala %1$s</string>
 
     <!-- Export -->
@@ -462,20 +457,4 @@
         <item quantity="other">Confirm all %1$d</item>
     </plurals>
     <string name="review_change">Change</string>
-    <string name="settings_ai">AI</string>
-    <string name="ai_identification">Merchant identification</string>
-    <string name="ai_off">Off</string>
-    <string name="ai_on">On</string>
-    <string name="ai_on_groq">On · Groq</string>
-    <plurals name="ai_waiting">
-        <item quantity="one">On · %1$d merchant waiting</item>
-        <item quantity="other">On · %1$d merchants waiting</item>
-    </plurals>
-    <string name="ai_hint">Halala sends Groq only a shop\'s name as your bank writes it, such as PANDA 1042 RIYADH, and asks what kind of business it is. Amounts, dates, accounts and people\'s names never leave your phone. Well-known shops are identified on the phone without asking.</string>
-    <string name="ai_key_missing">This build has no Groq key, so this can\'t be turned on.</string>
-    <string name="ai_identify_now">Identify now</string>
-    <string name="ai_error_key">Groq refused this build\'s key.</string>
-    <string name="ai_error_network">Couldn\'t reach Groq. Halala tries again when you\'re online.</string>
-    <string name="ai_error_rejected">Groq couldn\'t answer this time. Halala asks again later.</string>
-    <string name="ai_error_limit">Groq\'s free limit was reached. Halala tries again later.</string>
 </resources>
