@@ -65,8 +65,7 @@ class Seed(private val clock: Clock) : RoomDatabase.Callback() {
             "Entertainment" to ExpenseType.VARIABLE_DISCRETIONARY,
             "Shopping" to ExpenseType.VARIABLE_DISCRETIONARY,
             "Government fees" to ExpenseType.VARIABLE_ESSENTIAL,
-            "Fees & charges" to ExpenseType.VARIABLE_ESSENTIAL,
-            "Other" to null
+            "Fees & charges" to ExpenseType.VARIABLE_ESSENTIAL
         )
 
         /** The spec's v1 institutions. Sender IDs arrive with the SMS parsers in Phase 1. */

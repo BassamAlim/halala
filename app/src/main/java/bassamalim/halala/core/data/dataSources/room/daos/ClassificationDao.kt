@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ClassificationDao {
 
-    // By id: the seeded order, which ends in Other.
+    // By id: the seeded order, then yours as you added them.
     @Query("SELECT * FROM categories ORDER BY id")
     fun observeCategories(): Flow<List<Category>>
 
