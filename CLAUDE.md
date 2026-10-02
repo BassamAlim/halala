@@ -252,6 +252,25 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   a plain transfer again, and when it was all that was lent the loan goes and its repayments are
   freed. Transaction detail asks whether a transfer repays the person's oldest open loan
   (`Loans.repaidBy`) and offers marking it as a loan. Merging people moves their loans.
+- **Subscriptions, bills and planned payments** are one `RecurringSeries` (the spec's
+  RecurringSeries): kind (`SUBSCRIPTION`, `BILL`, `PLANNED` for family support and the like),
+  amount every N days/weeks/months/years from an `anchor` (occurrences count from the anchor, so
+  the 31st never drifts), auto-renew, an optional end date (a contract), an optional reminder lead
+  time. Charges aren't stored: they are its merchant's spending (or, for `PLANNED`, transfers to
+  its person), read from the ledger (`Charges`); each one from the anchor on (up to half a cadence
+  early) moves the next due date on, and a series with neither merchant nor person is taken as
+  paid when its day passes. A linked one whose charge is more than `Recurring.GRACE_DAYS` late is
+  "missed"; a last charge above the known price is a price rise ("Keep it" takes the new price,
+  "Remind me to cancel" also asks for a reminder before it renews). `Recurring.detect` proposes
+  (status `PROPOSED`) a payee charged three times or more at a steady week, month or year, the
+  last recently: a subscription when the amount barely moves (5%), a bill when it moves some
+  (50%), planned for a person; you add or dismiss it (dismissed stays dismissed). It runs on
+  opening and on the screen. Monthly and yearly totals are exact integers, rounded half up. Merging
+  merchants or people moves their series.
+- **Reminders for what is due** (`DueReminders`, daily at nine, periodic WorkManager work): a
+  bill or subscription its lead time before it is due, a cancel reminder three days (or its lead
+  time) before it renews, an open loan on its due day. Names and days, never an amount. Choosing a
+  reminder or a due date asks for notification permission.
 - **Undo**: everything you do to filing (an answer, "always", saving, switching or deleting a
   rule, editing or deleting a category, renaming, merging or splitting a merchant, saying what a
   merchant is) is one `AuditBatch`:
@@ -291,7 +310,7 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   `ExportFile`, schema-versioned (`schemaVersion`, bump on any shape change; 2 added categories
   and rules, 3 merchants with their aliases, 4 business types on merchants and categories, 5 all
   a restore needs: raw bank messages, account refs, balance checkpoints, full rule conditions,
-  6 people with their aliases, 7 loans with their events),
+  6 people with their aliases, 7 loans with their events, 8 subscriptions and bills),
   keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
 - **Restore** (same screen, "Restore from JSON"): `Importer.read` turns a schema-5 or later export into
   rows numbered afresh (pure; refuses older or newer schemas and dangling uids), you confirm,
@@ -360,5 +379,9 @@ repayment" (choose their transfer, or forgive what is left), "This loan" with it
 events; settled loans; then all transfers with them, how the bank writes their name, "Same as
 another person" and their transfers; reached from People and from Transaction detail's Person
 row), and Transaction detail's **Loan** card (no board: built from the system's card and
-buttons). Still to come: due-date reminders, a Home "people owe you" card, splits,
-subscription detection and bills.
+buttons), **Subscriptions and bills** (Recurring board: a month and a year, alert cards for a
+price rise, a missed charge and what was found, Next 30 days and Later, each with its badges;
+reached from the Plan tab's card and Home's Coming up), **Subscription or bill** (no board: the
+form, from the list or its + Add), Home's **People owe you** and **Coming up** cards (Home
+board), and the Plan tab's Subscriptions and bills card (Plan board; the rest of Plan comes with
+Phase 4). Still to come: splits.

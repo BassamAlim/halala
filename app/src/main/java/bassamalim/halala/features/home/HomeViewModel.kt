@@ -3,6 +3,7 @@ package bassamalim.halala.features.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import bassamalim.halala.core.Globals
+import bassamalim.halala.core.domain.Loans
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.Rules
 import bassamalim.halala.core.domain.feedOf
@@ -10,6 +11,8 @@ import bassamalim.halala.core.domain.toItem
 import bassamalim.halala.core.enums.AccountType
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
+import bassamalim.halala.core.utils.shortDateLabel
+import bassamalim.halala.features.recurring.RecurringDomain
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -25,8 +28,10 @@ class HomeViewModel @Inject constructor(
 
     val uiState: StateFlow<HomeUiState> = combine(
         domain.observeAccounts(),
-        domain.observeTransactions()
-    ) { accounts, transactions ->
+        domain.observeTransactions(),
+        domain.observeLoans(),
+        domain.observeRecurring()
+    ) { accounts, transactions, loans, recurring ->
         val wallet = accounts.firstOrNull { it.account.type == AccountType.CASH && !it.account.archived }
         val today = domain.today()
 
@@ -39,7 +44,20 @@ class HomeViewModel @Inject constructor(
             reviewCount = Rules.clusters(transactions).size,
             recent = feedOf(transactions)
                 .take(HomeDomain.RECENT_COUNT)
-                .map { it.toItem(domain.zone(), today) }
+                .map { it.toItem(domain.zone(), today) },
+            hasLoans = loans.isNotEmpty(),
+            owedToYou = Money.format(Loans.owed(loans, Globals.PRIMARY_CURRENCY).first, Globals.PRIMARY_CURRENCY, decimals = false),
+            youOwe = Money.format(Loans.owed(loans, Globals.PRIMARY_CURRENCY).second, Globals.PRIMARY_CURRENCY, decimals = false),
+            comingUp = RecurringDomain.upcoming(recurring)
+                .filter { !it.nextDue!!.isAfter(today.plusDays(RecurringDomain.SOON_DAYS)) }
+                .take(HomeDomain.COMING_UP_COUNT)
+                .map {
+                    ComingUp(
+                        name = it.series.name,
+                        due = shortDateLabel(it.nextDue!!, today),
+                        amount = Money.format(it.raisedTo ?: it.series.amountMinor, it.series.currency, decimals = false)
+                    )
+                }
         )
     }.stateIn(
         scope = viewModelScope,
@@ -56,6 +74,10 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onAccountsClick() = navigator.navigate(Screen.Accounts)
+
+    fun onPeopleClick() = navigator.navigate(Screen.People)
+
+    fun onComingUpClick() = navigator.navigate(Screen.Recurring)
 
     fun onTransactionClick(id: Long) = navigator.navigate(Screen.Transaction(id))
 }

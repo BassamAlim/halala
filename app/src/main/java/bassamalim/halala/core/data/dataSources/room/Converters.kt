@@ -8,6 +8,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
 import bassamalim.halala.core.enums.AuditAction
 import bassamalim.halala.core.enums.AuditEntity
 import bassamalim.halala.core.enums.BusinessType
+import bassamalim.halala.core.enums.CadenceUnit
 import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.enums.ExpenseType
 import bassamalim.halala.core.enums.IdentifiedBy
@@ -15,6 +16,8 @@ import bassamalim.halala.core.enums.LoanDirection
 import bassamalim.halala.core.enums.LoanEventType
 import bassamalim.halala.core.enums.RuleSource
 import bassamalim.halala.core.enums.RawStatus
+import bassamalim.halala.core.enums.RecurringKind
+import bassamalim.halala.core.enums.SeriesStatus
 import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.enums.TransactionSource
 import kotlinx.serialization.json.Json
@@ -157,4 +160,24 @@ class Converters {
 
     @TypeConverter
     fun fromLoanEventType(type: LoanEventType): String = type.name
+
+    @TypeConverter
+    fun toRecurringKind(name: String): RecurringKind =
+        RecurringKind.entries.firstOrNull { it.name == name } ?: RecurringKind.BILL
+
+    @TypeConverter
+    fun fromRecurringKind(kind: RecurringKind): String = kind.name
+
+    @TypeConverter
+    fun toCadenceUnit(name: String): CadenceUnit = CadenceUnit.valueOf(name)
+
+    @TypeConverter
+    fun fromCadenceUnit(unit: CadenceUnit): String = unit.name
+
+    @TypeConverter
+    fun toSeriesStatus(name: String): SeriesStatus =
+        SeriesStatus.entries.firstOrNull { it.name == name } ?: SeriesStatus.PROPOSED
+
+    @TypeConverter
+    fun fromSeriesStatus(status: SeriesStatus): String = status.name
 }

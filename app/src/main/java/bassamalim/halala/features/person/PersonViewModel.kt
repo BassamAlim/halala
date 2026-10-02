@@ -17,7 +17,7 @@ import bassamalim.halala.core.enums.LoanEventType
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
 import bassamalim.halala.core.utils.accountLabel
-import bassamalim.halala.core.utils.dateLabel
+import bassamalim.halala.core.utils.shortDateLabel
 import bassamalim.halala.core.utils.initialOf
 import bassamalim.halala.features.people.PeopleDomain
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -168,7 +168,7 @@ class PersonViewModel @Inject constructor(
     private fun loanOf(state: LoanState, mine: List<TransactionDetail>, zone: ZoneId, today: LocalDate): PersonLoan {
         val loan = state.loan
         val lent = loan.direction == LoanDirection.LENT
-        fun day(at: Instant?) = at?.let { dateLabel(it.atZone(zone).toLocalDate(), today) }.orEmpty()
+        fun day(at: Instant?) = at?.let { shortDateLabel(it.atZone(zone).toLocalDate(), today) }.orEmpty()
 
         return PersonLoan(
             loanId = loan.id,
@@ -180,7 +180,7 @@ class PersonViewModel @Inject constructor(
             lentOn = day(state.lentAt),
             repaid = Money.format(state.repaidMinor, loan.currency, decimals = false),
             hasRepaid = state.repaidMinor > 0,
-            dueLabel = loan.dueOn?.let { dateLabel(it, today) },
+            dueLabel = loan.dueOn?.let { shortDateLabel(it, today) },
             pickDueFrom = loan.dueOn ?: today.plusMonths(1),
             progress = if (state.lentMinor == 0L) 0f
             else (Math.subtractExact(state.lentMinor, state.remainingMinor).toDouble() / state.lentMinor).toFloat(),

@@ -339,6 +339,7 @@ class ClassificationRepository @Inject constructor(
                 merchantsDao.updateMerchant(
                     into.copy(businessType = from.businessType, identifiedBy = from.identifiedBy, confidence = from.confidence)
                 )
+            merchantsDao.moveSeries(fromId, intoId)
             merchantsDao.deleteMerchant(fromId)
             syncAutoRules()
             fileByRules()

@@ -96,6 +96,10 @@ interface MerchantsDao {
     @Query("UPDATE merchant_aliases SET merchantId = :intoId WHERE merchantId = :fromId")
     suspend fun moveAliases(fromId: Long, intoId: Long)
 
+    /** Subscriptions and bills follow a merged merchant. */
+    @Query("UPDATE recurring_series SET merchantId = :intoId WHERE merchantId = :fromId")
+    suspend fun moveSeries(fromId: Long, intoId: Long)
+
     @Query("SELECT id, title, merchantKey, kind, occurredAt FROM transactions ORDER BY occurredAt, id")
     suspend fun getKeyRows(): List<KeyRow>
 

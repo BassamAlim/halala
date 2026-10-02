@@ -77,6 +77,9 @@ object DataSourceModule {
     fun provideLoansDao(database: AppDatabase) = database.loansDao()
 
     @Provides @Singleton
+    fun provideRecurringDao(database: AppDatabase) = database.recurringDao()
+
+    @Provides @Singleton
     fun provideRestoreDao(database: AppDatabase) = database.restoreDao()
 
     @Provides @Singleton

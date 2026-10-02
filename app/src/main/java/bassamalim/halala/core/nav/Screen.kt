@@ -63,6 +63,12 @@ sealed interface Screen {
     /** One person: their transfers, the ways their bank writes them, merging and splitting. */
     @Serializable data class Person(val id: Long) : Screen
 
+    /** Subscriptions, bills and planned payments: what they cost and when each is due. */
+    @Serializable data object Recurring : Screen
+
+    /** Adding one by hand, or changing [id]. */
+    @Serializable data class EditRecurring(val id: Long = 0) : Screen
+
     /** Writing a rule by hand, or editing [id]. */
     @Serializable data class EditRule(val id: Long = 0) : Screen
 

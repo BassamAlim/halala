@@ -54,6 +54,7 @@ import bassamalim.halala.core.ui.components.ListCard
 import bassamalim.halala.core.ui.components.ListRow
 import bassamalim.halala.core.ui.components.MONEY_MARK
 import bassamalim.halala.core.ui.components.MoneyText
+import bassamalim.halala.core.ui.components.rememberNotificationAsk
 import bassamalim.halala.core.ui.components.TopBar
 import bassamalim.halala.core.ui.expenseTypeLabel
 import bassamalim.halala.core.ui.kindLabel
@@ -303,6 +304,7 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
 
         is TransactionSheet.MarkLoan -> {
             val open = state.loan as? LoanLink.Open
+            val askToNotify = rememberNotificationAsk()
             HalalaSheet(onDismiss = viewModel::onSheetDismiss) {
                 Text(
                     text = stringResource(
@@ -320,7 +322,10 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
                     ListRow(
                         title = stringResource(R.string.loan_due),
                         subtitle = sheet.dueLabel ?: stringResource(R.string.loan_due_none),
-                        onClick = viewModel::onDueClick
+                        onClick = {
+                            askToNotify()
+                            viewModel.onDueClick()
+                        }
                     )
                 }
                 HalalaButton(

@@ -21,6 +21,7 @@ import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
 import bassamalim.halala.core.utils.accountLabel
 import bassamalim.halala.core.utils.dateLabel
+import bassamalim.halala.core.utils.shortDateLabel
 import bassamalim.halala.core.utils.initialOf
 import bassamalim.halala.core.utils.timeLabel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -160,7 +161,7 @@ class TransactionViewModel @Inject constructor(
     fun onDueClick() = sheet.update { (it as? TransactionSheet.MarkLoan)?.copy(picking = true) ?: it }
 
     fun onDuePicked(date: LocalDate) = sheet.update {
-        (it as? TransactionSheet.MarkLoan)?.copy(dueOn = date, dueLabel = dateLabel(date, domain.today()), picking = false) ?: it
+        (it as? TransactionSheet.MarkLoan)?.copy(dueOn = date, dueLabel = shortDateLabel(date, domain.today()), picking = false) ?: it
     }
 
     fun onDuePickDismiss() = sheet.update { (it as? TransactionSheet.MarkLoan)?.copy(picking = false) ?: it }
@@ -240,7 +241,7 @@ class TransactionViewModel @Inject constructor(
                     lent = it.loan.direction == LoanDirection.LENT,
                     remaining = Money.format(it.remainingMinor, it.loan.currency),
                     currency = it.loan.currency,
-                    lentOn = it.lentAt?.let { at -> dateLabel(at.atZone(domain.zone()).toLocalDate(), today) }.orEmpty()
+                    lentOn = it.lentAt?.let { at -> shortDateLabel(at.atZone(domain.zone()).toLocalDate(), today) }.orEmpty()
                 )
             }
         )

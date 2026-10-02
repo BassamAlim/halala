@@ -9,7 +9,7 @@ import bassamalim.halala.core.enums.AmountTone
 import bassamalim.halala.core.enums.LoanDirection
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
-import bassamalim.halala.core.utils.dateLabel
+import bassamalim.halala.core.utils.shortDateLabel
 import bassamalim.halala.core.utils.initialOf
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,7 +44,7 @@ class PeopleViewModel @Inject constructor(
         val flows = PeopleDomain.flowsByPerson(details, currency)
         val names = people.associate { it.person.id to it.person.name }
         val (owedToYou, youOwe) = Loans.owed(loans, currency)
-        fun day(at: Instant?) = at?.let { dateLabel(it.atZone(zone).toLocalDate(), today) }
+        fun day(at: Instant?) = at?.let { shortDateLabel(it.atZone(zone).toLocalDate(), today) }
 
         val rows = loans.map { state ->
             val lent = state.loan.direction == LoanDirection.LENT
@@ -55,7 +55,7 @@ class PeopleViewModel @Inject constructor(
                 name = name,
                 initial = initialOf(name),
                 lent = lent,
-                dueLabel = state.loan.dueOn?.let { dateLabel(it, today) },
+                dueLabel = state.loan.dueOn?.let { shortDateLabel(it, today) },
                 lentOnLabel = day(state.lentAt),
                 settledLabel = day(state.settledAt),
                 forgiven = state.forgivenMinor > 0,
@@ -88,7 +88,7 @@ class PeopleViewModel @Inject constructor(
                     name = row.person.name,
                     initial = initialOf(row.person.name),
                     transfers = row.transactions,
-                    lastDate = row.lastAt?.let { dateLabel(it.atZone(zone).toLocalDate(), today) }.orEmpty(),
+                    lastDate = row.lastAt?.let { shortDateLabel(it.atZone(zone).toLocalDate(), today) }.orEmpty(),
                     net = Money.format(net, currency, showPlus = net > 0),
                     tone = if (net > 0) AmountTone.Income else AmountTone.Spending
                 )

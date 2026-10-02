@@ -15,6 +15,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.MerchantAlias
 import bassamalim.halala.core.data.dataSources.room.entities.Person
 import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
+import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
 import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
@@ -54,7 +55,8 @@ class Importer @Inject constructor(
         people = snapshot.people,
         personAliases = snapshot.personAliases,
         loans = snapshot.loans,
-        loanEvents = snapshot.loanEvents
+        loanEvents = snapshot.loanEvents,
+        recurring = snapshot.recurring
     )
 
     companion object {
@@ -280,6 +282,29 @@ class Importer @Inject constructor(
                     )
                 }
 
+            val recurring = file.recurring.mapIndexed { index, series ->
+                require(series.amountMinor > 0 && series.every >= 1) { "Recurring ${series.uid} has no positive amount or cadence." }
+                RecurringSeries(
+                    id = index + 1L,
+                    uid = series.uid,
+                    kind = converters.toRecurringKind(series.kind),
+                    name = series.name,
+                    merchantId = series.merchantUid?.let { merchantIds.named(it, "merchant") },
+                    personId = series.personUid?.let { personIds.named(it, "person") },
+                    amountMinor = series.amountMinor,
+                    currency = series.currency,
+                    every = series.every,
+                    unit = converters.toCadenceUnit(series.unit),
+                    anchor = LocalDate.parse(series.anchor),
+                    autoRenew = series.autoRenew,
+                    endsOn = series.endsOn?.let(LocalDate::parse),
+                    reminderDays = series.reminderDays,
+                    cancelReminder = series.cancelReminder,
+                    status = converters.toSeriesStatus(series.status),
+                    createdAt = Instant.parse(series.createdAt)
+                )
+            }
+
             return LedgerSnapshot(
                 institutions = institutions,
                 accounts = accounts,
@@ -296,7 +321,8 @@ class Importer @Inject constructor(
                 people = people,
                 personAliases = personAliases,
                 loans = loans,
-                loanEvents = loanEvents
+                loanEvents = loanEvents,
+                recurring = recurring
             )
         }
 

@@ -462,6 +462,111 @@
     <string name="loan_unlink_body">It becomes a plain transfer again. If it was all that was lent, the loan goes, and its repayments become plain transfers too.</string>
     <string name="loan_unlink_confirm">Take it out</string>
 
+    <!-- Subscriptions, bills and planned payments. -->
+    <string name="recurring_title">Subscriptions and bills</string>
+    <string name="recurring_add">Add</string>
+    <string name="recurring_new">New bill</string>
+    <string name="recurring_edit">Subscription or bill</string>
+    <string name="recurring_monthly">Every month</string>
+    <string name="recurring_yearly">Every year</string>
+    <string name="recurring_soon">Next 30 days</string>
+    <string name="recurring_later">Later</string>
+    <string name="recurring_empty">Nothing yet. Halala finds subscriptions as they repeat, or add a bill yourself.</string>
+    <string name="recurring_subscription">Subscription</string>
+    <string name="recurring_bill">Bill</string>
+    <string name="recurring_planned">Planned</string>
+    <string name="recurring_badge_auto_renew">Auto-renew</string>
+    <string name="recurring_badge_planned">Planned</string>
+    <string name="recurring_badge_price_up">Price up</string>
+    <string name="recurring_renews">renews %1$s</string>
+    <string name="recurring_ends">contract ends %1$s</string>
+    <plurals name="recurring_reminder">
+        <item quantity="one">reminder %1$d day before</item>
+        <item quantity="other">reminder %1$d days before</item>
+    </plurals>
+    <plurals name="recurring_reminder_option">
+        <item quantity="one">%1$d day before</item>
+        <item quantity="other">%1$d days before</item>
+    </plurals>
+    <string name="recurring_price_up">%1$s went up from %2$s to %3$s %4$s.</string>
+    <string name="recurring_missed">%1$s was due %2$s and hasn\'t been charged yet.</string>
+    <string name="recurring_found_subscription">Looks like a subscription: %1$s, %2$s %3$s.</string>
+    <string name="recurring_found_bill">Looks like a bill: %1$s, about %2$s %3$s.</string>
+    <string name="recurring_found_planned">Looks like a planned payment: %1$s, %2$s %3$s.</string>
+    <string name="recurring_keep">Keep it</string>
+    <string name="recurring_remind_cancel">Remind me to cancel</string>
+    <string name="recurring_open">Open</string>
+    <string name="recurring_confirm">Add it</string>
+    <string name="recurring_dismiss">It isn\'t one</string>
+    <string name="recurring_name">Name</string>
+    <string name="recurring_kind">What it is</string>
+    <string name="recurring_every">Every</string>
+    <string name="recurring_every_invalid">Choose how often, from 1 to 365</string>
+    <string name="recurring_next_due">Next due</string>
+    <string name="recurring_ends_on">Ends</string>
+    <string name="recurring_runs_on">Runs on</string>
+    <string name="recurring_no_end">No end date</string>
+    <string name="recurring_ends_before_due">It ends before it is next due</string>
+    <string name="recurring_auto_renew">Renews on its own</string>
+    <string name="recurring_reminder">Remind me</string>
+    <string name="recurring_delete_title">Delete %1$s?</string>
+    <string name="recurring_delete_body">Its payments stay as they are. If it repeats again, Halala may suggest it.</string>
+    <string name="recurring_plan_next">Next: %1$s, %2$s</string>
+    <string name="recurring_per_month">%1$s / mo</string>
+    <string name="home_coming_up">Coming up</string>
+    <string name="home_people_owe">People owe you</string>
+    <string name="home_you_owe">You owe %1$s</string>
+    <string name="due_channel">Bills and loans</string>
+    <string name="due_bill_title">%1$s is coming up</string>
+    <string name="due_bill_text">Due %1$s</string>
+    <string name="due_cancel_title">Cancel %1$s?</string>
+    <string name="due_cancel_text">You asked to be reminded before it renews on %1$s.</string>
+    <string name="due_loan_lent_title">%1$s\'s loan is due today</string>
+    <string name="due_loan_borrowed_title">Your loan from %1$s is due today</string>
+    <string name="due_loan_text">Open Halala to see where it stands.</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="cadence_daily">Daily</string>
+    <string name="cadence_weekly">Weekly</string>
+    <string name="cadence_monthly">Monthly</string>
+    <string name="cadence_yearly">Yearly</string>
+    <plurals name="cadence_days">
+        <item quantity="one">Every %1$d day</item>
+        <item quantity="other">Every %1$d days</item>
+    </plurals>
+    <plurals name="cadence_weeks">
+        <item quantity="one">Every %1$d week</item>
+        <item quantity="other">Every %1$d weeks</item>
+    </plurals>
+    <plurals name="cadence_months">
+        <item quantity="one">Every %1$d month</item>
+        <item quantity="other">Every %1$d months</item>
+    </plurals>
+    <plurals name="cadence_years">
+        <item quantity="one">Every %1$d year</item>
+        <item quantity="other">Every %1$d years</item>
+    </plurals>
+    <plurals name="unit_days">
+        <item quantity="one">day</item>
+        <item quantity="other">days</item>
+    </plurals>
+    <plurals name="unit_weeks">
+        <item quantity="one">week</item>
+        <item quantity="other">weeks</item>
+    </plurals>
+    <plurals name="unit_months">
+        <item quantity="one">month</item>
+        <item quantity="other">months</item>
+    </plurals>
+    <plurals name="unit_years">
+        <item quantity="one">year</item>
+        <item quantity="other">years</item>
+    </plurals>
+    <string name="per_day">a day</string>
+    <string name="per_week">a week</string>
+    <string name="per_month">a month</string>
+    <string name="per_year">a year</string>
+
     <!-- Business types: what a merchant is. -->
     <string name="business_supermarket">Supermarket</string>
     <string name="business_convenience_store">Convenience store</string>

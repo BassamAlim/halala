@@ -7,7 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * The phone is the only place the full ledger lives: every schema change is a migration, never
  * a destructive rebuild. Add each one here, in order, against the schemas in `app/schemas`.
  */
-val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6, Migration6To7)
+val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6, Migration6To7, Migration7To8)
 
 /** Phase 1: raw bank SMS, the digits learned per bank, reported balances, and SMS links. */
 private object Migration1To2 : Migration(1, 2) {
@@ -215,5 +215,27 @@ private object Migration6To7 : Migration(6, 7) {
         db.execSQL(
             "CREATE UNIQUE INDEX IF NOT EXISTS `index_loan_events_transactionId` ON `loan_events` (`transactionId`)"
         )
+    }
+}
+
+/**
+ * Phase 3: subscriptions, bills and planned payments, one model for all three. Empty to start:
+ * `RecurringRepository.detect` proposes them from history when the app opens.
+ */
+private object Migration7To8 : Migration(7, 8) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `recurring_series` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`uid` TEXT NOT NULL, `kind` TEXT NOT NULL, `name` TEXT NOT NULL, `merchantId` INTEGER, " +
+                    "`personId` INTEGER, `amountMinor` INTEGER NOT NULL, `currency` TEXT NOT NULL, " +
+                    "`every` INTEGER NOT NULL, `unit` TEXT NOT NULL, `anchor` INTEGER NOT NULL, " +
+                    "`autoRenew` INTEGER NOT NULL, `endsOn` INTEGER, `reminderDays` INTEGER, " +
+                    "`cancelReminder` INTEGER NOT NULL, `status` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, " +
+                    "FOREIGN KEY(`merchantId`) REFERENCES `merchants`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL , " +
+                    "FOREIGN KEY(`personId`) REFERENCES `people`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )"
+        )
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_recurring_series_uid` ON `recurring_series` (`uid`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_recurring_series_merchantId` ON `recurring_series` (`merchantId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_recurring_series_personId` ON `recurring_series` (`personId`)")
     }
 }

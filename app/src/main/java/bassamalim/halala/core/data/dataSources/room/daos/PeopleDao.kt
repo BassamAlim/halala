@@ -83,11 +83,15 @@ interface PeopleDao {
     @Query("UPDATE loans SET personId = :intoId WHERE personId = :fromId")
     suspend fun moveLoans(fromId: Long, intoId: Long)
 
-    /** One person becomes another: their spellings and loans move, then they go, as one write. */
+    @Query("UPDATE recurring_series SET personId = :intoId WHERE personId = :fromId")
+    suspend fun moveSeries(fromId: Long, intoId: Long)
+
+    /** One person becomes another: their spellings, loans and planned payments move, then they go, as one write. */
     @androidx.room.Transaction
     suspend fun merge(fromId: Long, intoId: Long) {
         moveAliases(fromId, intoId)
         moveLoans(fromId, intoId)
+        moveSeries(fromId, intoId)
         deletePerson(fromId)
     }
 

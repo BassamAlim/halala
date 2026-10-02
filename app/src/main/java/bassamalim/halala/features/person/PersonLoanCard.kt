@@ -22,6 +22,7 @@ import bassamalim.halala.core.ui.components.ListRow
 import bassamalim.halala.core.ui.components.ProgressBar
 import bassamalim.halala.core.ui.components.appendCurrency
 import bassamalim.halala.core.ui.components.currencyInlineContent
+import bassamalim.halala.core.ui.components.rememberNotificationAsk
 import bassamalim.halala.core.ui.kindLabel
 import bassamalim.halala.core.ui.theme.HalalaColors
 import bassamalim.halala.core.ui.theme.HalalaNumbers
@@ -92,11 +93,15 @@ fun SettledLoan(loan: PersonLoan, viewModel: PersonViewModel) {
 
 @Composable
 private fun LoanEvents(loan: PersonLoan, viewModel: PersonViewModel, label: String = stringResource(R.string.loan_this)) {
+    val askToNotify = rememberNotificationAsk()
     HalalaCard(label = label, modifier = Modifier.fillMaxWidth()) {
         if (loan.open) ListRow(
             title = stringResource(R.string.loan_due),
             subtitle = loan.dueLabel ?: stringResource(R.string.loan_due_none),
-            onClick = { viewModel.onDueClick(loan.loanId) }
+            onClick = {
+                askToNotify()
+                viewModel.onDueClick(loan.loanId)
+            }
         )
         loan.events.forEachIndexed { index, event ->
             val title = stringResource(

@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
@@ -52,6 +53,8 @@ fun TransactionRow(
     modifier: Modifier = Modifier,
     currency: String? = null,
     autoLabel: String? = null,
+    /** The badge's colour: jade for Auto; muted or amber for the subscriptions board's badges. */
+    badgeColor: Color = HalalaColors.Accent,
     divider: Boolean = false,
     /** A figure that no longer stands (a settled loan's nothing owed): muted whatever its tone. */
     muted: Boolean = false,
@@ -84,7 +87,7 @@ fun TransactionRow(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
                     )
-                    if (autoLabel != null) AutoBadge(autoLabel)
+                    if (autoLabel != null) AutoBadge(autoLabel, color = badgeColor)
                 }
 
                 Text(

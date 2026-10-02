@@ -15,6 +15,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.MerchantAlias
 import bassamalim.halala.core.data.dataSources.room.entities.Person
 import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
+import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
 import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
@@ -24,6 +25,7 @@ import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.InstitutionsRepository
 import bassamalim.halala.core.data.repositories.LoansRepository
 import bassamalim.halala.core.data.repositories.PeopleRepository
+import bassamalim.halala.core.data.repositories.RecurringRepository
 import bassamalim.halala.core.data.repositories.RestoreRepository
 import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
@@ -31,6 +33,9 @@ import bassamalim.halala.core.data.TEST_CLOCK
 import bassamalim.halala.core.data.testDatabase
 import bassamalim.halala.core.enums.AccountType
 import bassamalim.halala.core.enums.AliasMatch
+import bassamalim.halala.core.enums.CadenceUnit
+import bassamalim.halala.core.enums.RecurringKind
+import bassamalim.halala.core.enums.SeriesStatus
 import bassamalim.halala.core.enums.BusinessType
 import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.enums.ExpenseType
@@ -99,6 +104,11 @@ class ImporterTest {
         loanEvents = listOf(
             LoanEvent(151, "lent", 141, LoanEventType.DISBURSEMENT, transactionId = 34),
             LoanEvent(152, "forgiven", 141, LoanEventType.FORGIVENESS, amountMinor = 50_000, at = at)
+        ),
+        recurring = listOf(
+            RecurringSeries(161, "rec-jahez", RecurringKind.SUBSCRIPTION, "Jahez Plus", merchantId = 84, amountMinor = 2_900, currency = "SAR", unit = CadenceUnit.MONTH, anchor = LocalDate.parse("2026-10-03"), autoRenew = true, reminderDays = 3, status = SeriesStatus.ACTIVE, createdAt = at),
+            RecurringSeries(162, "rec-rent", RecurringKind.BILL, "Rent", amountMinor = 350_000, currency = "SAR", every = 6, unit = CadenceUnit.MONTH, anchor = LocalDate.parse("2026-11-01"), endsOn = LocalDate.parse("2027-08-31"), status = SeriesStatus.ACTIVE, createdAt = at),
+            RecurringSeries(163, "rec-khalid", RecurringKind.PLANNED, "Khalid", personId = 121, amountMinor = 1_000, currency = "SAR", unit = CadenceUnit.WEEK, anchor = LocalDate.parse("2026-10-01"), cancelReminder = true, status = SeriesStatus.DISMISSED, createdAt = at)
         )
     )
 
@@ -122,6 +132,7 @@ class ImporterTest {
         SmsRepository(db.smsDao()),
         PeopleRepository(db.peopleDao()),
         LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK),
+        RecurringRepository(db.recurringDao(), db.transactionsDao(), TEST_CLOCK),
         TEST_CLOCK
     )
 

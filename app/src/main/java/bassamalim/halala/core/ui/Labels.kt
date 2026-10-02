@@ -2,9 +2,12 @@ package bassamalim.halala.core.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import bassamalim.halala.R
 import bassamalim.halala.core.enums.AccountType
+import bassamalim.halala.core.enums.CadenceUnit
+import bassamalim.halala.core.enums.RecurringKind
 import bassamalim.halala.core.enums.AliasMatch
 import bassamalim.halala.core.enums.AuditAction
 import bassamalim.halala.core.enums.BusinessType
@@ -46,6 +49,45 @@ fun kindLabel(kind: TransactionKind): String = stringResource(
         TransactionKind.OTHER -> R.string.kind_other
     }
 )
+
+@Composable
+fun recurringKindLabel(kind: RecurringKind): String = stringResource(
+    when (kind) {
+        RecurringKind.SUBSCRIPTION -> R.string.recurring_subscription
+        RecurringKind.BILL -> R.string.recurring_bill
+        RecurringKind.PLANNED -> R.string.recurring_planned
+    }
+)
+
+/** "Monthly", "Weekly", "Every 2 months". */
+@Composable
+fun cadenceLabel(every: Int, unit: CadenceUnit): String = if (every == 1) stringResource(
+    when (unit) {
+        CadenceUnit.DAY -> R.string.cadence_daily
+        CadenceUnit.WEEK -> R.string.cadence_weekly
+        CadenceUnit.MONTH -> R.string.cadence_monthly
+        CadenceUnit.YEAR -> R.string.cadence_yearly
+    }
+) else pluralStringResource(
+    when (unit) {
+        CadenceUnit.DAY -> R.plurals.cadence_days
+        CadenceUnit.WEEK -> R.plurals.cadence_weeks
+        CadenceUnit.MONTH -> R.plurals.cadence_months
+        CadenceUnit.YEAR -> R.plurals.cadence_years
+    },
+    every, every
+)
+
+/** "a month", "a year", "every 2 months": how often a price is paid, after an amount. */
+@Composable
+fun perLabel(every: Int, unit: CadenceUnit): String = if (every == 1) stringResource(
+    when (unit) {
+        CadenceUnit.DAY -> R.string.per_day
+        CadenceUnit.WEEK -> R.string.per_week
+        CadenceUnit.MONTH -> R.string.per_month
+        CadenceUnit.YEAR -> R.string.per_year
+    }
+) else cadenceLabel(every, unit).lowercase()
 
 @Composable
 fun accountTypeLabel(type: AccountType): String = stringResource(

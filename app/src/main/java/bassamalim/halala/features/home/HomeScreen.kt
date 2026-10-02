@@ -34,9 +34,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
 import bassamalim.halala.core.Globals
 import bassamalim.halala.core.ui.components.CardLabel
+import bassamalim.halala.core.ui.components.HalalaCard
 import bassamalim.halala.core.ui.components.SummaryCard
 import bassamalim.halala.core.ui.components.TransactionItemRow
 import bassamalim.halala.core.ui.theme.HalalaColors
+import bassamalim.halala.core.ui.theme.HalalaNumbers
 import bassamalim.halala.core.ui.theme.HalalaType
 import bassamalim.halala.core.ui.theme.Insets
 import bassamalim.halala.core.ui.theme.Radius
@@ -45,8 +47,9 @@ import bassamalim.halala.core.ui.theme.Spacing
 
 /**
  * Home, from the Home board as far as it can be filled: the mark and wordmark, the review pill
- * while anything waits in the inbox, the wallet and the banks in the two summary cards, and the
- * latest transactions. The balance card arrives with budgets.
+ * while anything waits in the inbox, the wallet and the banks in the two summary cards, what
+ * people owe you, what is coming up, and the latest transactions. The balance card arrives with
+ * budgets.
  */
 @Composable
 fun HomeScreen(onSeeAllClick: () -> Unit, viewModel: HomeViewModel = hiltViewModel()) {
@@ -59,7 +62,9 @@ fun HomeScreen(onSeeAllClick: () -> Unit, viewModel: HomeViewModel = hiltViewMod
         onCashClick = viewModel::onCashClick,
         onAccountsClick = viewModel::onAccountsClick,
         onSeeAllClick = onSeeAllClick,
-        onTransactionClick = viewModel::onTransactionClick
+        onTransactionClick = viewModel::onTransactionClick,
+        onPeopleClick = viewModel::onPeopleClick,
+        onComingUpClick = viewModel::onComingUpClick
     )
 }
 
@@ -71,7 +76,9 @@ private fun HomeContent(
     onCashClick: () -> Unit,
     onAccountsClick: () -> Unit,
     onSeeAllClick: () -> Unit,
-    onTransactionClick: (Long) -> Unit
+    onTransactionClick: (Long) -> Unit,
+    onPeopleClick: () -> Unit = {},
+    onComingUpClick: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -145,6 +152,31 @@ private fun HomeContent(
                 onClick = onAccountsClick,
                 modifier = Modifier.weight(1f).fillMaxHeight()
             )
+        }
+
+        if (state.hasLoans) SummaryCard(
+            label = stringResource(R.string.home_people_owe),
+            amount = state.owedToYou,
+            currency = Globals.PRIMARY_CURRENCY,
+            caption = stringResource(R.string.home_you_owe, state.youOwe),
+            onClick = onPeopleClick,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        if (state.comingUp.isNotEmpty()) HalalaCard(label = stringResource(R.string.home_coming_up), onClick = onComingUpClick) {
+            state.comingUp.forEach { item ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = Spacing.xs),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = item.name, style = HalalaType.Label, modifier = Modifier.weight(1f))
+                    Text(text = "${item.due} · ", style = HalalaType.Label, color = HalalaColors.TextMuted)
+                    Text(text = item.amount, style = HalalaNumbers.Meta, color = HalalaColors.Text)
+                }
+            }
         }
 
         Column {

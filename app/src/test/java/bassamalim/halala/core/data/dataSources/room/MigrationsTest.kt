@@ -192,6 +192,18 @@ class MigrationsTest {
         }
     }
 
+    @Test
+    fun `7 to 8 adds subscriptions and bills empty and matches the schema`() {
+        helper.createDatabase(DB, 7).use { }
+
+        helper.runMigrationsAndValidate(DB, 8, true, *MIGRATIONS).use { db ->
+            db.query("SELECT COUNT(*) FROM recurring_series").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+        }
+    }
+
     private companion object {
         const val DB = "migration-test"
     }

@@ -16,6 +16,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.MerchantAlias
 import bassamalim.halala.core.data.dataSources.room.entities.Person
 import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
+import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 
@@ -43,7 +44,8 @@ interface RestoreDao {
         people: List<Person>,
         personAliases: List<PersonAlias>,
         loans: List<Loan>,
-        loanEvents: List<LoanEvent>
+        loanEvents: List<LoanEvent>,
+        recurring: List<RecurringSeries>
     ) {
         // What points at a row goes before the row. The history of changes names rows by the
         // ids they had, so it can't outlive them.
@@ -51,6 +53,7 @@ interface RestoreDao {
         clearAuditBatches()
         clearLoanEvents()
         clearLoans()
+        clearRecurring()
         clearTransfers()
         clearCheckpoints()
         clearRefs()
@@ -80,6 +83,7 @@ interface RestoreDao {
         insertPersonAliases(personAliases)
         insertLoans(loans)
         insertLoanEvents(loanEvents)
+        insertRecurring(recurring)
     }
 
     @Query("DELETE FROM audit_changes") suspend fun clearAuditChanges()
@@ -94,6 +98,7 @@ interface RestoreDao {
     @Query("DELETE FROM merchants") suspend fun clearMerchants()
     @Query("DELETE FROM loan_events") suspend fun clearLoanEvents()
     @Query("DELETE FROM loans") suspend fun clearLoans()
+    @Query("DELETE FROM recurring_series") suspend fun clearRecurring()
     @Query("DELETE FROM person_aliases") suspend fun clearPersonAliases()
     @Query("DELETE FROM people") suspend fun clearPeople()
     @Query("DELETE FROM categories") suspend fun clearCategories()
@@ -115,4 +120,5 @@ interface RestoreDao {
     @Insert suspend fun insertPersonAliases(rows: List<PersonAlias>)
     @Insert suspend fun insertLoans(rows: List<Loan>)
     @Insert suspend fun insertLoanEvents(rows: List<LoanEvent>)
+    @Insert suspend fun insertRecurring(rows: List<RecurringSeries>)
 }

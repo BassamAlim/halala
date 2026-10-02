@@ -37,10 +37,12 @@ data class ExportFile(
     /** Since schema 6: the people transfers go to and come from. */
     val people: List<ExportPerson> = emptyList(),
     /** Since schema 7. */
-    val loans: List<ExportLoan> = emptyList()
+    val loans: List<ExportLoan> = emptyList(),
+    /** Since schema 8: subscriptions, bills and planned payments. */
+    val recurring: List<ExportRecurring> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 7
+        const val SCHEMA_VERSION = 8
     }
 }
 
@@ -183,6 +185,31 @@ data class ExportLoanEvent(
     val transactionUid: String? = null,
     val amountMinor: Long? = null,
     val at: String? = null
+)
+
+/**
+ * A subscription, bill or planned payment: `amountMinor` every `every` `unit` (DAY, WEEK, MONTH,
+ * YEAR) from `anchor`, paid to its merchant or person (by uid) when it has one.
+ */
+@Serializable
+data class ExportRecurring(
+    val uid: String,
+    val kind: String,
+    val name: String,
+    val merchantUid: String?,
+    val personUid: String?,
+    val amountMinor: Long,
+    val currency: String,
+    val every: Int,
+    val unit: String,
+    /** ISO-8601 dates. */
+    val anchor: String,
+    val autoRenew: Boolean,
+    val endsOn: String?,
+    val reminderDays: Int?,
+    val cancelReminder: Boolean,
+    val status: String,
+    val createdAt: String
 )
 
 @Serializable

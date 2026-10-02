@@ -28,6 +28,13 @@ fun dayLabel(date: LocalDate, today: LocalDate): DayLabel = when (date) {
 fun dateLabel(date: LocalDate, today: LocalDate): String =
     date.format(if (date.year == today.year) DAY_FORMAT else DAY_WITH_YEAR_FORMAT)
 
+/** "3 Oct", with the year when it isn't this one: the boards' dates in lists of what is due. */
+fun shortDateLabel(date: LocalDate, today: LocalDate): String =
+    date.format(if (date.year == today.year) SHORT_FORMAT else SHORT_WITH_YEAR_FORMAT)
+
+/** "Aug 2027": when a contract ends. */
+fun monthYearLabel(date: LocalDate): String = date.format(MONTH_YEAR_FORMAT)
+
 /** 24-hour, as the design writes it: "21:14". */
 fun timeLabel(time: LocalTime): String = time.format(TIME_FORMAT)
 
@@ -51,4 +58,7 @@ fun initialOf(title: String): String =
  */
 private val DAY_FORMAT = DateTimeFormatter.ofPattern("EEE d MMM", Locale.US)
 private val DAY_WITH_YEAR_FORMAT = DateTimeFormatter.ofPattern("EEE d MMM yyyy", Locale.US)
+private val SHORT_FORMAT = DateTimeFormatter.ofPattern("d MMM", Locale.US)
+private val SHORT_WITH_YEAR_FORMAT = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.US)
+private val MONTH_YEAR_FORMAT = DateTimeFormatter.ofPattern("MMM yyyy", Locale.US)
 private val TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm", Locale.US)
