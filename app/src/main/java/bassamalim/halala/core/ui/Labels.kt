@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import bassamalim.halala.R
 import bassamalim.halala.core.enums.AccountType
+import bassamalim.halala.core.enums.ExpenseType
 import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.models.TransactionItem
 import bassamalim.halala.core.utils.DayLabel
@@ -63,11 +64,30 @@ fun itemTitle(item: TransactionItem): String = item.title.ifBlank { kindLabel(it
 
 /**
  * A row's second line: "Between your accounts · not spending" for a move, else the kind and
- * either the account ("Purchase · Al Rajhi – Salary") or the day ("Purchase · Today").
+ * either the account ("Purchase · Al Rajhi – Salary") or the day ("Purchase · Today"); once it
+ * has a category, that reads in the kind's place ("Groceries · Today").
  */
 @Composable
 fun itemMeta(item: TransactionItem, withDay: Boolean): String = when {
     item.isMove -> stringResource(R.string.between_your_accounts)
-    withDay -> stringResource(R.string.meta_pair, kindLabel(item.kind), dayText(item.day))
-    else -> stringResource(R.string.meta_pair, kindLabel(item.kind), item.accountLabel)
+    withDay -> stringResource(R.string.meta_pair, item.category ?: kindLabel(item.kind), dayText(item.day))
+    else -> stringResource(R.string.meta_pair, item.category ?: kindLabel(item.kind), item.accountLabel)
 }
+
+@Composable
+fun expenseTypeLabel(type: ExpenseType): String = stringResource(
+    when (type) {
+        ExpenseType.FIXED_ESSENTIAL -> R.string.expense_fixed_essential
+        ExpenseType.FIXED_DISCRETIONARY -> R.string.expense_fixed_discretionary
+        ExpenseType.VARIABLE_ESSENTIAL -> R.string.expense_variable_essential
+        ExpenseType.VARIABLE_DISCRETIONARY -> R.string.expense_variable_discretionary
+    }
+)
+
+/** A rule in plain words: "Merchant is Jahez → Delivery · Variable · Discretionary". */
+@Composable
+fun ruleSentence(merchant: String, category: String, type: ExpenseType?): String = stringResource(
+    R.string.rule_sentence,
+    merchant,
+    if (type == null) category else stringResource(R.string.meta_pair, category, expenseTypeLabel(type))
+)

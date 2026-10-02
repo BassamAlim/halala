@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import bassamalim.halala.core.Globals
 import bassamalim.halala.core.domain.Money
+import bassamalim.halala.core.domain.Rules
 import bassamalim.halala.core.domain.feedOf
 import bassamalim.halala.core.domain.toItem
 import bassamalim.halala.core.enums.AccountType
@@ -35,6 +36,7 @@ class HomeViewModel @Inject constructor(
             cashBalance = Money.format(wallet?.balanceMinor ?: 0, wallet?.account?.currency ?: Globals.PRIMARY_CURRENCY, decimals = false),
             bankBalance = Money.format(HomeDomain.bankTotal(accounts), Globals.PRIMARY_CURRENCY, decimals = false),
             bankAccountCount = HomeDomain.bankAccounts(accounts).size,
+            reviewCount = Rules.clusters(transactions).size,
             recent = feedOf(transactions)
                 .take(HomeDomain.RECENT_COUNT)
                 .map { it.toItem(domain.zone(), today) }
@@ -44,6 +46,8 @@ class HomeViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = HomeUiState()
     )
+
+    fun onReviewClick() = navigator.navigate(Screen.Review)
 
     fun onSettingsClick() = navigator.navigate(Screen.Settings)
 

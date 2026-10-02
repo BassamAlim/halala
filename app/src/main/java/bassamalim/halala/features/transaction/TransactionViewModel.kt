@@ -5,9 +5,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import bassamalim.halala.core.domain.Money
+import bassamalim.halala.core.domain.Rules
 import bassamalim.halala.core.domain.titleOf
 import bassamalim.halala.core.domain.toneOf
 import bassamalim.halala.core.enums.AmountTone
+import bassamalim.halala.core.enums.ExpenseType
+import bassamalim.halala.core.models.CategoryOption
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
 import bassamalim.halala.core.utils.accountLabel
@@ -34,11 +37,15 @@ class TransactionViewModel @Inject constructor(
     private val id = savedStateHandle.toRoute<Screen.Transaction>().id
 
     private val confirmingDelete = MutableStateFlow(false)
+    private val sheet = MutableStateFlow<TransactionSheet?>(null)
 
     val uiState: StateFlow<TransactionUiState> = combine(
         domain.observe(id),
-        confirmingDelete
-    ) { detail, confirming ->
+        domain.observeCategories(),
+        domain.observeRules(),
+        confirmingDelete,
+        sheet
+    ) { detail, categories, rules, confirming, sheet ->
         // Gone (deleted from here or elsewhere): the screen stays as it was while it leaves.
         if (detail == null) return@combine TransactionUiState(isLoading = true)
 
@@ -70,7 +77,21 @@ class TransactionViewModel @Inject constructor(
             note = tx.note,
             source = tx.source,
             createdLabel = dateLabel(tx.createdAt.atZone(zone).toLocalDate(), today),
-            isConfirmingDelete = confirming
+            isConfirmingDelete = confirming,
+            canCategorise = Rules.canCategorise(detail),
+            category = tx.categoryId?.let { CategoryOption(it, detail.categoryName.orEmpty()) },
+            expenseType = tx.expenseType,
+            categories = categories.map { CategoryOption(it.id, it.name) },
+            filedBy = rules.firstOrNull { it.rule.id == tx.ruleId }?.let {
+                FiledBy(
+                    merchant = it.rule.conditions.merchant.orEmpty(),
+                    category = it.categoryName.orEmpty(),
+                    expenseType = it.rule.actions.expenseType,
+                    hits = it.hits
+                )
+            },
+            sheet = sheet,
+            merchant = tx.title
         )
     }.stateIn(
         scope = viewModelScope,
@@ -81,6 +102,37 @@ class TransactionViewModel @Inject constructor(
     fun onBackClick() = navigator.popBackStack()
 
     fun onEditClick() = navigator.navigate(Screen.EditTransaction(id = id))
+
+    fun onCategoryClick() = sheet.update { TransactionSheet.Category }
+
+    fun onTypeClick() = sheet.update { TransactionSheet.Type }
+
+    fun onSheetDismiss() = sheet.update { null }
+
+    /** A named merchant can be remembered, so it asks; a nameless one is filed on its own. */
+    fun onCategoryPick(category: CategoryOption) {
+        if (uiState.value.merchant.isNotBlank()) sheet.update { TransactionSheet.Always(category) }
+        else onJustThisOne(category)
+    }
+
+    fun onJustThisOne(category: CategoryOption) {
+        sheet.update { null }
+        viewModelScope.launch { domain.file(id, category.id) }
+    }
+
+    fun onAlways(category: CategoryOption) {
+        val merchant = uiState.value.merchant
+        sheet.update { null }
+        viewModelScope.launch { domain.fileAlways(id, merchant, category.id) }
+    }
+
+    fun onTypePick(type: ExpenseType) {
+        val categoryId = uiState.value.category?.id
+        sheet.update { null }
+        viewModelScope.launch { domain.setType(id, categoryId, type) }
+    }
+
+    fun onEditRuleClick() = navigator.navigate(Screen.Rules)
 
     fun onDeleteClick() = confirmingDelete.update { true }
 

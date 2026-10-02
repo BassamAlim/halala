@@ -20,10 +20,13 @@ data class ExportFile(
     val institutions: List<ExportInstitution>,
     val accounts: List<ExportAccount>,
     val transactions: List<ExportTransaction>,
-    val internalTransfers: List<ExportInternalTransfer>
+    val internalTransfers: List<ExportInternalTransfer>,
+    /** Since schema 2. */
+    val categories: List<ExportCategory> = emptyList(),
+    val rules: List<ExportRule> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 1
+        const val SCHEMA_VERSION = 2
     }
 }
 
@@ -57,6 +60,25 @@ data class ExportTransaction(
     val title: String,
     val note: String,
     val source: String,
+    val createdAt: String,
+    /** Since schema 2: what it is filed under, and the rule that filed it (null when you did). */
+    val categoryUid: String? = null,
+    val expenseType: String? = null,
+    val ruleUid: String? = null
+)
+
+@Serializable
+data class ExportCategory(val uid: String, val name: String, val expenseType: String?)
+
+@Serializable
+data class ExportRule(
+    val uid: String,
+    /** The merchant it matches, as written when the rule was made. */
+    val merchant: String?,
+    val categoryUid: String?,
+    val expenseType: String?,
+    val source: String,
+    val enabled: Boolean,
     val createdAt: String
 )
 

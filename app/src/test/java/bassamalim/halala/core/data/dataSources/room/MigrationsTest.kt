@@ -44,6 +44,35 @@ class MigrationsTest {
         }
     }
 
+    @Test
+    fun `2 to 3 keeps every transaction, seeds the categories and matches the schema`() {
+        helper.createDatabase(DB, 2).use { db ->
+            db.execSQL(
+                "INSERT INTO accounts (id, uid, institutionId, nickname, type, last4, ibanSuffix, currency, " +
+                        "openingBalanceMinor, archived, createdAt) " +
+                        "VALUES (1, 'a', NULL, 'Cash', 'CASH', NULL, NULL, 'SAR', 0, 0, 0)"
+            )
+            db.execSQL(
+                "INSERT INTO transactions (uid, accountId, direction, amountMinor, currency, occurredAt, kind, " +
+                        "title, note, source, createdAt) " +
+                        "VALUES ('t', 1, 'DEBIT', 1250, 'SAR', 0, 'PURCHASE', 'Panda', '', 'MANUAL', 0)"
+            )
+        }
+
+        helper.runMigrationsAndValidate(DB, 3, true, *MIGRATIONS).use { db ->
+            db.query("SELECT amountMinor, categoryId, ruleId FROM transactions").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(1250L, cursor.getLong(0))
+                assertEquals(true, cursor.isNull(1))
+                assertEquals(true, cursor.isNull(2))
+            }
+            db.query("SELECT COUNT(*) FROM categories").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(Seed.CATEGORIES.size, cursor.getInt(0))
+            }
+        }
+    }
+
     private companion object {
         const val DB = "migration-test"
     }

@@ -1,6 +1,8 @@
 package bassamalim.halala.core.ui.components
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import bassamalim.halala.R
 import androidx.compose.ui.Modifier
 import bassamalim.halala.core.models.TransactionItem
 import bassamalim.halala.core.ui.itemMeta
@@ -22,6 +24,7 @@ fun TransactionItemRow(
         currency = item.currency,
         tone = item.tone,
         initial = item.initial,
+        autoLabel = if (item.auto) stringResource(R.string.auto) else null,
         divider = divider,
         onClick = onClick,
         modifier = modifier

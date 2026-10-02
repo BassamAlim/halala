@@ -2,11 +2,18 @@ package bassamalim.halala.core.data.dataSources.room
 
 import androidx.room.TypeConverter
 import bassamalim.halala.core.enums.AccountType
+import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
+import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
 import bassamalim.halala.core.enums.Direction
+import bassamalim.halala.core.enums.ExpenseType
+import bassamalim.halala.core.enums.RuleSource
 import bassamalim.halala.core.enums.RawStatus
 import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.enums.TransactionSource
+import kotlinx.serialization.json.Json
 import java.time.Instant
+
+private val lenientJson = Json { ignoreUnknownKeys = true }
 
 /**
  * Enums are stored by name. A name that no longer exists decays to a safe value rather than
@@ -47,6 +54,32 @@ class Converters {
 
     @TypeConverter
     fun fromTransactionSource(source: TransactionSource): String = source.name
+
+    @TypeConverter
+    fun toExpenseType(name: String?): ExpenseType? = ExpenseType.entries.firstOrNull { it.name == name }
+
+    @TypeConverter
+    fun fromExpenseType(type: ExpenseType?): String? = type?.name
+
+    @TypeConverter
+    fun toRuleSource(name: String): RuleSource =
+        RuleSource.entries.firstOrNull { it.name == name } ?: RuleSource.LEARNED
+
+    @TypeConverter
+    fun fromRuleSource(source: RuleSource): String = source.name
+
+    // A condition or action a newer version wrote is skipped rather than failing the read.
+    @TypeConverter
+    fun toRuleConditions(json: String): RuleConditions = lenientJson.decodeFromString(json)
+
+    @TypeConverter
+    fun fromRuleConditions(conditions: RuleConditions): String = lenientJson.encodeToString(conditions)
+
+    @TypeConverter
+    fun toRuleActions(json: String): RuleActions = lenientJson.decodeFromString(json)
+
+    @TypeConverter
+    fun fromRuleActions(actions: RuleActions): String = lenientJson.encodeToString(actions)
 
     @TypeConverter
     fun toRawStatus(name: String): RawStatus =

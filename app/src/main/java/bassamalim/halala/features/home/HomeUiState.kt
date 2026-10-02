@@ -10,5 +10,7 @@ data class HomeUiState(
     val cashBalance: String = "",
     val bankBalance: String = "",
     val bankAccountCount: Int = 0,
+    /** Cards waiting in the review inbox. */
+    val reviewCount: Int = 0,
     val recent: List<TransactionItem> = emptyList()
 )

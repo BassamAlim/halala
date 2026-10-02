@@ -136,7 +136,10 @@ class TransactionsRepository @Inject constructor(
                 kind = TransactionKind.FEE,
                 title = "",
                 originalAmountMinor = null,
-                originalCurrency = null
+                originalCurrency = null,
+                categoryId = null,
+                expenseType = null,
+                ruleId = null
             )
         )
     }

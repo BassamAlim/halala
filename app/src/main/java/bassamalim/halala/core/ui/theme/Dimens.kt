@@ -37,6 +37,8 @@ object Sizes {
     val icon = 22.dp
     val iconSmall = 18.dp
     val chip = 32.dp
+    /** Home's review pill. */
+    val pill = 36.dp
     val border = 1.dp
     val progress = 4.dp
     /** The balance card's own track, thicker than a [progress] bar. */

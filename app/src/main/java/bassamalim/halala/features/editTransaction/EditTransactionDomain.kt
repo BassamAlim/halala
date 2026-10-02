@@ -2,6 +2,7 @@ package bassamalim.halala.features.editTransaction
 
 import bassamalim.halala.core.data.dataSources.room.relations.AccountWithBalance
 import bassamalim.halala.core.data.repositories.AccountsRepository
+import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.enums.AccountType
@@ -54,6 +55,7 @@ sealed interface CheckedEntry {
 class EditTransactionDomain @Inject constructor(
     private val accountsRepository: AccountsRepository,
     private val transactionsRepository: TransactionsRepository,
+    private val classificationRepository: ClassificationRepository,
     private val clock: Clock
 ) {
 
@@ -112,6 +114,8 @@ class EditTransactionDomain @Inject constructor(
                 else transactionsRepository.updateTransfer(id, checked.draft)
         }
 
+        // A merchant the rules know is filed as soon as it is written down.
+        classificationRepository.applyRules()
         return emptySet()
     }
 

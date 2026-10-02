@@ -56,7 +56,9 @@ fun TransactionDetail.toItem(zone: ZoneId, today: LocalDate): TransactionItem {
         tone = toneOf(this),
         initial = initialOf(title),
         date = date,
-        day = dayLabel(date, today)
+        day = dayLabel(date, today),
+        category = categoryName,
+        auto = transaction.ruleId != null
     )
 }
 

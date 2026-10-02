@@ -4,15 +4,18 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import bassamalim.halala.core.data.dataSources.room.daos.AccountsDao
+import bassamalim.halala.core.data.dataSources.room.daos.ClassificationDao
 import bassamalim.halala.core.data.dataSources.room.daos.InstitutionsDao
 import bassamalim.halala.core.data.dataSources.room.daos.SmsDao
 import bassamalim.halala.core.data.dataSources.room.daos.TransactionsDao
 import bassamalim.halala.core.data.dataSources.room.entities.Account
 import bassamalim.halala.core.data.dataSources.room.entities.AccountRef
 import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
+import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.entities.Institution
 import bassamalim.halala.core.data.dataSources.room.entities.InternalTransfer
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
+import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 
 @Database(
@@ -23,9 +26,11 @@ import bassamalim.halala.core.data.dataSources.room.entities.Transaction
         InternalTransfer::class,
         RawMessage::class,
         AccountRef::class,
-        BalanceCheckpoint::class
+        BalanceCheckpoint::class,
+        Category::class,
+        Rule::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -34,4 +39,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun accountsDao(): AccountsDao
     abstract fun transactionsDao(): TransactionsDao
     abstract fun smsDao(): SmsDao
+    abstract fun classificationDao(): ClassificationDao
 }

@@ -212,4 +212,74 @@
     <string name="onboarding_transactions">Transactions</string>
     <string name="onboarding_since">Since</string>
     <string name="onboarding_done">Done</string>
+
+    <!-- Categories and rules -->
+    <string name="category">Category</string>
+    <string name="expense_type">Type</string>
+    <string name="choose">Choose</string>
+    <string name="choose_category">Choose category</string>
+    <string name="auto">Auto</string>
+    <string name="expense_fixed_essential">Fixed · Essential</string>
+    <string name="expense_fixed_discretionary">Fixed · Discretionary</string>
+    <string name="expense_variable_essential">Variable · Essential</string>
+    <string name="expense_variable_discretionary">Variable · Discretionary</string>
+    <string name="always_title">Always file %1$s under %2$s?</string>
+    <string name="always_body">Its other transactions are filed too, and new ones as they arrive. The ones you filed yourself stay as they are.</string>
+    <string name="always_confirm">Always</string>
+    <string name="always_dismiss">Just this one</string>
+    <string name="filed_automatically">Filed automatically</string>
+    <string name="edit_rule">Edit rule</string>
+    <!-- "Merchant is Jahez → Delivery". -->
+    <string name="rule_sentence">Merchant is %1$s → %2$s</string>
+    <plurals name="rule_used">
+        <item quantity="one">used %d time</item>
+        <item quantity="other">used %d times</item>
+    </plurals>
+    <string name="rule_last">last %1$s</string>
+    <string name="rule_off">Off</string>
+    <string name="rule_source_manual">Yours</string>
+    <string name="rule_source_learned">Learned from you</string>
+    <string name="rule_source_ai">AI suggestion you confirmed</string>
+    <string name="rule_change_category">Change category</string>
+    <string name="rule_turn_off">Turn off</string>
+    <string name="rule_turn_on">Turn on</string>
+
+    <!-- Categories -->
+    <string name="categories">Categories</string>
+    <string name="settings_categories_summary">What your spending is filed under</string>
+    <string name="categories_hint">Tap a category to remove it.</string>
+    <string name="category_new">New category</string>
+    <string name="category_name">Name</string>
+    <string name="category_name_missing">Give it a name.</string>
+    <string name="category_name_taken">You already have that one.</string>
+    <string name="category_delete_title">Delete %1$s?</string>
+    <string name="category_delete_unused">Nothing is filed under it.</string>
+    <plurals name="category_delete_body">
+        <item quantity="one">%d transaction goes back to review, and rules that file under it are deleted.</item>
+        <item quantity="other">%d transactions go back to review, and rules that file under it are deleted.</item>
+    </plurals>
+    <plurals name="transaction_count">
+        <item quantity="one">%d transaction</item>
+        <item quantity="other">%d transactions</item>
+    </plurals>
+
+    <!-- Review -->
+    <string name="review">Review</string>
+    <plurals name="review_count">
+        <item quantity="one">%d to review</item>
+        <item quantity="other">%d to review</item>
+    </plurals>
+    <string name="review_hint">Biggest first. One answer files every transaction from that merchant, and the ones to come.</string>
+    <string name="review_empty">Nothing to review.</string>
+    <plurals name="review_cluster_meta">
+        <item quantity="one">%1$d transaction · since %2$s</item>
+        <item quantity="other">%1$d transactions · since %2$s</item>
+    </plurals>
+
+    <!-- Rules -->
+    <string name="rules">Rules</string>
+    <string name="rules_search">Search rules</string>
+    <string name="rules_empty">No rules yet. Choose a category for a merchant and Halala remembers it.</string>
+    <string name="rules_footer">Changing a rule re-files what it filed. Transactions you filed yourself stay as they are.</string>
+    <string name="settings_rules_summary">What Halala learned from your answers</string>
 </resources>

@@ -145,7 +145,7 @@ Don't hardcode hex values or `.dp` literals that aren't a named token in `Dimens
   coral text), `HalalaChip` (Plain, Outline, Accent = active filter, On = selected choice),
   `AutoBadge`, `TransactionRow`/`Avatar`/`GroupLabel`, `TopBar` (sub-screens) and `ScreenTitle`
   (tabs), `BottomNav`, `SearchField`/`HalalaTextField`, `ProgressBar`, `SegmentedControl`,
-  `ConfirmSheet`, `QuickAddButton`, `FormField`/`ChoiceChips`.
+  `HalalaSheet`/`ConfirmSheet`/`ChoiceSheet`, `QuickAddButton`, `FormField`/`ChoiceChips`.
 - Voice: short, plain, second person; figure then currency ("6,240 SAR"); thousands separators
   always; the true minus sign; two decimals in lists and detail, none in summaries; no
   exclamation marks, no emoji.
@@ -181,8 +181,19 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   filtered to one account. A move across currencies is refused until FX lands with SMS parsing.
 - **Totals** (Activity's In/Out) are per currency, in SAR for now, this calendar month (pay
   cycles arrive with budgets).
+- **Categories and rules**: only spending has a category (money out that counts in totals;
+  `Rules.canCategorise`). A transaction with a category and no `ruleId` was filed by you, and no
+  rule ever changes it; one with a `ruleId` was filed by that rule and shows the Auto badge.
+  Choosing a category for a merchant asks "just this one, or always": always writes one learned
+  rule per merchant key (`Rules.merchantKey`: lower case, letters only) and files its past too.
+  `ClassificationRepository.applyRules()` is idempotent and runs after every SMS run, every
+  manual save and every rule change. A rule's use count is counted from the transactions it
+  filed, not stored. Rule conditions and actions are JSON columns, so new kinds need no
+  migration. Yours beat learned, learned beat AI. Removing a category deletes the rules that
+  file under it and sends its transactions back to review.
 - **Every automated decision says why** (the spec's principle): Transaction detail's
-  "How it got here" card names the source — added by you, a wallet count, or (Phase 1) an SMS.
+  "How it got here" card names the source (added by you, a wallet count, or an SMS), and
+  "Filed automatically" names the rule.
 - **Lock**: `BiometricPrompt` on every cold start (the graph starts on `Screen.Lock`) and after
   a minute in the background (`LockManager`, monotonic clock; the minute is a preference,
   `PreferencesRepository.lockTimeoutSeconds`, with no UI yet). Always on; strong (class 3)
@@ -203,8 +214,8 @@ These are decided (mostly by the spec); don't re-litigate them in code.
 - **Exports** (Settings › Backup and export) are written to a file you pick (SAF). CSV: a zip of
   `accounts.csv` and `transactions.csv` (UTF-8 with BOM, CRLF, signed decimal amounts plus exact
   `amount_minor`, local times, text cells defused against spreadsheet formula injection). JSON:
-  `ExportFile`, schema-versioned (`schemaVersion`, bump on any shape change), keyed by `uid`s,
-  amounts in minor units. The screen says plainly that exports aren't encrypted.
+  `ExportFile`, schema-versioned (`schemaVersion`, bump on any shape change; 2 added categories
+  and rules), keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
 - **Privacy**: no analytics, no crash reporter, no network in Phase 0. Nothing about money goes
   in DataStore (it isn't encrypted).
 - The spec's global quick-add is a flat jade `QuickAddButton` on Home and Activity (the boards
@@ -236,5 +247,15 @@ pipeline (`SmsIngest`: routing by last four, dedupe, pairing internal transfers,
 checkpoints) and back-import (`SmsImport`), plus **Onboarding** (the onboarding board).
 Amounts show the riyal sign for SAR (`Currency.kt`), the ISO code otherwise.
 
-Next is Phase 2 (classification and learning): categories and expense types, the rule engine,
-the review inbox, rules screen and audit log, then AI classification with scrubbing.
+**Phase 2 (classification and learning)** is started, the part that needs no network:
+categories and expense types (seeded; `Category`, `ExpenseType`), learned rules (`Rule`,
+`core/domain/Rules`, `ClassificationRepository`), the **Review** inbox (Review board: one card
+per merchant, biggest first, reached from Home's review pill), the **Rules** screen (Rules
+board; reached from Settings and from a transaction's "Filed automatically" card), and
+category and type on Transaction detail. **Categories** (Settings; no board: add with a
+name and optional type, tap to remove) is built. Still to come in Phase 2: renaming and
+two-level categories, rules
+written by hand and conditions beyond the merchant, the "applies to N past transactions"
+preview, the audit log with undo, merchants with aliases and fuzzy matching, review reminders,
+and AI classification with scrubbing (Groq's data-retention question in the spec is still
+open: nothing is sent until the owner settles it).

@@ -30,8 +30,9 @@ import bassamalim.halala.core.ui.theme.Sizes
 import bassamalim.halala.core.ui.theme.Spacing
 
 /**
- * Settings, from the Settings board, holding only the rows Phase 0 makes true: accounts, backup
- * and export, and the lock. Categories, rules, reminders and AI join as they are built.
+ * Settings, from the Settings board, holding only the rows that are true today: accounts, bank
+ * messages, categories, rules, backup and export, and the lock. Reminders and AI join as they
+ * are built.
  */
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
@@ -62,6 +63,18 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 subtitle = stringResource(R.string.settings_messages_summary),
                 divider = true,
                 onClick = viewModel::onMessagesClick
+            )
+            ListRow(
+                title = stringResource(R.string.categories),
+                subtitle = stringResource(R.string.settings_categories_summary),
+                divider = true,
+                onClick = viewModel::onCategoriesClick
+            )
+            ListRow(
+                title = stringResource(R.string.rules),
+                subtitle = stringResource(R.string.settings_rules_summary),
+                divider = true,
+                onClick = viewModel::onRulesClick
             )
         }
 

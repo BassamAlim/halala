@@ -43,4 +43,11 @@ sealed interface Screen {
     @Serializable data class Onboarding(val fromSettings: Boolean = false) : Screen
 
     @Serializable data object Export : Screen
+
+    /** The review inbox: uncategorised spending, a merchant at a time. */
+    @Serializable data object Review : Screen
+
+    @Serializable data object Rules : Screen
+
+    @Serializable data object Categories : Screen
 }

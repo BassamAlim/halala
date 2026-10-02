@@ -19,12 +19,15 @@ import bassamalim.halala.core.ui.inFromLeft
 import bassamalim.halala.core.ui.outToLeft
 import bassamalim.halala.core.ui.outToRight
 import bassamalim.halala.features.accounts.AccountsScreen
+import bassamalim.halala.features.categories.CategoriesScreen
 import bassamalim.halala.features.editAccount.EditAccountScreen
 import bassamalim.halala.features.editTransaction.EditTransactionScreen
 import bassamalim.halala.features.export.ExportScreen
 import bassamalim.halala.features.lock.LockScreen
 import bassamalim.halala.features.main.MainScreen
 import bassamalim.halala.features.onboarding.OnboardingScreen
+import bassamalim.halala.features.review.ReviewScreen
+import bassamalim.halala.features.rules.RulesScreen
 import bassamalim.halala.features.reconcileCash.ReconcileCashScreen
 import bassamalim.halala.features.settings.SettingsScreen
 import bassamalim.halala.features.transaction.TransactionScreen
@@ -74,6 +77,12 @@ fun NavGraph(navController: NavHostController, startDestination: Screen) {
         screen<Screen.Export> { ExportScreen() }
 
         screen<Screen.Onboarding> { OnboardingScreen() }
+
+        screen<Screen.Review> { ReviewScreen() }
+
+        screen<Screen.Rules> { RulesScreen() }
+
+        screen<Screen.Categories> { CategoriesScreen() }
     }
 }
 

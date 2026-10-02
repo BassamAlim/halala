@@ -1,10 +1,13 @@
 package bassamalim.halala.core.export
 
 import bassamalim.halala.core.data.dataSources.room.entities.Account
+import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.entities.Institution
 import bassamalim.halala.core.data.dataSources.room.entities.InternalTransfer
+import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.repositories.AccountsRepository
+import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.InstitutionsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
 import bassamalim.halala.core.domain.Money
@@ -27,7 +30,9 @@ data class LedgerSnapshot(
     /** Balances by account id, in minor units. */
     val balances: Map<Long, Long>,
     val transactions: List<Transaction>,
-    val transfers: List<InternalTransfer>
+    val transfers: List<InternalTransfer>,
+    val categories: List<Category> = emptyList(),
+    val rules: List<Rule> = emptyList()
 )
 
 /**
@@ -38,6 +43,7 @@ class Exporter @Inject constructor(
     private val institutionsRepository: InstitutionsRepository,
     private val accountsRepository: AccountsRepository,
     private val transactionsRepository: TransactionsRepository,
+    private val classificationRepository: ClassificationRepository,
     private val clock: Clock
 ) {
 
@@ -46,7 +52,9 @@ class Exporter @Inject constructor(
         accounts = accountsRepository.getAll(),
         balances = accountsRepository.getAllWithBalance().associate { it.account.id to it.balanceMinor },
         transactions = transactionsRepository.getAll(),
-        transfers = transactionsRepository.getAllTransfers()
+        transfers = transactionsRepository.getAllTransfers(),
+        categories = classificationRepository.getCategories(),
+        rules = classificationRepository.getRules()
     )
 
     fun fileStem(): String = "halala-${clock.instant().atZone(clock.zone).toLocalDate()}"
@@ -65,6 +73,8 @@ class Exporter @Inject constructor(
             val institutionNames = snapshot.institutions.associate { it.id to it.name }
             val accountUids = snapshot.accounts.associate { it.id to it.uid }
             val transactionUids = snapshot.transactions.associate { it.id to it.uid }
+            val categoryUids = snapshot.categories.associate { it.id to it.uid }
+            val ruleUids = snapshot.rules.associate { it.id to it.uid }
 
             val file = ExportFile(
                 appVersion = appVersion,
@@ -101,7 +111,10 @@ class Exporter @Inject constructor(
                         title = tx.title,
                         note = tx.note,
                         source = tx.source.name,
-                        createdAt = tx.createdAt.toString()
+                        createdAt = tx.createdAt.toString(),
+                        categoryUid = tx.categoryId?.let(categoryUids::get),
+                        expenseType = tx.expenseType?.name,
+                        ruleUid = tx.ruleId?.let(ruleUids::get)
                     )
                 },
                 internalTransfers = snapshot.transfers.map { pair ->
@@ -110,6 +123,18 @@ class Exporter @Inject constructor(
                         outTransactionUid = transactionUids.getValue(pair.outTransactionId),
                         inTransactionUid = transactionUids.getValue(pair.inTransactionId),
                         matchConfidence = pair.matchConfidence
+                    )
+                },
+                categories = snapshot.categories.map { ExportCategory(it.uid, it.name, it.expenseType?.name) },
+                rules = snapshot.rules.map { rule ->
+                    ExportRule(
+                        uid = rule.uid,
+                        merchant = rule.conditions.merchant,
+                        categoryUid = categoryUids[rule.actions.categoryId],
+                        expenseType = rule.actions.expenseType?.name,
+                        source = rule.source.name,
+                        enabled = rule.enabled,
+                        createdAt = rule.createdAt.toString()
                     )
                 }
             )
@@ -142,6 +167,7 @@ class Exporter @Inject constructor(
             val institutionNames = snapshot.institutions.associate { it.id to it.name }
             val accountsById = snapshot.accounts.associateBy { it.id }
             val transactionUids = snapshot.transactions.associate { it.id to it.uid }
+            val categoryNames = snapshot.categories.associate { it.id to it.name }
             val counterpartOf = snapshot.transfers
                 .flatMap { listOf(it.outTransactionId to it.inTransactionId, it.inTransactionId to it.outTransactionId) }
                 .toMap()
@@ -168,7 +194,7 @@ class Exporter @Inject constructor(
 
             val transactions = Csv.table(
                 header = listOf(
-                    "uid", "date", "time", "account", "account_uid", "kind", "title",
+                    "uid", "date", "time", "account", "account_uid", "kind", "title", "category", "expense_type",
                     "amount", "amount_minor", "currency", "note", "source", "transfer_counterpart_uid"
                 ),
                 rows = snapshot.transactions.map { tx ->
@@ -184,6 +210,8 @@ class Exporter @Inject constructor(
                         account.uid,
                         tx.kind.name,
                         Csv.text(tx.title),
+                        Csv.text(tx.categoryId?.let(categoryNames::get)),
+                        tx.expenseType?.name.orEmpty(),
                         Csv.number(Money.plain(signed, tx.currency)),
                         signed.toString(),
                         tx.currency,

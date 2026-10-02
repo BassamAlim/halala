@@ -1,6 +1,8 @@
 package bassamalim.halala.features.home
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,9 +44,9 @@ import bassamalim.halala.core.ui.theme.Sizes
 import bassamalim.halala.core.ui.theme.Spacing
 
 /**
- * Home, from the Home board as far as Phase 0 can fill it: the mark and wordmark, the wallet and
- * the banks in the two summary cards, and the latest transactions. The balance card arrives
- * with budgets, and the review pill with the inbox.
+ * Home, from the Home board as far as it can be filled: the mark and wordmark, the review pill
+ * while anything waits in the inbox, the wallet and the banks in the two summary cards, and the
+ * latest transactions. The balance card arrives with budgets.
  */
 @Composable
 fun HomeScreen(onSeeAllClick: () -> Unit, viewModel: HomeViewModel = hiltViewModel()) {
@@ -52,6 +54,7 @@ fun HomeScreen(onSeeAllClick: () -> Unit, viewModel: HomeViewModel = hiltViewMod
 
     HomeContent(
         state = state,
+        onReviewClick = viewModel::onReviewClick,
         onSettingsClick = viewModel::onSettingsClick,
         onCashClick = viewModel::onCashClick,
         onAccountsClick = viewModel::onAccountsClick,
@@ -63,6 +66,7 @@ fun HomeScreen(onSeeAllClick: () -> Unit, viewModel: HomeViewModel = hiltViewMod
 @Composable
 private fun HomeContent(
     state: HomeUiState,
+    onReviewClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onCashClick: () -> Unit,
     onAccountsClick: () -> Unit,
@@ -98,19 +102,23 @@ private fun HomeContent(
                 Text(text = stringResource(R.string.app_name), style = HalalaType.Wordmark)
             }
 
-            Box(
-                modifier = Modifier
-                    .size(Sizes.touchTarget)
-                    .clip(Radius.pill)
-                    .clickable(role = Role.Button, onClick = onSettingsClick),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_settings),
-                    contentDescription = stringResource(R.string.settings),
-                    tint = HalalaColors.TextMuted,
-                    modifier = Modifier.size(Sizes.icon)
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (state.reviewCount > 0) ReviewPill(state.reviewCount, onReviewClick)
+
+                Box(
+                    modifier = Modifier
+                        .size(Sizes.touchTarget)
+                        .clip(Radius.pill)
+                        .clickable(role = Role.Button, onClick = onSettingsClick),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_settings),
+                        contentDescription = stringResource(R.string.settings),
+                        tint = HalalaColors.TextMuted,
+                        modifier = Modifier.size(Sizes.icon)
+                    )
+                }
             }
         }
 
@@ -180,6 +188,45 @@ private fun HomeContent(
                     onClick = { onTransactionClick(item.id) }
                 )
             }
+        }
+    }
+}
+
+/** The board's "7 to review" pill; its hit area is padded out to a touch target. */
+@Composable
+private fun ReviewPill(count: Int, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .heightIn(min = Sizes.touchTarget)
+            .clickable(
+                interactionSource = null,
+                indication = null,
+                role = Role.Button,
+                onClick = onClick
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            modifier = Modifier
+                .height(Sizes.pill)
+                .clip(Radius.pill)
+                .background(HalalaColors.Surface)
+                .border(Sizes.border, HalalaColors.Line, Radius.pill)
+                .padding(horizontal = Spacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_inbox),
+                contentDescription = null,
+                tint = HalalaColors.Text,
+                modifier = Modifier.size(Sizes.iconSmall)
+            )
+            Text(
+                text = pluralStringResource(R.plurals.review_count, count, count),
+                style = HalalaType.Label,
+                color = HalalaColors.Text
+            )
         }
     }
 }

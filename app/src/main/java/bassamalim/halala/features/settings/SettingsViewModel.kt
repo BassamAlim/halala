@@ -42,5 +42,9 @@ class SettingsViewModel @Inject constructor(
 
     fun onExportClick() = navigator.navigate(Screen.Export)
 
+    fun onCategoriesClick() = navigator.navigate(Screen.Categories)
+
+    fun onRulesClick() = navigator.navigate(Screen.Rules)
+
     fun onMessagesClick() = navigator.navigate(Screen.Onboarding(fromSettings = true))
 }
