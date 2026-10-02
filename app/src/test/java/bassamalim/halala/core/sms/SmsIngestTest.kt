@@ -326,6 +326,21 @@ class SmsIngestTest {
     }
 
     @Test
+    fun `an SMS that names no account goes to its bank's busiest one`() = runTest {
+        // Al Rajhi has two accounts here; the main one is in use.
+        receive("AlRajhiBank", purchase)
+        receive("AlRajhiBank", """
+            سداد فاتورة
+            مبلغ:SAR 100
+            الخدمة:Electricity
+            في:25-2-6 20:44
+        """, minutes = 5)
+
+        assertEquals(listOf(RawStatus.RECORDED, RawStatus.RECORDED), statuses())
+        assertEquals(-16_200L, balance(rajhiMain))
+    }
+
+    @Test
     fun `fees are their own debit`() = runTest {
         receive("AlRajhiBank", """
             حوالة محلية صادرة بـSR 2500

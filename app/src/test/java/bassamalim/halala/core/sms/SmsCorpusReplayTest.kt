@@ -49,12 +49,10 @@ class SmsCorpusReplayTest {
         out.appendLine("## found"); found.forEach { out.appendLine("${it.bank} ${it.refs} ${it.messages}") }
 
         val banks = institutions.getAll().associate { it.name to it.id }
-        // As a careful owner would: a bank's digitless SMS go to its busiest account, and the
-        // one-account wallets get one name.
+        // Every row named apart, except the one-account wallets, which get one name.
         val wallets = setOf("STC Bank", "Barq", "D360")
-        val busiest = found.filter { it.refs.isNotEmpty() }.groupBy { it.bank }.mapValues { it.value.maxBy { a -> a.messages } }
         val names = found.map {
-            val lead = if (it.refs.isEmpty() || it.bank in wallets) busiest[it.bank] ?: it else it
+            val lead = if (it.bank in wallets) found.first { other -> other.bank == it.bank } else it
             it to "${it.bank} ${lead.refs.firstOrNull().orEmpty()}"
         }
         for (account in OnboardingDomain.plan(names)) {

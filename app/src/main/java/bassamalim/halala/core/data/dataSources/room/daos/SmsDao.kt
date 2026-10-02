@@ -74,16 +74,15 @@ interface SmsDao {
     ): List<Transaction>
 
     /**
-     * The lowest an account's transactions alone ever brought it by the end of a day, up to
-     * [until]: below zero, it must have started with at least that much. Null with none.
+     * The lowest an account's transactions alone ever brought it, up to [until]: below zero, it
+     * must have started with at least that much. Null with none.
      */
     @Query(
-        "SELECT MIN(run) FROM (SELECT SUM(net) OVER (ORDER BY day) AS run FROM (" +
-                "SELECT occurredAt / 86400000 AS day, " +
-                "SUM(CASE WHEN direction = 'CREDIT' THEN amountMinor ELSE -amountMinor END) AS net " +
-                "FROM transactions WHERE accountId = :accountId AND occurredAt <= :until GROUP BY day))"
+        "SELECT MIN(run) FROM (SELECT SUM(CASE WHEN direction = 'CREDIT' THEN amountMinor ELSE -amountMinor END) " +
+                "OVER (ORDER BY occurredAt, id) AS run " +
+                "FROM transactions WHERE accountId = :accountId AND occurredAt <= :until)"
     )
-    suspend fun lowestDailyBalance(accountId: Long, until: Instant): Long?
+    suspend fun lowestBalance(accountId: Long, until: Instant): Long?
 
     /** Arrivals from SMS, up to [until], that no sending leg was ever paired with. */
     @Query(
@@ -96,6 +95,13 @@ interface SmsDao {
     /** Messages that recorded nothing (OTPs among them) received in a span of time. */
     @Query("SELECT * FROM raw_messages WHERE status = 'IGNORED' AND receivedAt BETWEEN :from AND :to")
     suspend fun ignoredBetween(from: Instant, to: Instant): List<RawMessage>
+
+    /** The one of [accountIds] with the most transactions; null when none has any. */
+    @Query(
+        "SELECT accountId FROM transactions WHERE accountId IN (:accountIds) " +
+                "GROUP BY accountId ORDER BY COUNT(*) DESC, accountId LIMIT 1"
+    )
+    suspend fun busiestOf(accountIds: List<Long>): Long?
 
     /** Which of [accountIds] already had a transaction by [at]: the accounts in use then. */
     @Query("SELECT DISTINCT accountId FROM transactions WHERE accountId IN (:accountIds) AND occurredAt <= :at")

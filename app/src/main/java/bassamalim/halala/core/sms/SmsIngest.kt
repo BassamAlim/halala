@@ -57,15 +57,19 @@ class SmsIngest @Inject constructor(
     /**
      * Runs what is waiting through the pipeline, oldest first. Safe to call any time. With
      * [retry], messages no account matched are tried again (after accounts were named), and
-     * again while each pass learns new digits: a card is learned from an SMS that quotes it
+     * again while each pass gets somewhere: a card is learned from an SMS that quotes it
      * beside its account, which may be newer than the SMS that quote the card alone.
      */
     suspend fun processPending(retry: Boolean = false) {
         val statuses = if (retry) listOf(RawStatus.PENDING, RawStatus.UNROUTED) else listOf(RawStatus.PENDING)
+        // Another pass, too, while one files something: an SMS that names no account goes to its
+        // bank's busiest, which the first pass through an empty ledger can't tell yet.
         do {
             val known = sms.getRefs().size
+            val waiting = sms.getRawIds(listOf(RawStatus.UNROUTED)).size
             for (id in sms.getRawIds(statuses)) process(id)
-        } while (retry && sms.getRefs().size > known)
+            val progressed = sms.getRefs().size > known || sms.getRawIds(listOf(RawStatus.UNROUTED)).size < waiting
+        } while (retry && progressed)
         recordUnsentLegs()
         floorOpeningBalances()
     }
@@ -115,21 +119,22 @@ class SmsIngest @Inject constructor(
         return codes.mapNotNull { raw ->
             val institutionId = SmsParser.bankFor(raw.sender)?.let { institutionIdOf(it) } ?: return@mapNotNull null
             if (institutionId == here.institutionId) return@mapNotNull null
-            route(emptyList(), all.filter { it.institutionId == institutionId }, learned.filter { it.institutionId == institutionId })
+            val there = all.filter { it.institutionId == institutionId }
+            route(emptyList(), there, learned.filter { it.institutionId == institutionId }, busiestOf(there))
         }.distinctBy { it.id }.singleOrNull()
     }
 
     /**
      * A bank account can't have been below zero, so one whose messages take it there held at
      * least that much before they began: its opening balance is raised to the least that keeps
-     * every finished day at zero or more. Days still under way are left out, since a debit's SMS
-     * can arrive a moment before the credit that paid for it.
+     * it at zero or more throughout. The last hour is left out, since a debit's SMS can arrive a
+     * moment before the credit that paid for it.
      */
     private suspend fun floorOpeningBalances() {
-        val until = clock.instant() - SETTLED_AFTER
+        val until = clock.instant() - FLOOR_AFTER
         for (account in accounts.getAll()) {
             if (account.institutionId == null) continue
-            val lowest = sms.lowestDailyBalance(account.id, until) ?: continue
+            val lowest = sms.lowestBalance(account.id, until) ?: continue
             if (account.openingBalanceMinor + lowest < 0) accounts.setOpeningBalance(account.id, -lowest)
         }
     }
@@ -156,7 +161,8 @@ class SmsIngest @Inject constructor(
                 val learned = sms.getRefs()
                 val all = accounts.getAll()
                 val atBank = learned.filter { it.institutionId == institutionId }
-                val account = route(parsed.ownRefs, all.filter { it.institutionId == institutionId }, atBank)
+                val here = all.filter { it.institutionId == institutionId }
+                val account = route(parsed.ownRefs, here, atBank, busiestOf(here).takeIf { parsed.ownRefs.isEmpty() })
                     ?: return sms.setStatus(id, RawStatus.UNROUTED, BankFormats.PARSER_VERSION, parsed.ownRefs.joinToString(","))
                 // A card quoted beside its account ("من:1111 بطاقة:9001") is learned for it, so
                 // the SMS that quote only the card find their way without asking.
@@ -337,6 +343,10 @@ class SmsIngest @Inject constructor(
         return accounts.get(id)
     }
 
+    /** The bank's account in use with the most transactions so far: where its digitless SMS go. */
+    private suspend fun busiestOf(atBank: List<Account>): Long? =
+        sms.busiestOf(atBank.filter { !it.archived }.map(Account::id))
+
     private suspend fun institutionIdOf(bank: BankFormat): Long? =
         institutions.getAll().firstOrNull { it.name == bank.institution }?.id
 
@@ -348,8 +358,11 @@ class SmsIngest @Inject constructor(
         /** How long before an arrival its sender's one-time code can have been sent. */
         val CODE_WINDOW: Duration = Duration.ofMinutes(5)
 
-        /** How old a day must be before its end-of-day balance is trusted as settled. */
+        /** How long an arrival waits for its sending bank's SMS before that leg is implied. */
         val SETTLED_AFTER: Duration = Duration.ofDays(1)
+
+        /** How old a transaction must be before a dip below zero is believed. */
+        val FLOOR_AFTER: Duration = Duration.ofHours(1)
         val CLOSE_WINDOW: Duration = Duration.ofMinutes(10)
         /** The most a sending bank's fee adds to the amount it quotes (2 SAR; SARIE costs up to 1.15). */
         const val FEE_TOLERANCE = 200L
@@ -370,10 +383,12 @@ class SmsIngest @Inject constructor(
 
         /**
          * Which of a bank's [accounts] an SMS is about: the first of its digit groups that ends
-         * an account's last four or was learned for one. A bank's only account takes an SMS that
-         * quotes no digits; digits nobody knows are asked about, never guessed.
+         * an account's last four or was learned for one. Digits nobody knows are asked about,
+         * never guessed. An SMS that quotes none goes to the account you chose for those, else
+         * the bank's only account, else its busiest ([busiestId]): most of what a bank sends
+         * without a number is everyday traffic on the main account.
          */
-        fun route(refs: List<String>, accounts: List<Account>, learned: List<AccountRef>): Account? {
+        fun route(refs: List<String>, accounts: List<Account>, learned: List<AccountRef>, busiestId: Long? = null): Account? {
             for (ref in refs) {
                 learned.firstOrNull { it.ref == ref }
                     ?.let { hit -> accounts.firstOrNull { it.id == hit.accountId } }
@@ -384,7 +399,7 @@ class SmsIngest @Inject constructor(
             learned.firstOrNull { it.ref == NO_DIGITS }
                 ?.let { hit -> accounts.firstOrNull { it.id == hit.accountId } }
                 ?.let { return it }
-            return accounts.filter { !it.archived }.singleOrNull()
+            return accounts.filter { !it.archived }.singleOrNull() ?: accounts.firstOrNull { it.id == busiestId }
         }
 
         /** Whether any of [refs] names [account]: its last four, or digits learned for it. */

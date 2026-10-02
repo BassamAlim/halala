@@ -47,18 +47,14 @@ class OnboardingDomainTest {
     }
 
     @Test
-    fun `messages with no digits join a bank's only account, or ask when there are several`() {
+    fun `messages with no digits count with the bank's busiest account, or stand alone at a wallet`() {
         assertEquals(
-            listOf(Triple("STC Bank", listOf("6666"), 222)),
-            found(Triple("STC Bank", "6666", 12), Triple("STCPAY", "", 210))
+            listOf(Triple("STC Bank", listOf("6666"), 222), Triple("STC Bank", listOf("7777"), 9)),
+            found(Triple("STC Bank", "6666", 12), Triple("STC Bank", "7777", 9), Triple("STCPAY", "", 210))
         )
         assertEquals(
             listOf(Triple("Barq", emptyList<String>(), 5)),
             found(Triple("barq app", "", 5))
-        )
-        assertEquals(
-            3,
-            found(Triple("STC Bank", "6666", 12), Triple("STC Bank", "7777", 9), Triple("STCPAY", "", 210)).size
         )
     }
 

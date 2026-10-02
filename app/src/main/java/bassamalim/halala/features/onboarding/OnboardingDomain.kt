@@ -107,8 +107,8 @@ class OnboardingDomain @Inject constructor(
          * The accounts behind the SMS no account matched. Digits quoted together are one account
          * (the account and its card); three digits are the tail of a four-digit number seen at
          * the same bank ("444*690" is ••4444). Each account leads with the digits its SMS put
-         * first, which is the account's own number. A bank's SMS that quote no digits are their
-         * own row only when they can't simply belong to that bank's one account.
+         * first, which is the account's own number. A bank's SMS that quote no digits count with
+         * its busiest account, and are a row of their own only when the bank has no other.
          */
         fun found(groups: List<UnroutedGroup>): List<FoundAccount> =
             groups.groupBy { SmsParser.bankFor(it.sender)?.institution }
@@ -145,10 +145,13 @@ class OnboardingDomain @Inject constructor(
                 }
             val digitless = messages.filter { it.first.isEmpty() }.sumOf { it.second }
 
+            // SMS that quote no digits go to the bank's busiest account by themselves; they are a
+            // row of their own only at a bank whose SMS never quote any (a wallet).
+            val busiest = accounts.maxByOrNull { it.messages }
             return when {
                 digitless == 0 -> accounts
-                accounts.size == 1 -> accounts.map { it.copy(messages = it.messages + digitless) }
-                else -> accounts + FoundAccount(bank, emptyList(), digitless)
+                busiest == null -> listOf(FoundAccount(bank, emptyList(), digitless))
+                else -> accounts.map { if (it === busiest) it.copy(messages = it.messages + digitless) else it }
             }
         }
 

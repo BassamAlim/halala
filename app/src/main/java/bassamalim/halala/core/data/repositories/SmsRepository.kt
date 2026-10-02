@@ -49,12 +49,13 @@ class SmsRepository @Inject constructor(
         to: Instant
     ): List<Transaction> = smsDao.findSimilar(accountId, direction, amountMinor, from, to)
 
-    suspend fun lowestDailyBalance(accountId: Long, until: Instant): Long? =
-        smsDao.lowestDailyBalance(accountId, until)
+    suspend fun lowestBalance(accountId: Long, until: Instant): Long? = smsDao.lowestBalance(accountId, until)
 
     suspend fun unpairedArrivals(until: Instant): List<Transaction> = smsDao.unpairedArrivals(until)
 
     suspend fun ignoredBetween(from: Instant, to: Instant): List<RawMessage> = smsDao.ignoredBetween(from, to)
+
+    suspend fun busiestOf(accountIds: List<Long>): Long? = smsDao.busiestOf(accountIds)
 
     suspend fun inUseBy(accountIds: List<Long>, at: Instant): List<Long> = smsDao.inUseBy(accountIds, at)
 
