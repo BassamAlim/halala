@@ -69,8 +69,8 @@ object BankFormats {
             out("تحويل Urpay", TRANSFER_OUT),
             // Each Awaeed deposit is its own numberless account at the bank; they are kept as one.
             out("انشاء حساب عوائد", SAVINGS_DEPOSIT).copy(into = "Awaeed"),
-            out("تحويل الى حساب الراجحي المالية", TRANSFER_OUT),
-            into("تحويل من حساب الراجحي المالية", TRANSFER_IN),
+            out("تحويل الى حساب الراجحي المالية", TRANSFER_OUT).copy(farBank = "Al Rajhi Capital"),
+            into("تحويل من حساب الراجحي المالية", TRANSFER_IN).copy(farBank = "Al Rajhi Capital"),
             out("مدفوعات", BILL_PAYMENT),
             out("سداد فاتورة", BILL_PAYMENT),
             out("خصم:رسوم", FEE),

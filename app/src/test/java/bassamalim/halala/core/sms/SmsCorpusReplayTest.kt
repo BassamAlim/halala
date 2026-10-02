@@ -92,6 +92,16 @@ class SmsCorpusReplayTest {
             SELECT strftime('%Y-%m-%d %H:%M', t.occurredAt/1000, 'unixepoch'), a.nickname, t.kind, t.direction, t.amountMinor/100.0, t.title FROM transactions t JOIN accounts a ON a.id=t.accountId
             WHERE t.id NOT IN (SELECT outTransactionId FROM internal_transfers UNION SELECT inTransactionId FROM internal_transfers)
             AND t.kind IN ('TRANSFER_IN','TRANSFER_OUT','INTERNAL_TRANSFER') AND t.occurredAt > 1782000000000 ORDER BY t.amountMinor DESC LIMIT 40""")
+        query("lowest end-of-day and lowest running balance per account", """
+            SELECT a.nickname, MIN(d.run)/100.0, (SELECT MIN(r.run)/100.0 FROM (
+                SELECT SUM(CASE WHEN t.direction='CREDIT' THEN t.amountMinor ELSE -t.amountMinor END) OVER (ORDER BY t.occurredAt, t.id) AS run
+                FROM transactions t WHERE t.accountId = a.id) r)
+            FROM accounts a JOIN (
+                SELECT accountId, SUM(net) OVER (PARTITION BY accountId ORDER BY day) AS run FROM (
+                    SELECT accountId, occurredAt/86400000 AS day,
+                        SUM(CASE WHEN direction='CREDIT' THEN amountMinor ELSE -amountMinor END) AS net
+                    FROM transactions GROUP BY accountId, day)) d ON d.accountId = a.id
+            GROUP BY a.id""")
         query("dropped or held", "SELECT status, sender, replace(body, char(10), ' / ') FROM raw_messages WHERE status IN ('DUPLICATE','FOREIGN','UNRECOGNISED') ORDER BY status, sender, receivedAt")
         File(corpus.parentFile, "replay.txt").writeText(out.toString())
         db.close()

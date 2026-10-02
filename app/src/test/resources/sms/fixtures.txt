@@ -752,6 +752,25 @@ Ref:21000000
 Date:04-04-2026 14:08
 expect: TRANSFER_OUT DEBIT 1435.00 SAR own=8888 party=-
 ===
+# Requested, not yet done: the "Status: Success" message that follows is the transfer.
+sender: ALRajhiCPTL
+Local Transfer
+From:****8888
+Amount:2531.59
+To:****4444 Status: Initiated
+Ref:11000000
+Date:31-01-2025 16:12
+expect: Ignored
+===
+sender: ALRajhiCPTL
+Local Transfer
+From:****8888
+Amount:2531.59
+To:****4444 Status: Success
+Ref:11000000
+Date:31-01-2025 16:12
+expect: TRANSFER_OUT DEBIT 2531.59 SAR own=8888 party=4444
+===
 sender: ALRajhiCPTL
 حوالة محلية
 من:****8888

@@ -249,6 +249,51 @@ class SmsIngestTest {
     }
 
     @Test
+    fun `an account its old messages take below zero must have started with that much`() = runTest {
+        val days = 24 * 60L
+        receive("AlRajhiBank", purchase, minutes = -10 * days)
+        assertEquals(0L, balance(rajhiMain))
+        assertEquals(6_200L, accounts.get(rajhiMain)!!.openingBalanceMinor)
+
+        // Today's messages may still be out of order, so they don't move the floor.
+        receive("AlRajhiBank", purchase.replace("Jahez", "Keeta"))
+        assertEquals(-6_200L, balance(rajhiMain))
+    }
+
+    @Test
+    fun `buying fund units doesn't change what the investment account is worth`() = runTest {
+        val broker = db.institutionsDao().getAll().first { it.name == "Al Rajhi Capital" }.id
+        val funds = accounts.create(AccountDraft(broker, "Funds", AccountType.INVESTMENT, "8888", "SAR", 0))
+        val days = 24 * 60L
+
+        // Only the purchase came by SMS: the cash for it must already have been there.
+        receive("ALRajhiCPTL", "Subscription Order 6600001\n10.000000 Units\nFund A\nUnit Price 10.0000\nAmount 100.00", minutes = -10 * days)
+
+        assertEquals(10_000L, accounts.get(funds)!!.openingBalanceMinor)
+        assertEquals(10_000L, balance(funds))
+    }
+
+    @Test
+    fun `money the bank says came from your broker account leaves it, even with no SMS from the broker`() = runTest {
+        val broker = db.institutionsDao().getAll().first { it.name == "Al Rajhi Capital" }.id
+        val funds = accounts.create(AccountDraft(broker, "Funds", AccountType.INVESTMENT, "8888", "SAR", 500_000))
+
+        receive("AlRajhiBank", """
+            تحويل من حساب الراجحي المالية
+            الى:1111
+            مبلغ:SR 2700
+            26/6/4 16:11
+        """)
+        assertEquals(270_000L, balance(rajhiMain))
+        assertEquals(230_000L, balance(funds))
+        assertEquals(SmsIngest.IMPLIED_CONFIDENCE, transactions.getAllTransfers().single().matchConfidence, 0.0)
+
+        // The broker's own SMS for it, a minute later, is the same event.
+        receive("ALRajhiCPTL", "Local Transfer\nFrom:****8888\nAmount:2700.0\nTo:****\nRef:21000000", minutes = 1)
+        assertEquals(230_000L, balance(funds))
+    }
+
+    @Test
     fun `fees are their own debit`() = runTest {
         receive("AlRajhiBank", """
             حوالة محلية صادرة بـSR 2500

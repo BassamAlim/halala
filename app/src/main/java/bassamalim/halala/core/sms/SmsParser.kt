@@ -39,7 +39,13 @@ data class Template(
      * The bank's own product the money goes into, when the SMS quotes no number for it: an
      * "Awaeed" term deposit. It is kept as one account of yours under that name.
      */
-    val into: String? = null
+    val into: String? = null,
+    /**
+     * The institution the other side is at, when the SMS says it is your own account there
+     * ("from your Al Rajhi Capital account"): if that bank sends no SMS of its own, the other
+     * leg is recorded on your one account there.
+     */
+    val farBank: String? = null
 )
 
 /** How one bank writes its SMS. [institution] is the seeded Institution's name. */
@@ -74,7 +80,9 @@ sealed interface ParsedSms {
         val originalCurrency: String? = null,
         val balanceMinor: Long? = null,
         /** See [Template.into]. */
-        val into: String? = null
+        val into: String? = null,
+        /** See [Template.farBank]. */
+        val farBank: String? = null
     ) : ParsedSms
 
     /** A declined card or transfer: no money moved, kept for anomaly alerts. */
@@ -99,7 +107,8 @@ object SmsParser {
 
     fun parse(bank: BankFormat, body: String): ParsedSms {
         val lines = INVISIBLE.replace(body, "").lines().map(String::trim).filter(String::isNotEmpty)
-        if (lines.isEmpty() || ONE_TIME_CODE.containsMatchIn(body)) return ParsedSms.Ignored
+        if (lines.isEmpty() || ONE_TIME_CODE.containsMatchIn(body) || NOT_YET.containsMatchIn(body))
+            return ParsedSms.Ignored
 
         val template = bank.templates.firstOrNull { lines[0].startsWith(it.header) }
             ?: return if (lines.any { money(it) != null }) ParsedSms.Unrecognised else ParsedSms.Ignored
@@ -167,7 +176,8 @@ object SmsParser {
             originalMinor = stated.first.takeIf { foreign },
             originalCurrency = stated.second.takeIf { foreign },
             balanceMinor = moneyOf(Role.BALANCE, charged.second)?.takeIf { it.second == charged.second }?.first,
-            into = template.into
+            into = template.into,
+            farBank = template.farBank
         )
     }
 
@@ -221,6 +231,8 @@ object SmsParser {
         Regex("OTP|One Time Password|رمز|كلمة مرور|الرقم السري", RegexOption.IGNORE_CASE)
     private val DATE = Regex("""^\d{1,4}[/-]\d{1,2}[/-]\d{1,4}""")
     private val LEADING_REF = Regex("""^[\s*]*\d""")
+    /** A transfer only requested ("Status: Initiated"); the one that says Success is the transfer. */
+    private val NOT_YET = Regex("""Status:\s*Initiated""", RegexOption.IGNORE_CASE)
     private val NULL_WORD = Regex("""\bnull\b""")
     private val SPACES = Regex("""\s+""")
 

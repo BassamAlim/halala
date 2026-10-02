@@ -49,6 +49,9 @@ class SmsRepository @Inject constructor(
         to: Instant
     ): List<Transaction> = smsDao.findSimilar(accountId, direction, amountMinor, from, to)
 
+    suspend fun lowestDailyBalance(accountId: Long, until: Instant): Long? =
+        smsDao.lowestDailyBalance(accountId, until)
+
     suspend fun inUseBy(accountIds: List<Long>, at: Instant): List<Long> = smsDao.inUseBy(accountIds, at)
 
     suspend fun findUnpaired(

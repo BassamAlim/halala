@@ -66,6 +66,22 @@ class SmsIngest @Inject constructor(
             val known = sms.getRefs().size
             for (id in sms.getRawIds(statuses)) process(id)
         } while (retry && sms.getRefs().size > known)
+        floorOpeningBalances()
+    }
+
+    /**
+     * A bank account can't have been below zero, so one whose messages take it there held at
+     * least that much before they began: its opening balance is raised to the least that keeps
+     * every finished day at zero or more. Days still under way are left out, since a debit's SMS
+     * can arrive a moment before the credit that paid for it.
+     */
+    private suspend fun floorOpeningBalances() {
+        val until = clock.instant() - SETTLED_AFTER
+        for (account in accounts.getAll()) {
+            if (account.institutionId == null) continue
+            val lowest = sms.lowestDailyBalance(account.id, until) ?: continue
+            if (account.openingBalanceMinor + lowest < 0) accounts.setOpeningBalance(account.id, -lowest)
+        }
     }
 
     /**
@@ -159,7 +175,10 @@ class SmsIngest @Inject constructor(
             if (stated != null) transactions.addParsedPair(sent, arrived)
             else transactions.addParsed(sent).also { transactions.pair(it, transactions.addParsed(arrived), IMPLIED_CONFIDENCE) }
         } else {
-            transactions.addParsed(leg).also { pairWithFarSide(leg.copy(id = it), parsed, all, learned) }
+            transactions.addParsed(leg).also { id ->
+                val recorded = leg.copy(id = id)
+                if (!pairWithFarSide(recorded, parsed, all, learned)) recordFarSide(recorded, parsed, all)
+            }
         }
 
         if (parsed.feeMinor > 0) transactions.addParsed(
@@ -185,9 +204,9 @@ class SmsIngest @Inject constructor(
      * sender's fee (which then becomes its own debit). Either SMS naming the other
      * account's digits pairs them within 48 hours; two plain transfers pair within 10 minutes.
      */
-    private suspend fun pairWithFarSide(leg: Transaction, parsed: ParsedSms.Movement, all: List<Account>, learned: List<AccountRef>) {
+    private suspend fun pairWithFarSide(leg: Transaction, parsed: ParsedSms.Movement, all: List<Account>, learned: List<AccountRef>): Boolean {
         val outgoing = leg.direction == Direction.DEBIT
-        if (leg.kind !in if (outgoing) OUT_KINDS else IN_KINDS) return
+        if (leg.kind !in if (outgoing) OUT_KINDS else IN_KINDS) return false
 
         val candidates = sms.findUnpaired(
             accountId = leg.accountId,
@@ -221,11 +240,35 @@ class SmsIngest @Inject constructor(
             compareByDescending<Triple<Transaction, Duration, Double>> { it.third }
                 .thenBy { (it.first.amountMinor - leg.amountMinor).absoluteValue }
                 .thenBy { it.second }
-        ) ?: return
+        ) ?: return false
 
         val (sent, arrived) = if (outgoing) leg to best.first else best.first to leg
         if (sent.amountMinor > arrived.amountMinor) transactions.splitFee(sent.id, sent.amountMinor - arrived.amountMinor)
         transactions.pair(sent.id, arrived.id, best.third)
+        return true
+    }
+
+    /**
+     * The SMS says the other side is your own account at [ParsedSms.Movement.farBank], and that
+     * bank has sent nothing to pair it with: the other leg is recorded on your one account
+     * there. If its own SMS does arrive in the next minutes, it is dropped as the same event.
+     */
+    private suspend fun recordFarSide(leg: Transaction, parsed: ParsedSms.Movement, all: List<Account>) {
+        val institutionId = institutions.getAll().firstOrNull { it.name == parsed.farBank }?.id ?: return
+        val there = all.singleOrNull { it.institutionId == institutionId && !it.archived && it.currency == leg.currency } ?: return
+
+        val outgoing = leg.direction == Direction.DEBIT
+        val farId = transactions.addParsed(
+            leg.copy(
+                id = 0,
+                uid = UUID.randomUUID().toString(),
+                accountId = there.id,
+                direction = if (outgoing) Direction.CREDIT else Direction.DEBIT,
+                kind = if (outgoing) TransactionKind.TRANSFER_IN else TransactionKind.TRANSFER_OUT
+            )
+        )
+        if (outgoing) transactions.pair(leg.id, farId, IMPLIED_CONFIDENCE)
+        else transactions.pair(farId, leg.id, IMPLIED_CONFIDENCE)
     }
 
     /**
@@ -251,6 +294,9 @@ class SmsIngest @Inject constructor(
         /** Banks resend within seconds; three minutes is the spec's window. */
         val DUPLICATE_WINDOW: Duration = Duration.ofMinutes(3)
         val PAIR_WINDOW: Duration = Duration.ofHours(48)
+
+        /** How old a day must be before its end-of-day balance is trusted as settled. */
+        val SETTLED_AFTER: Duration = Duration.ofDays(1)
         val CLOSE_WINDOW: Duration = Duration.ofMinutes(10)
         /** The most a sending bank's fee adds to the amount it quotes (2 SAR; SARIE costs up to 1.15). */
         const val FEE_TOLERANCE = 200L

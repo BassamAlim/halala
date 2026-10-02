@@ -8,9 +8,14 @@ import bassamalim.halala.core.data.dataSources.room.entities.Account
 import bassamalim.halala.core.data.dataSources.room.relations.AccountWithBalance
 import kotlinx.coroutines.flow.Flow
 
-/** The signed sum of an account's transactions, in SQL integers; appended to by a condition. */
+/**
+ * The signed sum of an account's transactions, in SQL integers; appended to by a condition.
+ * Buying or redeeming fund units changes what the account holds, not what it is worth: the units
+ * stay in it, counted at what was paid for them until their prices are tracked.
+ */
 private const val SIGNED_SUM = """
-            SELECT SUM(CASE WHEN t.direction = 'CREDIT' THEN t.amountMinor ELSE -t.amountMinor END)
+            SELECT SUM(CASE WHEN t.kind IN ('INVESTMENT_BUY', 'INVESTMENT_SELL') THEN 0
+                WHEN t.direction = 'CREDIT' THEN t.amountMinor ELSE -t.amountMinor END)
             FROM transactions t WHERE t.accountId = a.id"""
 
 /**
@@ -63,6 +68,9 @@ interface AccountsDao {
 
     @Update
     suspend fun update(account: Account)
+
+    @Query("UPDATE accounts SET openingBalanceMinor = :openingBalanceMinor WHERE id = :id")
+    suspend fun setOpeningBalance(id: Long, openingBalanceMinor: Long)
 
     @Query("UPDATE accounts SET archived = :archived WHERE id = :id")
     suspend fun setArchived(id: Long, archived: Boolean)

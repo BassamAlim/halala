@@ -73,6 +73,18 @@ interface SmsDao {
         to: Instant
     ): List<Transaction>
 
+    /**
+     * The lowest an account's transactions alone ever brought it by the end of a day, up to
+     * [until]: below zero, it must have started with at least that much. Null with none.
+     */
+    @Query(
+        "SELECT MIN(run) FROM (SELECT SUM(net) OVER (ORDER BY day) AS run FROM (" +
+                "SELECT occurredAt / 86400000 AS day, " +
+                "SUM(CASE WHEN direction = 'CREDIT' THEN amountMinor ELSE -amountMinor END) AS net " +
+                "FROM transactions WHERE accountId = :accountId AND occurredAt <= :until GROUP BY day))"
+    )
+    suspend fun lowestDailyBalance(accountId: Long, until: Instant): Long?
+
     /** Which of [accountIds] already had a transaction by [at]: the accounts in use then. */
     @Query("SELECT DISTINCT accountId FROM transactions WHERE accountId IN (:accountIds) AND occurredAt <= :at")
     suspend fun inUseBy(accountIds: List<Long>, at: Instant): List<Long>
