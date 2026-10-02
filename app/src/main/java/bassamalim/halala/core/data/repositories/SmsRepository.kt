@@ -36,6 +36,10 @@ class SmsRepository @Inject constructor(
 
     suspend fun getRefs(): List<AccountRef> = smsDao.getRefs()
 
+    suspend fun getAllRaw(): List<RawMessage> = smsDao.getAllRaw()
+
+    suspend fun getCheckpoints(): List<BalanceCheckpoint> = smsDao.getCheckpoints()
+
     suspend fun addRef(institutionId: Long, ref: String, accountId: Long) =
         smsDao.insertRef(AccountRef(institutionId = institutionId, ref = ref, accountId = accountId))
 

@@ -7,6 +7,7 @@ import bassamalim.halala.core.data.dataSources.room.daos.AccountsDao
 import bassamalim.halala.core.data.dataSources.room.daos.ClassificationDao
 import bassamalim.halala.core.data.dataSources.room.daos.InstitutionsDao
 import bassamalim.halala.core.data.dataSources.room.daos.MerchantsDao
+import bassamalim.halala.core.data.dataSources.room.daos.RestoreDao
 import bassamalim.halala.core.data.dataSources.room.daos.SmsDao
 import bassamalim.halala.core.data.dataSources.room.daos.TransactionsDao
 import bassamalim.halala.core.data.dataSources.room.entities.Account
@@ -50,4 +51,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun smsDao(): SmsDao
     abstract fun classificationDao(): ClassificationDao
     abstract fun merchantsDao(): MerchantsDao
+    abstract fun restoreDao(): RestoreDao
 }

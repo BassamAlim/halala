@@ -1,16 +1,20 @@
 package bassamalim.halala.core.export
 
 import bassamalim.halala.core.data.dataSources.room.entities.Account
+import bassamalim.halala.core.data.dataSources.room.entities.AccountRef
+import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
 import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.entities.Institution
 import bassamalim.halala.core.data.dataSources.room.entities.InternalTransfer
 import bassamalim.halala.core.data.dataSources.room.entities.Merchant
 import bassamalim.halala.core.data.dataSources.room.entities.MerchantAlias
+import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.InstitutionsRepository
+import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.enums.Direction
@@ -36,7 +40,10 @@ data class LedgerSnapshot(
     val categories: List<Category> = emptyList(),
     val rules: List<Rule> = emptyList(),
     val merchants: List<Merchant> = emptyList(),
-    val aliases: List<MerchantAlias> = emptyList()
+    val aliases: List<MerchantAlias> = emptyList(),
+    val rawMessages: List<RawMessage> = emptyList(),
+    val refs: List<AccountRef> = emptyList(),
+    val checkpoints: List<BalanceCheckpoint> = emptyList()
 ) {
     /** The merchant each transaction's title names, by transaction id. */
     fun merchantOf(): Map<Long, Merchant> {
@@ -57,6 +64,7 @@ class Exporter @Inject constructor(
     private val accountsRepository: AccountsRepository,
     private val transactionsRepository: TransactionsRepository,
     private val classificationRepository: ClassificationRepository,
+    private val smsRepository: SmsRepository,
     private val clock: Clock
 ) {
 
@@ -69,7 +77,10 @@ class Exporter @Inject constructor(
         categories = classificationRepository.getCategories(),
         rules = classificationRepository.getRules(),
         merchants = classificationRepository.getMerchants(),
-        aliases = classificationRepository.getAliases()
+        aliases = classificationRepository.getAliases(),
+        rawMessages = smsRepository.getAllRaw(),
+        refs = smsRepository.getRefs(),
+        checkpoints = smsRepository.getCheckpoints()
     )
 
     fun fileStem(): String = "halala-${clock.instant().atZone(clock.zone).toLocalDate()}"
@@ -92,6 +103,7 @@ class Exporter @Inject constructor(
             val ruleUids = snapshot.rules.associate { it.id to it.uid }
             val merchantUids = snapshot.merchants.associate { it.id to it.uid }
             val merchantOf = snapshot.merchantOf()
+            val rawHashes = snapshot.rawMessages.associate { it.id to it.hash }
 
             val file = ExportFile(
                 appVersion = appVersion,
@@ -113,7 +125,10 @@ class Exporter @Inject constructor(
                         currency = account.currency,
                         openingBalanceMinor = account.openingBalanceMinor,
                         archived = account.archived,
-                        createdAt = account.createdAt.toString()
+                        createdAt = account.createdAt.toString(),
+                        refs = snapshot.refs.filter { it.accountId == account.id }.map {
+                            ExportAccountRef(institutionNames.getValue(it.institutionId), it.ref)
+                        }
                     )
                 },
                 transactions = snapshot.transactions.map { tx ->
@@ -132,7 +147,10 @@ class Exporter @Inject constructor(
                         categoryUid = tx.categoryId?.let(categoryUids::get),
                         expenseType = tx.expenseType?.name,
                         ruleUid = tx.ruleId?.let(ruleUids::get),
-                        merchantUid = merchantOf[tx.id]?.uid
+                        merchantUid = merchantOf[tx.id]?.uid,
+                        originalAmountMinor = tx.originalAmountMinor,
+                        originalCurrency = tx.originalCurrency,
+                        rawMessageHash = tx.rawMessageId?.let(rawHashes::get)
                     )
                 },
                 internalTransfers = snapshot.transfers.map { pair ->
@@ -160,7 +178,11 @@ class Exporter @Inject constructor(
                         expenseType = rule.actions.expenseType?.name,
                         source = rule.source.name,
                         enabled = rule.enabled,
-                        createdAt = rule.createdAt.toString()
+                        createdAt = rule.createdAt.toString(),
+                        contains = rule.conditions.contains,
+                        accountUid = rule.conditions.accountId?.let(accountUids::get),
+                        minMinor = rule.conditions.minMinor,
+                        maxMinor = rule.conditions.maxMinor
                     )
                 },
                 merchants = snapshot.merchants.map { merchant ->
@@ -172,7 +194,28 @@ class Exporter @Inject constructor(
                             .map { ExportAlias(it.aliasKey, it.descriptor, it.matchedBy.name) },
                         businessType = merchant.businessType?.name,
                         identifiedBy = merchant.identifiedBy?.name,
-                        confidence = merchant.confidence
+                        confidence = merchant.confidence,
+                        namedByYou = merchant.namedByYou,
+                        autoRuled = merchant.autoRuled
+                    )
+                },
+                rawMessages = snapshot.rawMessages.map { message ->
+                    ExportRawMessage(
+                        sender = message.sender,
+                        body = message.body,
+                        receivedAt = message.receivedAt.toString(),
+                        hash = message.hash,
+                        status = message.status.name,
+                        parserVersion = message.parserVersion,
+                        unroutedRefs = message.unroutedRefs
+                    )
+                },
+                balanceCheckpoints = snapshot.checkpoints.map { checkpoint ->
+                    ExportCheckpoint(
+                        accountUid = accountUids.getValue(checkpoint.accountId),
+                        balanceMinor = checkpoint.balanceMinor,
+                        at = checkpoint.at.toString(),
+                        rawMessageHash = checkpoint.rawMessageId?.let(rawHashes::get)
                     )
                 }
             )

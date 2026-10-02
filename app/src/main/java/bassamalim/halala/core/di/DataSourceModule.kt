@@ -71,6 +71,9 @@ object DataSourceModule {
     fun provideMerchantsDao(database: AppDatabase) = database.merchantsDao()
 
     @Provides @Singleton
+    fun provideRestoreDao(database: AppDatabase) = database.restoreDao()
+
+    @Provides @Singleton
     fun providePreferencesDataStore(application: Application): DataStore<Preferences> =
         application.preferencesDataStore
 

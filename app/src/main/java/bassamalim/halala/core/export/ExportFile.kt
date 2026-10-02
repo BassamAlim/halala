@@ -8,6 +8,11 @@ import kotlinx.serialization.Serializable
  * rather than duplicate. Amounts are integer minor units next to their ISO currency, exactly as
  * stored: `amountMinor: 21450, currency: "SAR"` is 214.50 SAR.
  *
+ * Since schema 5 it holds all that a restore needs ([Importer]): the bank messages as they
+ * arrived, the digits learned for each account and the balances the banks reported, so a
+ * restored phone reads its inbox again without recording anything twice. Only the history of
+ * changes (undo) is left out.
+ *
  * Bump [SCHEMA_VERSION] with any change to this shape; importers migrate older files forward.
  */
 @Serializable
@@ -25,10 +30,13 @@ data class ExportFile(
     val categories: List<ExportCategory> = emptyList(),
     val rules: List<ExportRule> = emptyList(),
     /** Since schema 3. */
-    val merchants: List<ExportMerchant> = emptyList()
+    val merchants: List<ExportMerchant> = emptyList(),
+    /** Since schema 5. */
+    val rawMessages: List<ExportRawMessage> = emptyList(),
+    val balanceCheckpoints: List<ExportCheckpoint> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 4
+        const val SCHEMA_VERSION = 5
     }
 }
 
@@ -46,8 +54,13 @@ data class ExportAccount(
     val currency: String,
     val openingBalanceMinor: Long,
     val archived: Boolean,
-    val createdAt: String
+    val createdAt: String,
+    /** Since schema 5: other digits its bank's SMS quote for it (a card on it). */
+    val refs: List<ExportAccountRef> = emptyList()
 )
+
+@Serializable
+data class ExportAccountRef(val institution: String, val ref: String)
 
 @Serializable
 data class ExportTransaction(
@@ -68,7 +81,11 @@ data class ExportTransaction(
     val expenseType: String? = null,
     val ruleUid: String? = null,
     /** Since schema 3: the merchant its title names, when it names one. */
-    val merchantUid: String? = null
+    val merchantUid: String? = null,
+    /** Since schema 5: a foreign charge before conversion, and the SMS it was read from. */
+    val originalAmountMinor: Long? = null,
+    val originalCurrency: String? = null,
+    val rawMessageHash: String? = null
 )
 
 @Serializable
@@ -91,7 +108,12 @@ data class ExportRule(
     val expenseType: String?,
     val source: String,
     val enabled: Boolean,
-    val createdAt: String
+    val createdAt: String,
+    /** Since schema 5: its other conditions (title holds, account, amount range). */
+    val contains: String? = null,
+    val accountUid: String? = null,
+    val minMinor: Long? = null,
+    val maxMinor: Long? = null
 )
 
 /**
@@ -106,7 +128,10 @@ data class ExportMerchant(
     val aliases: List<ExportAlias>,
     val businessType: String? = null,
     val identifiedBy: String? = null,
-    val confidence: Int? = null
+    val confidence: Int? = null,
+    /** Since schema 5: you named it; its automatic rule was already made. */
+    val namedByYou: Boolean = false,
+    val autoRuled: Boolean = false
 )
 
 /** One spelling: its key (lower case, letters only), as first written, and how it joined. */
@@ -119,4 +144,26 @@ data class ExportInternalTransfer(
     val outTransactionUid: String,
     val inTransactionUid: String,
     val matchConfidence: Double
+)
+
+/** A bank SMS exactly as it arrived. [hash] is what transactions and balances point at. */
+@Serializable
+data class ExportRawMessage(
+    val sender: String,
+    val body: String,
+    /** ISO-8601 instant. */
+    val receivedAt: String,
+    val hash: String,
+    val status: String,
+    val parserVersion: Int,
+    val unroutedRefs: String? = null
+)
+
+/** A balance a bank reported, or one you gave (no message). */
+@Serializable
+data class ExportCheckpoint(
+    val accountUid: String,
+    val balanceMinor: Long,
+    val at: String,
+    val rawMessageHash: String? = null
 )

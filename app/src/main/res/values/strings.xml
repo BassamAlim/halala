@@ -179,7 +179,15 @@
     <string name="export_csv">Export CSV</string>
     <string name="export_csv_summary">Accounts and transactions, one file each, zipped</string>
     <string name="export_json">Export JSON</string>
-    <string name="export_json_summary">Everything, readable by your own scripts</string>
+    <string name="export_json_summary">Everything, bank messages included; can be restored</string>
+    <string name="export_restore">Restore from JSON</string>
+    <string name="export_restore_summary">Replace everything here with an export</string>
+    <string name="export_restore_title">Replace everything on this phone?</string>
+    <string name="export_restore_body">The file holds %1$s transactions on %2$s accounts. Restoring replaces the whole ledger with them and can\'t be undone. The history of changes isn\'t restored.</string>
+    <string name="export_restore_confirm">Replace</string>
+    <string name="export_restored">Restored.</string>
+    <string name="export_restore_failed">Couldn\'t restore that file. Nothing was changed.</string>
+    <string name="export_unreadable">That isn\'t a Halala export this version can restore.</string>
     <string name="export_warning">Exports aren\'t encrypted: keep them somewhere private. Encrypted backups come later.</string>
     <string name="export_saved">Export saved.</string>
     <string name="export_failed">Couldn\'t write that file.</string>
