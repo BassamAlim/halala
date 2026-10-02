@@ -17,13 +17,19 @@ import bassamalim.halala.core.data.dataSources.room.relations.CategoryWithUse
 import bassamalim.halala.core.data.dataSources.room.relations.Filing
 import bassamalim.halala.core.data.dataSources.room.relations.MerchantWithStats
 import bassamalim.halala.core.data.dataSources.room.relations.RuleWithStats
+import bassamalim.halala.core.data.dataSources.room.relations.ToIdentify
+import bassamalim.halala.core.domain.Identification
+import bassamalim.halala.core.domain.KnownMerchants
 import bassamalim.halala.core.domain.MerchantLookup
 import bassamalim.halala.core.domain.Merchants
 import bassamalim.halala.core.domain.Rules
+import bassamalim.halala.core.domain.Tier
 import bassamalim.halala.core.enums.AliasMatch
 import bassamalim.halala.core.enums.AuditAction
 import bassamalim.halala.core.enums.AuditEntity
+import bassamalim.halala.core.enums.BusinessType
 import bassamalim.halala.core.enums.ExpenseType
+import bassamalim.halala.core.enums.IdentifiedBy
 import bassamalim.halala.core.enums.RuleSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Mutex
@@ -44,8 +50,9 @@ import javax.inject.Singleton
  * Everything you do here is recorded as one batch (what every category, rule, merchant, alias
  * and filing read before and after), so it can be undone as one thing. What happens on its own
  * as SMS arrive isn't a batch: the rules filing them (the transaction names its rule, and the
- * rule is what you would change), and new descriptors finding their merchant (the merchant
- * screen says how each one did, and is where you would change it).
+ * rule is what you would change), new descriptors finding their merchant (the merchant
+ * screen says how each one did, and is where you would change it), and merchants being
+ * identified, with the automatic rules that file them (the rule says why).
  */
 @Singleton
 class ClassificationRepository @Inject constructor(
@@ -72,6 +79,26 @@ class ClassificationRepository @Inject constructor(
     )
 
     /**
+     * Renames a category, changes its type, or the business types it takes. A business type
+     * belongs to one category: taking one here takes it from wherever it was. What the
+     * automatic rules file follows the change.
+     */
+    suspend fun editCategory(id: Long, name: String, expenseType: ExpenseType?, businessTypes: List<BusinessType>): Long? {
+        val category = classificationDao.getCategory(id) ?: return null
+        val taken = businessTypes.filter { it != BusinessType.UNKNOWN }.distinct()
+
+        return audited(AuditAction.CATEGORY_EDITED, category.name, name) {
+            for (other in classificationDao.getCategories()) {
+                if (other.id == id || other.businessTypes.none { it in taken }) continue
+                classificationDao.updateCategory(other.copy(businessTypes = other.businessTypes - taken.toSet()))
+            }
+            classificationDao.updateCategory(category.copy(name = name, expenseType = expenseType, businessTypes = taken))
+            syncAutoRules()
+            fileByRules()
+        }
+    }
+
+    /**
      * Removes a category. Rules that file under it go with it (they would point at nothing), and
      * what was filed under it is uncategorised again, back in the review inbox.
      */
@@ -80,7 +107,7 @@ class ClassificationRepository @Inject constructor(
         audited(AuditAction.CATEGORY_DELETED, category.name) {
             classificationDao.getRules()
                 .filter { it.actions.categoryId == id }
-                .forEach { classificationDao.deleteRule(it.id) }
+                .forEach { if (it.source == RuleSource.AI) dropAutoRule(it) else classificationDao.deleteRule(it.id) }
             transactionsDao.clearTypeOf(id)
             classificationDao.deleteCategory(id)
         }
@@ -204,6 +231,8 @@ class ClassificationRepository @Inject constructor(
      */
     suspend fun applyRules() = writing.withLock {
         resolveMerchants()
+        identifyKnown()
+        syncAutoRules()
         fileByRules()
     }
 
@@ -252,7 +281,26 @@ class ClassificationRepository @Inject constructor(
         if (trimmed.isEmpty() || trimmed == merchant.name) return null
 
         return audited(AuditAction.MERCHANT_RENAMED, merchant.name, trimmed) {
-            merchantsDao.updateMerchant(merchant.copy(name = trimmed))
+            merchantsDao.updateMerchant(merchant.copy(name = trimmed, namedByYou = true))
+            syncAutoRules()
+        }
+    }
+
+    /**
+     * What the business is, as you say: it files as that from now on, whatever the list or the
+     * AI said, and its automatic rule (if you had deleted it) is made again.
+     */
+    suspend fun setBusinessType(merchantId: Long, type: BusinessType): Long? {
+        val merchant = merchantsDao.getMerchant(merchantId) ?: return null
+        if (merchant.identifiedBy == IdentifiedBy.YOU && merchant.businessType == type) return null
+
+        return audited(AuditAction.MERCHANT_TYPED, merchant.name, type.name) {
+            classificationDao.getRules().filter { it.isAutoFor(merchantId) }.forEach { dropAutoRule(it) }
+            merchantsDao.updateMerchant(
+                merchant.copy(businessType = type, identifiedBy = IdentifiedBy.YOU, confidence = null, autoRuled = false)
+            )
+            syncAutoRules()
+            fileByRules()
         }
     }
 
@@ -280,7 +328,13 @@ class ClassificationRepository @Inject constructor(
             }
             for (alias in merchantsDao.getAliases().filter { it.merchantId == fromId })
                 merchantsDao.updateAlias(alias.copy(merchantId = intoId, matchedBy = AliasMatch.YOU))
+            // What the merged-away merchant was known to be, when the other wasn't known yet.
+            if (into.identifiedBy == null && from.identifiedBy != null)
+                merchantsDao.updateMerchant(
+                    into.copy(businessType = from.businessType, identifiedBy = from.identifiedBy, confidence = from.confidence)
+                )
             merchantsDao.deleteMerchant(fromId)
+            syncAutoRules()
             fileByRules()
         }
     }
@@ -307,6 +361,128 @@ class ClassificationRepository @Inject constructor(
 
     private fun Rule.isLearnedFor(merchantId: Long) =
         source == RuleSource.LEARNED && conditions.size == 1 && conditions.merchantId == merchantId
+
+    private fun Rule.isAutoFor(merchantId: Long) = source == RuleSource.AI && conditions.merchantId == merchantId
+
+    // Identifying merchants.
+
+    /** Every merchant as it is, with what it was identified as. */
+    fun observeAllMerchants(): Flow<List<Merchant>> = merchantsDao.observeAll()
+
+    /** How many merchants wait to be identified: ones with spending that nothing has filed. */
+    fun observeToIdentifyCount(): Flow<Int> = merchantsDao.observeToIdentifyCount()
+
+    /** The merchants waiting to be identified, the busiest first, each with the name a bank wrote. */
+    suspend fun toIdentify(): List<ToIdentify> = merchantsDao.getToIdentify()
+
+    /**
+     * What the AI said each merchant is (id → its answer). A merchant something else has
+     * identified since keeps that; one you named keeps your name. Then the automatic rules file
+     * what they now can.
+     */
+    suspend fun recordIdentifications(answers: Map<Long, IdentifiedAs>) = writing.withLock {
+        for ((id, answer) in answers) {
+            val merchant = merchantsDao.getMerchant(id) ?: continue
+            if (merchant.identifiedBy != null) continue
+            val name = answer.name.trim().takeIf { it.isNotEmpty() && it.length <= MAX_NAME && !merchant.namedByYou }
+            merchantsDao.updateMerchant(
+                merchant.copy(
+                    name = name ?: merchant.name,
+                    businessType = answer.type,
+                    identifiedBy = IdentifiedBy.AI,
+                    confidence = answer.confidence.coerceIn(0, 100)
+                )
+            )
+        }
+        syncAutoRules()
+        fileByRules()
+    }
+
+    /** Merchants whose name is never sent (it may hold more than a shop's name): left for you. */
+    suspend fun withhold(ids: Collection<Long>) = writing.withLock {
+        for (id in ids) {
+            val merchant = merchantsDao.getMerchant(id) ?: continue
+            if (merchant.identifiedBy == null) merchantsDao.updateMerchant(merchant.copy(identifiedBy = IdentifiedBy.WITHHELD))
+        }
+    }
+
+    /** The well-known merchants, from the bundled list: no call, and before any is made. */
+    private suspend fun identifyKnown() {
+        val keys = merchantsDao.getAliases().groupBy({ it.merchantId }, { it.aliasKey })
+        for (merchant in merchantsDao.getMerchants()) {
+            if (merchant.identifiedBy != null) continue
+            val known = KnownMerchants.identify(keys[merchant.id].orEmpty()) ?: continue
+            merchantsDao.updateMerchant(
+                merchant.copy(
+                    name = if (merchant.namedByYou) merchant.name else known.name,
+                    businessType = known.type,
+                    identifiedBy = IdentifiedBy.LIST
+                )
+            )
+        }
+    }
+
+    /**
+     * Keeps one automatic rule ("Merchant is Panda → Groceries", source AI) for each merchant
+     * whose spending files itself (`Tier.AUTO`), pointing at the category that takes its business
+     * type, and none for the rest. A rule you delete isn't made again ([Merchant.autoRuled]); one
+     * you turn off stays off. Your rules and learned ones still beat it.
+     */
+    private suspend fun syncAutoRules() {
+        val categories = classificationDao.getCategories()
+        val merchants = merchantsDao.getMerchants()
+        val autoRules = classificationDao.getRules().filter { it.source == RuleSource.AI }
+        val known = merchants.map { it.id }.toSet()
+        autoRules.filter { it.conditions.merchantId !in known }.forEach { dropAutoRule(it) }
+        val rulesOf = autoRules.groupBy { it.conditions.merchantId }
+
+        for (merchant in merchants) {
+            val rules = rulesOf[merchant.id].orEmpty()
+            val category = Identification.categoryFor(merchant.businessType, categories)
+                ?.takeIf { Identification.tierOf(merchant, categories) == Tier.AUTO }
+
+            if (category == null) {
+                rules.forEach { dropAutoRule(it) }
+                continue
+            }
+            val conditions = RuleConditions(merchant = merchant.name, merchantId = merchant.id)
+            val actions = RuleActions(category.id, category.expenseType)
+            val rule = rules.firstOrNull()
+            when {
+                rule != null -> {
+                    if (rule.conditions != conditions || rule.actions != actions)
+                        classificationDao.updateRule(rule.copy(conditions = conditions, actions = actions))
+                    rules.drop(1).forEach { dropAutoRule(it, forget = false) }
+                }
+                !merchant.autoRuled -> {
+                    classificationDao.insertRule(
+                        Rule(
+                            uid = UUID.randomUUID().toString(),
+                            conditions = conditions,
+                            actions = actions,
+                            source = RuleSource.AI,
+                            createdAt = clock.instant()
+                        )
+                    )
+                    merchantsDao.updateMerchant(merchant.copy(autoRuled = true))
+                }
+            }
+        }
+    }
+
+    /**
+     * Takes away an automatic rule and what it filed (back to review, not left as if you had
+     * chosen it). Unless it was only a duplicate ([forget] false), the merchant may have one
+     * again when it files itself once more.
+     */
+    private suspend fun dropAutoRule(rule: Rule, forget: Boolean = true) {
+        classificationDao.unfileRule(rule.id)
+        classificationDao.deleteRule(rule.id)
+        if (!forget) return
+        rule.conditions.merchantId?.let { merchantsDao.getMerchant(it) }
+            ?.takeIf { it.autoRuled }
+            ?.let { merchantsDao.updateMerchant(it.copy(autoRuled = false)) }
+    }
 
     private suspend fun lookup() = MerchantLookup(merchantsDao.getAliases(), merchantsDao.getMerchants())
 
@@ -513,5 +689,11 @@ class ClassificationRepository @Inject constructor(
 
     private companion object {
         val json = Json { ignoreUnknownKeys = true }
+
+        /** A name the AI tidied that is longer than this is not a name; the bank's stays. */
+        const val MAX_NAME = 60
     }
 }
+
+/** What the AI said a merchant is: its name, what the business is, and how sure it was (0–100). */
+data class IdentifiedAs(val name: String, val type: BusinessType, val confidence: Int)

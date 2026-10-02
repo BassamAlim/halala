@@ -58,6 +58,8 @@ import bassamalim.halala.core.ui.theme.Insets
 import bassamalim.halala.core.ui.theme.Radius
 import bassamalim.halala.core.ui.theme.Sizes
 import bassamalim.halala.core.ui.theme.Spacing
+import bassamalim.halala.core.ui.businessTypeLabel
+import bassamalim.halala.core.ui.identifiedLabel
 
 /**
  * One transaction, from the Transaction detail board: the figure, when and where, what it is,
@@ -204,6 +206,17 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
                     style = HalalaType.Label,
                     color = HalalaColors.TextMuted
                 )
+                // An automatic rule says why: what the merchant is, and who said so.
+                rule.identifiedAs?.let { type ->
+                    val identified = stringResource(R.string.identified_as, businessTypeLabel(type))
+                    Text(
+                        text = rule.identifiedBy
+                            ?.let { stringResource(R.string.meta_pair, identified, identifiedLabel(it, rule.confidence)) }
+                            ?: identified,
+                        style = HalalaType.Label,
+                        color = HalalaColors.TextMuted
+                    )
+                }
             }
         }
 

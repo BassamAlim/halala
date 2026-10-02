@@ -7,7 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * The phone is the only place the full ledger lives: every schema change is a migration, never
  * a destructive rebuild. Add each one here, in order, against the schemas in `app/schemas`.
  */
-val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4)
+val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4, Migration4To5)
 
 /** Phase 1: raw bank SMS, the digits learned per bank, reported balances, and SMS links. */
 private object Migration1To2 : Migration(1, 2) {
@@ -135,5 +135,24 @@ private object Migration3To4 : Migration(3, 4) {
 
         db.execSQL("ALTER TABLE `transactions` ADD COLUMN `merchantKey` TEXT NOT NULL DEFAULT ''")
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_transactions_merchantKey` ON `transactions` (`merchantKey`)")
+    }
+}
+
+/**
+ * Phase 2: what each merchant is (its business type, who said so, and how sure), and which
+ * business types each category takes, seeded for the default categories. Merchants start
+ * unidentified: `ClassificationRepository.applyRules` identifies the well-known ones from the
+ * bundled list on its next run, and the AI the rest, when you turn it on.
+ */
+private object Migration4To5 : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `categories` ADD COLUMN `businessTypes` TEXT NOT NULL DEFAULT ''")
+        Seed.seedBusinessTypes(db)
+
+        db.execSQL("ALTER TABLE `merchants` ADD COLUMN `businessType` TEXT")
+        db.execSQL("ALTER TABLE `merchants` ADD COLUMN `identifiedBy` TEXT")
+        db.execSQL("ALTER TABLE `merchants` ADD COLUMN `confidence` INTEGER")
+        db.execSQL("ALTER TABLE `merchants` ADD COLUMN `namedByYou` INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE `merchants` ADD COLUMN `autoRuled` INTEGER NOT NULL DEFAULT 0")
     }
 }

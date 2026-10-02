@@ -6,6 +6,8 @@ import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.enums.TransactionSource
 import bassamalim.halala.core.models.CategoryOption
 import bassamalim.halala.core.models.RuleWords
+import bassamalim.halala.core.enums.BusinessType
+import bassamalim.halala.core.enums.IdentifiedBy
 
 data class TransactionUiState(
     val isLoading: Boolean = true,
@@ -46,7 +48,16 @@ data class TransactionUiState(
 }
 
 /** The rule behind an automatic filing, as the "Filed automatically" card words it. */
-data class FiledBy(val words: RuleWords, val category: String, val expenseType: ExpenseType?, val hits: Int)
+data class FiledBy(
+    val words: RuleWords,
+    val category: String,
+    val expenseType: ExpenseType?,
+    val hits: Int,
+    /** For an automatic rule: what the merchant was identified as, by whom, and how sure. */
+    val identifiedAs: BusinessType? = null,
+    val identifiedBy: IdentifiedBy? = null,
+    val confidence: Int? = null
+)
 
 sealed interface TransactionSheet {
     data object Category : TransactionSheet

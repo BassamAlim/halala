@@ -39,7 +39,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.Transaction
         Merchant::class,
         MerchantAlias::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

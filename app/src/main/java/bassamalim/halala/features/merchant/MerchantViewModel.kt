@@ -5,9 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import bassamalim.halala.core.Globals
+import bassamalim.halala.core.domain.Identification
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.feedOf
 import bassamalim.halala.core.domain.toItem
+import bassamalim.halala.core.enums.BusinessType
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
 import bassamalim.halala.core.utils.initialOf
@@ -33,12 +35,13 @@ class MerchantViewModel @Inject constructor(
     private val sheet = MutableStateFlow<MerchantSheet?>(null)
 
     val uiState: StateFlow<MerchantUiState> = combine(
-        domain.observeMerchant(id),
+        // What it is reads against the categories, which change with it.
+        combine(domain.observeMerchant(id), domain.observeCategories(), ::Pair),
         domain.observeAliases(id),
         domain.observeMerchants(),
         domain.observeTransactions(),
         sheet
-    ) { merchant, aliases, merchants, details, sheet ->
+    ) { (merchant, categories), aliases, merchants, details, sheet ->
         // Gone (merged into another): the screen stays as it was while it leaves.
         if (merchant == null) return@combine MerchantUiState(isLoading = true)
 
@@ -55,6 +58,10 @@ class MerchantViewModel @Inject constructor(
             currency = currency,
             count = mine.size,
             since = mine.minOfOrNull { it.transaction.occurredAt }?.atZone(zone)?.year?.toString().orEmpty(),
+            businessType = merchant.businessType,
+            identifiedBy = merchant.identifiedBy,
+            confidence = merchant.confidence,
+            filesUnder = Identification.categoryFor(merchant.businessType, categories)?.name,
             spellings = aliases.map { SpellingRow(it.alias.id, it.alias.descriptor, it.alias.matchedBy, it.transactions) },
             canSplit = aliases.size > 1,
             transactions = mine.map { it.toItem(zone, today) },
@@ -99,6 +106,13 @@ class MerchantViewModel @Inject constructor(
     }
 
     fun onMergeClick() = sheet.update { MerchantSheet.Merge() }
+
+    fun onBusinessTypeClick() = sheet.update { MerchantSheet.BusinessType }
+
+    fun onBusinessTypePick(type: BusinessType) {
+        sheet.update { null }
+        viewModelScope.launch { domain.setBusinessType(id, type) }
+    }
 
     fun onMergeQueryChange(query: String) = sheet.update { MerchantSheet.Merge(query) }
 

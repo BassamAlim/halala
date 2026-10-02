@@ -2,6 +2,7 @@ package bassamalim.halala.features.categories
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import bassamalim.halala.core.enums.BusinessType
 import bassamalim.halala.core.enums.ExpenseType
 import bassamalim.halala.core.nav.Navigator
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,22 +21,22 @@ class CategoriesViewModel @Inject constructor(
     private val navigator: Navigator
 ) : ViewModel() {
 
-    private val adding = MutableStateFlow<NewCategory?>(null)
+    private val form = MutableStateFlow<CategoryForm?>(null)
     private val deletingId = MutableStateFlow<Long?>(null)
 
     val uiState: StateFlow<CategoriesUiState> = combine(
         domain.observeCategories(),
-        adding,
+        form,
         deletingId
-    ) { categories, adding, deletingId ->
+    ) { categories, form, deletingId ->
         val items = categories.map { (category, uses) ->
-            CategoryItem(category.id, category.name, category.expenseType, uses)
+            CategoryItem(category.id, category.name, category.expenseType, category.businessTypes, uses)
         }
 
         CategoriesUiState(
             isLoading = false,
             categories = items,
-            adding = adding,
+            form = form,
             deleting = items.firstOrNull { it.id == deletingId }
         )
     }.stateIn(
@@ -46,26 +47,38 @@ class CategoriesViewModel @Inject constructor(
 
     fun onBackClick() = navigator.popBackStack()
 
-    fun onAddClick() = adding.update { NewCategory() }
+    fun onAddClick() = form.update { CategoryForm() }
 
-    fun onAddDismiss() = adding.update { null }
+    fun onCategoryClick(category: CategoryItem) = form.update {
+        CategoryForm(category.id, category.name, category.expenseType, category.businessTypes)
+    }
 
-    fun onNameChange(name: String) = adding.update { it?.copy(name = name, problem = null) }
+    fun onFormDismiss() = form.update { null }
+
+    fun onNameChange(name: String) = form.update { it?.copy(name = name, problem = null) }
 
     /** Tapping the chosen type again clears it: a category needn't have one. */
     fun onTypeClick(type: ExpenseType) =
-        adding.update { it?.copy(expenseType = type.takeIf { _ -> it.expenseType != type }) }
+        form.update { it?.copy(expenseType = type.takeIf { _ -> it.expenseType != type }) }
+
+    fun onBusinessTypeClick(type: BusinessType) = form.update {
+        it?.copy(businessTypes = if (type in it.businessTypes) it.businessTypes - type else it.businessTypes + type)
+    }
 
     fun onSaveClick() {
-        val new = adding.value ?: return
-        val names = uiState.value.categories.map { it.name }
+        val written = form.value ?: return
+        val others = uiState.value.categories.filter { it.id != written.id }.map { it.name }
         viewModelScope.launch {
-            val problem = domain.add(new.name, new.expenseType, names)
-            adding.update { if (problem == null) null else it?.copy(problem = problem) }
+            val problem = domain.save(written, others)
+            form.update { if (problem == null) null else it?.copy(problem = problem) }
         }
     }
 
-    fun onDeleteClick(id: Long) = deletingId.update { id }
+    fun onDeleteClick() {
+        val id = form.value?.id ?: return
+        form.update { null }
+        deletingId.update { id }
+    }
 
     fun onDeleteDismiss() = deletingId.update { null }
 

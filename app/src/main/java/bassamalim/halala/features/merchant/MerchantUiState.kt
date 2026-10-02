@@ -1,6 +1,8 @@
 package bassamalim.halala.features.merchant
 
 import bassamalim.halala.core.enums.AliasMatch
+import bassamalim.halala.core.enums.BusinessType
+import bassamalim.halala.core.enums.IdentifiedBy
 import bassamalim.halala.core.models.TransactionItem
 
 data class MerchantUiState(
@@ -13,6 +15,12 @@ data class MerchantUiState(
     val count: Int = 0,
     /** The year of the oldest one: "2024"; empty with none. */
     val since: String = "",
+    /** What the business is, who said so and how sure; none until it is identified. */
+    val businessType: BusinessType? = null,
+    val identifiedBy: IdentifiedBy? = null,
+    val confidence: Int? = null,
+    /** The category its spending files under, by what it is: none when no category takes it. */
+    val filesUnder: String? = null,
     val spellings: List<SpellingRow> = emptyList(),
     /** A merchant known by one spelling has none to take out. */
     val canSplit: Boolean = false,
@@ -37,4 +45,7 @@ sealed interface MerchantSheet {
     data class Merge(val query: String = "") : MerchantSheet
 
     data class ConfirmMerge(val into: MerchantOption) : MerchantSheet
+
+    /** Saying what the business is. */
+    data object BusinessType : MerchantSheet
 }

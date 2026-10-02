@@ -70,3 +70,28 @@ fun <T> ChoiceChips(
         }
     }
 }
+
+/** Any number of choices out of several, as chips that wrap: the chosen ones filled. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun <T> MultiChoiceChips(
+    options: List<T>,
+    selected: Collection<T>,
+    label: @Composable (T) -> String,
+    onToggle: (T) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    FlowRow(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm)
+    ) {
+        options.forEach { option ->
+            HalalaChip(
+                label = label(option),
+                style = if (option in selected) ChipStyle.On else ChipStyle.Outline,
+                onClick = { onToggle(option) }
+            )
+        }
+    }
+}

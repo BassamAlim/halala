@@ -1,5 +1,6 @@
 package bassamalim.halala.features.merchant
 
+import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.entities.Merchant
 import bassamalim.halala.core.data.dataSources.room.relations.AliasWithCount
 import bassamalim.halala.core.data.dataSources.room.relations.MerchantWithStats
@@ -9,6 +10,7 @@ import bassamalim.halala.core.data.repositories.TransactionsRepository
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.toneOf
 import bassamalim.halala.core.enums.AmountTone
+import bassamalim.halala.core.enums.BusinessType
 import kotlinx.coroutines.flow.Flow
 import java.time.Clock
 import java.time.LocalDate
@@ -30,6 +32,11 @@ class MerchantDomain @Inject constructor(
     fun observeMerchants(): Flow<List<MerchantWithStats>> = classificationRepository.observeMerchants()
 
     fun observeTransactions(): Flow<List<TransactionDetail>> = transactionsRepository.observeAll()
+
+    fun observeCategories(): Flow<List<Category>> = classificationRepository.observeCategories()
+
+    /** What the business is, as you say: one change you can undo. */
+    suspend fun setBusinessType(id: Long, type: BusinessType) = classificationRepository.setBusinessType(id, type)
 
     /** Checks and writes; the problem when there is one. */
     suspend fun rename(id: Long, name: String): NameProblem? {

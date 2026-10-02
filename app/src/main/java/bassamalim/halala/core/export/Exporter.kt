@@ -143,7 +143,14 @@ class Exporter @Inject constructor(
                         matchConfidence = pair.matchConfidence
                     )
                 },
-                categories = snapshot.categories.map { ExportCategory(it.uid, it.name, it.expenseType?.name) },
+                categories = snapshot.categories.map { category ->
+                    ExportCategory(
+                        uid = category.uid,
+                        name = category.name,
+                        expenseType = category.expenseType?.name,
+                        businessTypes = category.businessTypes.map { it.name }
+                    )
+                },
                 rules = snapshot.rules.map { rule ->
                     ExportRule(
                         uid = rule.uid,
@@ -162,7 +169,10 @@ class Exporter @Inject constructor(
                         name = merchant.name,
                         aliases = snapshot.aliases
                             .filter { it.merchantId == merchant.id }
-                            .map { ExportAlias(it.aliasKey, it.descriptor, it.matchedBy.name) }
+                            .map { ExportAlias(it.aliasKey, it.descriptor, it.matchedBy.name) },
+                        businessType = merchant.businessType?.name,
+                        identifiedBy = merchant.identifiedBy?.name,
+                        confidence = merchant.confidence
                     )
                 }
             )

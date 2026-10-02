@@ -28,3 +28,9 @@ data class KeyRow(
     val kind: TransactionKind,
     val occurredAt: Instant
 )
+
+/** A merchant waiting to be identified, and the name a bank first wrote for it: all that is sent. */
+data class ToIdentify(
+    val merchantId: Long,
+    val descriptor: String
+)

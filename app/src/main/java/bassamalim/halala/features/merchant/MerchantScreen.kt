@@ -40,6 +40,10 @@ import bassamalim.halala.core.ui.theme.HalalaColors
 import bassamalim.halala.core.ui.theme.HalalaType
 import bassamalim.halala.core.ui.theme.Insets
 import bassamalim.halala.core.ui.theme.Spacing
+import bassamalim.halala.core.enums.BusinessType
+import bassamalim.halala.core.ui.businessTypeLabel
+import bassamalim.halala.core.ui.identifiedLabel
+import bassamalim.halala.core.ui.components.ChoiceSheet
 
 /**
  * One merchant: what you call it, what was spent there, every way its bank writes it (each
@@ -97,6 +101,29 @@ fun MerchantScreen(viewModel: MerchantViewModel = hiltViewModel()) {
                         .fillMaxWidth()
                         .padding(bottom = Spacing.card)
                 )
+            }
+
+            item {
+                Column(
+                    modifier = Modifier.padding(bottom = Spacing.card),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.sm)
+                ) {
+                    GroupLabel(stringResource(R.string.merchant_is))
+                    ListCard(Modifier.fillMaxWidth()) {
+                        val identified = state.identifiedBy?.let { identifiedLabel(it, state.confidence) }
+                        val filesUnder = state.filesUnder
+                        ListRow(
+                            title = state.businessType?.let { businessTypeLabel(it) }
+                                ?: stringResource(R.string.merchant_is_unknown),
+                            subtitle = when {
+                                identified != null && filesUnder != null ->
+                                    stringResource(R.string.meta_pair, identified, filesUnder)
+                                else -> identified ?: filesUnder
+                            },
+                            onClick = viewModel::onBusinessTypeClick
+                        )
+                    }
+                }
             }
 
             item {
@@ -214,6 +241,15 @@ fun MerchantScreen(viewModel: MerchantViewModel = hiltViewModel()) {
             onConfirm = viewModel::onMergeConfirm,
             onDismiss = viewModel::onSheetDismiss,
             destructive = false
+        )
+
+        MerchantSheet.BusinessType -> ChoiceSheet(
+            title = stringResource(R.string.merchant_is_title, state.name),
+            options = BusinessType.TAKEABLE,
+            selected = state.businessType,
+            label = { businessTypeLabel(it) },
+            onPick = viewModel::onBusinessTypePick,
+            onDismiss = viewModel::onSheetDismiss
         )
 
         null -> Unit

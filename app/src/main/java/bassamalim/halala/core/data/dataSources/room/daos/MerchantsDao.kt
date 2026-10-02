@@ -11,6 +11,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.MerchantAlias
 import bassamalim.halala.core.data.dataSources.room.relations.AliasWithCount
 import bassamalim.halala.core.data.dataSources.room.relations.KeyRow
 import bassamalim.halala.core.data.dataSources.room.relations.MerchantWithStats
+import bassamalim.halala.core.data.dataSources.room.relations.ToIdentify
 import kotlinx.coroutines.flow.Flow
 
 /** Merchants and the descriptors (aliases) each is known by. */
@@ -43,6 +44,28 @@ interface MerchantsDao {
 
     @Query("SELECT * FROM merchants ORDER BY id")
     suspend fun getMerchants(): List<Merchant>
+
+    @Query("SELECT * FROM merchants ORDER BY id")
+    fun observeAll(): Flow<List<Merchant>>
+
+    /**
+     * Merchants nobody has identified that have spending nothing has filed, the busiest first,
+     * each with the descriptor its first alias was written as.
+     */
+    @Query(
+        """
+        SELECT m.id AS merchantId,
+            (SELECT a.descriptor FROM merchant_aliases a WHERE a.merchantId = m.id ORDER BY a.id LIMIT 1) AS descriptor
+        FROM merchants m
+        WHERE m.identifiedBy IS NULL AND $UNFILED
+        ORDER BY (SELECT COUNT(*) FROM transactions t JOIN merchant_aliases a ON a.aliasKey = t.merchantKey
+            WHERE a.merchantId = m.id) DESC, m.id
+        """
+    )
+    suspend fun getToIdentify(): List<ToIdentify>
+
+    @Query("SELECT COUNT(*) FROM merchants m WHERE m.identifiedBy IS NULL AND $UNFILED")
+    fun observeToIdentifyCount(): Flow<Int>
 
     @Query("SELECT * FROM merchants WHERE id = :id")
     suspend fun getMerchant(id: Long): Merchant?
@@ -95,3 +118,7 @@ interface MerchantsDao {
     @Query("UPDATE transactions SET categoryId = NULL, expenseType = NULL, ruleId = NULL WHERE merchantKey = :key AND ruleId IS NOT NULL")
     suspend fun unfileByRules(key: String)
 }
+
+/** The merchant (`m`) has a transaction no category has been chosen for. */
+private const val UNFILED = "EXISTS (SELECT 1 FROM transactions t JOIN merchant_aliases a ON a.aliasKey = t.merchantKey " +
+        "WHERE a.merchantId = m.id AND t.categoryId IS NULL)"

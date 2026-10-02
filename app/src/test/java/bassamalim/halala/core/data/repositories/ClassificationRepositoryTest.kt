@@ -30,6 +30,10 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import bassamalim.halala.features.review.ReviewDomain
+import bassamalim.halala.core.enums.RuleSource
+import bassamalim.halala.core.enums.IdentifiedBy
+import bassamalim.halala.core.enums.BusinessType
 
 @RunWith(RobolectricTestRunner::class)
 class ClassificationRepositoryTest {
@@ -61,14 +65,14 @@ class ClassificationRepositoryTest {
 
     @Test
     fun `one answer files a merchant's past and future, and nothing else`() = runTest {
-        val past = spend("PANDA 1042")
-        val other = spend("Jarir")
+        val past = spend("NAKHL 1042")
+        val other = spend("Kutub")
         val income = transactions.add(
-            TransactionDraft(cash, Direction.CREDIT, 500, TEST_CLOCK.instant(), TransactionKind.REFUND, "Panda")
+            TransactionDraft(cash, Direction.CREDIT, 500, TEST_CLOCK.instant(), TransactionKind.REFUND, "Nakhl")
         )
 
-        classification.learn("Panda 7", groceries)
-        val future = spend("panda")
+        classification.learn("Nakhl 7", groceries)
+        val future = spend("nakhl")
         classification.applyRules()
 
         val rule = classification.getRules().single()
@@ -86,27 +90,27 @@ class ClassificationRepositoryTest {
 
     @Test
     fun `what you filed yourself stays, and a new answer replaces the rule`() = runTest {
-        val mine = spend("Panda")
-        val theirs = spend("Panda")
+        val mine = spend("Nakhl")
+        val theirs = spend("Nakhl")
         classification.file(mine, shopping, null)
 
-        classification.learn("Panda", groceries)
+        classification.learn("Nakhl", groceries)
         assertEquals(shopping, transactions.get(mine)!!.categoryId)
         assertEquals(groceries, transactions.get(theirs)!!.categoryId)
 
-        classification.learn("Panda", shopping)
+        classification.learn("Nakhl", shopping)
         assertEquals(1, classification.getRules().size)
         assertEquals(shopping, transactions.get(theirs)!!.categoryId)
     }
 
     @Test
     fun `a rule that is off files nothing new, and a deleted one leaves its filing`() = runTest {
-        val filed = spend("Panda")
-        classification.learn("Panda", groceries)
+        val filed = spend("Nakhl")
+        classification.learn("Nakhl", groceries)
         val rule = classification.getRules().single()
 
         classification.setEnabled(rule.id, false)
-        val later = spend("Panda")
+        val later = spend("Nakhl")
         classification.applyRules()
         assertNull(transactions.get(later)!!.categoryId)
 
@@ -136,9 +140,9 @@ class ClassificationRepositoryTest {
 
     @Test
     fun `undoing an answer unfiles what it filed and forgets the rule, but keeps what you did since`() = runTest {
-        val first = spend("Panda")
-        val second = spend("Panda")
-        val batch = classification.learn("Panda", groceries, alsoFile = first)!!
+        val first = spend("Nakhl")
+        val second = spend("Nakhl")
+        val batch = classification.learn("Nakhl", groceries, alsoFile = first)!!
         assertEquals(2, classification.observeBatches().first().single().transactions)
 
         classification.file(second, shopping, null)
@@ -153,8 +157,8 @@ class ClassificationRepositoryTest {
 
     @Test
     fun `undoing a deleted category brings back the category, its rules and its filings`() = runTest {
-        val filed = spend("Panda")
-        classification.learn("Panda", groceries)
+        val filed = spend("Nakhl")
+        classification.learn("Nakhl", groceries)
         val rule = classification.getRules().single()
 
         classification.deleteCategory(groceries)
@@ -169,15 +173,15 @@ class ClassificationRepositoryTest {
 
     @Test
     fun `your rule beats a learned one, and the more specific of yours wins`() = runTest {
-        val small = spend("Jahez 12", 5_000)
-        val big = spend("JAHEZ Riyadh", 40_000)
-        classification.learn("Jahez", groceries)
+        val small = spend("Wasel 12", 5_000)
+        val big = spend("WASEL Riyadh", 40_000)
+        classification.learn("Wasel", groceries)
         assertEquals(groceries, transactions.get(small)!!.categoryId)
-        // "JAHEZ Riyadh" is Jahez in Riyadh: the merchant's rule files it too.
+        // "WASEL Riyadh" is Wasel in Riyadh: the merchant's rule files it too.
         assertEquals(groceries, transactions.get(big)!!.categoryId)
 
-        classification.saveRule(0, RuleConditions(contains = "jahez"), RuleActions(shopping))
-        classification.saveRule(0, RuleConditions(contains = "jahez", minMinor = 20_000, accountId = cash), RuleActions(groceries))
+        classification.saveRule(0, RuleConditions(contains = "wasel"), RuleActions(shopping))
+        classification.saveRule(0, RuleConditions(contains = "wasel", minMinor = 20_000, accountId = cash), RuleActions(groceries))
 
         assertEquals(shopping, transactions.get(small)!!.categoryId)
         assertEquals(groceries, transactions.get(big)!!.categoryId)
@@ -198,8 +202,8 @@ class ClassificationRepositoryTest {
             EditRuleDomain.validate(RuleForm(min = "20", max = "10", categoryId = 1), "SAR")
         )
         assertEquals(
-            CheckedRule.Valid(RuleConditions(contains = "panda", maxMinor = 15_000), RuleActions(1)),
-            EditRuleDomain.validate(RuleForm(contains = " panda ", max = "150", categoryId = 1), "SAR")
+            CheckedRule.Valid(RuleConditions(contains = "nakhl", maxMinor = 15_000), RuleActions(1)),
+            EditRuleDomain.validate(RuleForm(contains = " nakhl ", max = "150", categoryId = 1), "SAR")
         )
     }
 
@@ -208,9 +212,9 @@ class ClassificationRepositoryTest {
         val bank = db.accountsDao().insert(
             db.accountsDao().getCashWallet()!!.copy(id = 0, uid = "b", nickname = "Bank")
         )
-        spend("Panda 1", 1000)
-        spend("Panda 2", 2000)
-        spend("Jarir", 5000)
+        spend("Nakhl 1", 1000)
+        spend("Nakhl 2", 2000)
+        spend("Kutub", 5000)
         spend("", 9000)
         transactions.addTransfer(
             TransferDraft(bank, cash, 7000, TEST_CLOCK.instant(), TransactionKind.ATM_WITHDRAWAL, "ATM")
@@ -219,11 +223,11 @@ class ClassificationRepositoryTest {
         classification.applyRules()
 
         val clusters = Rules.clusters(transactions.observeAll().first())
-        assertEquals(listOf("Jarir" to 1, "Panda" to 2), clusters.map { it.name to it.count })
+        assertEquals(listOf("Kutub" to 1, "Nakhl" to 2), clusters.map { it.name to it.count })
         assertEquals(3000L, clusters[1].totalMinor)
 
-        classification.learn("Panda", groceries)
-        assertEquals(listOf("Jarir"), Rules.clusters(transactions.observeAll().first()).map { it.name })
+        classification.learn("Nakhl", groceries)
+        assertEquals(listOf("Kutub"), Rules.clusters(transactions.observeAll().first()).map { it.name })
     }
 
     // Merchants.
@@ -232,8 +236,8 @@ class ClassificationRepositoryTest {
 
     @Test
     fun `each spelling finds its merchant, and a person is never one`() = runTest {
-        val psn = spend("PLAYSTATIONNETWORK")
-        val psnAbroad = spend("PlaystationNetw LONDON")
+        val psn = spend("GAMESTATIONNETWORK")
+        val psnAbroad = spend("GamestationNetw LONDON")
         val laundry = spend("Clean laundry")
         val machine = spend("Clean laundry machine")
         val person = transactions.add(
@@ -247,13 +251,13 @@ class ClassificationRepositoryTest {
         assertEquals(3, classification.getMerchants().size)
 
         val aliases = classification.getAliases().associateBy { it.aliasKey }
-        assertEquals(AliasMatch.FIRST, aliases.getValue("playstationnetwork").matchedBy)
-        assertEquals(AliasMatch.SIMILAR, aliases.getValue("playstationnetw").matchedBy)
-        assertEquals("PlaystationNetw LONDON", aliases.getValue("playstationnetw").descriptor)
+        assertEquals(AliasMatch.FIRST, aliases.getValue("gamestationnetwork").matchedBy)
+        assertEquals(AliasMatch.SIMILAR, aliases.getValue("gamestationnetw").matchedBy)
+        assertEquals("GamestationNetw LONDON", aliases.getValue("gamestationnetw").descriptor)
         // The feed shows the merchant's name; the title keeps the bank's words.
         val abroad = transactions.observe(psnAbroad).first()!!
-        assertEquals("PLAYSTATIONNETWORK", titleOf(abroad))
-        assertEquals("PlaystationNetw LONDON", abroad.transaction.title)
+        assertEquals("GAMESTATIONNETWORK", titleOf(abroad))
+        assertEquals("GamestationNetw LONDON", abroad.transaction.title)
 
         // Running again changes nothing.
         classification.applyRules()
@@ -263,9 +267,9 @@ class ClassificationRepositoryTest {
 
     @Test
     fun `a learned rule is taught the merchant, so it files every spelling and keeps its new name`() = runTest {
-        val first = spend("PLAYSTATIONNETWORK")
-        classification.learn("PLAYSTATIONNETWORK", shopping)
-        val later = spend("PlaystationNetw LONDON")
+        val first = spend("GAMESTATIONNETWORK")
+        classification.learn("GAMESTATIONNETWORK", shopping)
+        val later = spend("GamestationNetw LONDON")
         classification.applyRules()
 
         val rule = classification.getRules().single()
@@ -273,9 +277,9 @@ class ClassificationRepositoryTest {
         assertEquals(shopping, transactions.get(later)!!.categoryId)
         assertEquals(rule.id, transactions.get(later)!!.ruleId)
 
-        classification.renameMerchant(merchantOf(first)!!, "PlayStation")
-        assertEquals("PlayStation", classification.observeRules().first().single().merchantName)
-        assertEquals(1, classification.countFor("PlaystationNetw", exceptId = later))
+        classification.renameMerchant(merchantOf(first)!!, "GameStation")
+        assertEquals("GameStation", classification.observeRules().first().single().merchantName)
+        assertEquals(1, classification.countFor("GamestationNetw", exceptId = later))
     }
 
     @Test
@@ -306,19 +310,19 @@ class ClassificationRepositoryTest {
 
     @Test
     fun `taking a spelling out makes it its own merchant and sends the rule's filings back to review`() = runTest {
-        val psn = spend("PLAYSTATIONNETWORK")
-        val wrong = spend("PlaystationNetw LONDON")
-        val mine = spend("PlaystationNetw LONDON")
+        val psn = spend("GAMESTATIONNETWORK")
+        val wrong = spend("GamestationNetw LONDON")
+        val mine = spend("GamestationNetw LONDON")
         classification.applyRules()
         classification.file(mine, groceries, null)
-        classification.learn("PLAYSTATIONNETWORK", shopping)
+        classification.learn("GAMESTATIONNETWORK", shopping)
         assertEquals(shopping, transactions.get(wrong)!!.categoryId)
-        val alias = classification.getAliases().single { it.aliasKey == "playstationnetw" }
+        val alias = classification.getAliases().single { it.aliasKey == "gamestationnetw" }
 
         val batch = classification.splitAlias(alias.id)!!
 
         assertTrue(merchantOf(wrong) != merchantOf(psn))
-        assertEquals("PlaystationNetw", transactions.observe(wrong).first()!!.merchantName)
+        assertEquals("GamestationNetw", transactions.observe(wrong).first()!!.merchantName)
         assertNull(transactions.get(wrong)!!.categoryId)
         assertEquals(groceries, transactions.get(mine)!!.categoryId)
         assertEquals(shopping, transactions.get(psn)!!.categoryId)
@@ -337,15 +341,174 @@ class ClassificationRepositoryTest {
 
     @Test
     fun `keys follow a title that changes, and an emptied name is no merchant`() = runTest {
-        val id = spend("Jarir")
+        val id = spend("Kutub")
         transactions.update(
-            id, TransactionDraft(cash, Direction.DEBIT, 1000, TEST_CLOCK.instant(), TransactionKind.PURCHASE, "Panda 12")
+            id, TransactionDraft(cash, Direction.DEBIT, 1000, TEST_CLOCK.instant(), TransactionKind.PURCHASE, "Nakhl 12")
         )
         classification.applyRules()
-        assertEquals("panda", transactions.get(id)!!.merchantKey)
-        assertEquals("Panda", transactions.observe(id).first()!!.merchantName)
+        assertEquals("nakhl", transactions.get(id)!!.merchantKey)
+        assertEquals("Nakhl", transactions.observe(id).first()!!.merchantName)
 
         assertEquals(null, classification.renameMerchant(merchantOf(id)!!, "  "))
         assertEquals(NameProblem.Missing, MerchantDomain.validateName(" "))
+    }
+
+    // Identifying merchants.
+
+    private suspend fun category(name: String) = classification.getCategories().single { it.name == name }
+
+    private suspend fun ruleOf(id: Long) = classification.getRule(transactions.get(id)!!.ruleId!!)!!
+
+    @Test
+    fun `a well-known merchant files itself under the category that takes what it is`() = runTest {
+        val id = spend("PANDA 1042")
+        classification.applyRules()
+
+        val merchant = classification.getMerchant(merchantOf(id)!!)!!
+        assertEquals("Panda", merchant.name)
+        assertEquals(BusinessType.SUPERMARKET, merchant.businessType)
+        assertEquals(IdentifiedBy.LIST, merchant.identifiedBy)
+        assertEquals(groceries, transactions.get(id)!!.categoryId)
+        assertEquals(RuleSource.AI, ruleOf(id).source)
+        assertEquals(merchant.id, ruleOf(id).conditions.merchantId)
+        assertTrue(Rules.clusters(transactions.observeAll().first()).isEmpty())
+        // Running again changes nothing.
+        classification.applyRules()
+        assertEquals(1, classification.getRules().size)
+    }
+
+    @Test
+    fun `your answer beats the automatic rule`() = runTest {
+        val id = spend("PANDA 1042")
+        classification.applyRules()
+
+        classification.learn("Panda", shopping)
+
+        assertEquals(shopping, transactions.get(id)!!.categoryId)
+        assertEquals(RuleSource.LEARNED, ruleOf(id).source)
+    }
+
+    @Test
+    fun `an automatic rule you delete stays deleted`() = runTest {
+        val id = spend("PANDA 1042")
+        classification.applyRules()
+
+        classification.delete(ruleOf(id).id)
+        classification.applyRules()
+
+        assertTrue(classification.getRules().isEmpty())
+        // What it filed stays, as if you had chosen it.
+        assertEquals(groceries, transactions.get(id)!!.categoryId)
+        assertNull(transactions.get(id)!!.ruleId)
+    }
+
+    @Test
+    fun `giving a business type to another category moves what it files, and undo moves it back`() = runTest {
+        val id = spend("PANDA 1042")
+        classification.applyRules()
+        val before = category("Shopping")
+
+        val batch = classification.editCategory(
+            shopping, "Shopping", before.expenseType, before.businessTypes + BusinessType.SUPERMARKET
+        )!!
+
+        assertEquals(shopping, transactions.get(id)!!.categoryId)
+        assertEquals(RuleSource.AI, ruleOf(id).source)
+        assertTrue(BusinessType.SUPERMARKET !in category("Groceries").businessTypes)
+
+        classification.undo(batch)
+
+        assertEquals(groceries, transactions.get(id)!!.categoryId)
+        assertTrue(BusinessType.SUPERMARKET in category("Groceries").businessTypes)
+        assertTrue(BusinessType.SUPERMARKET !in category("Shopping").businessTypes)
+    }
+
+    @Test
+    fun `a category is renamed as one change you can undo`() = runTest {
+        val type = category("Groceries").expenseType
+        val types = category("Groceries").businessTypes
+
+        val batch = classification.editCategory(groceries, "Food", type, types)!!
+        assertEquals("Food", classification.getCategories().single { it.id == groceries }.name)
+        // Its own name, however capitalised, is no clash.
+        assertNull(CategoriesDomain.validate("food", listOf("Shopping")))
+
+        classification.undo(batch)
+        assertEquals("Groceries", classification.getCategories().single { it.id == groceries }.name)
+    }
+
+    @Test
+    fun `the AI's answer files itself when sure, is suggested when fairly sure, and is asked otherwise`() = runTest {
+        val sure = spend("ALMTRF TRDG EST 0412")
+        val fairly = spend("QAHWAT HUDA 77")
+        val unsure = spend("ZZYZX 9")
+        classification.applyRules()
+
+        val waiting = classification.toIdentify()
+        assertEquals(
+            setOf("ALMTRF TRDG EST 0412", "QAHWAT HUDA 77", "ZZYZX 9"),
+            waiting.map { it.descriptor }.toSet()
+        )
+
+        classification.recordIdentifications(
+            mapOf(
+                merchantOf(sure)!! to IdentifiedAs("Al-Mutref Trading", BusinessType.HARDWARE, 95),
+                merchantOf(fairly)!! to IdentifiedAs("Qahwat Huda", BusinessType.CAFE, 70),
+                merchantOf(unsure)!! to IdentifiedAs("", BusinessType.UNKNOWN, 30)
+            )
+        )
+
+        val categories = classification.getCategories()
+        assertEquals(category("Housing").id, transactions.get(sure)!!.categoryId)
+        assertEquals("Al-Mutref Trading", classification.getMerchant(merchantOf(sure)!!)!!.name)
+        assertNull(transactions.get(fairly)!!.categoryId)
+        assertEquals(
+            category("Restaurants"),
+            ReviewDomain.suggestionFor(classification.getMerchant(merchantOf(fairly)!!), categories)
+        )
+        assertNull(ReviewDomain.suggestionFor(classification.getMerchant(merchantOf(unsure)!!), categories))
+        // A blank name keeps the bank's.
+        assertEquals("ZZYZX", classification.getMerchant(merchantOf(unsure)!!)!!.name)
+        assertTrue(classification.toIdentify().isEmpty())
+    }
+
+    @Test
+    fun `a name you gave stays when the AI identifies the merchant`() = runTest {
+        val id = spend("ZZYZX 9")
+        classification.applyRules()
+        classification.renameMerchant(merchantOf(id)!!, "Corner shop")
+
+        classification.recordIdentifications(mapOf(merchantOf(id)!! to IdentifiedAs("Zzyzx", BusinessType.CONVENIENCE_STORE, 95)))
+
+        assertEquals("Corner shop", classification.getMerchant(merchantOf(id)!!)!!.name)
+        assertEquals(groceries, transactions.get(id)!!.categoryId)
+    }
+
+    @Test
+    fun `saying what a merchant is files it, even after its automatic rule was deleted`() = runTest {
+        val id = spend("PANDA 1042")
+        classification.applyRules()
+        classification.delete(ruleOf(id).id)
+        classification.file(id, null, null)
+
+        val batch = classification.setBusinessType(merchantOf(id)!!, BusinessType.ELECTRONICS)!!
+
+        assertEquals(shopping, transactions.get(id)!!.categoryId)
+        assertEquals(IdentifiedBy.YOU, classification.getMerchant(merchantOf(id)!!)!!.identifiedBy)
+
+        classification.undo(batch)
+        assertNull(transactions.get(id)!!.categoryId)
+        assertEquals(IdentifiedBy.LIST, classification.getMerchant(merchantOf(id)!!)!!.identifiedBy)
+    }
+
+    @Test
+    fun `a merchant kept back is no longer waiting`() = runTest {
+        val id = spend("ZZYZX 9")
+        classification.applyRules()
+
+        classification.withhold(listOf(merchantOf(id)!!))
+
+        assertTrue(classification.toIdentify().isEmpty())
+        assertEquals(IdentifiedBy.WITHHELD, classification.getMerchant(merchantOf(id)!!)!!.identifiedBy)
     }
 }

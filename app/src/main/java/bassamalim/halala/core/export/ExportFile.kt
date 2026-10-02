@@ -28,7 +28,7 @@ data class ExportFile(
     val merchants: List<ExportMerchant> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 3
+        const val SCHEMA_VERSION = 4
     }
 }
 
@@ -72,7 +72,13 @@ data class ExportTransaction(
 )
 
 @Serializable
-data class ExportCategory(val uid: String, val name: String, val expenseType: String?)
+data class ExportCategory(
+    val uid: String,
+    val name: String,
+    val expenseType: String?,
+    /** Since schema 4: the business types it takes (`BusinessType` names). */
+    val businessTypes: List<String> = emptyList()
+)
 
 @Serializable
 data class ExportRule(
@@ -88,9 +94,20 @@ data class ExportRule(
     val createdAt: String
 )
 
-/** A merchant and every way its bank writes it. */
+/**
+ * A merchant and every way its bank writes it. Since schema 4, what the business is
+ * (`BusinessType` name), who said so (`IdentifiedBy`: LIST, AI, YOU or WITHHELD) and, from the
+ * AI, how sure it was (0–100); all null while it is unidentified.
+ */
 @Serializable
-data class ExportMerchant(val uid: String, val name: String, val aliases: List<ExportAlias>)
+data class ExportMerchant(
+    val uid: String,
+    val name: String,
+    val aliases: List<ExportAlias>,
+    val businessType: String? = null,
+    val identifiedBy: String? = null,
+    val confidence: Int? = null
+)
 
 /** One spelling: its key (lower case, letters only), as first written, and how it joined. */
 @Serializable

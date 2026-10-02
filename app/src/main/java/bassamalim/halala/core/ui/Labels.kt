@@ -7,7 +7,9 @@ import bassamalim.halala.R
 import bassamalim.halala.core.enums.AccountType
 import bassamalim.halala.core.enums.AliasMatch
 import bassamalim.halala.core.enums.AuditAction
+import bassamalim.halala.core.enums.BusinessType
 import bassamalim.halala.core.enums.ExpenseType
+import bassamalim.halala.core.enums.IdentifiedBy
 import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.models.RuleWords
 import bassamalim.halala.core.models.TransactionItem
@@ -133,9 +135,18 @@ fun auditSentence(action: AuditAction, subject: String, detail: String): String 
         AuditAction.RULE_ON -> stringResource(R.string.audit_rule_on, name)
         AuditAction.RULE_DELETED -> stringResource(R.string.audit_rule_deleted, name)
         AuditAction.CATEGORY_DELETED -> stringResource(R.string.audit_category_deleted, name)
+        AuditAction.CATEGORY_EDITED ->
+            if (detail.isBlank() || detail == subject) stringResource(R.string.audit_category_edited, name)
+            else stringResource(R.string.audit_category_renamed, name, detail)
         AuditAction.MERCHANT_RENAMED -> stringResource(R.string.audit_merchant_renamed, name, detail)
         AuditAction.MERCHANTS_MERGED -> stringResource(R.string.audit_merchants_merged, name, detail)
         AuditAction.ALIAS_SPLIT -> stringResource(R.string.audit_alias_split, name, detail)
+        // The batch keeps the type by its name, which is the same in every language.
+        AuditAction.MERCHANT_TYPED -> stringResource(
+            R.string.audit_merchant_typed,
+            name,
+            businessTypeLabel(BusinessType.entries.firstOrNull { it.name == detail } ?: BusinessType.UNKNOWN)
+        )
     }
 }
 
@@ -148,3 +159,66 @@ fun aliasMatchLabel(match: AliasMatch): String = stringResource(
         AliasMatch.YOU -> R.string.merchant_spelling_you
     }
 )
+
+/** What a business is, in words: "Supermarket". */
+@Composable
+fun businessTypeLabel(type: BusinessType): String = stringResource(
+    when (type) {
+        BusinessType.SUPERMARKET -> R.string.business_supermarket
+        BusinessType.CONVENIENCE_STORE -> R.string.business_convenience_store
+        BusinessType.BAKERY -> R.string.business_bakery
+        BusinessType.RESTAURANT -> R.string.business_restaurant
+        BusinessType.FAST_FOOD -> R.string.business_fast_food
+        BusinessType.CAFE -> R.string.business_cafe
+        BusinessType.FOOD_DELIVERY -> R.string.business_food_delivery
+        BusinessType.FUEL_STATION -> R.string.business_fuel_station
+        BusinessType.CAR_SERVICE -> R.string.business_car_service
+        BusinessType.PARKING -> R.string.business_parking
+        BusinessType.RIDE_HAILING -> R.string.business_ride_hailing
+        BusinessType.PUBLIC_TRANSPORT -> R.string.business_public_transport
+        BusinessType.CAR_RENTAL -> R.string.business_car_rental
+        BusinessType.AIRLINE -> R.string.business_airline
+        BusinessType.HOTEL -> R.string.business_hotel
+        BusinessType.TRAVEL_AGENCY -> R.string.business_travel_agency
+        BusinessType.PHARMACY -> R.string.business_pharmacy
+        BusinessType.CLINIC -> R.string.business_clinic
+        BusinessType.OPTICIAN -> R.string.business_optician
+        BusinessType.GYM -> R.string.business_gym
+        BusinessType.TELECOM -> R.string.business_telecom
+        BusinessType.UTILITY -> R.string.business_utility
+        BusinessType.GOVERNMENT -> R.string.business_government
+        BusinessType.INSURANCE -> R.string.business_insurance
+        BusinessType.EDUCATION -> R.string.business_education
+        BusinessType.BOOKSTORE -> R.string.business_bookstore
+        BusinessType.ELECTRONICS -> R.string.business_electronics
+        BusinessType.CLOTHING -> R.string.business_clothing
+        BusinessType.BEAUTY -> R.string.business_beauty
+        BusinessType.SALON -> R.string.business_salon
+        BusinessType.JEWELRY -> R.string.business_jewelry
+        BusinessType.GIFTS -> R.string.business_gifts
+        BusinessType.SPORTS_GOODS -> R.string.business_sports_goods
+        BusinessType.TOYS -> R.string.business_toys
+        BusinessType.HOME_FURNISHING -> R.string.business_home_furnishing
+        BusinessType.HARDWARE -> R.string.business_hardware
+        BusinessType.LAUNDRY -> R.string.business_laundry
+        BusinessType.REAL_ESTATE -> R.string.business_real_estate
+        BusinessType.DEPARTMENT_STORE -> R.string.business_department_store
+        BusinessType.ONLINE_MARKETPLACE -> R.string.business_online_marketplace
+        BusinessType.STREAMING -> R.string.business_streaming
+        BusinessType.SOFTWARE -> R.string.business_software
+        BusinessType.GAMING -> R.string.business_gaming
+        BusinessType.ENTERTAINMENT -> R.string.business_entertainment
+        BusinessType.CHARITY -> R.string.business_charity
+        BusinessType.MONEY_TRANSFER -> R.string.business_money_transfer
+        BusinessType.UNKNOWN -> R.string.business_unknown
+    }
+)
+
+/** Who said what a merchant is, and how sure: "Identified by AI, 92% sure". */
+@Composable
+fun identifiedLabel(by: IdentifiedBy, confidence: Int?): String = when (by) {
+    IdentifiedBy.LIST -> stringResource(R.string.identified_list)
+    IdentifiedBy.AI -> stringResource(R.string.identified_ai, confidence ?: 0)
+    IdentifiedBy.YOU -> stringResource(R.string.identified_you)
+    IdentifiedBy.WITHHELD -> stringResource(R.string.identified_withheld)
+}

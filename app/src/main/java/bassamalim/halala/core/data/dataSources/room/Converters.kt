@@ -7,8 +7,10 @@ import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
 import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
 import bassamalim.halala.core.enums.AuditAction
 import bassamalim.halala.core.enums.AuditEntity
+import bassamalim.halala.core.enums.BusinessType
 import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.enums.ExpenseType
+import bassamalim.halala.core.enums.IdentifiedBy
 import bassamalim.halala.core.enums.RuleSource
 import bassamalim.halala.core.enums.RawStatus
 import bassamalim.halala.core.enums.TransactionKind
@@ -111,4 +113,25 @@ class Converters {
 
     @TypeConverter
     fun fromAliasMatch(match: AliasMatch): String = match.name
+
+    @TypeConverter
+    fun toBusinessType(name: String?): BusinessType? =
+        name?.let { BusinessType.entries.firstOrNull { type -> type.name == it } ?: BusinessType.UNKNOWN }
+
+    @TypeConverter
+    fun fromBusinessType(type: BusinessType?): String? = type?.name
+
+    /** A category's business types, comma-separated; names no longer known are dropped. */
+    @TypeConverter
+    fun toBusinessTypes(names: String): List<BusinessType> =
+        names.split(',').mapNotNull { name -> BusinessType.entries.firstOrNull { it.name == name } }
+
+    @TypeConverter
+    fun fromBusinessTypes(types: List<BusinessType>): String = types.joinToString(",") { it.name }
+
+    @TypeConverter
+    fun toIdentifiedBy(name: String?): IdentifiedBy? = IdentifiedBy.entries.firstOrNull { it.name == name }
+
+    @TypeConverter
+    fun fromIdentifiedBy(by: IdentifiedBy?): String? = by?.name
 }

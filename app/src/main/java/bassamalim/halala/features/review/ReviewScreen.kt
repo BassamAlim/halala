@@ -32,12 +32,21 @@ import bassamalim.halala.core.ui.theme.HalalaColors
 import bassamalim.halala.core.ui.theme.HalalaType
 import bassamalim.halala.core.ui.theme.Insets
 import bassamalim.halala.core.ui.theme.Spacing
+import bassamalim.halala.core.ui.components.HalalaChip
+import bassamalim.halala.core.ui.components.ChipStyle
+import bassamalim.halala.core.ui.components.ButtonKind
+import bassamalim.halala.core.ui.expenseTypeLabel
+import bassamalim.halala.core.ui.businessTypeLabel
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.SpanStyle
 
 /**
- * The review inbox, from the Review board as far as rules alone can fill it: uncategorised
- * spending a merchant at a time, the most money first, each card filed with one answer that is
- * remembered. Suggestions with their confidence and evidence, the Suggested / Needs you filter,
- * swiping, loans and splits, and the snooze row arrive with AI, people and reminders.
+ * The review inbox, from the Review board: uncategorised spending a merchant at a time, the most
+ * money first, each card filed with one answer that is remembered. A merchant that was
+ * identified shows what it is (and, from the AI, how sure) with its category chosen, one tap
+ * from confirmed; the rest need you. Swiping, loans and splits, and the snooze row arrive with
+ * people and reminders.
  */
 @Composable
 fun ReviewScreen(viewModel: ReviewViewModel = hiltViewModel()) {
@@ -75,6 +84,22 @@ fun ReviewScreen(viewModel: ReviewViewModel = hiltViewModel()) {
                 }
             }
 
+            if (state.total > 0) item {
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                    ReviewFilter.entries.forEach { filter ->
+                        HalalaChip(
+                            label = when (filter) {
+                                ReviewFilter.All -> stringResource(R.string.review_all, state.total)
+                                ReviewFilter.Suggested -> stringResource(R.string.review_suggested, state.suggested)
+                                ReviewFilter.NeedsYou -> stringResource(R.string.review_needs_you, state.needsYou)
+                            },
+                            style = if (filter == state.filter) ChipStyle.Accent else ChipStyle.Outline,
+                            onClick = { viewModel.onFilterClick(filter) }
+                        )
+                    }
+                }
+            }
+
             items(state.cards, key = { it.key }) { card ->
                 HalalaCard(Modifier.fillMaxWidth()) {
                     TransactionRow(
@@ -89,11 +114,50 @@ fun ReviewScreen(viewModel: ReviewViewModel = hiltViewModel()) {
                         // One transaction opens itself; many open their merchant.
                         onClick = if (card.count == 1 || card.merchantId != null) ({ viewModel.onCardClick(card) }) else null
                     )
-                    HalalaButton(
-                        text = stringResource(R.string.choose_category),
-                        onClick = { viewModel.onChooseClick(card) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    card.businessType?.let { type ->
+                        val evidence = stringResource(R.string.identified_as, businessTypeLabel(type))
+                        Text(
+                            text = card.confidence
+                                ?.let { stringResource(R.string.meta_pair, evidence, stringResource(R.string.review_sure, it)) }
+                                ?: evidence,
+                            style = HalalaType.Label,
+                            color = HalalaColors.TextMuted
+                        )
+                    }
+
+                    val suggestion = card.suggestion
+                    if (suggestion == null) {
+                        HalalaButton(
+                            text = stringResource(R.string.choose_category),
+                            onClick = { viewModel.onChooseClick(card) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    } else {
+                        Text(
+                            text = buildAnnotatedString {
+                                append(suggestion.category.name)
+                                suggestion.expenseType?.let { type ->
+                                    withStyle(SpanStyle(color = HalalaColors.TextMuted)) {
+                                        append(stringResource(R.string.separator))
+                                        append(expenseTypeLabel(type))
+                                    }
+                                }
+                            },
+                            style = HalalaType.Body
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                            HalalaButton(
+                                text = pluralStringResource(R.plurals.review_confirm_all, card.count, card.count),
+                                onClick = { viewModel.onConfirmClick(card) },
+                                kind = ButtonKind.Primary,
+                                modifier = Modifier.weight(1f)
+                            )
+                            HalalaButton(
+                                text = stringResource(R.string.review_change),
+                                onClick = { viewModel.onChooseClick(card) }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -122,7 +186,7 @@ fun ReviewScreen(viewModel: ReviewViewModel = hiltViewModel()) {
         ChoiceSheet(
             title = card.title,
             options = state.categories,
-            selected = null,
+            selected = card.suggestion?.category,
             label = { it.name },
             onPick = viewModel::onCategoryPick,
             onDismiss = viewModel::onPickDismiss

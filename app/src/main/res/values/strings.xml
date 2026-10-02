@@ -251,14 +251,14 @@
     <string name="rule_off">Off</string>
     <string name="rule_source_manual">Yours</string>
     <string name="rule_source_learned">Learned from you</string>
-    <string name="rule_source_ai">AI suggestion you confirmed</string>
+    <string name="rule_source_ai">Automatic, from what the merchant is</string>
     <string name="rule_turn_off">Turn off</string>
     <string name="rule_turn_on">Turn on</string>
 
     <!-- Categories -->
     <string name="categories">Categories</string>
     <string name="settings_categories_summary">What your spending is filed under</string>
-    <string name="categories_hint">Tap a category to remove it.</string>
+    <string name="categories_hint">Tap a category to rename it, change what it takes, or remove it.</string>
     <string name="category_new">New category</string>
     <string name="category_name">Name</string>
     <string name="category_name_missing">Give it a name.</string>
@@ -374,4 +374,103 @@
     <string name="merchant_merge_confirm_body">%1$s\'s spellings and rules become %2$s\'s. If both have a learned category, %2$s\'s stays. You can undo this in Recent changes.</string>
     <string name="merchant_merge_confirm">Merge</string>
     <string name="merchant_transactions">Transactions</string>
+
+    <!-- Business types: what a merchant is. -->
+    <string name="business_supermarket">Supermarket</string>
+    <string name="business_convenience_store">Convenience store</string>
+    <string name="business_bakery">Bakery</string>
+    <string name="business_restaurant">Restaurant</string>
+    <string name="business_fast_food">Fast food</string>
+    <string name="business_cafe">Café</string>
+    <string name="business_food_delivery">Food delivery</string>
+    <string name="business_fuel_station">Fuel station</string>
+    <string name="business_car_service">Car service</string>
+    <string name="business_parking">Parking</string>
+    <string name="business_ride_hailing">Ride-hailing</string>
+    <string name="business_public_transport">Public transport</string>
+    <string name="business_car_rental">Car rental</string>
+    <string name="business_airline">Airline</string>
+    <string name="business_hotel">Hotel</string>
+    <string name="business_travel_agency">Travel agency</string>
+    <string name="business_pharmacy">Pharmacy</string>
+    <string name="business_clinic">Clinic or hospital</string>
+    <string name="business_optician">Optician</string>
+    <string name="business_gym">Gym</string>
+    <string name="business_telecom">Telecom</string>
+    <string name="business_utility">Electricity or water</string>
+    <string name="business_government">Government service</string>
+    <string name="business_insurance">Insurance</string>
+    <string name="business_education">School or courses</string>
+    <string name="business_bookstore">Bookstore</string>
+    <string name="business_electronics">Electronics</string>
+    <string name="business_clothing">Clothing</string>
+    <string name="business_beauty">Beauty and perfume</string>
+    <string name="business_salon">Salon or barber</string>
+    <string name="business_jewelry">Jewellery</string>
+    <string name="business_gifts">Gifts and flowers</string>
+    <string name="business_sports_goods">Sports goods</string>
+    <string name="business_toys">Toys</string>
+    <string name="business_home_furnishing">Furniture and home</string>
+    <string name="business_hardware">Hardware and building</string>
+    <string name="business_laundry">Laundry</string>
+    <string name="business_real_estate">Real estate</string>
+    <string name="business_department_store">Department store</string>
+    <string name="business_online_marketplace">Online marketplace</string>
+    <string name="business_streaming">Streaming</string>
+    <string name="business_software">Apps and software</string>
+    <string name="business_gaming">Gaming</string>
+    <string name="business_entertainment">Cinema and events</string>
+    <string name="business_charity">Charity</string>
+    <string name="business_money_transfer">Money transfer</string>
+    <string name="business_unknown">Not known</string>
+
+    <!-- Identifying merchants. -->
+    <string name="audit_category_edited">Changed the category %1$s</string>
+    <string name="audit_category_renamed">Renamed the category %1$s to %2$s</string>
+    <string name="audit_merchant_typed">Said %1$s is: %2$s</string>
+    <string name="category_edit">Edit category</string>
+    <string name="category_takes">Takes</string>
+    <string name="category_takes_hint">Merchants identified as these are filed here. A business type belongs to one category.</string>
+    <string name="category_delete">Delete category</string>
+    <plurals name="category_takes_count">
+        <item quantity="one">Takes %1$d business type</item>
+        <item quantity="other">Takes %1$d business types</item>
+    </plurals>
+    <string name="merchant_is">What it is</string>
+    <string name="merchant_is_title">What is %1$s?</string>
+    <string name="merchant_is_unknown">Not identified yet</string>
+    <string name="identified_list">From Halala\'s list of known merchants</string>
+    <string name="identified_ai">Identified by AI, %1$d%% sure</string>
+    <string name="identified_you">Said by you</string>
+    <string name="identified_withheld">Not sent to AI: its name may hold an account number</string>
+    <string name="identified_as">Identified as: %1$s</string>
+    <string name="review_all">All %1$d</string>
+    <string name="review_suggested">Suggested %1$d</string>
+    <string name="review_needs_you">Needs you %1$d</string>
+    <string name="review_sure">%1$d%% sure</string>
+    <string name="review_confirm">Confirm</string>
+    <plurals name="review_confirm_all">
+        <item quantity="one">Confirm</item>
+        <item quantity="other">Confirm all %1$d</item>
+    </plurals>
+    <string name="review_change">Change</string>
+    <string name="settings_ai">AI</string>
+    <string name="ai_identification">Merchant identification</string>
+    <string name="ai_off">Off</string>
+    <string name="ai_on">On</string>
+    <string name="ai_on_groq">On · Groq</string>
+    <plurals name="ai_waiting">
+        <item quantity="one">On · %1$d merchant waiting</item>
+        <item quantity="other">On · %1$d merchants waiting</item>
+    </plurals>
+    <string name="ai_hint">Halala sends Groq only a shop\'s name as your bank writes it, such as PANDA 1042 RIYADH, and asks what kind of business it is. Amounts, dates, accounts and people\'s names never leave your phone. Well-known shops are identified on the phone without asking.</string>
+    <string name="ai_key">Groq API key</string>
+    <string name="ai_key_hint">From console.groq.com. Kept encrypted on this phone.</string>
+    <string name="ai_key_saved">Key saved</string>
+    <string name="ai_key_missing">Add your Groq API key to turn this on.</string>
+    <string name="ai_save_key">Save key</string>
+    <string name="ai_identify_now">Identify now</string>
+    <string name="ai_error_key">Groq refused the key. Check it and save it again.</string>
+    <string name="ai_error_network">Couldn\'t reach Groq. Halala tries again when you\'re online.</string>
+    <string name="ai_error_limit">Groq\'s free limit was reached. Halala tries again later.</string>
 </resources>
