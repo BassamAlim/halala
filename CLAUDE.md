@@ -295,6 +295,13 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   saved in; what is saved is their balances. A month's saving needed = what is left over the
   months to the target month (rounded up); "you averaged" = the net flow into those accounts
   over the last three months, a third of it.
+- **Anomaly alerts** (`Anomalies`, last 30 days, found in the ledger, never stored): the same
+  merchant, amount and account twice within a day; a charge over three times the merchant's
+  median (four or more before it) and at least 100 above it; a foreign-currency charge; a
+  declined card (a `DECLINED` message); a bank balance that isn't the one before plus what was
+  recorded between (a missed or doubled SMS). Only dismissals are stored (`dismissed_alerts`, by
+  key; "Normal for it" quiets a merchant's large ones); a restore clears them. Home shows a row
+  while any stand; the daily reminder work notifies a count of new ones, never what or how much.
 - **Reminders for what is due** (`DueReminders`, daily at nine, periodic WorkManager work): a
   bill or subscription its lead time before it is due, a cancel reminder three days (or its lead
   time) before it renews, an open loan on its due day. Names and days, never an amount. Choosing a
@@ -423,4 +430,5 @@ with Phase 5), Home's **balance card** (Home board and its warn/over states, wit
 "End ≈"), **Forecast** (Forecast board: the end figure and band, the balance chart drawn on a
 Canvas, left over each month with the dip's biggest payments, and "Can I afford it?"), **Budgets** and **Budget**
 (no board: the Plan board's budget rows full size, and the form), the Plan board's **goal
-cards** and **Savings goal** (no board: the form).
+cards** and **Savings goal** (no board: the form), and **Alerts** (no board: a card per alert with
+Open, Normal for it and Dismiss).

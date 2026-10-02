@@ -75,6 +75,9 @@ sealed interface Screen {
     /** Adding a savings goal, or changing [id]. */
     @Serializable data class EditGoal(val id: Long = 0) : Screen
 
+    /** Anomaly alerts: duplicates, unusual charges, declined cards, balances that don't add up. */
+    @Serializable data object Alerts : Screen
+
     /** Every budget this pay cycle. */
     @Serializable data object Budgets : Screen
 

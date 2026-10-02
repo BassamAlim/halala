@@ -37,6 +37,8 @@ import bassamalim.halala.core.ui.components.BalanceCard
 import bassamalim.halala.core.ui.components.CardLabel
 import bassamalim.halala.core.domain.BudgetState
 import bassamalim.halala.core.ui.components.HalalaCard
+import bassamalim.halala.core.ui.components.ListCard
+import bassamalim.halala.core.ui.components.ListRow
 import bassamalim.halala.core.ui.components.SummaryCard
 import bassamalim.halala.core.ui.components.TransactionItemRow
 import bassamalim.halala.core.ui.theme.HalalaColors
@@ -66,7 +68,8 @@ fun HomeScreen(onSeeAllClick: () -> Unit, viewModel: HomeViewModel = hiltViewMod
         onSeeAllClick = onSeeAllClick,
         onTransactionClick = viewModel::onTransactionClick,
         onPeopleClick = viewModel::onPeopleClick,
-        onComingUpClick = viewModel::onComingUpClick
+        onComingUpClick = viewModel::onComingUpClick,
+        onAlertsClick = viewModel::onAlertsClick
     )
 }
 
@@ -80,7 +83,8 @@ private fun HomeContent(
     onSeeAllClick: () -> Unit,
     onTransactionClick: (Long) -> Unit,
     onPeopleClick: () -> Unit = {},
-    onComingUpClick: () -> Unit = {}
+    onComingUpClick: () -> Unit = {},
+    onAlertsClick: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -129,6 +133,14 @@ private fun HomeContent(
                     )
                 }
             }
+        }
+
+        if (state.alertCount > 0) ListCard(Modifier.fillMaxWidth()) {
+            ListRow(
+                title = pluralStringResource(R.plurals.alert_count, state.alertCount, state.alertCount),
+                subtitle = stringResource(R.string.alerts_hint),
+                onClick = onAlertsClick
+            )
         }
 
         state.balance?.let { balance ->

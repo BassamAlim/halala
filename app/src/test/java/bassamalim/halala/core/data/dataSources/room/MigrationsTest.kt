@@ -241,6 +241,12 @@ class MigrationsTest {
         }
     }
 
+    @Test
+    fun `11 to 12 adds dismissed alerts and matches the schema`() {
+        helper.createDatabase(DB, 11).use { }
+        helper.runMigrationsAndValidate(DB, 12, true, *MIGRATIONS).close()
+    }
+
     private companion object {
         const val DB = "migration-test"
     }

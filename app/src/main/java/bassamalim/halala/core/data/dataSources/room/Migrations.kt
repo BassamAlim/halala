@@ -7,7 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * The phone is the only place the full ledger lives: every schema change is a migration, never
  * a destructive rebuild. Add each one here, in order, against the schemas in `app/schemas`.
  */
-val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6, Migration6To7, Migration7To8, Migration8To9, Migration9To10, Migration10To11)
+val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6, Migration6To7, Migration7To8, Migration8To9, Migration9To10, Migration10To11, Migration11To12)
 
 /** Phase 1: raw bank SMS, the digits learned per bank, reported balances, and SMS links. */
 private object Migration1To2 : Migration(1, 2) {
@@ -277,5 +277,12 @@ private object Migration10To11 : Migration(10, 11) {
                     "`currency` TEXT NOT NULL, `targetDate` INTEGER, `accountIds` TEXT NOT NULL, `createdAt` INTEGER NOT NULL)"
         )
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_savings_goals_uid` ON `savings_goals` (`uid`)")
+    }
+}
+
+/** Phase 4: anomaly alerts you dismissed. The alerts themselves are found, not stored. */
+private object Migration11To12 : Migration(11, 12) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS `dismissed_alerts` (`key` TEXT NOT NULL, `at` INTEGER NOT NULL, PRIMARY KEY(`key`))")
     }
 }

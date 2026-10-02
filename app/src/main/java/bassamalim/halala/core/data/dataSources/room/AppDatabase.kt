@@ -4,6 +4,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import bassamalim.halala.core.data.dataSources.room.daos.AccountsDao
+import bassamalim.halala.core.data.dataSources.room.daos.AlertsDao
 import bassamalim.halala.core.data.dataSources.room.daos.BudgetsDao
 import bassamalim.halala.core.data.dataSources.room.daos.ClassificationDao
 import bassamalim.halala.core.data.dataSources.room.daos.GoalsDao
@@ -22,6 +23,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.AuditChange
 import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
 import bassamalim.halala.core.data.dataSources.room.entities.Budget
 import bassamalim.halala.core.data.dataSources.room.entities.Category
+import bassamalim.halala.core.data.dataSources.room.entities.DismissedAlert
 import bassamalim.halala.core.data.dataSources.room.entities.Institution
 import bassamalim.halala.core.data.dataSources.room.entities.InternalTransfer
 import bassamalim.halala.core.data.dataSources.room.entities.Loan
@@ -57,9 +59,10 @@ import bassamalim.halala.core.data.dataSources.room.entities.Transaction
         LoanEvent::class,
         RecurringSeries::class,
         Budget::class,
-        SavingsGoal::class
+        SavingsGoal::class,
+        DismissedAlert::class
     ],
-    version = 11,
+    version = 12,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -75,5 +78,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun recurringDao(): RecurringDao
     abstract fun budgetsDao(): BudgetsDao
     abstract fun goalsDao(): GoalsDao
+    abstract fun alertsDao(): AlertsDao
     abstract fun restoreDao(): RestoreDao
 }

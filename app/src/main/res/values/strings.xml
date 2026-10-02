@@ -599,6 +599,25 @@
     <string name="goal_reached">Reached.</string>
     <string name="goal_add">Add a savings goal</string>
     <string name="goal_add_hint">A target and a date, in the accounts you save in.</string>
+    <string name="alerts">Alerts</string>
+    <string name="alerts_empty">Nothing looks unusual.</string>
+    <string name="alerts_hint">Something looks unusual. Have a look.</string>
+    <plurals name="alert_count">
+        <item quantity="one">%1$d alert</item>
+        <item quantity="other">%1$d alerts</item>
+    </plurals>
+    <string name="alert_dismiss">Dismiss</string>
+    <string name="alert_normal">Normal for it</string>
+    <string name="alert_duplicate">Charged twice?</string>
+    <string name="alert_duplicate_body">%1$s charged %2$s twice on %3$s.</string>
+    <string name="alert_large">Unusually large</string>
+    <string name="alert_large_body">%1$s: %2$s, against a usual %3$s, on %4$s.</string>
+    <string name="alert_foreign">Foreign charge</string>
+    <string name="alert_foreign_body">%1$s: %2$s, charged in %3$s, on %4$s.</string>
+    <string name="alert_declined">Declined</string>
+    <string name="alert_declined_body">%1$s declined a payment on %2$s.</string>
+    <string name="alert_mismatch">Balance doesn\'t add up</string>
+    <string name="alert_mismatch_body">%1$s: the bank said %2$s, the ledger makes it %3$s, on %4$s. An SMS may have been missed or recorded twice.</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="cadence_daily">Daily</string>

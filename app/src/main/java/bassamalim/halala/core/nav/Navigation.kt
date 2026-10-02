@@ -32,6 +32,7 @@ import bassamalim.halala.features.merchants.MerchantsScreen
 import bassamalim.halala.features.people.PeopleScreen
 import bassamalim.halala.features.budgets.BudgetsScreen
 import bassamalim.halala.features.forecast.ForecastScreen
+import bassamalim.halala.features.alerts.AlertsScreen
 import bassamalim.halala.features.editGoal.EditGoalScreen
 import bassamalim.halala.features.editBudget.EditBudgetScreen
 import bassamalim.halala.features.recurring.RecurringScreen
@@ -111,6 +112,8 @@ fun NavGraph(navController: NavHostController, startDestination: Screen) {
         screen<Screen.Budgets> { BudgetsScreen() }
 
         screen<Screen.Forecast> { ForecastScreen() }
+
+        screen<Screen.Alerts> { AlertsScreen() }
 
         screen<Screen.EditGoal> { EditGoalScreen() }
 

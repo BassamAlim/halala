@@ -55,6 +55,7 @@ interface RestoreDao {
         // ids they had, so it can't outlive them.
         clearAuditChanges()
         clearAuditBatches()
+        clearDismissedAlerts()
         clearLoanEvents()
         clearLoans()
         clearRecurring()
@@ -96,6 +97,8 @@ interface RestoreDao {
 
     @Query("DELETE FROM audit_changes") suspend fun clearAuditChanges()
     @Query("DELETE FROM audit_batches") suspend fun clearAuditBatches()
+    // Dismissed alerts name transactions by the ids they had: they go with them.
+    @Query("DELETE FROM dismissed_alerts") suspend fun clearDismissedAlerts()
     @Query("DELETE FROM internal_transfers") suspend fun clearTransfers()
     @Query("DELETE FROM balance_checkpoints") suspend fun clearCheckpoints()
     @Query("DELETE FROM account_refs") suspend fun clearRefs()

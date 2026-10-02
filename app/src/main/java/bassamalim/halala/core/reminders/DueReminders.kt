@@ -13,6 +13,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import bassamalim.halala.R
+import bassamalim.halala.core.data.repositories.AlertsRepository
 import bassamalim.halala.core.data.repositories.LoansRepository
 import bassamalim.halala.core.data.repositories.PeopleRepository
 import bassamalim.halala.core.data.repositories.RecurringRepository
@@ -46,10 +47,17 @@ sealed interface DueNotice {
 
     /** A loan with [person] is due today: owed to you when [lent]. */
     data class Loan(override val key: Int, val person: String, val lent: Boolean) : DueNotice
+
+    /** [count] things looked unusual since yesterday (anomaly alerts). */
+    data class Alerts(val count: Int) : DueNotice {
+        override val key get() = ALERTS_KEY
+    }
 }
 
+private const val ALERTS_KEY = 400_000
+
 /**
- * Bill, renewal and loan reminders: once a day, each thing you asked to hear about whose day it
+ * Bill, renewal and loan reminders, and the day's anomaly alerts: once a day, each thing you asked to hear about whose day it
  * is gets one notification. Quiet otherwise. Bills and subscriptions remind you their lead time
  * before they are due; a cancel reminder comes three days before a renewal, or its lead time if
  * that is longer; a loan, on its due day.
@@ -132,6 +140,8 @@ class DueReminders @Inject constructor(
                     is DueNotice.Loan -> context.getString(
                         if (notice.lent) R.string.due_loan_lent_title else R.string.due_loan_borrowed_title, notice.person
                     ) to context.getString(R.string.due_loan_text)
+                    is DueNotice.Alerts -> context.resources.getQuantityString(R.plurals.alert_count, notice.count, notice.count) to
+                            context.getString(R.string.alerts_hint)
                 }
                 manager.notify(
                     notice.key,
@@ -156,6 +166,7 @@ class DueReminderWorker @AssistedInject constructor(
     private val recurring: RecurringRepository,
     private val loans: LoansRepository,
     private val people: PeopleRepository,
+    private val alerts: AlertsRepository,
     private val clock: Clock
 ) : CoroutineWorker(context, params) {
 
@@ -163,7 +174,10 @@ class DueReminderWorker @AssistedInject constructor(
         val today = LocalDate.now(clock)
         val names = people.getPeople().associate { it.id to it.name }
         val notices = DueReminders.dueOn(today, recurring.observeStates().first(), loans.observeStates().first(), names)
-        DueReminders.notify(applicationContext, notices, today)
+        // Anomalies: once a day, how many arose since the last look; never what or how much.
+        val since = clock.instant().minus(Duration.ofDays(1))
+        val fresh = alerts.observeAlerts().first().count { it.at.isAfter(since) }
+        DueReminders.notify(applicationContext, notices + listOfNotNull(DueNotice.Alerts(fresh).takeIf { fresh > 0 }), today)
         return Result.success()
     }
 }

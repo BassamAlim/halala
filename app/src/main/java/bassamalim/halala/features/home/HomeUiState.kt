@@ -21,7 +21,9 @@ data class HomeUiState(
     /** What is due within a month, the soonest first. */
     val comingUp: List<ComingUp> = emptyList(),
     /** The balance card, once there is a budget for everything. */
-    val balance: BalanceInfo? = null
+    val balance: BalanceInfo? = null,
+    /** Anomaly alerts not dismissed. */
+    val alertCount: Int = 0
 )
 
 /**

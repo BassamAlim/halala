@@ -32,15 +32,16 @@ class HomeViewModel @Inject constructor(
     val uiState: StateFlow<HomeUiState> = combine(
         domain.observeAccounts(),
         domain.observeTransactions(),
-        domain.observeLoans(),
+        combine(domain.observeLoans(), domain.observeAlerts(), ::Pair),
         combine(domain.observeRecurring(), domain.observeForecast(), ::Pair),
         domain.observeOverview()
-    ) { accounts, transactions, loans, (recurring, forecast), overview ->
+    ) { accounts, transactions, (loans, alerts), (recurring, forecast), overview ->
         val wallet = accounts.firstOrNull { it.account.type == AccountType.CASH && !it.account.archived }
         val today = domain.today()
 
         HomeUiState(
             isLoading = false,
+            alertCount = alerts.size,
             cashWalletId = wallet?.account?.id,
             cashBalance = Money.format(wallet?.balanceMinor ?: 0, wallet?.account?.currency ?: Globals.PRIMARY_CURRENCY, decimals = false),
             bankBalance = Money.format(HomeDomain.bankTotal(accounts), Globals.PRIMARY_CURRENCY, decimals = false),
@@ -92,6 +93,8 @@ class HomeViewModel @Inject constructor(
     fun onAccountsClick() = navigator.navigate(Screen.Accounts)
 
     fun onPeopleClick() = navigator.navigate(Screen.People)
+
+    fun onAlertsClick() = navigator.navigate(Screen.Alerts)
 
     fun onComingUpClick() = navigator.navigate(Screen.Recurring)
 
