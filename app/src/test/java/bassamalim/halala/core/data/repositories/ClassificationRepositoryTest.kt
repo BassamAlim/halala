@@ -6,6 +6,8 @@ import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
 import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
 import bassamalim.halala.core.data.testDatabase
 import bassamalim.halala.core.domain.Rules
+import bassamalim.halala.core.domain.titleOf
+import bassamalim.halala.core.enums.AliasMatch
 import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.models.TransactionDraft
@@ -16,11 +18,14 @@ import bassamalim.halala.features.editRule.CheckedRule
 import bassamalim.halala.features.editRule.EditRuleDomain
 import bassamalim.halala.features.editRule.RuleForm
 import bassamalim.halala.features.editRule.RuleProblem
+import bassamalim.halala.features.merchant.MerchantDomain
+import bassamalim.halala.features.merchant.NameProblem
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -40,7 +45,7 @@ class ClassificationRepositoryTest {
     fun setUp() = runTest {
         db = testDatabase()
         transactions = TransactionsRepository(db.transactionsDao(), db.accountsDao(), TEST_CLOCK)
-        classification = ClassificationRepository(db.classificationDao(), db.transactionsDao(), TEST_CLOCK)
+        classification = ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), TEST_CLOCK)
         cash = db.accountsDao().getCashWallet()!!.id
         val categories = classification.getCategories().associate { it.name to it.id }
         groceries = categories.getValue("Groceries")
@@ -53,14 +58,6 @@ class ClassificationRepositoryTest {
     private suspend fun spend(title: String, minor: Long = 1000) = transactions.add(
         TransactionDraft(cash, Direction.DEBIT, minor, TEST_CLOCK.instant(), TransactionKind.PURCHASE, title)
     )
-
-    @Test
-    fun `merchant keys ignore case, digits and punctuation`() {
-        assertEquals("panda riyadh", Rules.merchantKey("PANDA 1042 RIYADH"))
-        assertEquals(Rules.merchantKey("Panda-1077 Riyadh"), Rules.merchantKey("PANDA 1042 RIYADH"))
-        assertEquals("بنده", Rules.merchantKey("بنده 12"))
-        assertEquals("1234", Rules.merchantKey(" 1234 "))
-    }
 
     @Test
     fun `one answer files a merchant's past and future, and nothing else`() = runTest {
@@ -131,7 +128,7 @@ class ClassificationRepositoryTest {
         assertEquals(emptyList<Any>(), classification.getRules())
         assertNull(transactions.get(filed)!!.categoryId)
         assertNull(transactions.get(filed)!!.ruleId)
-        assertEquals(listOf("dose"), Rules.clusters(transactions.observeAll().first()).map { it.key })
+        assertEquals(listOf("Dose"), Rules.clusters(transactions.observeAll().first()).map { it.name })
         assertEquals(CategoryProblem.NameTaken, CategoriesDomain.validate(" groceries ", listOf("Groceries")))
         assertEquals(CategoryProblem.NameMissing, CategoriesDomain.validate("  ", emptyList()))
         assertNull(CategoriesDomain.validate("Coffee", listOf("Groceries")))
@@ -176,8 +173,8 @@ class ClassificationRepositoryTest {
         val big = spend("JAHEZ Riyadh", 40_000)
         classification.learn("Jahez", groceries)
         assertEquals(groceries, transactions.get(small)!!.categoryId)
-        // "Jahez Riyadh" is another merchant key: the learned rule misses it, "contains" doesn't.
-        assertNull(transactions.get(big)!!.categoryId)
+        // "JAHEZ Riyadh" is Jahez in Riyadh: the merchant's rule files it too.
+        assertEquals(groceries, transactions.get(big)!!.categoryId)
 
         classification.saveRule(0, RuleConditions(contains = "jahez"), RuleActions(shopping))
         classification.saveRule(0, RuleConditions(contains = "jahez", minMinor = 20_000, accountId = cash), RuleActions(groceries))
@@ -219,11 +216,136 @@ class ClassificationRepositoryTest {
             TransferDraft(bank, cash, 7000, TEST_CLOCK.instant(), TransactionKind.ATM_WITHDRAWAL, "ATM")
         )
 
+        classification.applyRules()
+
         val clusters = Rules.clusters(transactions.observeAll().first())
-        assertEquals(listOf("jarir" to 1, "panda" to 2), clusters.map { it.key to it.count })
+        assertEquals(listOf("Jarir" to 1, "Panda" to 2), clusters.map { it.name to it.count })
         assertEquals(3000L, clusters[1].totalMinor)
 
         classification.learn("Panda", groceries)
-        assertEquals(listOf("jarir"), Rules.clusters(transactions.observeAll().first()).map { it.key })
+        assertEquals(listOf("Jarir"), Rules.clusters(transactions.observeAll().first()).map { it.name })
+    }
+
+    // Merchants.
+
+    private suspend fun merchantOf(id: Long) = transactions.observe(id).first()!!.merchantId
+
+    @Test
+    fun `each spelling finds its merchant, and a person is never one`() = runTest {
+        val psn = spend("PLAYSTATIONNETWORK")
+        val psnAbroad = spend("PlaystationNetw LONDON")
+        val laundry = spend("Clean laundry")
+        val machine = spend("Clean laundry machine")
+        val person = transactions.add(
+            TransactionDraft(cash, Direction.DEBIT, 500, TEST_CLOCK.instant(), TransactionKind.TRANSFER_OUT, "AHMED ALI")
+        )
+        classification.applyRules()
+
+        assertEquals(merchantOf(psn), merchantOf(psnAbroad))
+        assertTrue(merchantOf(laundry) != merchantOf(machine))
+        assertNull(merchantOf(person))
+        assertEquals(3, classification.getMerchants().size)
+
+        val aliases = classification.getAliases().associateBy { it.aliasKey }
+        assertEquals(AliasMatch.FIRST, aliases.getValue("playstationnetwork").matchedBy)
+        assertEquals(AliasMatch.SIMILAR, aliases.getValue("playstationnetw").matchedBy)
+        assertEquals("PlaystationNetw LONDON", aliases.getValue("playstationnetw").descriptor)
+        // The feed shows the merchant's name; the title keeps the bank's words.
+        val abroad = transactions.observe(psnAbroad).first()!!
+        assertEquals("PLAYSTATIONNETWORK", titleOf(abroad))
+        assertEquals("PlaystationNetw LONDON", abroad.transaction.title)
+
+        // Running again changes nothing.
+        classification.applyRules()
+        assertEquals(3, classification.getMerchants().size)
+        assertEquals(4, classification.getAliases().size)
+    }
+
+    @Test
+    fun `a learned rule is taught the merchant, so it files every spelling and keeps its new name`() = runTest {
+        val first = spend("PLAYSTATIONNETWORK")
+        classification.learn("PLAYSTATIONNETWORK", shopping)
+        val later = spend("PlaystationNetw LONDON")
+        classification.applyRules()
+
+        val rule = classification.getRules().single()
+        assertEquals(merchantOf(first), rule.conditions.merchantId)
+        assertEquals(shopping, transactions.get(later)!!.categoryId)
+        assertEquals(rule.id, transactions.get(later)!!.ruleId)
+
+        classification.renameMerchant(merchantOf(first)!!, "PlayStation")
+        assertEquals("PlayStation", classification.observeRules().first().single().merchantName)
+        assertEquals(1, classification.countFor("PlaystationNetw", exceptId = later))
+    }
+
+    @Test
+    fun `merging moves spellings and rules, the merchant merged into keeps its answer, and undo puts it back`() = runTest {
+        val sasco = spend("SASCO Station")
+        val station = spend("SASCO PETROL")
+        classification.learn("SASCO Station", shopping)
+        classification.learn("SASCO PETROL", groceries)
+        val into = merchantOf(sasco)!!
+        val from = merchantOf(station)!!
+        val rulesBefore = classification.getRules()
+
+        val batch = classification.mergeMerchants(from, into)!!
+
+        assertEquals(into, merchantOf(station))
+        assertNull(classification.getMerchants().firstOrNull { it.id == from })
+        assertEquals(listOf(into), classification.getRules().mapNotNull { it.conditions.merchantId })
+        assertEquals(shopping, transactions.get(station)!!.categoryId)
+        assertEquals(AliasMatch.YOU, classification.getAliases().single { it.aliasKey == "sasco petrol" }.matchedBy)
+
+        classification.undo(batch)
+
+        assertEquals(from, merchantOf(station))
+        assertEquals(rulesBefore, classification.getRules())
+        assertEquals(groceries, transactions.get(station)!!.categoryId)
+        assertEquals(shopping, transactions.get(sasco)!!.categoryId)
+    }
+
+    @Test
+    fun `taking a spelling out makes it its own merchant and sends the rule's filings back to review`() = runTest {
+        val psn = spend("PLAYSTATIONNETWORK")
+        val wrong = spend("PlaystationNetw LONDON")
+        val mine = spend("PlaystationNetw LONDON")
+        classification.applyRules()
+        classification.file(mine, groceries, null)
+        classification.learn("PLAYSTATIONNETWORK", shopping)
+        assertEquals(shopping, transactions.get(wrong)!!.categoryId)
+        val alias = classification.getAliases().single { it.aliasKey == "playstationnetw" }
+
+        val batch = classification.splitAlias(alias.id)!!
+
+        assertTrue(merchantOf(wrong) != merchantOf(psn))
+        assertEquals("PlaystationNetw", transactions.observe(wrong).first()!!.merchantName)
+        assertNull(transactions.get(wrong)!!.categoryId)
+        assertEquals(groceries, transactions.get(mine)!!.categoryId)
+        assertEquals(shopping, transactions.get(psn)!!.categoryId)
+        // Its own merchant now: running again doesn't merge it back.
+        classification.applyRules()
+        assertTrue(merchantOf(wrong) != merchantOf(psn))
+        // A merchant known by one spelling has none to take out.
+        assertNull(classification.splitAlias(alias.id))
+
+        classification.undo(batch)
+
+        assertEquals(merchantOf(psn), merchantOf(wrong))
+        assertEquals(shopping, transactions.get(wrong)!!.categoryId)
+        assertEquals(1, classification.getMerchants().size)
+    }
+
+    @Test
+    fun `keys follow a title that changes, and an emptied name is no merchant`() = runTest {
+        val id = spend("Jarir")
+        transactions.update(
+            id, TransactionDraft(cash, Direction.DEBIT, 1000, TEST_CLOCK.instant(), TransactionKind.PURCHASE, "Panda 12")
+        )
+        classification.applyRules()
+        assertEquals("panda", transactions.get(id)!!.merchantKey)
+        assertEquals("Panda", transactions.observe(id).first()!!.merchantName)
+
+        assertEquals(null, classification.renameMerchant(merchantOf(id)!!, "  "))
+        assertEquals(NameProblem.Missing, MerchantDomain.validateName(" "))
     }
 }

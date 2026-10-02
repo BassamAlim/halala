@@ -128,6 +128,7 @@
     <string name="transaction_origin_manual">You added it on %1$s.</string>
     <string name="transaction_origin_reconcile">The gap found when you counted your wallet on %1$s.</string>
     <string name="transaction_origin_sms">Read from a bank message on %1$s.</string>
+    <string name="transaction_origin_descriptor">The bank wrote it as %1$s.</string>
     <string name="transaction_delete_title">Delete this transaction?</string>
     <string name="transaction_delete_body">It comes off the account\'s balance. This can\'t be undone.</string>
     <string name="transaction_delete_move">Both sides of this move are deleted. This can\'t be undone.</string>
@@ -290,7 +291,7 @@
 
     <!-- History -->
     <string name="history">Recent changes</string>
-    <string name="settings_history_summary">Undo a filing, a rule or a deleted category</string>
+    <string name="settings_history_summary">Undo a filing, a rule, a merge or a deleted category</string>
     <string name="history_empty">Nothing changed yet.</string>
     <string name="undo">Undo</string>
     <string name="undone">Undone</string>
@@ -303,6 +304,9 @@
     <string name="audit_rule_on">Turned on the rule for %1$s</string>
     <string name="audit_rule_deleted">Deleted the rule for %1$s</string>
     <string name="audit_category_deleted">Deleted the category %1$s</string>
+    <string name="audit_merchant_renamed">Renamed %1$s to %2$s</string>
+    <string name="audit_merchants_merged">Merged %1$s into %2$s</string>
+    <string name="audit_alias_split">Took %1$s out of %2$s</string>
 
     <!-- Review reminder -->
     <string name="settings_reminders">Reminders</string>
@@ -339,4 +343,35 @@
     <string name="rules_empty">No rules yet. Choose a category for a merchant and Halala remembers it.</string>
     <string name="rules_footer">Changing a rule re-files what it filed. Transactions you filed yourself stay as they are.</string>
     <string name="settings_rules_summary">What Halala learned from your answers</string>
+
+    <!-- Merchants -->
+    <string name="merchants">Merchants</string>
+    <string name="merchant">Merchant</string>
+    <string name="settings_merchants_summary">Each business, however its bank spells it</string>
+    <string name="merchants_search">Search merchants</string>
+    <string name="merchants_empty">No merchants yet. They appear as purchases arrive.</string>
+    <string name="merchants_hint">A new spelling joins the merchant it reads like. If one joined the wrong merchant, open it and take that spelling out.</string>
+    <plurals name="merchant_aliases">
+        <item quantity="one">%d spelling</item>
+        <item quantity="other">%d spellings</item>
+    </plurals>
+    <string name="merchant_rename">Rename</string>
+    <string name="merchant_name">Name</string>
+    <string name="merchant_name_missing">Give it a name</string>
+    <string name="merchant_spent">Spent</string>
+    <string name="merchant_spellings">How the bank writes it</string>
+    <string name="merchant_spelling_first">First seen</string>
+    <string name="merchant_spelling_similar">Spelled like the others</string>
+    <string name="merchant_spelling_you">Moved here by you</string>
+    <string name="merchant_split">Not this one</string>
+    <string name="merchant_split_title">Take %1$s out of %2$s?</string>
+    <string name="merchant_split_body">It becomes a merchant of its own. What a rule filed for %1$s goes back to review; what you filed yourself stays. You can undo this in Recent changes.</string>
+    <string name="merchant_split_confirm">Take it out</string>
+    <string name="merchant_merge">Same as another merchant</string>
+    <string name="merchant_merge_title">Which merchant is %1$s?</string>
+    <string name="merchant_merge_none">No merchant by that name.</string>
+    <string name="merchant_merge_confirm_title">Merge %1$s into %2$s?</string>
+    <string name="merchant_merge_confirm_body">%1$s\'s spellings and rules become %2$s\'s. If both have a learned category, %2$s\'s stays. You can undo this in Recent changes.</string>
+    <string name="merchant_merge_confirm">Merge</string>
+    <string name="merchant_transactions">Transactions</string>
 </resources>

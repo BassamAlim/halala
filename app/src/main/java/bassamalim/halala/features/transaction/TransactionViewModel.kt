@@ -91,7 +91,9 @@ class TransactionViewModel @Inject constructor(
                 )
             },
             sheet = sheet,
-            merchant = tx.title
+            merchant = tx.title,
+            merchantId = detail.merchantId,
+            merchantName = detail.merchantName
         )
     }.stateIn(
         scope = viewModelScope,
@@ -138,6 +140,11 @@ class TransactionViewModel @Inject constructor(
     }
 
     fun onEditRuleClick() = navigator.navigate(Screen.Rules)
+
+    fun onMerchantClick() {
+        val merchantId = uiState.value.merchantId ?: return
+        navigator.navigate(Screen.Merchant(merchantId))
+    }
 
     fun onDeleteClick() = confirmingDelete.update { true }
 

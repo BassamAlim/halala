@@ -2,6 +2,7 @@ package bassamalim.halala.core.data.dataSources.room
 
 import androidx.room.TypeConverter
 import bassamalim.halala.core.enums.AccountType
+import bassamalim.halala.core.enums.AliasMatch
 import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
 import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
 import bassamalim.halala.core.enums.AuditAction
@@ -103,4 +104,11 @@ class Converters {
 
     @TypeConverter
     fun fromRawStatus(status: RawStatus): String = status.name
+
+    @TypeConverter
+    fun toAliasMatch(name: String): AliasMatch =
+        AliasMatch.entries.firstOrNull { it.name == name } ?: AliasMatch.SIMILAR
+
+    @TypeConverter
+    fun fromAliasMatch(match: AliasMatch): String = match.name
 }

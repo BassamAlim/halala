@@ -1,5 +1,6 @@
 package bassamalim.halala.core.data.dataSources.room.entities
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -48,7 +49,8 @@ import java.time.Instant
         Index(value = ["occurredAt"]),
         Index(value = ["rawMessageId"]),
         Index(value = ["categoryId"]),
-        Index(value = ["ruleId"])
+        Index(value = ["ruleId"]),
+        Index(value = ["merchantKey"])
     ]
 )
 data class Transaction(
@@ -76,5 +78,11 @@ data class Transaction(
     val categoryId: Long? = null,
     val expenseType: ExpenseType? = null,
     /** The rule that filed it. Null with a category means you chose it yourself, and no rule may change it. */
-    val ruleId: Long? = null
+    val ruleId: Long? = null,
+    /**
+     * [title] as `Merchants.key` reads it: the merchant is the one whose alias this is. Kept in
+     * step with the title by the repository (and mended by `ClassificationRepository.applyRules`).
+     */
+    @ColumnInfo(defaultValue = "")
+    val merchantKey: String = ""
 )

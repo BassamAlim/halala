@@ -27,6 +27,8 @@ import bassamalim.halala.features.editTransaction.EditTransactionScreen
 import bassamalim.halala.features.export.ExportScreen
 import bassamalim.halala.features.lock.LockScreen
 import bassamalim.halala.features.main.MainScreen
+import bassamalim.halala.features.merchant.MerchantScreen
+import bassamalim.halala.features.merchants.MerchantsScreen
 import bassamalim.halala.features.onboarding.OnboardingScreen
 import bassamalim.halala.features.review.ReviewScreen
 import bassamalim.halala.features.rules.RulesScreen
@@ -85,6 +87,10 @@ fun NavGraph(navController: NavHostController, startDestination: Screen) {
         screen<Screen.Rules> { RulesScreen() }
 
         screen<Screen.Categories> { CategoriesScreen() }
+
+        screen<Screen.Merchants> { MerchantsScreen() }
+
+        screen<Screen.Merchant> { MerchantScreen() }
 
         screen<Screen.EditRule> { EditRuleScreen() }
 

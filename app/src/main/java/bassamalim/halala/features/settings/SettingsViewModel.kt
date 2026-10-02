@@ -88,5 +88,7 @@ class SettingsViewModel @Inject constructor(
 
     fun onRulesClick() = navigator.navigate(Screen.Rules)
 
+    fun onMerchantsClick() = navigator.navigate(Screen.Merchants)
+
     fun onMessagesClick() = navigator.navigate(Screen.Onboarding(fromSettings = true))
 }

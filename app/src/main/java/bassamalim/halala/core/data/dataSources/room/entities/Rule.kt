@@ -27,17 +27,25 @@ data class Rule(
 /** All of the conditions that are set must hold. */
 @Serializable
 data class RuleConditions(
-    /** The merchant as it was written when the rule was made; compared by its merchant key. */
+    /**
+     * The merchant as it was called when the rule was made. Without [merchantId], it is
+     * compared by its key, and holds for every alias of the merchant that key names.
+     */
     val merchant: String? = null,
     /** Text the transaction's title holds, whatever its capitals. */
     val contains: String? = null,
     val accountId: Long? = null,
     /** The amount's range in minor units, both ends included. */
     val minMinor: Long? = null,
-    val maxMinor: Long? = null
+    val maxMinor: Long? = null,
+    /**
+     * The merchant a learned rule was taught: it holds for every way the bank writes it, and
+     * follows the merchant through merges. [merchant] is then only its name, for words.
+     */
+    val merchantId: Long? = null
 ) {
-    /** How many conditions are set: the more, the more specific the rule. */
-    val size get() = listOfNotNull(merchant, contains, accountId, minMinor, maxMinor).size
+    /** How many conditions are set: the more, the more specific the rule. A merchant is one. */
+    val size get() = listOfNotNull(merchant ?: merchantId, contains, accountId, minMinor, maxMinor).size
 
     /** What the rule is about, in a word, for the history of changes. */
     val subject get() = merchant ?: contains ?: ""

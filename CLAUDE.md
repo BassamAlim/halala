@@ -67,7 +67,8 @@ core/
   data/dataSources/keystore/  DatabaseKey: the SQLCipher passphrase, wrapped by Android Keystore
   data/repositories/          the only way into storage; @Singleton + @Inject constructor
   di/                         Hilt modules for things Hilt can't construct itself
-  domain/                     app-wide rules: Money, BudgetState, CashGap, Totals, TransactionItems
+  domain/                     app-wide rules: Money, BudgetState, CashGap, Totals, TransactionItems,
+                              Rules, Merchants
   enums/                      shared enums (AccountType, Direction, TransactionKind, …)
   export/                     the CSV and JSON exports (Exporter, Csv, ExportFile)
   lock/                       LockManager: when the biometric lock asks again
@@ -185,17 +186,30 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   `Rules.canCategorise`). A transaction with a category and no `ruleId` was filed by you, and no
   rule ever changes it; one with a `ruleId` was filed by that rule and shows the Auto badge.
   Choosing a category for a merchant asks "just this one, or always": always writes one learned
-  rule per merchant key (`Rules.merchantKey`: lower case, letters only) and files its past too.
+  rule per merchant (taught the merchant's id, so it files every spelling) and files its past too.
   `ClassificationRepository.applyRules()` is idempotent and runs after every SMS run, every
   manual save and every rule change. A rule's use count is counted from the transactions it
   filed, not stored. Rule conditions and actions are JSON columns, so new kinds need no
   migration; all that are set must hold. Yours beat learned, learned beat AI, then the rule with
   more conditions, then the newer. Removing a category deletes the rules that file under it and
   sends its transactions back to review.
+- **Merchants**: a `Merchant` is a business however its bank spells it; each spelling is a
+  `MerchantAlias` keyed by `Merchants.key` (lower case, letters only, trailing places and company
+  words dropped: "PANDA 1042 RIYADH" is `panda`). Every transaction stores its title's key
+  (`merchantKey`, kept in step by `TransactionsRepository`) and finds its merchant through the
+  alias, so merging or splitting moves aliases, never transactions. `applyRules` first resolves
+  keys not seen before, oldest first, for purchases, refunds and bills only (a transfer's title
+  is a person): a key spelled like a known alias (`Merchants.similarTo`, bigram similarity ≥
+  0.85, five letters or more) joins that merchant, else it starts one named after it. Feeds
+  show the merchant's name; the title keeps the bank's words, and Transaction detail says
+  both. You rename, merge ("Same as another merchant": the merged-into merchant's learned
+  answer stands) and split ("Not this one": the spelling becomes its own merchant and what
+  rules filed under it goes back to review) on the Merchant screen. The app runs `applyRules`
+  on opening, which fills merchants in after the upgrade.
 - **Undo**: everything you do to filing (an answer, "always", saving, switching or deleting a
-  rule, deleting a category) is one `AuditBatch`: `ClassificationRepository.audited` snapshots
-  categories, rules and every transaction's filing before and after, and stores the rows that
-  differ. `undo` puts each row back only where it still reads as the batch left it, so nothing
+  rule, deleting a category, renaming, merging or splitting a merchant) is one `AuditBatch`:
+  `ClassificationRepository.audited` snapshots categories, rules, merchants, aliases and every
+  transaction's filing before and after, and stores the rows that differ. `undo` puts each row back only where it still reads as the batch left it, so nothing
   done since is overwritten. What rules file on their own as SMS arrive is not a batch (the
   transaction names its rule). New mutations of categories, rules or filings go through
   `audited`.
@@ -227,7 +241,7 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   `accounts.csv` and `transactions.csv` (UTF-8 with BOM, CRLF, signed decimal amounts plus exact
   `amount_minor`, local times, text cells defused against spreadsheet formula injection). JSON:
   `ExportFile`, schema-versioned (`schemaVersion`, bump on any shape change; 2 added categories
-  and rules), keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
+  and rules, 3 merchants with their aliases), keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
 - **Privacy**: no analytics, no crash reporter, no network in Phase 0. Nothing about money goes
   in DataStore (it isn't encrypted).
 - The spec's global quick-add is a flat jade `QuickAddButton` on Home and Activity (the boards
@@ -268,7 +282,10 @@ Home's review pill), **Rules** (Rules board; from Settings and from a transactio
 automatically" card), category and type on Transaction detail, and, with no board, built from
 the system's components: **Categories** (add, tap to remove), **Rule** (the form: merchant is,
 description contains, account, amount range → category and type), **Recent changes** (each
-with Undo) and the reminder sheet in Settings. Still to come in Phase 2: renaming and two-level
-categories, merchants with aliases and fuzzy matching, the Review board's suggestion parts, and
-AI classification with scrubbing (Groq's data-retention question in the spec is still open:
+with Undo), the reminder sheet in Settings, and **Merchants** (from Settings: every merchant,
+busiest first, with search) and **Merchant** (from Transaction detail's Merchant row, a Review
+card for many, or the list: rename, what was spent, how the bank writes it with how each
+spelling joined, "Not this one", "Same as another merchant", its transactions). Still to come
+in Phase 2: renaming and two-level categories, the Review board's suggestion parts, merchant
+logos and locations, and AI classification with scrubbing (Groq's data-retention question in the spec is still open:
 nothing is sent until the owner settles it).

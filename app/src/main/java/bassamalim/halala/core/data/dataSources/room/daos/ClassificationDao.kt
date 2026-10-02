@@ -48,7 +48,8 @@ interface ClassificationDao {
         SELECT r.*,
             (SELECT c.name FROM categories c WHERE c.id = json_extract(r.actions, '$.categoryId')) AS categoryName,
             (SELECT COUNT(*) FROM transactions t WHERE t.ruleId = r.id) AS hits,
-            (SELECT MAX(t.occurredAt) FROM transactions t WHERE t.ruleId = r.id) AS lastHitAt
+            (SELECT MAX(t.occurredAt) FROM transactions t WHERE t.ruleId = r.id) AS lastHitAt,
+            (SELECT m.name FROM merchants m WHERE m.id = json_extract(r.conditions, '$.merchantId')) AS merchantName
         FROM rules r ORDER BY hits DESC, r.id DESC
         """
     )
@@ -68,6 +69,10 @@ interface ClassificationDao {
 
     @Query("DELETE FROM rules WHERE id = :id")
     suspend fun deleteRule(id: Long)
+
+    /** What a rule filed goes back to review, for another rule to take. */
+    @Query("UPDATE transactions SET categoryId = NULL, expenseType = NULL, ruleId = NULL WHERE ruleId = :ruleId")
+    suspend fun unfileRule(ruleId: Long)
 
     @Update
     suspend fun updateCategory(category: Category)

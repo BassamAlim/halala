@@ -49,7 +49,7 @@ class SmsIngestTest {
             transactions,
             accounts,
             InstitutionsRepository(db.institutionsDao()),
-            ClassificationRepository(db.classificationDao(), db.transactionsDao(), TEST_CLOCK),
+            ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), TEST_CLOCK),
             TEST_CLOCK
         )
         val banks = db.institutionsDao().getAll().associate { it.name to it.id }

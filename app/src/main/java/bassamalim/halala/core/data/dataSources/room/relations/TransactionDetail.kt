@@ -17,7 +17,10 @@ data class TransactionDetail(
     val counterpartInstitutionName: String?,
     /** The receiving leg of a pair: the feed shows a move once, by its sending leg. */
     val isTransferInLeg: Boolean,
-    val categoryName: String? = null
+    val categoryName: String? = null,
+    /** The merchant its descriptor belongs to, when it names a business. */
+    val merchantId: Long? = null,
+    val merchantName: String? = null
 ) {
     val isInternalTransfer get() = counterpartId != null
 }

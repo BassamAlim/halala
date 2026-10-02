@@ -88,6 +88,12 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 onClick = viewModel::onCategoriesClick
             )
             ListRow(
+                title = stringResource(R.string.merchants),
+                subtitle = stringResource(R.string.settings_merchants_summary),
+                divider = true,
+                onClick = viewModel::onMerchantsClick
+            )
+            ListRow(
                 title = stringResource(R.string.rules),
                 subtitle = stringResource(R.string.settings_rules_summary),
                 divider = true,

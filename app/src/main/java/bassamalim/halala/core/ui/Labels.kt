@@ -5,6 +5,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import bassamalim.halala.R
 import bassamalim.halala.core.enums.AccountType
+import bassamalim.halala.core.enums.AliasMatch
 import bassamalim.halala.core.enums.AuditAction
 import bassamalim.halala.core.enums.ExpenseType
 import bassamalim.halala.core.enums.TransactionKind
@@ -132,5 +133,18 @@ fun auditSentence(action: AuditAction, subject: String, detail: String): String 
         AuditAction.RULE_ON -> stringResource(R.string.audit_rule_on, name)
         AuditAction.RULE_DELETED -> stringResource(R.string.audit_rule_deleted, name)
         AuditAction.CATEGORY_DELETED -> stringResource(R.string.audit_category_deleted, name)
+        AuditAction.MERCHANT_RENAMED -> stringResource(R.string.audit_merchant_renamed, name, detail)
+        AuditAction.MERCHANTS_MERGED -> stringResource(R.string.audit_merchants_merged, name, detail)
+        AuditAction.ALIAS_SPLIT -> stringResource(R.string.audit_alias_split, name, detail)
     }
 }
+
+/** How a spelling came to be the merchant's, for the merchant screen to say. */
+@Composable
+fun aliasMatchLabel(match: AliasMatch): String = stringResource(
+    when (match) {
+        AliasMatch.FIRST -> R.string.merchant_spelling_first
+        AliasMatch.SIMILAR -> R.string.merchant_spelling_similar
+        AliasMatch.YOU -> R.string.merchant_spelling_you
+    }
+)

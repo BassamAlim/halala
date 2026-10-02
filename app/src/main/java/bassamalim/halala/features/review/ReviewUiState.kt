@@ -19,8 +19,12 @@ data class JustFiled(val batchId: Long, val merchant: String, val category: Stri
 data class ReviewCard(
     /** Merchant key and currency: stable while the list changes under it. */
     val key: String,
-    /** The merchant as its newest transaction writes it. */
+    /** The merchant's name, or the newest title for one that isn't a merchant (a person). */
     val title: String,
+    /** How the newest one was written: what a rule learns from. */
+    val descriptor: String,
+    /** The merchant, when it is one: a card for many opens it. */
+    val merchantId: Long?,
     val initial: String,
     val count: Int,
     /** The total, signed as spending: "−18,400.00". */

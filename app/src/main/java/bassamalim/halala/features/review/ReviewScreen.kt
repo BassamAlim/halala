@@ -86,8 +86,8 @@ fun ReviewScreen(viewModel: ReviewViewModel = hiltViewModel()) {
                         currency = card.currency,
                         tone = AmountTone.Spending,
                         initial = card.initial,
-                        // One transaction opens; many are a list Activity's search already shows.
-                        onClick = if (card.count == 1) ({ viewModel.onTransactionClick(card.transactionId) }) else null
+                        // One transaction opens itself; many open their merchant.
+                        onClick = if (card.count == 1 || card.merchantId != null) ({ viewModel.onCardClick(card) }) else null
                     )
                     HalalaButton(
                         text = stringResource(R.string.choose_category),

@@ -44,8 +44,10 @@ class ReviewViewModel @Inject constructor(
                 val latest = cluster.latest
                 ReviewCard(
                     key = "${cluster.key}|${cluster.currency}",
-                    title = latest.transaction.title,
-                    initial = initialOf(latest.transaction.title),
+                    title = cluster.name,
+                    descriptor = latest.transaction.title,
+                    merchantId = cluster.merchantId,
+                    initial = initialOf(cluster.name),
                     count = cluster.count,
                     amount = Money.format(-cluster.totalMinor, cluster.currency),
                     currency = cluster.currency,
@@ -67,7 +69,12 @@ class ReviewViewModel @Inject constructor(
 
     fun onBackClick() = navigator.popBackStack()
 
-    fun onTransactionClick(id: Long) = navigator.navigate(Screen.Transaction(id))
+    /** One transaction opens itself; many open their merchant, when they have one. */
+    fun onCardClick(card: ReviewCard) = when {
+        card.count == 1 -> navigator.navigate(Screen.Transaction(card.transactionId))
+        card.merchantId != null -> navigator.navigate(Screen.Merchant(card.merchantId))
+        else -> Unit
+    }
 
     fun onChooseClick(card: ReviewCard) = picking.update { card }
 
@@ -77,7 +84,7 @@ class ReviewViewModel @Inject constructor(
         val card = picking.value ?: return
         picking.update { null }
         viewModelScope.launch {
-            val batchId = domain.learn(card.title, category.id)
+            val batchId = domain.learn(card.descriptor, category.id)
             justFiled.update { batchId?.let { JustFiled(it, card.title, category.name) } }
         }
     }

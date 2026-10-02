@@ -37,6 +37,9 @@ data class TransactionUiState(
     val filedBy: FiledBy? = null,
     /** What a rule would match: the title as stored (blank for a nameless one or a move). */
     val merchant: String = "",
+    /** The merchant it was at, when its title names one: the row that opens it. */
+    val merchantId: Long? = null,
+    val merchantName: String? = null,
     val sheet: TransactionSheet? = null
 ) {
     val isMove get() = fromLabel != null

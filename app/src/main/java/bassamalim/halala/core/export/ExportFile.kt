@@ -23,10 +23,12 @@ data class ExportFile(
     val internalTransfers: List<ExportInternalTransfer>,
     /** Since schema 2. */
     val categories: List<ExportCategory> = emptyList(),
-    val rules: List<ExportRule> = emptyList()
+    val rules: List<ExportRule> = emptyList(),
+    /** Since schema 3. */
+    val merchants: List<ExportMerchant> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 2
+        const val SCHEMA_VERSION = 3
     }
 }
 
@@ -64,7 +66,9 @@ data class ExportTransaction(
     /** Since schema 2: what it is filed under, and the rule that filed it (null when you did). */
     val categoryUid: String? = null,
     val expenseType: String? = null,
-    val ruleUid: String? = null
+    val ruleUid: String? = null,
+    /** Since schema 3: the merchant its title names, when it names one. */
+    val merchantUid: String? = null
 )
 
 @Serializable
@@ -75,12 +79,22 @@ data class ExportRule(
     val uid: String,
     /** The merchant it matches, as written when the rule was made. */
     val merchant: String?,
+    /** Since schema 3: the merchant it was taught, for a learned rule. */
+    val merchantUid: String? = null,
     val categoryUid: String?,
     val expenseType: String?,
     val source: String,
     val enabled: Boolean,
     val createdAt: String
 )
+
+/** A merchant and every way its bank writes it. */
+@Serializable
+data class ExportMerchant(val uid: String, val name: String, val aliases: List<ExportAlias>)
+
+/** One spelling: its key (lower case, letters only), as first written, and how it joined. */
+@Serializable
+data class ExportAlias(val key: String, val descriptor: String, val matchedBy: String)
 
 @Serializable
 data class ExportInternalTransfer(
