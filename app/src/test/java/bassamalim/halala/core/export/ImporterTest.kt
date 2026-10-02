@@ -10,6 +10,8 @@ import bassamalim.halala.core.data.dataSources.room.entities.Institution
 import bassamalim.halala.core.data.dataSources.room.entities.InternalTransfer
 import bassamalim.halala.core.data.dataSources.room.entities.Merchant
 import bassamalim.halala.core.data.dataSources.room.entities.MerchantAlias
+import bassamalim.halala.core.data.dataSources.room.entities.Person
+import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
@@ -18,6 +20,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.InstitutionsRepository
+import bassamalim.halala.core.data.repositories.PeopleRepository
 import bassamalim.halala.core.data.repositories.RestoreRepository
 import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
@@ -60,7 +63,8 @@ class ImporterTest {
         transactions = listOf(
             Transaction(31, "tx-jahez", 22, Direction.DEBIT, 21_450, "SAR", at, TransactionKind.PURCHASE, "Jahez Olaya", "lunch", TransactionSource.SMS, at, rawMessageId = 61, originalAmountMinor = 5_720, originalCurrency = "USD", categoryId = 47, expenseType = ExpenseType.VARIABLE_DISCRETIONARY, ruleId = 59, merchantKey = "jahez olaya"),
             Transaction(32, "tx-out", 22, Direction.DEBIT, 50_000, "SAR", at, TransactionKind.ATM_WITHDRAWAL, "", "", TransactionSource.MANUAL, at),
-            Transaction(33, "tx-in", 21, Direction.CREDIT, 50_000, "SAR", at, TransactionKind.ATM_WITHDRAWAL, "", "", TransactionSource.MANUAL, at)
+            Transaction(33, "tx-in", 21, Direction.CREDIT, 50_000, "SAR", at, TransactionKind.ATM_WITHDRAWAL, "", "", TransactionSource.MANUAL, at),
+            Transaction(34, "tx-khalid", 22, Direction.DEBIT, 150_000, "SAR", at, TransactionKind.TRANSFER_OUT, "KHALID ALI", "", TransactionSource.SMS, at, merchantKey = "khalid ali")
         ),
         transfers = listOf(InternalTransfer(71, "pair-1", outTransactionId = 32, inTransactionId = 33, matchConfidence = 0.8)),
         categories = listOf(
@@ -82,7 +86,9 @@ class ImporterTest {
         checkpoints = listOf(
             BalanceCheckpoint(111, accountId = 22, balanceMinor = 28_550, at = at, rawMessageId = 61),
             BalanceCheckpoint(112, accountId = 22, balanceMinor = -300, at = at, rawMessageId = null)
-        )
+        ),
+        people = listOf(Person(121, "person-khalid", "Khalid A.", namedByYou = true)),
+        personAliases = listOf(PersonAlias(131, 121, "khalid ali", "KHALID ALI"))
     )
 
     private val json = Exporter.json(snapshot, appVersion = "0.2.0", now = at)
@@ -101,8 +107,9 @@ class ImporterTest {
         InstitutionsRepository(db.institutionsDao()),
         AccountsRepository(db.accountsDao(), TEST_CLOCK),
         TransactionsRepository(db.transactionsDao(), db.accountsDao(), TEST_CLOCK),
-        ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), TEST_CLOCK),
+        ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), db.peopleDao(), TEST_CLOCK),
         SmsRepository(db.smsDao()),
+        PeopleRepository(db.peopleDao()),
         TEST_CLOCK
     )
 

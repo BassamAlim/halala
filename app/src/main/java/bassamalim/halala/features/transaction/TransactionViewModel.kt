@@ -97,7 +97,9 @@ class TransactionViewModel @Inject constructor(
             sheet = sheet,
             merchant = tx.title,
             merchantId = detail.merchantId,
-            merchantName = detail.merchantName
+            merchantName = detail.merchantName,
+            personId = detail.personId,
+            personName = detail.personName
         )
     }.stateIn(
         scope = viewModelScope,
@@ -144,6 +146,11 @@ class TransactionViewModel @Inject constructor(
     }
 
     fun onEditRuleClick() = navigator.navigate(Screen.Rules)
+
+    fun onPersonClick() {
+        val personId = uiState.value.personId ?: return
+        navigator.navigate(Screen.Person(personId))
+    }
 
     fun onMerchantClick() {
         val merchantId = uiState.value.merchantId ?: return

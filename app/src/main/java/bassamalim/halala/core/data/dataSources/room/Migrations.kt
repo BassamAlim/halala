@@ -7,7 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * The phone is the only place the full ledger lives: every schema change is a migration, never
  * a destructive rebuild. Add each one here, in order, against the schemas in `app/schemas`.
  */
-val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4, Migration4To5)
+val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6)
 
 /** Phase 1: raw bank SMS, the digits learned per bank, reported balances, and SMS links. */
 private object Migration1To2 : Migration(1, 2) {
@@ -162,5 +162,28 @@ private object Migration4To5 : Migration(4, 5) {
         db.execSQL("ALTER TABLE `merchants` ADD COLUMN `confidence` INTEGER")
         db.execSQL("ALTER TABLE `merchants` ADD COLUMN `namedByYou` INTEGER NOT NULL DEFAULT 0")
         db.execSQL("ALTER TABLE `merchants` ADD COLUMN `autoRuled` INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
+/**
+ * Phase 3: the people you send money to and get it from, and the names each is known by. Both
+ * start empty: `ClassificationRepository.applyRules` finds every transfer its person on its next
+ * run (the app runs it on opening), from the keys transactions already carry.
+ */
+private object Migration5To6 : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `people` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`uid` TEXT NOT NULL, `name` TEXT NOT NULL, `namedByYou` INTEGER NOT NULL DEFAULT 0)"
+        )
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_people_uid` ON `people` (`uid`)")
+
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `person_aliases` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`personId` INTEGER NOT NULL, `aliasKey` TEXT NOT NULL, `descriptor` TEXT NOT NULL, " +
+                    "FOREIGN KEY(`personId`) REFERENCES `people`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )"
+        )
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_person_aliases_aliasKey` ON `person_aliases` (`aliasKey`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_person_aliases_personId` ON `person_aliases` (`personId`)")
     }
 }

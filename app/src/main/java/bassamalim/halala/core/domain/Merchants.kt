@@ -20,8 +20,8 @@ object Merchants {
     private const val MIN_FUZZY = 5
 
     /**
-     * The kinds whose title names a business. A transfer's title is a person (counterparties
-     * come with Phase 3), and a person is never merged into a look-alike.
+     * The kinds whose title names a business. A transfer's title is a person (`People`), and a
+     * person is never merged into a look-alike.
      */
     val KINDS = setOf(TransactionKind.PURCHASE, TransactionKind.REFUND, TransactionKind.BILL_PAYMENT)
 

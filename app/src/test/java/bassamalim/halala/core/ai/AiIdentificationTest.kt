@@ -56,7 +56,7 @@ class AiIdentificationTest {
     fun setUp() = runTest {
         db = testDatabase()
         transactions = TransactionsRepository(db.transactionsDao(), db.accountsDao(), TEST_CLOCK)
-        classification = ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), TEST_CLOCK)
+        classification = ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), db.peopleDao(), TEST_CLOCK)
         accounts = AccountsRepository(db.accountsDao(), TEST_CLOCK)
         val rajhi = db.institutionsDao().getAll().first { it.name == "Al Rajhi" }.id
         bank = accounts.create(AccountDraft(rajhi, "Salary", AccountType.CURRENT, "5521", "SAR", 0))

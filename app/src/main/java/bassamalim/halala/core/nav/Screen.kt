@@ -57,6 +57,12 @@ sealed interface Screen {
     /** One merchant: its name, the ways its bank writes it, merging and splitting. */
     @Serializable data class Merchant(val id: Long) : Screen
 
+    /** Everyone you send money to or get it from. */
+    @Serializable data object People : Screen
+
+    /** One person: their transfers, the ways their bank writes them, merging and splitting. */
+    @Serializable data class Person(val id: Long) : Screen
+
     /** Writing a rule by hand, or editing [id]. */
     @Serializable data class EditRule(val id: Long = 0) : Screen
 

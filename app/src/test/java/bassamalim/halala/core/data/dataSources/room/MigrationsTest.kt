@@ -146,6 +146,34 @@ class MigrationsTest {
         }
     }
 
+    @Test
+    fun `5 to 6 adds people empty, keeps every transaction and matches the schema`() {
+        helper.createDatabase(DB, 5).use { db ->
+            db.execSQL(
+                "INSERT INTO accounts (id, uid, institutionId, nickname, type, last4, ibanSuffix, currency, " +
+                        "openingBalanceMinor, archived, createdAt) " +
+                        "VALUES (1, 'a', NULL, 'Cash', 'CASH', NULL, NULL, 'SAR', 0, 0, 0)"
+            )
+            db.execSQL(
+                "INSERT INTO transactions (uid, accountId, direction, amountMinor, currency, occurredAt, kind, " +
+                        "title, note, source, createdAt, merchantKey) " +
+                        "VALUES ('t', 1, 'DEBIT', 150000, 'SAR', 0, 'TRANSFER_OUT', 'KHALID ALI', '', 'MANUAL', 0, 'khalid ali')"
+            )
+        }
+
+        helper.runMigrationsAndValidate(DB, 6, true, *MIGRATIONS).use { db ->
+            db.query("SELECT amountMinor, merchantKey FROM transactions").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(150000L, cursor.getLong(0))
+                assertEquals("khalid ali", cursor.getString(1))
+            }
+            db.query("SELECT COUNT(*) FROM people").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+        }
+    }
+
     private companion object {
         const val DB = "migration-test"
     }

@@ -33,10 +33,12 @@ data class ExportFile(
     val merchants: List<ExportMerchant> = emptyList(),
     /** Since schema 5. */
     val rawMessages: List<ExportRawMessage> = emptyList(),
-    val balanceCheckpoints: List<ExportCheckpoint> = emptyList()
+    val balanceCheckpoints: List<ExportCheckpoint> = emptyList(),
+    /** Since schema 6: the people transfers go to and come from. */
+    val people: List<ExportPerson> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 5
+        const val SCHEMA_VERSION = 6
     }
 }
 
@@ -137,6 +139,22 @@ data class ExportMerchant(
 /** One spelling: its key (lower case, letters only), as first written, and how it joined. */
 @Serializable
 data class ExportAlias(val key: String, val descriptor: String, val matchedBy: String)
+
+/**
+ * Someone you send money to or get it from, and every way a bank writes their name (each a key,
+ * as merchants' are, and the name as first written). A transfer is theirs when its title's key
+ * is one of them.
+ */
+@Serializable
+data class ExportPerson(
+    val uid: String,
+    val name: String,
+    val namedByYou: Boolean,
+    val aliases: List<ExportPersonAlias>
+)
+
+@Serializable
+data class ExportPersonAlias(val key: String, val descriptor: String)
 
 @Serializable
 data class ExportInternalTransfer(

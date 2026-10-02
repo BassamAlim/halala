@@ -8,12 +8,15 @@ import bassamalim.halala.core.data.dataSources.room.entities.Institution
 import bassamalim.halala.core.data.dataSources.room.entities.InternalTransfer
 import bassamalim.halala.core.data.dataSources.room.entities.Merchant
 import bassamalim.halala.core.data.dataSources.room.entities.MerchantAlias
+import bassamalim.halala.core.data.dataSources.room.entities.Person
+import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.InstitutionsRepository
+import bassamalim.halala.core.data.repositories.PeopleRepository
 import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
 import bassamalim.halala.core.domain.Money
@@ -43,7 +46,9 @@ data class LedgerSnapshot(
     val aliases: List<MerchantAlias> = emptyList(),
     val rawMessages: List<RawMessage> = emptyList(),
     val refs: List<AccountRef> = emptyList(),
-    val checkpoints: List<BalanceCheckpoint> = emptyList()
+    val checkpoints: List<BalanceCheckpoint> = emptyList(),
+    val people: List<Person> = emptyList(),
+    val personAliases: List<PersonAlias> = emptyList()
 ) {
     /** The merchant each transaction's title names, by transaction id. */
     fun merchantOf(): Map<Long, Merchant> {
@@ -65,6 +70,7 @@ class Exporter @Inject constructor(
     private val transactionsRepository: TransactionsRepository,
     private val classificationRepository: ClassificationRepository,
     private val smsRepository: SmsRepository,
+    private val peopleRepository: PeopleRepository,
     private val clock: Clock
 ) {
 
@@ -80,7 +86,9 @@ class Exporter @Inject constructor(
         aliases = classificationRepository.getAliases(),
         rawMessages = smsRepository.getAllRaw(),
         refs = smsRepository.getRefs(),
-        checkpoints = smsRepository.getCheckpoints()
+        checkpoints = smsRepository.getCheckpoints(),
+        people = peopleRepository.getPeople(),
+        personAliases = peopleRepository.getAliases()
     )
 
     fun fileStem(): String = "halala-${clock.instant().atZone(clock.zone).toLocalDate()}"
@@ -216,6 +224,16 @@ class Exporter @Inject constructor(
                         balanceMinor = checkpoint.balanceMinor,
                         at = checkpoint.at.toString(),
                         rawMessageHash = checkpoint.rawMessageId?.let(rawHashes::get)
+                    )
+                },
+                people = snapshot.people.map { person ->
+                    ExportPerson(
+                        uid = person.uid,
+                        name = person.name,
+                        namedByYou = person.namedByYou,
+                        aliases = snapshot.personAliases
+                            .filter { it.personId == person.id }
+                            .map { ExportPersonAlias(it.aliasKey, it.descriptor) }
                     )
                 }
             )

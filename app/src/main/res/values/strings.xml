@@ -67,7 +67,7 @@
 
     <!-- Placeholders -->
     <string name="plan_placeholder">Budgets, savings goals, subscriptions and bills, the forecast and the calculators will live here.</string>
-    <string name="wealth_placeholder">Net worth, savings, funds, gold and the people who owe you will live here.</string>
+    <string name="wealth_placeholder">Net worth, savings, funds, gold and what people owe you will live here.</string>
     <string name="wealth_accounts">Accounts and cash</string>
     <string name="assistant_placeholder">Ask about your money in plain words, and read past digests, here.</string>
 
@@ -377,6 +377,32 @@
     <string name="merchant_merge_confirm_body">%1$s\'s spellings and rules become %2$s\'s. If both have a learned category, %2$s\'s stays. You can undo this in Recent changes.</string>
     <string name="merchant_merge_confirm">Merge</string>
     <string name="merchant_transactions">Transactions</string>
+
+    <!-- People: who transfers go to and come from. -->
+    <string name="people">People</string>
+    <string name="person">Person</string>
+    <string name="people_search">Search people</string>
+    <string name="people_empty">No one yet. People appear as transfers to and from them arrive.</string>
+    <string name="people_hint">Each name a bank writes is someone new. If two are the same person, open one and choose who they are.</string>
+    <string name="people_last">last %1$s</string>
+    <plurals name="people_count">
+        <item quantity="one">%1$d person</item>
+        <item quantity="other">%1$d people</item>
+    </plurals>
+    <plurals name="transfer_count">
+        <item quantity="one">%1$d transfer</item>
+        <item quantity="other">%1$d transfers</item>
+    </plurals>
+    <string name="person_transfers">All transfers with %1$s</string>
+    <string name="person_sent">Sent</string>
+    <string name="person_received">Received</string>
+    <string name="person_net">Net</string>
+    <string name="person_spellings">How the bank writes their name</string>
+    <string name="person_split_body">It becomes someone of their own, with the transfers written that way.</string>
+    <string name="person_merge">Same as another person</string>
+    <string name="person_merge_title">Who is %1$s?</string>
+    <string name="person_merge_none">No one by that name.</string>
+    <string name="person_merge_confirm_body">%1$s\'s transfers and spellings become %2$s\'s. A spelling can be taken out again from %2$s.</string>
 
     <!-- Business types: what a merchant is. -->
     <string name="business_supermarket">Supermarket</string>

@@ -73,7 +73,7 @@ core/
   data/repositories/          the only way into storage; @Singleton + @Inject constructor
   di/                         Hilt modules for things Hilt can't construct itself
   domain/                     app-wide rules: Money, BudgetState, CashGap, Totals, TransactionItems,
-                              Rules, Merchants, Identification, KnownMerchants
+                              Rules, Merchants, People, Identification, KnownMerchants
   enums/                      shared enums (AccountType, Direction, TransactionKind, …)
   export/                     the CSV and JSON exports (Exporter, Csv, ExportFile)
   lock/                       LockManager: when the biometric lock asks again
@@ -232,6 +232,15 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   identifies from the bundled list only). `IdentifyWorker` (online only, one at a time)
   runs after every SMS run and as the app opens, in batches of 40 names, the busiest first;
   what it says is recorded without a batch (the rule names why), and each merchant is asked once.
+- **People** (the spec's counterparties): a transfer's title (`People.KINDS`: transfers and the
+  loan kinds, never a move between your own accounts) names a `Person`, found as merchants are,
+  through a `PersonAlias` keyed by the transaction's `merchantKey`, so merging or splitting moves
+  aliases, never transactions. `applyRules` gives each name not seen before a new person
+  (`People.nameOf`: digits dropped, capitals put in title case); unlike merchants, a name never
+  joins a look-alike ("Ahmed Ali" and "Ahmed Saleh" are two people). Feeds show the person's
+  name. You rename, merge ("Same as another person") and split ("Not this one") on the Person
+  screen; these aren't audited (nothing is filed by them, and each can be taken back by hand).
+  Known IBANs and phone contacts aren't linked yet.
 - **Undo**: everything you do to filing (an answer, "always", saving, switching or deleting a
   rule, editing or deleting a category, renaming, merging or splitting a merchant, saying what a
   merchant is) is one `AuditBatch`:
@@ -270,9 +279,10 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   `amount_minor`, local times, text cells defused against spreadsheet formula injection). JSON:
   `ExportFile`, schema-versioned (`schemaVersion`, bump on any shape change; 2 added categories
   and rules, 3 merchants with their aliases, 4 business types on merchants and categories, 5 all
-  a restore needs: raw bank messages, account refs, balance checkpoints, full rule conditions),
+  a restore needs: raw bank messages, account refs, balance checkpoints, full rule conditions,
+  6 people with their aliases),
   keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
-- **Restore** (same screen, "Restore from JSON"): `Importer.read` turns a schema-5 export into
+- **Restore** (same screen, "Restore from JSON"): `Importer.read` turns a schema-5 or later export into
   rows numbered afresh (pure; refuses older or newer schemas and dangling uids), you confirm,
   and `RestoreDao.replaceAll` replaces the whole ledger in one transaction. It is a full
   replace, not a merge. The history of changes (undo) and DataStore settings aren't carried.
@@ -328,3 +338,11 @@ what it is (tap to say), how the bank writes it with how each spelling joined, "
 "Same as another merchant", its transactions). Still to come in Phase 2: web search for
 cryptic names (Tavily), the Review board's swiping and its loan/split marks (with Phase 3),
 the usage cap in Settings, and merchant logos and locations.
+
+**Phase 3 (people and recurring)** has begun: people (`Person`, `PersonAlias`, `PeopleRepository`,
+found by `applyRules`), **People** (the People board's "All transfers" view: everyone, the latest
+first, with what came back less what went; reached from Wealth) and **Person** (the Person
+board's transfers card: sent, received, net, then how the bank writes their name, "Same as
+another person" and their transfers, as the Merchant screen does; reached from People and from
+Transaction detail's Person row). Still to come: loans and repayments (the boards' Loans view,
+owed-to-you cards and loan card), splits, subscription detection and bills.

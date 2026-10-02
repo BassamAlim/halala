@@ -18,7 +18,7 @@ private const val DETAIL_SELECT = """
             (x.inTransactionId IS NOT NULL AND x.inTransactionId = t.id) AS isTransferInLeg,
             c.name AS categoryName, m.id AS merchantId, m.name AS merchantName,
             m.businessType AS merchantType, m.identifiedBy AS merchantIdentifiedBy,
-            m.confidence AS merchantConfidence
+            m.confidence AS merchantConfidence, p.id AS personId, p.name AS personName
         FROM transactions t
         JOIN accounts a ON a.id = t.accountId
         LEFT JOIN institutions i ON i.id = a.institutionId
@@ -30,6 +30,9 @@ private const val DETAIL_SELECT = """
         LEFT JOIN categories c ON c.id = t.categoryId
         LEFT JOIN merchant_aliases ma ON ma.aliasKey = t.merchantKey AND t.merchantKey != ''
         LEFT JOIN merchants m ON m.id = ma.merchantId
+        LEFT JOIN person_aliases pa ON pa.aliasKey = t.merchantKey AND t.merchantKey != ''
+            AND x.id IS NULL AND t.kind IN ($PERSON_KINDS)
+        LEFT JOIN people p ON p.id = pa.personId
     """
 
 @Dao

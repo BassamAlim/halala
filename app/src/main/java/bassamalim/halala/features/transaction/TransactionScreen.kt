@@ -152,7 +152,12 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
             DetailRow(stringResource(R.string.transaction_kind), divider = state.canCategorise) {
                 HalalaChip(kindLabel(state.kind))
             }
-            state.merchantName?.let { merchant ->
+            state.personName?.let { person ->
+                DetailRow(stringResource(R.string.person)) {
+                    HalalaChip(label = person, onClick = viewModel::onPersonClick)
+                }
+            }
+            state.merchantName?.takeIf { state.personName == null }?.let { merchant ->
                 DetailRow(stringResource(R.string.merchant)) {
                     HalalaChip(label = merchant, onClick = viewModel::onMerchantClick)
                 }
@@ -227,8 +232,9 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
                 TransactionSource.RECONCILE -> stringResource(R.string.transaction_origin_reconcile, state.createdLabel)
                 TransactionSource.SMS -> stringResource(R.string.transaction_origin_sms, state.createdLabel)
             }
-            // Shown under its merchant's name, it says how the bank wrote it.
-            val written = state.merchant.takeIf { state.merchantName != null && it != state.merchantName }
+            // Shown under its merchant's or person's name, it says how the bank wrote it.
+            val shownAs = state.personName ?: state.merchantName
+            val written = state.merchant.takeIf { shownAs != null && it != shownAs }
             Text(
                 text = written?.let { "$origin ${stringResource(R.string.transaction_origin_descriptor, it)}" } ?: origin,
                 style = HalalaType.Label,

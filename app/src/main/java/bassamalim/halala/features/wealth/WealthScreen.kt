@@ -10,12 +10,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
 import bassamalim.halala.core.Globals
+import bassamalim.halala.core.ui.components.ListCard
+import bassamalim.halala.core.ui.components.ListRow
 import bassamalim.halala.core.ui.components.PlaceholderTab
 import bassamalim.halala.core.ui.components.SummaryCard
 
 /**
- * Wealth, until Phase 5 builds net worth, savings, funds and gold: the accounts, which already
- * work, and a note on what's coming.
+ * Wealth, until Phase 5 builds net worth, savings, funds and gold: the accounts and the people
+ * you send money to, which already work, and a note on what's coming.
  */
 @Composable
 fun WealthScreen(viewModel: WealthViewModel = hiltViewModel()) {
@@ -33,5 +35,12 @@ fun WealthScreen(viewModel: WealthViewModel = hiltViewModel()) {
             onClick = viewModel::onAccountsClick,
             modifier = Modifier.fillMaxWidth()
         )
+        ListCard(Modifier.fillMaxWidth()) {
+            ListRow(
+                title = stringResource(R.string.people),
+                subtitle = pluralStringResource(R.plurals.people_count, state.peopleCount, state.peopleCount),
+                onClick = viewModel::onPeopleClick
+            )
+        }
     }
 }

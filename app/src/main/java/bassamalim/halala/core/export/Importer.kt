@@ -10,6 +10,8 @@ import bassamalim.halala.core.data.dataSources.room.entities.Institution
 import bassamalim.halala.core.data.dataSources.room.entities.InternalTransfer
 import bassamalim.halala.core.data.dataSources.room.entities.Merchant
 import bassamalim.halala.core.data.dataSources.room.entities.MerchantAlias
+import bassamalim.halala.core.data.dataSources.room.entities.Person
+import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
@@ -43,7 +45,9 @@ class Importer @Inject constructor(
         aliases = snapshot.aliases,
         transactions = snapshot.transactions,
         transfers = snapshot.transfers,
-        checkpoints = snapshot.checkpoints
+        checkpoints = snapshot.checkpoints,
+        people = snapshot.people,
+        personAliases = snapshot.personAliases
     )
 
     companion object {
@@ -224,6 +228,22 @@ class Importer @Inject constructor(
                 )
             }
 
+            // A file from before people (schema 5) has none: the app finds them again on opening.
+            val people = file.people.mapIndexed { index, person ->
+                Person(id = index + 1L, uid = person.uid, name = person.name, namedByYou = person.namedByYou)
+            }
+            val personIds = people.associate { it.uid to it.id }
+            val personAliases = file.people
+                .flatMap { person -> person.aliases.map { person.uid to it } }
+                .mapIndexed { index, (personUid, alias) ->
+                    PersonAlias(
+                        id = index + 1L,
+                        personId = personIds.getValue(personUid),
+                        aliasKey = alias.key,
+                        descriptor = alias.descriptor
+                    )
+                }
+
             return LedgerSnapshot(
                 institutions = institutions,
                 accounts = accounts,
@@ -236,7 +256,9 @@ class Importer @Inject constructor(
                 aliases = aliases,
                 rawMessages = rawMessages,
                 refs = refs,
-                checkpoints = checkpoints
+                checkpoints = checkpoints,
+                people = people,
+                personAliases = personAliases
             )
         }
 

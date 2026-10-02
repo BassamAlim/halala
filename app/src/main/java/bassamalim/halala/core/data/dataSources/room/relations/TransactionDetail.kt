@@ -26,7 +26,10 @@ data class TransactionDetail(
     /** What its merchant was identified as, by whom, and how sure: why an automatic rule filed it. */
     val merchantType: BusinessType? = null,
     val merchantIdentifiedBy: IdentifiedBy? = null,
-    val merchantConfidence: Int? = null
+    val merchantConfidence: Int? = null,
+    /** The person a transfer's title names. */
+    val personId: Long? = null,
+    val personName: String? = null
 ) {
     val isInternalTransfer get() = counterpartId != null
 }

@@ -42,6 +42,9 @@ data class TransactionUiState(
     /** The merchant it was at, when its title names one: the row that opens it. */
     val merchantId: Long? = null,
     val merchantName: String? = null,
+    /** The person a transfer's title names: the row that opens them. */
+    val personId: Long? = null,
+    val personName: String? = null,
     val sheet: TransactionSheet? = null
 ) {
     val isMove get() = fromLabel != null
