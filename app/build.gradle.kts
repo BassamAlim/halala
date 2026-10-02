@@ -55,6 +55,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // The owner's own key, so debug builds from here, from CI and the releases all
+            // install over each other. Without a `.env`, the machine's debug key as usual.
+            if (hasReleaseKeystore) signingConfig = signingConfigs.getByName("release")
+        }
         release {
             optimization {
                 enable = false
