@@ -98,6 +98,9 @@ object DataSourceModule {
     fun provideScenariosDao(database: AppDatabase) = database.scenariosDao()
 
     @Provides @Singleton
+    fun provideSavingsDao(database: AppDatabase) = database.savingsDao()
+
+    @Provides @Singleton
     fun provideRestoreDao(database: AppDatabase) = database.restoreDao()
 
     @Provides @Singleton

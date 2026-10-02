@@ -379,7 +379,7 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   a restore needs: raw bank messages, account refs, balance checkpoints, full rule conditions,
   6 people with their aliases, 7 loans with their events, 8 subscriptions and bills, 9 a loan's
   split purchase, 10 budgets, 11 savings goals, 12 assets and their snapshots, 13 the zakat
-  method, 14 retirement scenarios),
+  method, 14 retirement scenarios, 15 savings terms),
   keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
 - **Restore** (same screen, "Restore from JSON"): `Importer.read` turns a schema-5 or later export into
   rows numbered afresh (pure; refuses older or newer schemas and dangling uids), you confirm,
@@ -468,9 +468,13 @@ cards** and **Savings goal** (no board: the form), **Alerts** (no board: a card 
 Open, Normal for it and Dismiss), **Digest** (Digest board, minus net worth) and **Digests**
 (the archive, from the Assistant tab and Settings' Digests sheet).
 
-**Phase 5 (wealth)** has begun: the **Wealth** tab is the Net worth board (total, this month and
+**Phase 5 (wealth)** is built: the **Wealth** tab is the Net worth board (total, this month and
 year, the timeline over 3M/1Y/All, the breakdown, then Accounts, Assets, People and Zakat),
 **Assets** and **Asset** (no board: the list and the form), and **Zakat** (Zakat board; reached
 from Wealth and the Plan board's Zakat card), **Retirement** (Retirement board, with
-Scenarios) and **Compound interest** (no board). Still to come: the Savings board's Awaeed and
-Hasad details, and fetching fund and gold prices (an owner's decision, see Assets).
+Scenarios), **Compound interest** (no board) and **Savings** (Savings board: terms attached to a
+savings account, `SavingsTerms` and `core/domain/Savings`; Awaeed terms run from a start for a
+tenor and roll over when they renew, expected profit is simple on the balance; Hasad pays next
+month on this month's lowest balance, nothing under 5,000; a term maturing within a month shows
+on Wealth and is reminded three days before; the terms form has no board). Not built: fetching
+fund and gold prices (an owner's decision, see Assets).

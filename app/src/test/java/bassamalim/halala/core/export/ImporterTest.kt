@@ -22,6 +22,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
+import bassamalim.halala.core.data.dataSources.room.entities.SavingsTerms
 import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
 import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
@@ -36,6 +37,7 @@ import bassamalim.halala.core.data.repositories.LoansRepository
 import bassamalim.halala.core.data.repositories.PeopleRepository
 import bassamalim.halala.core.data.repositories.PlannerRepository
 import bassamalim.halala.core.data.repositories.RecurringRepository
+import bassamalim.halala.core.data.repositories.SavingsRepository
 import bassamalim.halala.core.data.repositories.RestoreRepository
 import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
@@ -55,6 +57,8 @@ import bassamalim.halala.core.enums.ExpenseType
 import bassamalim.halala.core.enums.IdentifiedBy
 import bassamalim.halala.core.enums.LoanDirection
 import bassamalim.halala.core.enums.LoanEventType
+import bassamalim.halala.core.enums.MaturityChoice
+import bassamalim.halala.core.enums.SavingsKind
 import bassamalim.halala.core.enums.RawStatus
 import bassamalim.halala.core.enums.RuleSource
 import bassamalim.halala.core.enums.TransactionKind
@@ -144,7 +148,8 @@ class ImporterTest {
         ),
         snapshots = listOf(NetWorthSnapshot(LocalDate.parse("2026-09-28"), 12_345_600, "SAR")),
         zakat = ZakatProfile(hijriMonth = 9, hijriDay = 1, goldPricePerGram = "563.25", includeGold = false, otherDebtsMinor = 5_000, paidHijriYear = 1447, remind = true),
-        scenarios = listOf(RetirementScenario(201, "scn-55", "Retire at 55", 32, 55, 26_295_000, 400_000, "6", "2.5", 800_000, "SAR", at))
+        scenarios = listOf(RetirementScenario(201, "scn-55", "Retire at 55", 32, 55, 26_295_000, 400_000, "6", "2.5", 800_000, "SAR", at)),
+        savingsTerms = listOf(SavingsTerms(22, SavingsKind.AWAEED, "4.40", LocalDate.parse("2026-05-14"), 6, MaturityChoice.RENEW_WITH_PROFIT))
     )
 
     private val json = Exporter.json(snapshot, appVersion = "0.2.0", now = at)
@@ -173,6 +178,7 @@ class ImporterTest {
         AssetsRepository(db.assetsDao(), TEST_CLOCK),
         ZakatRepository(db.zakatDao(), db.accountsDao(), db.assetsDao(), LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK), TEST_CLOCK),
         PlannerRepository(db.scenariosDao(), db.accountsDao(), db.assetsDao(), db.transactionsDao(), LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK), TEST_CLOCK),
+        SavingsRepository(db.savingsDao(), db.accountsDao(), db.transactionsDao(), TEST_CLOCK),
         TEST_CLOCK
     )
 

@@ -50,10 +50,12 @@ data class ExportFile(
     /** Since schema 13: how you work out zakat, once you have set it. */
     val zakat: ExportZakat? = null,
     /** Since schema 14. */
-    val scenarios: List<ExportScenario> = emptyList()
+    val scenarios: List<ExportScenario> = emptyList(),
+    /** Since schema 15: the terms of savings accounts. */
+    val savingsTerms: List<ExportSavingsTerms> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 14
+        const val SCHEMA_VERSION = 15
     }
 }
 
@@ -307,6 +309,17 @@ data class ExportScenario(
     val wantedMinor: Long,
     val currency: String,
     val createdAt: String
+)
+
+/** A savings account's terms: `kind` AWAEED or HASAD, the rate as decimal text, a term's start, months and maturity choice. */
+@Serializable
+data class ExportSavingsTerms(
+    val accountUid: String,
+    val kind: String,
+    val ratePercent: String,
+    val startDate: String?,
+    val tenorMonths: Int?,
+    val maturityChoice: String?
 )
 
 @Serializable

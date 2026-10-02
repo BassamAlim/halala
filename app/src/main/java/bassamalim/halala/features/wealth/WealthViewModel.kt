@@ -7,6 +7,8 @@ import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.AssetsRepository
 import bassamalim.halala.core.data.repositories.LoansRepository
 import bassamalim.halala.core.data.repositories.PeopleRepository
+import bassamalim.halala.core.data.repositories.SavingsRepository
+import bassamalim.halala.core.utils.shortDateLabel
 import bassamalim.halala.core.data.repositories.TransactionsRepository
 import bassamalim.halala.core.domain.Assets
 import bassamalim.halala.core.domain.DigestKind
@@ -52,7 +54,9 @@ data class WealthUiState(
     val parts: List<WealthPart> = emptyList(),
     val accountCount: Int = 0,
     val assetCount: Int = 0,
-    val peopleCount: Int = 0
+    val peopleCount: Int = 0,
+    /** An Awaeed term maturing within a month: its months, the day, the profit expected. */
+    val maturing: Triple<Int, String, String>? = null
 )
 
 @HiltViewModel
@@ -62,6 +66,7 @@ class WealthViewModel @Inject constructor(
     loansRepository: LoansRepository,
     peopleRepository: PeopleRepository,
     transactionsRepository: TransactionsRepository,
+    savingsRepository: SavingsRepository,
     private val navigator: Navigator,
     private val clock: Clock
 ) : ViewModel() {
@@ -72,9 +77,9 @@ class WealthViewModel @Inject constructor(
         combine(accountsRepository.observeAll(), assetsRepository.observeAll(), ::Pair),
         combine(loansRepository.observeStates(), peopleRepository.observePeople(), ::Pair),
         transactionsRepository.observeAll(),
-        assetsRepository.observeSnapshots(),
+        combine(assetsRepository.observeSnapshots(), savingsRepository.observe(), ::Pair),
         range
-    ) { (accounts, assets), (loans, people), details, snapshots, range ->
+    ) { (accounts, assets), (loans, people), details, (snapshots, savings), range ->
         val today = LocalDate.now(clock)
         val currency = Globals.PRIMARY_CURRENCY
         val now = NetWorth.now(accounts, assets, loans, currency, today)
@@ -123,7 +128,17 @@ class WealthViewModel @Inject constructor(
             },
             accountCount = included.size,
             assetCount = assets.size,
-            peopleCount = people.size
+            peopleCount = people.size,
+            maturing = savings.mapNotNull { saved -> saved.term?.let { saved to it } }
+                .filter { (_, term) -> !term.maturity.isAfter(today.plusDays(MATURING_DAYS)) }
+                .minByOrNull { (_, term) -> term.maturity }
+                ?.let { (saved, term) ->
+                    Triple(
+                        saved.terms?.tenorMonths ?: 0,
+                        shortDateLabel(term.maturity, today),
+                        Money.format(term.expectedProfitMinor, saved.account.account.currency, decimals = false, showPlus = true)
+                    )
+                }
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WealthUiState())
 
@@ -137,9 +152,12 @@ class WealthViewModel @Inject constructor(
 
     fun onZakatClick() = navigator.navigate(Screen.Zakat)
 
+    fun onSavingsClick() = navigator.navigate(Screen.Savings)
+
     private companion object {
         /** Points the chart draws at most: a long history is thinned evenly, keeping the last. */
         const val MAX_POINTS = 120
+        const val MATURING_DAYS = 30L
         val LABEL: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM yyyy", Locale.US)
 
         fun sample(values: List<Long>): List<Long> {

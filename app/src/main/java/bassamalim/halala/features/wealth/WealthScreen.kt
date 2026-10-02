@@ -118,9 +118,22 @@ fun WealthScreen(viewModel: WealthViewModel = hiltViewModel()) {
             }
         }
 
+        state.maturing?.let { (months, day, profit) ->
+            HalalaCard(modifier = Modifier.fillMaxWidth(), onClick = viewModel::onSavingsClick) {
+                Text(text = stringResource(R.string.savings_awaeed_months, pluralStringResource(R.plurals.savings_months, months, months)), style = HalalaType.BodyStrong)
+                Text(text = stringResource(R.string.savings_matures, day, profit), style = HalalaType.Caption, color = HalalaColors.TextMuted)
+            }
+        }
+
         ListCard(Modifier.fillMaxWidth()) {
             ListRow(
+                title = stringResource(R.string.wealth_savings),
+                subtitle = stringResource(R.string.savings_summary),
+                onClick = viewModel::onSavingsClick
+            )
+            ListRow(
                 title = stringResource(R.string.wealth_accounts),
+                divider = true,
                 subtitle = pluralStringResource(R.plurals.account_count, state.accountCount, state.accountCount),
                 onClick = viewModel::onAccountsClick
             )

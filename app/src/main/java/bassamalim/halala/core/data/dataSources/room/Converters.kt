@@ -16,6 +16,8 @@ import bassamalim.halala.core.enums.ExpenseType
 import bassamalim.halala.core.enums.IdentifiedBy
 import bassamalim.halala.core.enums.LoanDirection
 import bassamalim.halala.core.enums.LoanEventType
+import bassamalim.halala.core.enums.MaturityChoice
+import bassamalim.halala.core.enums.SavingsKind
 import bassamalim.halala.core.enums.RuleSource
 import bassamalim.halala.core.enums.RawStatus
 import bassamalim.halala.core.enums.RecurringKind
@@ -201,4 +203,16 @@ class Converters {
 
     @TypeConverter
     fun fromAssetType(type: AssetType): String = type.name
+
+    @TypeConverter
+    fun toSavingsKind(name: String): SavingsKind = SavingsKind.entries.firstOrNull { it.name == name } ?: SavingsKind.HASAD
+
+    @TypeConverter
+    fun fromSavingsKind(kind: SavingsKind): String = kind.name
+
+    @TypeConverter
+    fun toMaturityChoice(name: String?): MaturityChoice? = MaturityChoice.entries.firstOrNull { it.name == name }
+
+    @TypeConverter
+    fun fromMaturityChoice(choice: MaturityChoice?): String? = choice?.name
 }

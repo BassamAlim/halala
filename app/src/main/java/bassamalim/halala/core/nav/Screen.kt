@@ -90,6 +90,12 @@ sealed interface Screen {
     /** Adding an asset, or changing [id]. */
     @Serializable data class EditAsset(val id: Long = 0) : Screen
 
+    /** Savings: Awaeed terms and Hasad. */
+    @Serializable data object Savings : Screen
+
+    /** The terms of savings account [accountId]. */
+    @Serializable data class SavingsTerms(val accountId: Long) : Screen
+
     /** The retirement planner. */
     @Serializable data object Retirement : Screen
 

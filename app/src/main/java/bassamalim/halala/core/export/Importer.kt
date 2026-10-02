@@ -22,6 +22,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
+import bassamalim.halala.core.data.dataSources.room.entities.SavingsTerms
 import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
 import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
@@ -68,7 +69,8 @@ class Importer @Inject constructor(
         assets = snapshot.assets,
         snapshots = snapshot.snapshots,
         zakat = snapshot.zakat,
-        scenarios = snapshot.scenarios
+        scenarios = snapshot.scenarios,
+        savingsTerms = snapshot.savingsTerms
     )
 
     companion object {
@@ -402,6 +404,12 @@ class Importer @Inject constructor(
                     RetirementScenario(
                         index + 1L, it.uid, it.name, it.ageNow, it.retireAt, it.startMinor, it.monthlyMinor, it.returnPercent,
                         it.inflationPercent, it.wantedMinor, it.currency, Instant.parse(it.createdAt)
+                    )
+                },
+                savingsTerms = file.savingsTerms.map {
+                    SavingsTerms(
+                        accountIds.named(it.accountUid, "account"), converters.toSavingsKind(it.kind), it.ratePercent,
+                        it.startDate?.let(LocalDate::parse), it.tenorMonths, converters.toMaturityChoice(it.maturityChoice)
                     )
                 }
             )

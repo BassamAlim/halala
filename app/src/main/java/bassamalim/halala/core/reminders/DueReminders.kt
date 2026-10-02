@@ -18,6 +18,7 @@ import bassamalim.halala.core.data.repositories.AlertsRepository
 import bassamalim.halala.core.data.repositories.DigestRepository
 import bassamalim.halala.core.data.repositories.AssetsRepository
 import bassamalim.halala.core.data.repositories.PreferencesRepository
+import bassamalim.halala.core.data.repositories.SavingsRepository
 import bassamalim.halala.core.data.repositories.ZakatRepository
 import bassamalim.halala.core.domain.DigestKind
 import bassamalim.halala.core.domain.DigestPeriod
@@ -58,6 +59,11 @@ sealed interface DueNotice {
     /** A loan with [person] is due today: owed to you when [lent]. */
     data class Loan(override val key: Int, val person: String, val lent: Boolean) : DueNotice
 
+    /** An Awaeed term ([name]) matures on [due], in a few days: time to confirm what happens. */
+    data class Maturing(val accountId: Long, val name: String, val due: LocalDate) : DueNotice {
+        override val key get() = MATURING_KEY + accountId.toInt()
+    }
+
     /** Zakat falls due on [due], two weeks from now (you asked to be reminded). */
     data class Zakat(val due: LocalDate) : DueNotice {
         override val key get() = ZAKAT_KEY
@@ -77,6 +83,8 @@ sealed interface DueNotice {
 private const val ALERTS_KEY = 400_000
 private const val DIGEST_KEY = 500_000
 private const val ZAKAT_KEY = 600_000
+private const val MATURING_KEY = 700_000
+private const val MATURING_LEAD_DAYS = 3L
 private const val ZAKAT_LEAD_DAYS = 14L
 private val DIGEST_TITLE_MONTH = DateTimeFormatter.ofPattern("MMMM", Locale.US)
 
@@ -167,6 +175,8 @@ class DueReminders @Inject constructor(
                     ) to context.getString(R.string.due_loan_text)
                     is DueNotice.Alerts -> context.resources.getQuantityString(R.plurals.alert_count, notice.count, notice.count) to
                             context.getString(R.string.alerts_hint)
+                    is DueNotice.Maturing -> context.getString(R.string.due_maturing_title, notice.name) to
+                            context.getString(R.string.due_maturing_text, shortDateLabel(notice.due, today))
                     is DueNotice.Zakat -> context.getString(R.string.due_zakat_title) to
                             context.getString(R.string.due_bill_text, shortDateLabel(notice.due, today))
                     is DueNotice.DigestReady -> context.getString(
@@ -206,6 +216,7 @@ class DueReminderWorker @AssistedInject constructor(
     private val preferences: PreferencesRepository,
     private val zakat: ZakatRepository,
     private val assets: AssetsRepository,
+    private val savings: SavingsRepository,
     private val clock: Clock
 ) : CoroutineWorker(context, params) {
 
@@ -226,10 +237,17 @@ class DueReminderWorker @AssistedInject constructor(
         val zakatDue = state.dueOn?.takeIf { profile.remind && !state.paid && it.minusDays(ZAKAT_LEAD_DAYS) == today }
         DueReminders.notify(
             applicationContext,
-            notices + ready + listOfNotNull(zakatDue?.let { DueNotice.Zakat(it) }, DueNotice.Alerts(fresh).takeIf { fresh > 0 }),
+            notices + ready + maturing(today) + listOfNotNull(zakatDue?.let { DueNotice.Zakat(it) }, DueNotice.Alerts(fresh).takeIf { fresh > 0 }),
             today
         )
         assets.snapshot(Globals.PRIMARY_CURRENCY)
         return Result.success()
+    }
+
+    /** Awaeed terms maturing in a few days, so you can confirm what happens. */
+    private suspend fun maturing(today: LocalDate) = savings.observe().first().mapNotNull { saved ->
+        val term = saved.term ?: return@mapNotNull null
+        if (term.maturity.minusDays(MATURING_LEAD_DAYS) != today) return@mapNotNull null
+        DueNotice.Maturing(saved.account.account.id, saved.account.account.nickname, term.maturity)
     }
 }
