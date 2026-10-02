@@ -7,7 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * The phone is the only place the full ledger lives: every schema change is a migration, never
  * a destructive rebuild. Add each one here, in order, against the schemas in `app/schemas`.
  */
-val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6, Migration6To7, Migration7To8, Migration8To9)
+val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6, Migration6To7, Migration7To8, Migration8To9, Migration9To10)
 
 /** Phase 1: raw bank SMS, the digits learned per bank, reported balances, and SMS links. */
 private object Migration1To2 : Migration(1, 2) {
@@ -248,5 +248,22 @@ private object Migration8To9 : Migration(8, 9) {
                     "REFERENCES `transactions`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE"
         )
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_loans_splitOf` ON `loans` (`splitOf`)")
+    }
+}
+
+/** Phase 4: budgets, limits on spending each pay cycle. */
+private object Migration9To10 : Migration(9, 10) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `budgets` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`uid` TEXT NOT NULL, `scope` TEXT NOT NULL, `categoryId` INTEGER, `expenseType` TEXT, " +
+                    "`merchantId` INTEGER, `amountMinor` INTEGER NOT NULL, `currency` TEXT NOT NULL, " +
+                    "`rollover` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, " +
+                    "FOREIGN KEY(`categoryId`) REFERENCES `categories`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , " +
+                    "FOREIGN KEY(`merchantId`) REFERENCES `merchants`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )"
+        )
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_budgets_uid` ON `budgets` (`uid`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_budgets_categoryId` ON `budgets` (`categoryId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_budgets_merchantId` ON `budgets` (`merchantId`)")
     }
 }

@@ -5,6 +5,7 @@ import bassamalim.halala.core.data.dataSources.room.Seed
 import bassamalim.halala.core.data.dataSources.room.entities.Account
 import bassamalim.halala.core.data.dataSources.room.entities.AccountRef
 import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
+import bassamalim.halala.core.data.dataSources.room.entities.Budget
 import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.entities.Institution
 import bassamalim.halala.core.data.dataSources.room.entities.InternalTransfer
@@ -21,6 +22,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
 import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.repositories.AccountsRepository
+import bassamalim.halala.core.data.repositories.BudgetsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.InstitutionsRepository
 import bassamalim.halala.core.data.repositories.LoansRepository
@@ -33,6 +35,7 @@ import bassamalim.halala.core.data.TEST_CLOCK
 import bassamalim.halala.core.data.testDatabase
 import bassamalim.halala.core.enums.AccountType
 import bassamalim.halala.core.enums.AliasMatch
+import bassamalim.halala.core.enums.BudgetScope
 import bassamalim.halala.core.enums.CadenceUnit
 import bassamalim.halala.core.enums.RecurringKind
 import bassamalim.halala.core.enums.SeriesStatus
@@ -113,6 +116,12 @@ class ImporterTest {
             RecurringSeries(161, "rec-jahez", RecurringKind.SUBSCRIPTION, "Jahez Plus", merchantId = 84, amountMinor = 2_900, currency = "SAR", unit = CadenceUnit.MONTH, anchor = LocalDate.parse("2026-10-03"), autoRenew = true, reminderDays = 3, status = SeriesStatus.ACTIVE, createdAt = at),
             RecurringSeries(162, "rec-rent", RecurringKind.BILL, "Rent", amountMinor = 350_000, currency = "SAR", every = 6, unit = CadenceUnit.MONTH, anchor = LocalDate.parse("2026-11-01"), endsOn = LocalDate.parse("2027-08-31"), status = SeriesStatus.ACTIVE, createdAt = at),
             RecurringSeries(163, "rec-khalid", RecurringKind.PLANNED, "Khalid", personId = 121, amountMinor = 1_000, currency = "SAR", unit = CadenceUnit.WEEK, anchor = LocalDate.parse("2026-10-01"), cancelReminder = true, status = SeriesStatus.DISMISSED, createdAt = at)
+        ),
+        budgets = listOf(
+            Budget(171, "bud-all", BudgetScope.TOTAL, amountMinor = 900_000, currency = "SAR", createdAt = at),
+            Budget(172, "bud-delivery", BudgetScope.CATEGORY, categoryId = 47, amountMinor = 60_000, currency = "SAR", rollover = true, createdAt = at),
+            Budget(173, "bud-jahez", BudgetScope.MERCHANT, merchantId = 84, amountMinor = 30_000, currency = "SAR", createdAt = at),
+            Budget(174, "bud-fun", BudgetScope.EXPENSE_TYPE, expenseType = ExpenseType.VARIABLE_DISCRETIONARY, amountMinor = 350_000, currency = "SAR", createdAt = at)
         )
     )
 
@@ -137,6 +146,7 @@ class ImporterTest {
         PeopleRepository(db.peopleDao()),
         LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK),
         RecurringRepository(db.recurringDao(), db.transactionsDao(), TEST_CLOCK),
+        BudgetsRepository(db.budgetsDao(), db.transactionsDao(), TEST_CLOCK),
         TEST_CLOCK
     )
 

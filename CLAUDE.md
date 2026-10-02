@@ -272,6 +272,16 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   (50%), planned for a person; you add or dismiss it (dismissed stays dismissed). It runs on
   opening and on the screen. Monthly and yearly totals are exact integers, rounded half up. Merging
   merchants or people moves their series.
+- **Pay cycle** (`PayCycles`): salary to salary. Pay days are `SALARY` credits at least half the
+  usual salary (median of the last three) and 20 days apart (an allowance after it doesn't start
+  a cycle); the cycle ends a month after the last, and runs on while a salary is late. With no
+  salary in 45 days it is the calendar month.
+- **Budgets** (`Budget`, `core/domain/Budgets`): a limit each pay cycle on everything, a category,
+  an expense type or a merchant, optionally rolling over what was left last cycle. Spending is
+  money out that counts in totals, your share of it; never stored, read from the ledger.
+  `BudgetState` colours it, and spending further through the budget than through the cycle by
+  10% or more reads as "spending fast" (the warn look) even under 80%. The Everything budget
+  drives Home's balance card.
 - **Reminders for what is due** (`DueReminders`, daily at nine, periodic WorkManager work): a
   bill or subscription its lead time before it is due, a cancel reminder three days (or its lead
   time) before it renews, an open loan on its due day. Names and days, never an amount. Choosing a
@@ -316,7 +326,7 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   and rules, 3 merchants with their aliases, 4 business types on merchants and categories, 5 all
   a restore needs: raw bank messages, account refs, balance checkpoints, full rule conditions,
   6 people with their aliases, 7 loans with their events, 8 subscriptions and bills, 9 a loan's
-  split purchase),
+  split purchase, 10 budgets),
   keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
 - **Restore** (same screen, "Restore from JSON"): `Importer.read` turns a schema-5 or later export into
   rows numbered afresh (pure; refuses older or newer schemas and dangling uids), you confirm,
@@ -393,3 +403,8 @@ board), and the Plan tab's Subscriptions and bills card (Plan board; the rest of
 Phase 4), and Transaction detail's **Split** card and sheet (no board). Still to come in
 Phase 3: the Review board's one-tap loan/split/subscription marks, linking people to IBANs and
 contacts.
+
+**Phase 4 (planning)** has begun: pay cycles and budgets. Screens: the **Plan** tab (Plan board:
+the cycle chip, Budgets this cycle, Subscriptions and bills; goals, forecast and calculators to
+come), Home's **balance card** (Home board and its warn/over states), **Budgets** and **Budget**
+(no board: the Plan board's budget rows full size, and the form).

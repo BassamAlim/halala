@@ -66,7 +66,7 @@
     <string name="activity_no_match">Nothing matches.</string>
 
     <!-- Placeholders -->
-    <string name="plan_placeholder">Budgets, savings goals, subscriptions and bills, the forecast and the calculators will live here.</string>
+    <string name="plan_placeholder">Savings goals, the forecast and the calculators will live here.</string>
     <string name="wealth_placeholder">Net worth, savings, funds, gold and what people owe you will live here.</string>
     <string name="wealth_accounts">Accounts and cash</string>
     <string name="assistant_placeholder">Ask about your money in plain words, and read past digests, here.</string>
@@ -539,6 +539,34 @@
     <string name="split_undo">Undo the split</string>
     <string name="split_undo_title">Undo the split?</string>
     <string name="split_undo_body">The shares are no longer owed, and all of it is your spending again. Repayments of them become plain transfers.</string>
+    <string name="budgets">Budgets</string>
+    <string name="budget">Budget</string>
+    <string name="budget_new">New budget</string>
+    <string name="budgets_this_cycle">Budgets this cycle</string>
+    <string name="budgets_empty">No budgets yet. Set one for everything you spend, or for a category, type or merchant.</string>
+    <string name="budgets_hint">Budgets run from one salary to the next. Only your share of a split bill counts, and loans and moves between your accounts don\'t.</string>
+    <string name="budget_everything">Everything</string>
+    <string name="budget_for">What it limits</string>
+    <string name="budget_choice_missing">Choose one</string>
+    <string name="budget_amount">Each pay cycle</string>
+    <string name="budget_amount_hint">From one salary to the next, or a calendar month until a salary arrives.</string>
+    <string name="budget_rollover">Roll over what is left</string>
+    <string name="budget_rollover_hint">What you didn\'t spend last cycle is added to this one.</string>
+    <string name="budget_left">%1$s left</string>
+    <string name="budget_over_by">over by %1$s</string>
+    <string name="budget_delete_title">Delete this budget?</string>
+    <string name="budget_delete_body">Your spending stays as it is.</string>
+    <string name="home_spent_cycle">Spent this pay cycle</string>
+    <string name="home_on_track">On track</string>
+    <string name="home_spending_fast">Spending fast</string>
+    <string name="home_over_budget">Over budget</string>
+    <plurals name="home_days_left">
+        <item quantity="one">%1$d day left</item>
+        <item quantity="other">%1$d days left</item>
+    </plurals>
+    <string name="home_of_budget">of %1$s · %2$s</string>
+    <string name="home_over_amount">%1$s over · %2$s</string>
+    <string name="home_end_about">End ≈ %1$s</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="cadence_daily">Daily</string>

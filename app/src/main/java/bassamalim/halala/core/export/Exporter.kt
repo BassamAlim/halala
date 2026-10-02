@@ -3,6 +3,7 @@ package bassamalim.halala.core.export
 import bassamalim.halala.core.data.dataSources.room.entities.Account
 import bassamalim.halala.core.data.dataSources.room.entities.AccountRef
 import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
+import bassamalim.halala.core.data.dataSources.room.entities.Budget
 import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.entities.Institution
 import bassamalim.halala.core.data.dataSources.room.entities.InternalTransfer
@@ -17,6 +18,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.repositories.AccountsRepository
+import bassamalim.halala.core.data.repositories.BudgetsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.InstitutionsRepository
 import bassamalim.halala.core.data.repositories.LoansRepository
@@ -56,7 +58,8 @@ data class LedgerSnapshot(
     val personAliases: List<PersonAlias> = emptyList(),
     val loans: List<Loan> = emptyList(),
     val loanEvents: List<LoanEvent> = emptyList(),
-    val recurring: List<RecurringSeries> = emptyList()
+    val recurring: List<RecurringSeries> = emptyList(),
+    val budgets: List<Budget> = emptyList()
 ) {
     /** The merchant each transaction's title names, by transaction id. */
     fun merchantOf(): Map<Long, Merchant> {
@@ -81,6 +84,7 @@ class Exporter @Inject constructor(
     private val peopleRepository: PeopleRepository,
     private val loansRepository: LoansRepository,
     private val recurringRepository: RecurringRepository,
+    private val budgetsRepository: BudgetsRepository,
     private val clock: Clock
 ) {
 
@@ -101,7 +105,8 @@ class Exporter @Inject constructor(
         personAliases = peopleRepository.getAliases(),
         loans = loansRepository.getLoans(),
         loanEvents = loansRepository.getEvents(),
-        recurring = recurringRepository.getAll()
+        recurring = recurringRepository.getAll(),
+        budgets = budgetsRepository.getAll()
     )
 
     fun fileStem(): String = "halala-${clock.instant().atZone(clock.zone).toLocalDate()}"
@@ -288,6 +293,19 @@ class Exporter @Inject constructor(
                         cancelReminder = series.cancelReminder,
                         status = series.status.name,
                         createdAt = series.createdAt.toString()
+                    )
+                },
+                budgets = snapshot.budgets.map { budget ->
+                    ExportBudget(
+                        uid = budget.uid,
+                        scope = budget.scope.name,
+                        categoryUid = budget.categoryId?.let(categoryUids::getValue),
+                        expenseType = budget.expenseType?.name,
+                        merchantUid = budget.merchantId?.let(merchantUids::getValue),
+                        amountMinor = budget.amountMinor,
+                        currency = budget.currency,
+                        rollover = budget.rollover,
+                        createdAt = budget.createdAt.toString()
                     )
                 }
             )

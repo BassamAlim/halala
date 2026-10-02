@@ -33,7 +33,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
 import bassamalim.halala.core.Globals
+import bassamalim.halala.core.ui.components.BalanceCard
 import bassamalim.halala.core.ui.components.CardLabel
+import bassamalim.halala.core.domain.BudgetState
 import bassamalim.halala.core.ui.components.HalalaCard
 import bassamalim.halala.core.ui.components.SummaryCard
 import bassamalim.halala.core.ui.components.TransactionItemRow
@@ -48,8 +50,8 @@ import bassamalim.halala.core.ui.theme.Spacing
 /**
  * Home, from the Home board as far as it can be filled: the mark and wordmark, the review pill
  * while anything waits in the inbox, the wallet and the banks in the two summary cards, what
- * people owe you, what is coming up, and the latest transactions. The balance card arrives with
- * budgets.
+ * people owe you, what is coming up, and the latest transactions, under the balance card once
+ * there is a budget for everything.
  */
 @Composable
 fun HomeScreen(onSeeAllClick: () -> Unit, viewModel: HomeViewModel = hiltViewModel()) {
@@ -127,6 +129,27 @@ private fun HomeContent(
                     )
                 }
             }
+        }
+
+        state.balance?.let { balance ->
+            val days = pluralStringResource(R.plurals.home_days_left, balance.daysLeft, balance.daysLeft)
+            BalanceCard(
+                overline = stringResource(R.string.home_spent_cycle),
+                status = stringResource(
+                    when (balance.state) {
+                        BudgetState.OK -> R.string.home_on_track
+                        BudgetState.WARN -> R.string.home_spending_fast
+                        BudgetState.OVER -> R.string.home_over_budget
+                    }
+                ),
+                spent = balance.spent,
+                currency = Globals.PRIMARY_CURRENCY,
+                progress = balance.progress,
+                state = balance.state,
+                footStart = balance.over?.let { stringResource(R.string.home_over_amount, it, days) }
+                    ?: stringResource(R.string.home_of_budget, balance.limit, days),
+                footEnd = balance.endAbout?.let { stringResource(R.string.home_end_about, it) }.orEmpty()
+            )
         }
 
         // While loading, the cards keep their shape with blank figures, so nothing jumps in.

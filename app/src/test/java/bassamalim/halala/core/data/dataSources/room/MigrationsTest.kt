@@ -219,6 +219,17 @@ class MigrationsTest {
         }
     }
 
+    @Test
+    fun `9 to 10 adds budgets empty and matches the schema`() {
+        helper.createDatabase(DB, 9).use { }
+        helper.runMigrationsAndValidate(DB, 10, true, *MIGRATIONS).use { db ->
+            db.query("SELECT COUNT(*) FROM budgets").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+        }
+    }
+
     private companion object {
         const val DB = "migration-test"
     }

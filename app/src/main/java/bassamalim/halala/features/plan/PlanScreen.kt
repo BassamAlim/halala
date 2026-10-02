@@ -1,28 +1,69 @@
 package bassamalim.halala.features.plan
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
-import bassamalim.halala.core.ui.components.PlaceholderTab
+import bassamalim.halala.core.ui.components.HalalaCard
+import bassamalim.halala.core.ui.components.HalalaChip
+import bassamalim.halala.core.ui.components.ScreenTitle
 import bassamalim.halala.core.ui.components.SummaryCard
+import bassamalim.halala.core.ui.theme.HalalaColors
+import bassamalim.halala.core.ui.theme.HalalaType
+import bassamalim.halala.core.ui.theme.Insets
+import bassamalim.halala.core.ui.theme.Spacing
+import bassamalim.halala.features.budgets.BudgetRowsList
 
 /**
- * Plan, as far as it is built: the Plan board's Subscriptions and bills card. Budgets, goals,
- * the forecast and the calculators arrive in Phases 4 and 5.
+ * The Plan board, as far as it is built: this pay cycle, its budgets, and subscriptions and
+ * bills. Savings goals, the forecast and the calculators fill in the rest.
  */
 @Composable
 fun PlanScreen(viewModel: PlanViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    PlaceholderTab(
-        title = stringResource(R.string.tab_plan),
-        body = stringResource(R.string.plan_placeholder)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = Spacing.screen)
+            .padding(top = Insets.screenTop, bottom = Spacing.md),
+        verticalArrangement = Arrangement.spacedBy(Spacing.card)
     ) {
+        ScreenTitle(stringResource(R.string.tab_plan)) {
+            if (state.cycle.isNotEmpty()) HalalaChip(label = state.cycle)
+        }
+        if (state.isLoading) return@Column
+
+        HalalaCard(modifier = Modifier.fillMaxWidth(), onClick = viewModel::onBudgetsClick) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text(text = stringResource(R.string.budgets_this_cycle), style = HalalaType.Label, color = HalalaColors.TextMuted)
+                Text(
+                    text = stringResource(if (state.budgets.isEmpty()) R.string.recurring_add else R.string.edit),
+                    style = HalalaType.Label,
+                    color = HalalaColors.Accent
+                )
+            }
+            if (state.budgets.isEmpty()) Text(
+                text = stringResource(R.string.budgets_empty),
+                style = HalalaType.Body,
+                color = HalalaColors.TextMuted
+            ) else BudgetRowsList(state.budgets)
+        }
+
         SummaryCard(
             label = stringResource(R.string.recurring_title),
             amount = stringResource(R.string.recurring_per_month, state.monthly),
@@ -30,5 +71,9 @@ fun PlanScreen(viewModel: PlanViewModel = hiltViewModel()) {
             onClick = viewModel::onRecurringClick,
             modifier = Modifier.fillMaxWidth()
         )
+
+        HalalaCard(modifier = Modifier.fillMaxWidth()) {
+            Text(text = stringResource(R.string.plan_placeholder), style = HalalaType.Body, color = HalalaColors.TextMuted)
+        }
     }
 }

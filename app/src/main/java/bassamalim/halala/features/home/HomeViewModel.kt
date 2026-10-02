@@ -9,6 +9,8 @@ import bassamalim.halala.core.domain.Rules
 import bassamalim.halala.core.domain.feedOf
 import bassamalim.halala.core.domain.toItem
 import bassamalim.halala.core.enums.AccountType
+import bassamalim.halala.core.enums.BudgetScope
+import bassamalim.halala.core.domain.BudgetState
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
 import bassamalim.halala.core.utils.shortDateLabel
@@ -30,8 +32,9 @@ class HomeViewModel @Inject constructor(
         domain.observeAccounts(),
         domain.observeTransactions(),
         domain.observeLoans(),
-        domain.observeRecurring()
-    ) { accounts, transactions, loans, recurring ->
+        domain.observeRecurring(),
+        domain.observeOverview()
+    ) { accounts, transactions, loans, recurring, overview ->
         val wallet = accounts.firstOrNull { it.account.type == AccountType.CASH && !it.account.archived }
         val today = domain.today()
 
@@ -56,6 +59,17 @@ class HomeViewModel @Inject constructor(
                         name = it.series.name,
                         due = shortDateLabel(it.nextDue!!, today),
                         amount = Money.format(it.raisedTo ?: it.series.amountMinor, it.series.currency, decimals = false)
+                    )
+                },
+            balance = overview.statuses.firstOrNull { it.budget.scope == BudgetScope.TOTAL && it.budget.currency == overview.currency }
+                ?.let { status ->
+                    BalanceInfo(
+                        spent = Money.format(status.spentMinor, overview.currency, decimals = false),
+                        limit = Money.format(status.limitMinor, overview.currency, decimals = false),
+                        over = (-status.leftMinor).takeIf { it > 0 }?.let { Money.format(it, overview.currency, decimals = false) },
+                        progress = BudgetState.progress(status.spentMinor, status.limitMinor),
+                        state = if (status.state == BudgetState.OK && status.paceAhead) BudgetState.WARN else status.state,
+                        daysLeft = overview.cycle.daysLeft(today).toInt()
                     )
                 }
         )

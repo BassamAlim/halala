@@ -4,6 +4,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import bassamalim.halala.core.data.dataSources.room.daos.AccountsDao
+import bassamalim.halala.core.data.dataSources.room.daos.BudgetsDao
 import bassamalim.halala.core.data.dataSources.room.daos.ClassificationDao
 import bassamalim.halala.core.data.dataSources.room.daos.InstitutionsDao
 import bassamalim.halala.core.data.dataSources.room.daos.LoansDao
@@ -18,6 +19,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.AccountRef
 import bassamalim.halala.core.data.dataSources.room.entities.AuditBatch
 import bassamalim.halala.core.data.dataSources.room.entities.AuditChange
 import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
+import bassamalim.halala.core.data.dataSources.room.entities.Budget
 import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.entities.Institution
 import bassamalim.halala.core.data.dataSources.room.entities.InternalTransfer
@@ -51,9 +53,10 @@ import bassamalim.halala.core.data.dataSources.room.entities.Transaction
         PersonAlias::class,
         Loan::class,
         LoanEvent::class,
-        RecurringSeries::class
+        RecurringSeries::class,
+        Budget::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -67,5 +70,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun peopleDao(): PeopleDao
     abstract fun loansDao(): LoansDao
     abstract fun recurringDao(): RecurringDao
+    abstract fun budgetsDao(): BudgetsDao
     abstract fun restoreDao(): RestoreDao
 }

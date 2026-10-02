@@ -5,6 +5,7 @@ import bassamalim.halala.core.data.dataSources.room.Seed
 import bassamalim.halala.core.data.dataSources.room.entities.Account
 import bassamalim.halala.core.data.dataSources.room.entities.AccountRef
 import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
+import bassamalim.halala.core.data.dataSources.room.entities.Budget
 import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.entities.Institution
 import bassamalim.halala.core.data.dataSources.room.entities.InternalTransfer
@@ -56,7 +57,8 @@ class Importer @Inject constructor(
         personAliases = snapshot.personAliases,
         loans = snapshot.loans,
         loanEvents = snapshot.loanEvents,
-        recurring = snapshot.recurring
+        recurring = snapshot.recurring,
+        budgets = snapshot.budgets
     )
 
     companion object {
@@ -306,6 +308,22 @@ class Importer @Inject constructor(
                 )
             }
 
+            val budgets = file.budgets.mapIndexed { index, budget ->
+                require(budget.amountMinor > 0) { "Budget ${budget.uid} has no positive amount." }
+                Budget(
+                    id = index + 1L,
+                    uid = budget.uid,
+                    scope = converters.toBudgetScope(budget.scope),
+                    categoryId = budget.categoryUid?.let { categoryIds.named(it, "category") },
+                    expenseType = converters.toExpenseType(budget.expenseType),
+                    merchantId = budget.merchantUid?.let { merchantIds.named(it, "merchant") },
+                    amountMinor = budget.amountMinor,
+                    currency = budget.currency,
+                    rollover = budget.rollover,
+                    createdAt = Instant.parse(budget.createdAt)
+                )
+            }
+
             return LedgerSnapshot(
                 institutions = institutions,
                 accounts = accounts,
@@ -323,7 +341,8 @@ class Importer @Inject constructor(
                 personAliases = personAliases,
                 loans = loans,
                 loanEvents = loanEvents,
-                recurring = recurring
+                recurring = recurring,
+                budgets = budgets
             )
         }
 

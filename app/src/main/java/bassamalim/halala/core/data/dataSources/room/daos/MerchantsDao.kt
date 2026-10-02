@@ -100,6 +100,10 @@ interface MerchantsDao {
     @Query("UPDATE recurring_series SET merchantId = :intoId WHERE merchantId = :fromId")
     suspend fun moveSeries(fromId: Long, intoId: Long)
 
+    /** And so do its budgets. */
+    @Query("UPDATE budgets SET merchantId = :intoId WHERE merchantId = :fromId")
+    suspend fun moveBudgets(fromId: Long, intoId: Long)
+
     @Query("SELECT id, title, merchantKey, kind, occurredAt FROM transactions ORDER BY occurredAt, id")
     suspend fun getKeyRows(): List<KeyRow>
 

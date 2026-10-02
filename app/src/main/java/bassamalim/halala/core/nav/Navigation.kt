@@ -30,6 +30,8 @@ import bassamalim.halala.features.main.MainScreen
 import bassamalim.halala.features.merchant.MerchantScreen
 import bassamalim.halala.features.merchants.MerchantsScreen
 import bassamalim.halala.features.people.PeopleScreen
+import bassamalim.halala.features.budgets.BudgetsScreen
+import bassamalim.halala.features.editBudget.EditBudgetScreen
 import bassamalim.halala.features.recurring.RecurringScreen
 import bassamalim.halala.features.editRecurring.EditRecurringScreen
 import bassamalim.halala.features.person.PersonScreen
@@ -103,6 +105,10 @@ fun NavGraph(navController: NavHostController, startDestination: Screen) {
         screen<Screen.Recurring> { RecurringScreen() }
 
         screen<Screen.EditRecurring> { EditRecurringScreen() }
+
+        screen<Screen.Budgets> { BudgetsScreen() }
+
+        screen<Screen.EditBudget> { EditBudgetScreen() }
 
         screen<Screen.EditRule> { EditRuleScreen() }
 

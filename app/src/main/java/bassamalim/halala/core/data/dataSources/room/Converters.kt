@@ -7,6 +7,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
 import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
 import bassamalim.halala.core.enums.AuditAction
 import bassamalim.halala.core.enums.AuditEntity
+import bassamalim.halala.core.enums.BudgetScope
 import bassamalim.halala.core.enums.BusinessType
 import bassamalim.halala.core.enums.CadenceUnit
 import bassamalim.halala.core.enums.Direction
@@ -180,4 +181,10 @@ class Converters {
 
     @TypeConverter
     fun fromSeriesStatus(status: SeriesStatus): String = status.name
+
+    @TypeConverter
+    fun toBudgetScope(name: String): BudgetScope = BudgetScope.entries.firstOrNull { it.name == name } ?: BudgetScope.TOTAL
+
+    @TypeConverter
+    fun fromBudgetScope(scope: BudgetScope): String = scope.name
 }

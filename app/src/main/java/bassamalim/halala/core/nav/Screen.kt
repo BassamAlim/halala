@@ -69,6 +69,12 @@ sealed interface Screen {
     /** Adding one by hand, or changing [id]. */
     @Serializable data class EditRecurring(val id: Long = 0) : Screen
 
+    /** Every budget this pay cycle. */
+    @Serializable data object Budgets : Screen
+
+    /** Adding a budget, or changing [id]. */
+    @Serializable data class EditBudget(val id: Long = 0) : Screen
+
     /** Writing a rule by hand, or editing [id]. */
     @Serializable data class EditRule(val id: Long = 0) : Screen
 
