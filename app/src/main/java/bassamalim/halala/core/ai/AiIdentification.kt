@@ -1,0 +1,123 @@
+package bassamalim.halala.core.ai
+
+import android.content.Context
+import androidx.hilt.work.HiltWorker
+import androidx.work.BackoffPolicy
+import androidx.work.Constraints
+import androidx.work.CoroutineWorker
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.WorkerParameters
+import bassamalim.halala.core.data.repositories.AccountsRepository
+import bassamalim.halala.core.data.repositories.ClassificationRepository
+import bassamalim.halala.core.data.repositories.IdentifiedAs
+import bassamalim.halala.core.data.repositories.PreferencesRepository
+import bassamalim.halala.core.data.repositories.SmsRepository
+import bassamalim.halala.core.domain.Identification
+import bassamalim.halala.core.enums.BusinessType
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.first
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
+
+/**
+ * Identifies the merchants waiting for it, a batch of names at a time, the busiest first. Only
+ * a name ever leaves the phone, and only one that can't hold more than a shop's name
+ * ([Identification.sendable]); the rest are kept back for you. Each merchant is asked about once.
+ */
+class AiIdentification @Inject constructor(
+    private val classification: ClassificationRepository,
+    private val accounts: AccountsRepository,
+    private val sms: SmsRepository,
+    private val preferences: PreferencesRepository,
+    private val keys: ApiKeys,
+    private val identifier: MerchantIdentifier
+) {
+
+    /** Whether it is on and has a key: nothing is sent otherwise. */
+    suspend fun isOn(): Boolean = preferences.observeAiEnabled().first() && keys.hasGroq()
+
+    @Throws(IdentifyFailure::class)
+    suspend fun run() {
+        if (!isOn()) return
+        // The digits that name your accounts and cards: a name holding one is never sent.
+        val last4s = (accounts.getAll().mapNotNull { it.last4 } + sms.getRefs().map { it.ref })
+            .map { it.filter(Char::isDigit).takeLast(4) }
+            .filter { it.length == 4 }
+            .toSet()
+
+        repeat(MAX_BATCHES) {
+            val waiting = classification.toIdentify()
+            val (sendable, kept) = waiting.partition { Identification.sendable(it.descriptor, last4s) }
+            if (kept.isNotEmpty()) classification.withhold(kept.map { it.merchantId })
+            if (sendable.isEmpty()) return
+
+            val batch = sendable.take(BATCH)
+            val answers = identifier.identify(batch.map { it.descriptor })
+            // One it left out is asked about no more: it waits for you, like an unknown one.
+            classification.recordIdentifications(
+                batch.zip(answers).associate { (merchant, answer) ->
+                    merchant.merchantId to (answer ?: IdentifiedAs("", BusinessType.UNKNOWN, 0))
+                }
+            )
+        }
+    }
+
+    private companion object {
+        /** Names per request: the spec's batches of about 40. */
+        const val BATCH = 40
+
+        /** Requests per run, well inside Groq's free limits; a long back-import goes on next time. */
+        const val MAX_BATCHES = 20
+    }
+}
+
+/** Starts identifying in the background, when it is on: after SMS arrive, and as the app opens. */
+class AiScheduler @Inject constructor(
+    @param:ApplicationContext private val context: Context,
+    private val identification: AiIdentification
+) {
+
+    suspend fun request() {
+        if (identification.isOn()) IdentifyWorker.enqueue(context)
+    }
+}
+
+/** One run of [AiIdentification], online only. A problem is remembered for Settings to say. */
+@HiltWorker
+class IdentifyWorker @AssistedInject constructor(
+    @Assisted context: Context,
+    @Assisted params: WorkerParameters,
+    private val identification: AiIdentification,
+    private val preferences: PreferencesRepository
+) : CoroutineWorker(context, params) {
+
+    override suspend fun doWork(): Result = try {
+        identification.run()
+        preferences.setAiProblem(null)
+        Result.success()
+    } catch (failure: IdentifyFailure) {
+        preferences.setAiProblem(failure.problem.name)
+        if (failure.problem.retry) Result.retry() else Result.success()
+    }
+
+    companion object {
+        private const val WORK = "identify"
+
+        /** One run at a time: a run asks again for what arrives while it works. */
+        fun enqueue(context: Context) {
+            WorkManager.getInstance(context).enqueueUniqueWork(
+                WORK,
+                ExistingWorkPolicy.KEEP,
+                OneTimeWorkRequestBuilder<IdentifyWorker>()
+                    .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+                    .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.MINUTES)
+                    .build()
+            )
+        }
+    }
+}

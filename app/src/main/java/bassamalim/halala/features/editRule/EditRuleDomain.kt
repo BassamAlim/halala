@@ -15,6 +15,12 @@ import javax.inject.Inject
 /** What the rule form says before it is checked. */
 data class RuleForm(
     val merchant: String = "",
+    /**
+     * The merchant a learned rule was taught, and the name it was shown by: left as it is, the
+     * rule keeps following that merchant; edited, it matches the words written.
+     */
+    val merchantId: Long? = null,
+    val merchantName: String = "",
     val contains: String = "",
     val accountId: Long? = null,
     val min: String = "",
@@ -44,9 +50,12 @@ class EditRuleDomain @Inject constructor(
         val rule = classificationRepository.getRule(id) ?: return null
         val conditions = rule.conditions
         val currency = conditions.accountId?.let { accountsRepository.get(it) }?.currency ?: Globals.PRIMARY_CURRENCY
+        val merchant = conditions.merchantId?.let { classificationRepository.getMerchant(it) }
 
         return RuleForm(
-            merchant = conditions.merchant.orEmpty(),
+            merchant = merchant?.name ?: conditions.merchant.orEmpty(),
+            merchantId = merchant?.id,
+            merchantName = merchant?.name.orEmpty(),
             contains = conditions.contains.orEmpty(),
             accountId = conditions.accountId,
             min = conditions.minMinor?.let { Money.plain(it, currency) }.orEmpty(),
@@ -82,8 +91,10 @@ class EditRuleDomain @Inject constructor(
                 problems += RuleProblem.AmountInvalid
             if (min != null && max != null && min > max) problems += RuleProblem.RangeInverted
 
+            val merchant = form.merchant.trim().ifEmpty { null }
             val conditions = RuleConditions(
-                merchant = form.merchant.trim().ifEmpty { null },
+                merchant = merchant,
+                merchantId = form.merchantId?.takeIf { merchant != null && merchant == form.merchantName },
                 contains = form.contains.trim().ifEmpty { null },
                 accountId = form.accountId,
                 minMinor = min,

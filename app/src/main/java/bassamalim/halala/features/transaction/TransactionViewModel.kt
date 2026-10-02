@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import bassamalim.halala.core.enums.RuleSource
 
 @HiltViewModel
 class TransactionViewModel @Inject constructor(
@@ -87,11 +88,16 @@ class TransactionViewModel @Inject constructor(
                     words = it.words,
                     category = it.stats.categoryName.orEmpty(),
                     expenseType = it.stats.rule.actions.expenseType,
-                    hits = it.stats.hits
+                    hits = it.stats.hits,
+                    identifiedAs = detail.merchantType.takeIf { _ -> it.stats.rule.source == RuleSource.AI },
+                    identifiedBy = detail.merchantIdentifiedBy,
+                    confidence = detail.merchantConfidence
                 )
             },
             sheet = sheet,
-            merchant = tx.title
+            merchant = tx.title,
+            merchantId = detail.merchantId,
+            merchantName = detail.merchantName
         )
     }.stateIn(
         scope = viewModelScope,
@@ -138,6 +144,11 @@ class TransactionViewModel @Inject constructor(
     }
 
     fun onEditRuleClick() = navigator.navigate(Screen.Rules)
+
+    fun onMerchantClick() {
+        val merchantId = uiState.value.merchantId ?: return
+        navigator.navigate(Screen.Merchant(merchantId))
+    }
 
     fun onDeleteClick() = confirmingDelete.update { true }
 

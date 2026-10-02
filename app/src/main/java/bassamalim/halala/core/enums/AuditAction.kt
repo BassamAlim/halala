@@ -18,8 +18,23 @@ enum class AuditAction {
     RULE_DELETED,
 
     /** A category removed, with its rules and what was filed under it. */
-    CATEGORY_DELETED
+    CATEGORY_DELETED,
+
+    /** A category renamed, given another type, or given other business types to take. */
+    CATEGORY_EDITED,
+
+    /** A merchant given your own name for it. */
+    MERCHANT_RENAMED,
+
+    /** Two merchants made one, with their descriptors and rules. */
+    MERCHANTS_MERGED,
+
+    /** "Not this merchant": one descriptor made a merchant of its own. */
+    ALIAS_SPLIT,
+
+    /** You said what a merchant's business is. */
+    MERCHANT_TYPED
 }
 
 /** What kind of row a recorded change touched. */
-enum class AuditEntity { TRANSACTION, RULE, CATEGORY }
+enum class AuditEntity { TRANSACTION, RULE, CATEGORY, MERCHANT, ALIAS }

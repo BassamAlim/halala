@@ -16,6 +16,8 @@ import bassamalim.halala.core.ui.theme.HalalaColors
 import bassamalim.halala.core.ui.theme.HalalaType
 import bassamalim.halala.core.ui.theme.Radius
 import bassamalim.halala.core.ui.theme.Spacing
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 /** The one bottom sheet: surface fill, rounded where it rises from, screen padding inside. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,6 +55,13 @@ fun <T> ChoiceSheet(
 ) {
     HalalaSheet(onDismiss) {
         Text(text = title, style = HalalaType.Title)
-        ChoiceChips(options = options, selected = selected, label = label, onSelect = onPick)
+        // A long list (every business type) scrolls under its title.
+        ChoiceChips(
+            options = options,
+            selected = selected,
+            label = label,
+            onSelect = onPick,
+            modifier = Modifier.verticalScroll(rememberScrollState())
+        )
     }
 }

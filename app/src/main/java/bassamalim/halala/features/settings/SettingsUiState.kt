@@ -1,5 +1,6 @@
 package bassamalim.halala.features.settings
 
+import bassamalim.halala.core.ai.IdentifyProblem
 import bassamalim.halala.core.models.ReviewSchedule
 
 data class SettingsUiState(
@@ -12,5 +13,18 @@ data class SettingsUiState(
     /** The reminder's time as it reads: "20:00". */
     val reminderTime: String = "",
     val isEditingReminder: Boolean = false,
-    val isPickingReminderTime: Boolean = false
+    val isPickingReminderTime: Boolean = false,
+    val ai: AiSettings = AiSettings()
 )
+
+/** Merchant identification: whether it is on, its key, how many merchants wait, and what went wrong. */
+data class AiSettings(
+    val enabled: Boolean = false,
+    val hasKey: Boolean = false,
+    val waiting: Int = 0,
+    val problem: IdentifyProblem? = null,
+    /** The key being typed, while the sheet is open; null when it is closed. */
+    val keyDraft: String? = null
+) {
+    val isEditing get() = keyDraft != null
+}

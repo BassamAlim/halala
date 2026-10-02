@@ -73,6 +73,64 @@ class MigrationsTest {
         }
     }
 
+    @Test
+    fun `3 to 4 keeps every transaction, adds merchants empty and matches the schema`() {
+        helper.createDatabase(DB, 3).use { db ->
+            db.execSQL(
+                "INSERT INTO accounts (id, uid, institutionId, nickname, type, last4, ibanSuffix, currency, " +
+                        "openingBalanceMinor, archived, createdAt) " +
+                        "VALUES (1, 'a', NULL, 'Cash', 'CASH', NULL, NULL, 'SAR', 0, 0, 0)"
+            )
+            db.execSQL(
+                "INSERT INTO transactions (uid, accountId, direction, amountMinor, currency, occurredAt, kind, " +
+                        "title, note, source, createdAt) " +
+                        "VALUES ('t', 1, 'DEBIT', 1250, 'SAR', 0, 'PURCHASE', 'Panda 12', '', 'MANUAL', 0)"
+            )
+        }
+
+        // The keys and merchants are filled in by the app on opening, not by the migration.
+        helper.runMigrationsAndValidate(DB, 4, true, *MIGRATIONS).use { db ->
+            db.query("SELECT amountMinor, title, merchantKey FROM transactions").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(1250L, cursor.getLong(0))
+                assertEquals("Panda 12", cursor.getString(1))
+                assertEquals("", cursor.getString(2))
+            }
+            db.query("SELECT COUNT(*) FROM merchants").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+        }
+    }
+
+    @Test
+    fun `4 to 5 seeds what the default categories take, leaves merchants unidentified and matches the schema`() {
+        helper.createDatabase(DB, 4).use { db ->
+            db.execSQL("INSERT INTO categories (uid, name, expenseType) VALUES ('g', 'Groceries', 'VARIABLE_ESSENTIAL')")
+            db.execSQL("INSERT INTO categories (uid, name, expenseType) VALUES ('m', 'Mine', NULL)")
+            db.execSQL("INSERT INTO merchants (id, uid, name) VALUES (1, 'p', 'PANDA')")
+        }
+
+        helper.runMigrationsAndValidate(DB, 5, true, *MIGRATIONS).use { db ->
+            db.query("SELECT name, businessTypes FROM categories ORDER BY id").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("SUPERMARKET,CONVENIENCE_STORE,BAKERY", cursor.getString(1))
+                cursor.moveToNext()
+                assertEquals("Mine", cursor.getString(0))
+                assertEquals("", cursor.getString(1))
+            }
+            db.query("SELECT name, businessType, identifiedBy, confidence, namedByYou, autoRuled FROM merchants").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("PANDA", cursor.getString(0))
+                assertEquals(true, cursor.isNull(1))
+                assertEquals(true, cursor.isNull(2))
+                assertEquals(true, cursor.isNull(3))
+                assertEquals(0, cursor.getInt(4))
+                assertEquals(0, cursor.getInt(5))
+            }
+        }
+    }
+
     private companion object {
         const val DB = "migration-test"
     }

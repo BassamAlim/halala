@@ -51,6 +51,12 @@ sealed interface Screen {
 
     @Serializable data object Categories : Screen
 
+    /** Every merchant, the busiest first. */
+    @Serializable data object Merchants : Screen
+
+    /** One merchant: its name, the ways its bank writes it, merging and splitting. */
+    @Serializable data class Merchant(val id: Long) : Screen
+
     /** Writing a rule by hand, or editing [id]. */
     @Serializable data class EditRule(val id: Long = 0) : Screen
 

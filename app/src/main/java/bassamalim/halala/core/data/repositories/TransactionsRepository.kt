@@ -5,6 +5,7 @@ import bassamalim.halala.core.data.dataSources.room.daos.TransactionsDao
 import bassamalim.halala.core.data.dataSources.room.entities.InternalTransfer
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
+import bassamalim.halala.core.domain.Merchants
 import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.enums.TransactionSource
@@ -17,8 +18,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * The only way into the transactions table. Every amount is checked positive here, and every
- * transaction takes its account's currency here, so neither can be got wrong by a caller.
+ * The only way into the transactions table. Every amount is checked positive here, every
+ * transaction takes its account's currency here, and its merchant key follows its title here,
+ * so none of them can be got wrong by a caller.
  */
 @Singleton
 class TransactionsRepository @Inject constructor(
@@ -56,7 +58,7 @@ class TransactionsRepository @Inject constructor(
                 note = draft.note.trim(),
                 source = draft.source,
                 createdAt = clock.instant()
-            )
+            ).keyed()
         )
     }
 
@@ -75,7 +77,7 @@ class TransactionsRepository @Inject constructor(
                 kind = draft.kind,
                 title = draft.title.trim(),
                 note = draft.note.trim()
-            )
+            ).keyed()
         )
     }
 
@@ -108,7 +110,7 @@ class TransactionsRepository @Inject constructor(
      */
     suspend fun addParsed(transaction: Transaction): Long {
         check(transaction)
-        return transactionsDao.insert(transaction)
+        return transactionsDao.insert(transaction.keyed())
     }
 
     /** Both legs of a move one SMS described ("between your accounts"). Returns the sending leg's id. */
@@ -116,7 +118,7 @@ class TransactionsRepository @Inject constructor(
         check(outLeg)
         check(inLeg)
         require(outLeg.direction == Direction.DEBIT && inLeg.direction == Direction.CREDIT)
-        return transactionsDao.insertPair(outLeg, inLeg, pairUid = UUID.randomUUID().toString())
+        return transactionsDao.insertPair(outLeg.keyed(), inLeg.keyed(), pairUid = UUID.randomUUID().toString())
     }
 
     /**
@@ -135,6 +137,7 @@ class TransactionsRepository @Inject constructor(
                 amountMinor = feeMinor,
                 kind = TransactionKind.FEE,
                 title = "",
+                merchantKey = "",
                 originalAmountMinor = null,
                 originalCurrency = null,
                 categoryId = null,
@@ -184,7 +187,7 @@ class TransactionsRepository @Inject constructor(
             note = draft.note.trim(),
             source = TransactionSource.MANUAL,
             createdAt = now
-        )
+        ).keyed()
         val inLeg = outLeg.copy(
             uid = UUID.randomUUID().toString(),
             accountId = draft.toAccountId,
@@ -192,6 +195,9 @@ class TransactionsRepository @Inject constructor(
         )
         return outLeg to inLeg
     }
+
+    /** The merchant key its title reads as. */
+    private fun Transaction.keyed() = copy(merchantKey = Merchants.key(title))
 
     private suspend fun currencyOf(accountId: Long): String =
         checkNotNull(accountsDao.get(accountId)) { "No account $accountId" }.currency

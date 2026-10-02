@@ -68,6 +68,9 @@ object DataSourceModule {
     fun provideClassificationDao(database: AppDatabase) = database.classificationDao()
 
     @Provides @Singleton
+    fun provideMerchantsDao(database: AppDatabase) = database.merchantsDao()
+
+    @Provides @Singleton
     fun providePreferencesDataStore(application: Application): DataStore<Preferences> =
         application.preferencesDataStore
 

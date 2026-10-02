@@ -29,8 +29,9 @@ class ActivityDomain @Inject constructor(
     companion object {
 
         /**
-         * The feed for one account (or all of them), narrowed by a search over what you wrote
-         * and which account it was on. Case-insensitive; blank matches everything.
+         * The feed for one account (or all of them), narrowed by a search over what you wrote,
+         * the merchant it was at (by your name for it or the bank's), and which account it was
+         * on. Case-insensitive; blank matches everything.
          */
         fun filter(
             details: List<TransactionDetail>,
@@ -42,6 +43,7 @@ class ActivityDomain @Inject constructor(
             return feedOf(details, accountId).filter { detail ->
                 needle.isEmpty() || listOfNotNull(
                     detail.transaction.title,
+                    detail.merchantName,
                     detail.transaction.note,
                     detail.accountNickname,
                     detail.institutionName,
