@@ -1,5 +1,6 @@
 package bassamalim.halala.features.settings
 
+import bassamalim.halala.core.domain.DigestKind
 import bassamalim.halala.core.models.ReviewSchedule
 
 data class SettingsUiState(
@@ -10,5 +11,8 @@ data class SettingsUiState(
     /** The reminder's time as it reads: "20:00". */
     val reminderTime: String = "",
     val isEditingReminder: Boolean = false,
-    val isPickingReminderTime: Boolean = false
+    val isPickingReminderTime: Boolean = false,
+    /** The digests you are told about. */
+    val digests: Set<DigestKind> = emptySet(),
+    val isEditingDigests: Boolean = false
 )

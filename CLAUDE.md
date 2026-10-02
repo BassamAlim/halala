@@ -302,6 +302,15 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   recorded between (a missed or doubled SMS). Only dismissals are stored (`dismissed_alerts`, by
   key; "Normal for it" quiets a merchant's large ones); a restore clears them. Home shows a row
   while any stand; the daily reminder work notifies a count of new ones, never what or how much.
+- **Digests** (`Digests`, `DigestRepository`): weekly (Sunday to Saturday, the Saudi week),
+  monthly and yearly, built from the ledger whenever one is opened, never stored (so "past
+  digests are kept" means every finished period can be opened). Spending against the period
+  before (whole percent), income less spending, what is owed to you, the top five categories,
+  and up to three observations: a category moved 25% and 100 or more against its average over
+  the three periods before, a price rise with the new monthly total, a loan due within two
+  weeks (rule-based; AI-written ones come with the assistant). Each kind is off until you turn
+  it on in Settings; the daily reminder work notifies the morning after a period with spending
+  ends. Net worth's change joins with Phase 5.
 - **Reminders for what is due** (`DueReminders`, daily at nine, periodic WorkManager work): a
   bill or subscription its lead time before it is due, a cancel reminder three days (or its lead
   time) before it renews, an open loan on its due day. Names and days, never an amount. Choosing a
@@ -424,11 +433,13 @@ Phase 4), and Transaction detail's **Split** card and sheet (no board). Still to
 Phase 3: the Review board's one-tap loan/split/subscription marks, linking people to IBANs and
 contacts.
 
-**Phase 4 (planning)** has begun: pay cycles and budgets. Screens: the **Plan** tab (Plan board:
+**Phase 4 (planning)** is built: pay cycles, budgets, savings goals, the forecast, anomaly
+alerts and digests. Screens: the **Plan** tab (Plan board:
 the cycle chip, Budgets this cycle, savings goals, Subscriptions and bills, Forecast; calculators come
 with Phase 5), Home's **balance card** (Home board and its warn/over states, with the forecast's
 "End ≈"), **Forecast** (Forecast board: the end figure and band, the balance chart drawn on a
 Canvas, left over each month with the dip's biggest payments, and "Can I afford it?"), **Budgets** and **Budget**
 (no board: the Plan board's budget rows full size, and the form), the Plan board's **goal
-cards** and **Savings goal** (no board: the form), and **Alerts** (no board: a card per alert with
-Open, Normal for it and Dismiss).
+cards** and **Savings goal** (no board: the form), **Alerts** (no board: a card per alert with
+Open, Normal for it and Dismiss), **Digest** (Digest board, minus net worth) and **Digests**
+(the archive, from the Assistant tab and Settings' Digests sheet).

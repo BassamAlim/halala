@@ -78,6 +78,12 @@ sealed interface Screen {
     /** Anomaly alerts: duplicates, unusual charges, declined cards, balances that don't add up. */
     @Serializable data object Alerts : Screen
 
+    /** One digest: a week, month or year ([kind], a `DigestKind` name) starting on [startEpochDay]. */
+    @Serializable data class Digest(val kind: String, val startEpochDay: Long) : Screen
+
+    /** Every past digest. */
+    @Serializable data object Digests : Screen
+
     /** Every budget this pay cycle. */
     @Serializable data object Budgets : Screen
 

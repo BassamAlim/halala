@@ -3,6 +3,7 @@ package bassamalim.halala.features.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import bassamalim.halala.BuildConfig
+import bassamalim.halala.core.domain.DigestKind
 import bassamalim.halala.core.models.ReminderMode
 import bassamalim.halala.core.models.ReviewSchedule
 import bassamalim.halala.core.nav.Navigator
@@ -28,12 +29,13 @@ class SettingsViewModel @Inject constructor(
 
     private val editingReminder = MutableStateFlow(false)
     private val pickingReminderTime = MutableStateFlow(false)
+    private val editingDigests = MutableStateFlow(false)
     val uiState: StateFlow<SettingsUiState> = combine(
         domain.observeAccounts(),
         domain.observeReviewSchedule(),
-        editingReminder,
-        pickingReminderTime
-    ) { accounts, reminder, editingReminder, pickingReminderTime ->
+        combine(editingReminder, pickingReminderTime, editingDigests, ::Triple),
+        domain.observeDigests()
+    ) { accounts, reminder, (editingReminder, pickingReminderTime, editingDigests), digests ->
         val active = accounts.filter { !it.account.archived }
 
         SettingsUiState(
@@ -43,7 +45,9 @@ class SettingsViewModel @Inject constructor(
             reminder = reminder,
             reminderTime = timeLabel(reminder.time),
             isEditingReminder = editingReminder,
-            isPickingReminderTime = pickingReminderTime
+            isPickingReminderTime = pickingReminderTime,
+            digests = digests,
+            isEditingDigests = editingDigests
         )
     }.stateIn(
         scope = viewModelScope,
@@ -52,6 +56,20 @@ class SettingsViewModel @Inject constructor(
     )
 
     fun onReminderClick() = editingReminder.update { true }
+
+    fun onDigestsClick() = editingDigests.update { true }
+
+    fun onDigestsDismiss() = editingDigests.update { false }
+
+    fun onDigestToggle(kind: DigestKind) {
+        val on = kind !in uiState.value.digests
+        viewModelScope.launch { domain.setDigest(kind, on) }
+    }
+
+    fun onPastDigestsClick() {
+        editingDigests.update { false }
+        navigator.navigate(Screen.Digests)
+    }
 
     fun onReminderDismiss() = editingReminder.update { false }
 

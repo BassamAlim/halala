@@ -5,6 +5,7 @@ import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.enums.CadenceUnit
 import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.enums.RecurringKind
+import bassamalim.halala.core.enums.SeriesStatus
 import bassamalim.halala.core.enums.TransactionKind
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -208,4 +209,12 @@ object Charges {
             .map { (key, list) -> ChargeGroup(list.first().merchantName.orEmpty(), key.first, null, key.second, list.map { it.toCharge(zone) }) }
         return byMerchant + byPerson
     }
+}
+
+/** What active subscriptions and bills cost a month together, in one currency. */
+object RecurringDomainTotals {
+    fun monthly(states: List<SeriesState>, currency: String): Long = Money.sum(
+        states.filter { it.series.status == SeriesStatus.ACTIVE && it.series.currency == currency }
+            .map { it.monthlyMinor }
+    )
 }

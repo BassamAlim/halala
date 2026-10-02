@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import bassamalim.halala.core.domain.DigestKind
 import bassamalim.halala.core.models.ReminderMode
 import bassamalim.halala.core.models.ReviewSchedule
 import kotlinx.coroutines.flow.Flow
@@ -54,6 +55,17 @@ class PreferencesRepository @Inject constructor(
             it[REVIEW_MINUTE] = schedule.time.toSecondOfDay() / 60
         }
     }
+
+    /** Which digests to be told about: weekly, monthly, yearly. All off until you choose. */
+    fun observeDigests(): Flow<Set<DigestKind>> = dataStore.data.map { preferences ->
+        DigestKind.entries.filter { preferences[digestKey(it)] ?: false }.toSet()
+    }
+
+    suspend fun setDigest(kind: DigestKind, on: Boolean) {
+        dataStore.edit { it[digestKey(kind)] = on }
+    }
+
+    private fun digestKey(kind: DigestKind) = booleanPreferencesKey("digest_${kind.name.lowercase()}")
 
     companion object {
         private val REVIEW_MODE = stringPreferencesKey("review_reminder_mode")

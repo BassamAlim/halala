@@ -32,6 +32,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
+import androidx.compose.foundation.layout.FlowRow
+import bassamalim.halala.core.ui.components.HalalaChip
+import bassamalim.halala.core.ui.components.ChipStyle
+import bassamalim.halala.core.ui.components.rememberNotificationAsk
+import bassamalim.halala.core.domain.DigestKind
 import bassamalim.halala.core.ui.components.GroupLabel
 import bassamalim.halala.core.ui.components.ListCard
 import bassamalim.halala.core.ui.components.ListRow
@@ -114,6 +119,13 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 },
                 onClick = viewModel::onReminderClick
             )
+            ListRow(
+                title = stringResource(R.string.digests),
+                subtitle = if (state.digests.isEmpty()) stringResource(R.string.reminder_off)
+                else DigestKind.entries.filter { it in state.digests }.map { stringResource(digestLabel(it)) }.joinToString(", "),
+                divider = true,
+                onClick = viewModel::onDigestsClick
+            )
         }
 
         Section(stringResource(R.string.settings_privacy)) {
@@ -139,6 +151,41 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         )
     } else if (state.isEditingReminder) {
         ReminderSheet(state, viewModel)
+    } else if (state.isEditingDigests) {
+        DigestsSheet(state, viewModel)
+    }
+}
+
+private fun digestLabel(kind: DigestKind) = when (kind) {
+    DigestKind.WEEK -> R.string.digest_weekly
+    DigestKind.MONTH -> R.string.digest_monthly
+    DigestKind.YEAR -> R.string.digest_yearly
+}
+
+/** Which digests to be told about; each arrives the morning after its period ends. */
+@Composable
+private fun DigestsSheet(state: SettingsUiState, viewModel: SettingsViewModel) {
+    val askToNotify = rememberNotificationAsk()
+    HalalaSheet(onDismiss = viewModel::onDigestsDismiss) {
+        Text(text = stringResource(R.string.digests), style = HalalaType.Title)
+        Text(text = stringResource(R.string.digests_settings_hint), style = HalalaType.Body, color = HalalaColors.TextMuted)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            DigestKind.entries.forEach { kind ->
+                HalalaChip(
+                    label = stringResource(digestLabel(kind)),
+                    style = if (kind in state.digests) ChipStyle.On else ChipStyle.Outline,
+                    onClick = {
+                        if (kind !in state.digests) askToNotify()
+                        viewModel.onDigestToggle(kind)
+                    }
+                )
+            }
+        }
+        HalalaButton(
+            text = stringResource(R.string.digests_past),
+            onClick = viewModel::onPastDigestsClick,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
