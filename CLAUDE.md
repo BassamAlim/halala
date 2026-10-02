@@ -13,7 +13,8 @@ it for AI. It is sideloaded (APKs from GitHub Releases), never published to a st
 Sources of truth, read before writing code:
 
 - **Spec** (product, data model, AI pipeline, roadmap):
-  `https://claude.ai/code/artifact/198e29a7-8f36-4d4b-8c39-ada8fb94df56`
+  `https://claude.ai/code/artifact/198e29a7-8f36-4d4b-8c39-ada8fb94df56`; a copy is checked in at the
+  root (`Personal Finance App — Product & Technical Spec.md`), which may be the newer of the two
 - **Design system** "Halala Design System" (tokens, components, voice, Compose mapping):
   `https://claude.ai/artifact/S6fcpdnuBUEso5u7ojecaj`
 - **Screen designs** "Halala design canvas", 22 phone screens on its *Screens* page (Home and its
@@ -63,11 +64,14 @@ knows about Room.
 
 ```
 core/
+  ai/                         merchant identification: ApiKeys (Keystore-wrapped), GroqProtocol,
+                              GroqIdentifier, AiIdentification and its worker
   data/dataSources/room/      entities, daos, relations, AppDatabase, Converters, Migrations, Seed
   data/dataSources/keystore/  DatabaseKey: the SQLCipher passphrase, wrapped by Android Keystore
   data/repositories/          the only way into storage; @Singleton + @Inject constructor
   di/                         Hilt modules for things Hilt can't construct itself
-  domain/                     app-wide rules: Money, BudgetState, CashGap, Totals, TransactionItems
+  domain/                     app-wide rules: Money, BudgetState, CashGap, Totals, TransactionItems,
+                              Rules, Merchants, Identification, KnownMerchants
   enums/                      shared enums (AccountType, Direction, TransactionKind, …)
   export/                     the CSV and JSON exports (Exporter, Csv, ExportFile)
   lock/                       LockManager: when the biometric lock asks again
@@ -145,7 +149,7 @@ Don't hardcode hex values or `.dp` literals that aren't a named token in `Dimens
   coral text), `HalalaChip` (Plain, Outline, Accent = active filter, On = selected choice),
   `AutoBadge`, `TransactionRow`/`Avatar`/`GroupLabel`, `TopBar` (sub-screens) and `ScreenTitle`
   (tabs), `BottomNav`, `SearchField`/`HalalaTextField`, `ProgressBar`, `SegmentedControl`,
-  `ConfirmSheet`, `QuickAddButton`, `FormField`/`ChoiceChips`.
+  `HalalaSheet`/`ConfirmSheet`/`ChoiceSheet`, `QuickAddButton`, `FormField`/`ChoiceChips`.
 - Voice: short, plain, second person; figure then currency ("6,240 SAR"); thousands separators
   always; the true minus sign; two decimals in lists and detail, none in summaries; no
   exclamation marks, no emoji.
@@ -181,8 +185,67 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   filtered to one account. A move across currencies is refused until FX lands with SMS parsing.
 - **Totals** (Activity's In/Out) are per currency, in SAR for now, this calendar month (pay
   cycles arrive with budgets).
+- **Categories and rules**: only spending has a category (money out that counts in totals;
+  `Rules.canCategorise`). A transaction with a category and no `ruleId` was filed by you, and no
+  rule ever changes it; one with a `ruleId` was filed by that rule and shows the Auto badge.
+  Choosing a category for a merchant asks "just this one, or always": always writes one learned
+  rule per merchant (taught the merchant's id, so it files every spelling) and files its past too.
+  `ClassificationRepository.applyRules()` is idempotent and runs after every SMS run, every
+  manual save and every rule change. A rule's use count is counted from the transactions it
+  filed, not stored. Rule conditions and actions are JSON columns, so new kinds need no
+  migration; all that are set must hold. Yours beat learned, learned beat AI, then the rule with
+  more conditions, then the newer. Removing a category deletes the rules that file under it and
+  sends its transactions back to review. Categories are one level (two levels were dropped from
+  the spec); you rename them, and choose the business types each takes, on Categories.
+- **Merchants**: a `Merchant` is a business however its bank spells it; each spelling is a
+  `MerchantAlias` keyed by `Merchants.key` (lower case, letters only, trailing places and company
+  words dropped: "PANDA 1042 RIYADH" is `panda`). Every transaction stores its title's key
+  (`merchantKey`, kept in step by `TransactionsRepository`) and finds its merchant through the
+  alias, so merging or splitting moves aliases, never transactions. `applyRules` first resolves
+  keys not seen before, oldest first, for purchases, refunds and bills only (a transfer's title
+  is a person): a key spelled like a known alias (`Merchants.similarTo`, bigram similarity ≥
+  0.85, five letters or more) joins that merchant, else it starts one named after it. Feeds
+  show the merchant's name; the title keeps the bank's words, and Transaction detail says
+  both. You rename, merge ("Same as another merchant": the merged-into merchant's learned
+  answer stands) and split ("Not this one": the spelling becomes its own merchant and what
+  rules filed under it goes back to review) on the Merchant screen. The app runs `applyRules`
+  on opening, which fills merchants in after the upgrade.
+- **Identifying merchants** (the AI only identifies; code decides the rest): a merchant records
+  what the business is (`BusinessType`, a fixed list), who said so (`IdentifiedBy`: Halala's
+  bundled `KnownMerchants` list, the AI, you, or `WITHHELD`) and the AI's confidence (0–100). A
+  category takes some business types (`Category.businessTypes`, one category per type, seeded
+  for the defaults; mixed ones like a department store start in none), and the expense type is
+  the category's own. `Identification.tierOf` is the spec's tiers: what the list or you said, or
+  the AI at 90 or more, of a type a category takes, is **Auto**: `applyRules` keeps one
+  automatic rule per such merchant (source AI, "Merchant is Panda → Groceries"), made once (an
+  automatic rule you delete stays deleted, `Merchant.autoRuled`) and re-pointed when a category's
+  types change; yours and learned rules still beat it. 60–89 is **Suggest** (Review chooses the
+  category, one tap to confirm, which learns as usual); the rest is **Ask**. `applyRules`
+  identifies from the bundled list first, with no call; the AI only sees merchants still unknown
+  that have unfiled spending. **Only a merchant's name, as the bank wrote it (digits kept), ever
+  leaves the phone**, and never one holding your accounts' or cards' last four digits, ten or
+  more digits, or an IBAN (`Identification.sendable`; those are `WITHHELD` for you). The AI is
+  Groq (`qwen/qwen3.8-27b`, strict JSON schema, reasoning off), off by default, turned on in
+  Settings with your API key, which is stored wrapped by its own Android Keystore key
+  (`KeystoreApiKeys`, apart from the database's). `IdentifyWorker` (online only, one at a time)
+  runs after every SMS run and as the app opens, in batches of 40 names, the busiest first;
+  what it says is recorded without a batch (the rule names why), and each merchant is asked once.
+- **Undo**: everything you do to filing (an answer, "always", saving, switching or deleting a
+  rule, editing or deleting a category, renaming, merging or splitting a merchant, saying what a
+  merchant is) is one `AuditBatch`:
+  `ClassificationRepository.audited` snapshots categories, rules, merchants, aliases and every
+  transaction's filing before and after, and stores the rows that differ. `undo` puts each row back only where it still reads as the batch left it, so nothing
+  done since is overwritten. What rules file on their own as SMS arrive is not a batch (the
+  transaction names its rule). New mutations of categories, rules or filings go through
+  `audited`.
+- **Notifications**: only the review reminder (off by default; daily or weekly at a time, set in
+  Settings), which shows a count of merchants and never an amount, says nothing when the inbox
+  is empty, and can be put off an hour or a day. It is periodic WorkManager work, so it can run
+  late in Doze. Tapping it opens the app (lock, then Home), not Review directly.
 - **Every automated decision says why** (the spec's principle): Transaction detail's
-  "How it got here" card names the source — added by you, a wallet count, or (Phase 1) an SMS.
+  "How it got here" card names the source (added by you, a wallet count, or an SMS), and
+  "Filed automatically" names the rule (and, for an automatic one, what the merchant was
+  identified as, by whom and how sure).
 - **Lock**: `BiometricPrompt` on every cold start (the graph starts on `Screen.Lock`) and after
   a minute in the background (`LockManager`, monotonic clock; the minute is a preference,
   `PreferencesRepository.lockTimeoutSeconds`, with no UI yet). Always on; strong (class 3)
@@ -203,9 +266,11 @@ These are decided (mostly by the spec); don't re-litigate them in code.
 - **Exports** (Settings › Backup and export) are written to a file you pick (SAF). CSV: a zip of
   `accounts.csv` and `transactions.csv` (UTF-8 with BOM, CRLF, signed decimal amounts plus exact
   `amount_minor`, local times, text cells defused against spreadsheet formula injection). JSON:
-  `ExportFile`, schema-versioned (`schemaVersion`, bump on any shape change), keyed by `uid`s,
-  amounts in minor units. The screen says plainly that exports aren't encrypted.
-- **Privacy**: no analytics, no crash reporter, no network in Phase 0. Nothing about money goes
+  `ExportFile`, schema-versioned (`schemaVersion`, bump on any shape change; 2 added categories
+  and rules, 3 merchants with their aliases, 4 business types on merchants and categories),
+  keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
+- **Privacy**: no analytics, no crash reporter. The only network use is merchant identification
+  (Groq, HTTPS, when you turn it on: merchants' names and nothing else). Nothing about money goes
   in DataStore (it isn't encrypted).
 - The spec's global quick-add is a flat jade `QuickAddButton` on Home and Activity (the boards
   don't draw one). It opens the transaction form on the cash wallet: Out / In / Move, amount,
@@ -236,5 +301,22 @@ pipeline (`SmsIngest`: routing by last four, dedupe, pairing internal transfers,
 checkpoints) and back-import (`SmsImport`), plus **Onboarding** (the onboarding board).
 Amounts show the riyal sign for SAR (`Currency.kt`), the ISO code otherwise.
 
-Next is Phase 2 (classification and learning): categories and expense types, the rule engine,
-the review inbox, rules screen and audit log, then AI classification with scrubbing.
+**Phase 2 (classification and learning)** is built: categories and expense types (seeded;
+`Category`, `ExpenseType`), rules (`Rule`, `core/domain/Rules`, `ClassificationRepository`), the
+history of changes with undo (`AuditBatch`, `AuditChange`), the review reminder
+(`core/reminders`), and merchant identification (business types, the bundled list, Groq in
+`core/ai`). Screens: **Review** (Review board: one card per merchant, biggest first, with what it
+was identified as, the chosen category to confirm for the ones sure enough, the All / Suggested /
+Needs you filter, and the last answer's undo; reached from Home's review pill), **Rules** (Rules
+board; from Settings and from a transaction's "Filed automatically" card), category and type on
+Transaction detail, the AI row and sheet in Settings (Settings board's AI section: on or off,
+the key, what went wrong), and, with no board, built from the system's components:
+**Categories** (add; tap to rename, change the type and the business types it takes, or
+delete), **Rule** (the form: merchant is, description contains, account, amount range →
+category and type), **Recent changes** (each with Undo), the reminder sheet in Settings, and
+**Merchants** (from Settings: every merchant, busiest first, with search) and **Merchant** (from
+Transaction detail's Merchant row, a Review card for many, or the list: rename, what was spent,
+what it is (tap to say), how the bank writes it with how each spelling joined, "Not this one",
+"Same as another merchant", its transactions). Still to come in Phase 2: web search for
+cryptic names (Tavily), the Review board's swiping and its loan/split marks (with Phase 3),
+the usage cap in Settings, and merchant logos and locations.

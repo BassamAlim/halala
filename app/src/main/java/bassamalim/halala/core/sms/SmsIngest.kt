@@ -6,6 +6,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.repositories.AccountsRepository
+import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.InstitutionsRepository
 import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
@@ -38,6 +39,7 @@ class SmsIngest @Inject constructor(
     private val transactions: TransactionsRepository,
     private val accounts: AccountsRepository,
     private val institutions: InstitutionsRepository,
+    private val classification: ClassificationRepository,
     private val clock: Clock
 ) {
 
@@ -72,6 +74,8 @@ class SmsIngest @Inject constructor(
         } while (retry && progressed)
         recordUnsentLegs()
         floorOpeningBalances()
+        // The pipeline's last stage: what the rules know is filed as it arrives.
+        classification.applyRules()
     }
 
     /**

@@ -1,8 +1,13 @@
 package bassamalim.halala.features.transaction
 
 import bassamalim.halala.core.enums.AmountTone
+import bassamalim.halala.core.enums.ExpenseType
 import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.enums.TransactionSource
+import bassamalim.halala.core.models.CategoryOption
+import bassamalim.halala.core.models.RuleWords
+import bassamalim.halala.core.enums.BusinessType
+import bassamalim.halala.core.enums.IdentifiedBy
 
 data class TransactionUiState(
     val isLoading: Boolean = true,
@@ -24,7 +29,43 @@ data class TransactionUiState(
     val source: TransactionSource = TransactionSource.MANUAL,
     /** "30 Sep": the day it was written down. */
     val createdLabel: String = "",
-    val isConfirmingDelete: Boolean = false
+    val isConfirmingDelete: Boolean = false,
+    /** Spending has a category and a type; income, moves and corrections don't. */
+    val canCategorise: Boolean = false,
+    val category: CategoryOption? = null,
+    val expenseType: ExpenseType? = null,
+    val categories: List<CategoryOption> = emptyList(),
+    /** The rule that filed it, when one did. */
+    val filedBy: FiledBy? = null,
+    /** What a rule would match: the title as stored (blank for a nameless one or a move). */
+    val merchant: String = "",
+    /** The merchant it was at, when its title names one: the row that opens it. */
+    val merchantId: Long? = null,
+    val merchantName: String? = null,
+    val sheet: TransactionSheet? = null
 ) {
     val isMove get() = fromLabel != null
+}
+
+/** The rule behind an automatic filing, as the "Filed automatically" card words it. */
+data class FiledBy(
+    val words: RuleWords,
+    val category: String,
+    val expenseType: ExpenseType?,
+    val hits: Int,
+    /** For an automatic rule: what the merchant was identified as, by whom, and how sure. */
+    val identifiedAs: BusinessType? = null,
+    val identifiedBy: IdentifiedBy? = null,
+    val confidence: Int? = null
+)
+
+sealed interface TransactionSheet {
+    data object Category : TransactionSheet
+    data object Type : TransactionSheet
+
+    /**
+     * After choosing [category] for a named merchant: this one only, or always? [others] is how
+     * many of its other transactions "always" would file.
+     */
+    data class Always(val category: CategoryOption, val others: Int) : TransactionSheet
 }

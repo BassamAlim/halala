@@ -2,6 +2,7 @@ package bassamalim.halala.core.sms
 
 import bassamalim.halala.core.data.TEST_CLOCK
 import bassamalim.halala.core.data.repositories.AccountsRepository
+import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.InstitutionsRepository
 import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
@@ -36,7 +37,7 @@ class SmsCorpusReplayTest {
         val accounts = AccountsRepository(db.accountsDao(), TEST_CLOCK)
         val sms = SmsRepository(db.smsDao())
         val institutions = InstitutionsRepository(db.institutionsDao())
-        val ingest = SmsIngest(sms, TransactionsRepository(db.transactionsDao(), db.accountsDao(), TEST_CLOCK), accounts, institutions, TEST_CLOCK)
+        val ingest = SmsIngest(sms, TransactionsRepository(db.transactionsDao(), db.accountsDao(), TEST_CLOCK), accounts, institutions, ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), TEST_CLOCK), TEST_CLOCK)
 
         for (row in corpus.readLines()) {
             val (sender, millis, escaped) = row.split('\t', limit = 3)

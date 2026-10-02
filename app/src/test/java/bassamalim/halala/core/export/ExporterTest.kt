@@ -1,6 +1,15 @@
 package bassamalim.halala.core.export
 
 import bassamalim.halala.core.data.dataSources.room.entities.Account
+import bassamalim.halala.core.data.dataSources.room.entities.Category
+import bassamalim.halala.core.data.dataSources.room.entities.Merchant
+import bassamalim.halala.core.data.dataSources.room.entities.MerchantAlias
+import bassamalim.halala.core.enums.AliasMatch
+import bassamalim.halala.core.data.dataSources.room.entities.Rule
+import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
+import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
+import bassamalim.halala.core.enums.ExpenseType
+import bassamalim.halala.core.enums.RuleSource
 import bassamalim.halala.core.data.dataSources.room.entities.Institution
 import bassamalim.halala.core.data.dataSources.room.entities.InternalTransfer
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
@@ -30,11 +39,17 @@ class ExporterTest {
         ),
         balances = mapOf(1L to 50_000L, 2L to 28_550L),
         transactions = listOf(
-            Transaction(1, "tx-jahez", 2, Direction.DEBIT, 21_450, "SAR", at, TransactionKind.PURCHASE, "=Jahez, Olaya", "", TransactionSource.MANUAL, at),
+            Transaction(1, "tx-jahez", 2, Direction.DEBIT, 21_450, "SAR", at, TransactionKind.PURCHASE, "=Jahez, Olaya", "", TransactionSource.MANUAL, at, categoryId = 7, expenseType = ExpenseType.VARIABLE_DISCRETIONARY, ruleId = 9, merchantKey = "jahez olaya"),
             Transaction(2, "tx-out", 2, Direction.DEBIT, 50_000, "SAR", at, TransactionKind.ATM_WITHDRAWAL, "", "", TransactionSource.MANUAL, at),
             Transaction(3, "tx-in", 1, Direction.CREDIT, 50_000, "SAR", at, TransactionKind.ATM_WITHDRAWAL, "", "", TransactionSource.MANUAL, at)
         ),
-        transfers = listOf(InternalTransfer(1, "pair-1", outTransactionId = 2, inTransactionId = 3))
+        transfers = listOf(InternalTransfer(1, "pair-1", outTransactionId = 2, inTransactionId = 3)),
+        categories = listOf(Category(7, "cat-delivery", "Delivery", ExpenseType.VARIABLE_DISCRETIONARY)),
+        rules = listOf(
+            Rule(9, "rule-jahez", RuleConditions("Jahez", merchantId = 4), RuleActions(7, ExpenseType.VARIABLE_DISCRETIONARY), RuleSource.LEARNED, createdAt = at)
+        ),
+        merchants = listOf(Merchant(4, "mer-jahez", "Jahez")),
+        aliases = listOf(MerchantAlias(5, 4, "jahez olaya", "=Jahez, Olaya", AliasMatch.FIRST))
     )
 
     @Test
@@ -54,6 +69,14 @@ class ExporterTest {
         assertEquals("DEBIT", file.transactions[0].direction)
         assertEquals("tx-out", file.internalTransfers.single().outTransactionUid)
         assertEquals("tx-in", file.internalTransfers.single().inTransactionUid)
+        assertEquals("cat-delivery", file.transactions[0].categoryUid)
+        assertEquals("rule-jahez", file.transactions[0].ruleUid)
+        assertEquals("cat-delivery", file.rules.single().categoryUid)
+        assertEquals("Jahez", file.rules.single().merchant)
+        assertEquals("mer-jahez", file.rules.single().merchantUid)
+        assertEquals("mer-jahez", file.transactions[0].merchantUid)
+        assertEquals(null, file.transactions[1].merchantUid)
+        assertEquals(listOf("jahez olaya"), file.merchants.single().aliases.map { it.key })
     }
 
     @Test
@@ -61,16 +84,16 @@ class ExporterTest {
         val lines = Exporter.csvFiles(snapshot, zone).getValue("transactions.csv").split("\r\n")
 
         assertEquals(
-            "uid,date,time,account,account_uid,kind,title,amount,amount_minor,currency,note,source,transfer_counterpart_uid",
+            "uid,date,time,account,account_uid,kind,title,merchant,category,expense_type,amount,amount_minor,currency,note,source,transfer_counterpart_uid",
             lines[0]
         )
         // Local time in Riyadh, a quoted and defused title, and a negative debit.
         assertEquals(
-            "tx-jahez,2026-09-29,21:14,Al Rajhi – Salary,acc-salary,PURCHASE,\"'=Jahez, Olaya\",-214.50,-21450,SAR,,MANUAL,",
+            "tx-jahez,2026-09-29,21:14,Al Rajhi – Salary,acc-salary,PURCHASE,\"'=Jahez, Olaya\",Jahez,Delivery,VARIABLE_DISCRETIONARY,-214.50,-21450,SAR,,MANUAL,",
             lines[1]
         )
         assertTrue(lines[2].endsWith(",tx-in"))
-        assertTrue(lines[3].startsWith("tx-in,2026-09-29,21:14,Cash,acc-cash,ATM_WITHDRAWAL,,500.00,50000,SAR"))
+        assertTrue(lines[3].startsWith("tx-in,2026-09-29,21:14,Cash,acc-cash,ATM_WITHDRAWAL,,,,,500.00,50000,SAR"))
         assertTrue(lines[3].endsWith(",tx-out"))
     }
 

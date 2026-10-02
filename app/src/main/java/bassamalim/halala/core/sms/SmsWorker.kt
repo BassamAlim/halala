@@ -9,6 +9,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import bassamalim.halala.core.ai.AiScheduler
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.Flow
@@ -24,7 +25,8 @@ import java.time.Instant
 class SmsWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
-    private val ingest: SmsIngest
+    private val ingest: SmsIngest,
+    private val ai: AiScheduler
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
@@ -35,6 +37,8 @@ class SmsWorker @AssistedInject constructor(
         if (inputData.getBoolean(KEY_IMPORT_INBOX, false)) importInbox()
 
         ingest.processPending(retry = inputData.getBoolean(KEY_RETRY, false))
+        // New merchants the rules and the bundled list couldn't place go to the AI, when it is on.
+        ai.request()
         return Result.success()
     }
 

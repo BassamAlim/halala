@@ -7,6 +7,7 @@ import androidx.room.Update
 import bassamalim.halala.core.data.dataSources.room.entities.InternalTransfer
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
+import bassamalim.halala.core.enums.ExpenseType
 import kotlinx.coroutines.flow.Flow
 
 /** Every transaction column plus the names and pairing needed to show it. */
@@ -14,7 +15,10 @@ private const val DETAIL_SELECT = """
         SELECT t.*, a.nickname AS accountNickname, i.name AS institutionName,
             o.id AS counterpartId, o.accountId AS counterpartAccountId,
             oa.nickname AS counterpartNickname, oi.name AS counterpartInstitutionName,
-            (x.inTransactionId IS NOT NULL AND x.inTransactionId = t.id) AS isTransferInLeg
+            (x.inTransactionId IS NOT NULL AND x.inTransactionId = t.id) AS isTransferInLeg,
+            c.name AS categoryName, m.id AS merchantId, m.name AS merchantName,
+            m.businessType AS merchantType, m.identifiedBy AS merchantIdentifiedBy,
+            m.confidence AS merchantConfidence
         FROM transactions t
         JOIN accounts a ON a.id = t.accountId
         LEFT JOIN institutions i ON i.id = a.institutionId
@@ -23,6 +27,9 @@ private const val DETAIL_SELECT = """
             CASE WHEN x.outTransactionId = t.id THEN x.inTransactionId ELSE x.outTransactionId END
         LEFT JOIN accounts oa ON oa.id = o.accountId
         LEFT JOIN institutions oi ON oi.id = oa.institutionId
+        LEFT JOIN categories c ON c.id = t.categoryId
+        LEFT JOIN merchant_aliases ma ON ma.aliasKey = t.merchantKey AND t.merchantKey != ''
+        LEFT JOIN merchants m ON m.id = ma.merchantId
     """
 
 @Dao
@@ -48,6 +55,28 @@ interface TransactionsDao {
                 "OR inTransactionId = :transactionId"
     )
     suspend fun getTransferFor(transactionId: Long): InternalTransfer?
+
+    /**
+     * What a rule may file: named money out that isn't half of a move, and that you haven't
+     * filed yourself (nothing chosen yet, or chosen by a rule).
+     */
+    @Query(
+        """
+        SELECT * FROM transactions t
+        WHERE t.title != '' AND t.direction = 'DEBIT' AND (t.categoryId IS NULL OR t.ruleId IS NOT NULL)
+            AND NOT EXISTS (
+                SELECT 1 FROM internal_transfers x WHERE x.outTransactionId = t.id OR x.inTransactionId = t.id
+            )
+        """
+    )
+    suspend fun getRuleCandidates(): List<Transaction>
+
+    @Query("UPDATE transactions SET categoryId = :categoryId, expenseType = :expenseType, ruleId = :ruleId WHERE id IN (:ids)")
+    suspend fun setCategory(ids: List<Long>, categoryId: Long?, expenseType: ExpenseType?, ruleId: Long?)
+
+    /** With its category gone, a transaction's type goes too, so it comes back to review whole. */
+    @Query("UPDATE transactions SET expenseType = NULL WHERE categoryId = :categoryId")
+    suspend fun clearTypeOf(categoryId: Long)
 
     @Insert
     suspend fun insert(transaction: Transaction): Long

@@ -45,6 +45,8 @@ import bassamalim.halala.core.ui.theme.Insets
 import bassamalim.halala.core.ui.theme.Radius
 import bassamalim.halala.core.ui.theme.Sizes
 import bassamalim.halala.core.ui.theme.Spacing
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 
 /**
  * The 44dp search field: surface, line border, radius-md, a muted glyph. Focus shows the
@@ -125,7 +127,7 @@ fun SearchField(
 /**
  * The app's text input, from the onboarding board: surface-2, line border, radius-sm, at least a
  * touch target tall. [numeric] sets it in Plex Mono with a number keyboard, for amounts and
- * digits.
+ * digits. [secret] hides what is typed and keeps the keyboard from learning it, for keys.
  */
 @Composable
 fun HalalaTextField(
@@ -141,7 +143,8 @@ fun HalalaTextField(
     capitalization: KeyboardCapitalization = KeyboardCapitalization.None,
     /** Next moves to the following field; the last single-line field in a form passes Done. */
     imeAction: ImeAction = if (singleLine) ImeAction.Next else ImeAction.Default,
-    focusRequester: FocusRequester? = null
+    focusRequester: FocusRequester? = null,
+    secret: Boolean = false
 ) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
@@ -176,9 +179,11 @@ fun HalalaTextField(
             cursorBrush = SolidColor(HalalaColors.Accent),
             keyboardOptions = KeyboardOptions(
                 capitalization = capitalization,
-                keyboardType = keyboardType,
+                autoCorrectEnabled = !secret,
+                keyboardType = if (secret) KeyboardType.Password else keyboardType,
                 imeAction = imeAction
             ),
+            visualTransformation = if (secret) PasswordVisualTransformation() else VisualTransformation.None,
             modifier = Modifier
                 .fillMaxWidth()
                 .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)

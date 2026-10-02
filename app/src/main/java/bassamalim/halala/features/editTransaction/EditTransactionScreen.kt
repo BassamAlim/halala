@@ -9,15 +9,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,6 +33,7 @@ import bassamalim.halala.core.ui.components.FormField
 import bassamalim.halala.core.ui.components.HalalaButton
 import bassamalim.halala.core.ui.components.HalalaTextField
 import bassamalim.halala.core.ui.components.SegmentedControl
+import bassamalim.halala.core.ui.components.TimeDialog
 import bassamalim.halala.core.ui.components.TopBar
 import bassamalim.halala.core.ui.kindLabel
 import bassamalim.halala.core.ui.theme.HalalaColors
@@ -255,22 +253,4 @@ private fun DateDialog(date: LocalDate, onPicked: (LocalDate) -> Unit, onDismiss
     ) {
         DatePicker(state = pickerState)
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun TimeDialog(time: LocalTime, onPicked: (LocalTime) -> Unit, onDismiss: () -> Unit) {
-    val pickerState = rememberTimePickerState(initialHour = time.hour, initialMinute = time.minute, is24Hour = true)
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = HalalaColors.Surface,
-        confirmButton = {
-            TextButton(onClick = { onPicked(LocalTime.of(pickerState.hour, pickerState.minute)) }) {
-                Text(stringResource(R.string.done))
-            }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
-        text = { TimePicker(state = pickerState) }
-    )
 }

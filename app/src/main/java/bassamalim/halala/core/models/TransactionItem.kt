@@ -7,7 +7,8 @@ import java.time.LocalDate
 
 /**
  * One transaction as a list shows it, everything but translatable words already formatted.
- * A blank [title] reads as the kind's name; [isMove] rows read "Between your accounts".
+ * A blank [title] reads as the kind's name; [isMove] rows read "Between your accounts"; a
+ * [category] takes the kind's place in the second line, and [auto] marks one a rule filed.
  */
 data class TransactionItem(
     val id: Long,
@@ -20,5 +21,7 @@ data class TransactionItem(
     val tone: AmountTone,
     val initial: String,
     val date: LocalDate,
-    val day: DayLabel
+    val day: DayLabel,
+    val category: String? = null,
+    val auto: Boolean = false
 )

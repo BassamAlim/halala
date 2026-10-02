@@ -31,10 +31,10 @@ fun signedAmount(detail: TransactionDetail, decimals: Boolean = true): String {
 
 /**
  * A move is titled by its two accounts, sending side first ("Salary → Awaeed"), whichever leg
- * is being shown.
+ * is being shown; anything else by its merchant's name, or as it was written.
  */
 fun titleOf(detail: TransactionDetail): String {
-    if (!detail.isInternalTransfer) return detail.transaction.title
+    if (!detail.isInternalTransfer) return detail.merchantName ?: detail.transaction.title
 
     val here = detail.accountNickname
     val there = detail.counterpartNickname.orEmpty()
@@ -56,7 +56,9 @@ fun TransactionDetail.toItem(zone: ZoneId, today: LocalDate): TransactionItem {
         tone = toneOf(this),
         initial = initialOf(title),
         date = date,
-        day = dayLabel(date, today)
+        day = dayLabel(date, today),
+        category = categoryName,
+        auto = transaction.ruleId != null
     )
 }
 

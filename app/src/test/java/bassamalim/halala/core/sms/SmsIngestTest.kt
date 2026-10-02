@@ -3,6 +3,7 @@ package bassamalim.halala.core.sms
 import bassamalim.halala.core.data.TEST_CLOCK
 import bassamalim.halala.core.data.dataSources.room.AppDatabase
 import bassamalim.halala.core.data.repositories.AccountsRepository
+import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.InstitutionsRepository
 import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
@@ -48,6 +49,7 @@ class SmsIngestTest {
             transactions,
             accounts,
             InstitutionsRepository(db.institutionsDao()),
+            ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), TEST_CLOCK),
             TEST_CLOCK
         )
         val banks = db.institutionsDao().getAll().associate { it.name to it.id }
