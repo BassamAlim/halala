@@ -21,6 +21,8 @@ import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsTerms
+import bassamalim.halala.core.data.dataSources.room.entities.Tag
+import bassamalim.halala.core.data.dataSources.room.entities.TransactionTag
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.dataSources.room.entities.ZakatProfile
 import bassamalim.halala.core.data.repositories.AccountsRepository
@@ -35,6 +37,7 @@ import bassamalim.halala.core.data.repositories.PlannerRepository
 import bassamalim.halala.core.data.repositories.RecurringRepository
 import bassamalim.halala.core.data.repositories.SavingsRepository
 import bassamalim.halala.core.data.repositories.SmsRepository
+import bassamalim.halala.core.data.repositories.TagsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
 import bassamalim.halala.core.data.repositories.ZakatRepository
 import bassamalim.halala.core.domain.Money
@@ -76,7 +79,9 @@ data class LedgerSnapshot(
     val snapshots: List<NetWorthSnapshot> = emptyList(),
     val zakat: ZakatProfile? = null,
     val scenarios: List<RetirementScenario> = emptyList(),
-    val savingsTerms: List<SavingsTerms> = emptyList()
+    val savingsTerms: List<SavingsTerms> = emptyList(),
+    val tags: List<Tag> = emptyList(),
+    val transactionTags: List<TransactionTag> = emptyList()
 ) {
     /** The merchant each transaction's title names, by transaction id. */
     fun merchantOf(): Map<Long, Merchant> {
@@ -107,6 +112,7 @@ class Exporter @Inject constructor(
     private val zakatRepository: ZakatRepository,
     private val plannerRepository: PlannerRepository,
     private val savingsRepository: SavingsRepository,
+    private val tagsRepository: TagsRepository,
     private val clock: Clock
 ) {
 
@@ -134,7 +140,9 @@ class Exporter @Inject constructor(
         snapshots = assetsRepository.getSnapshots(),
         zakat = zakatRepository.get().takeIf { it != ZakatProfile() },
         scenarios = plannerRepository.getScenarios(),
-        savingsTerms = savingsRepository.getAll()
+        savingsTerms = savingsRepository.getAll(),
+        tags = tagsRepository.getAll(),
+        transactionTags = tagsRepository.getRows()
     )
 
     fun fileStem(): String = "halala-${clock.instant().atZone(clock.zone).toLocalDate()}"
@@ -382,6 +390,14 @@ class Exporter @Inject constructor(
                         accountUids.getValue(it.accountId), it.kind.name, it.ratePercent, it.startDate?.toString(),
                         it.tenorMonths, it.maturityChoice?.name
                     )
+                },
+                tags = snapshot.tags.map {
+                    ExportTag(it.uid, it.name, it.startsOn?.toString(), it.endsOn?.toString(), it.auto, it.createdAt.toString())
+                },
+                transactionTags = snapshot.tags.associate { it.id to it.uid }.let { tagUids ->
+                    snapshot.transactionTags
+                        .sortedWith(compareBy({ it.transactionId }, { it.tagId }))
+                        .map { ExportTransactionTag(transactionUids.getValue(it.transactionId), tagUids.getValue(it.tagId), it.removed) }
                 }
             )
 

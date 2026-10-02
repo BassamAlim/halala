@@ -926,6 +926,41 @@
         <item quantity="one">%1$d to review</item>
         <item quantity="other">%1$d to review</item>
     </plurals>
+    <string name="tags">Tags</string>
+    <string name="settings_tags_summary">Trips and occasions, across categories</string>
+    <string name="tags_empty">No tags yet. Tag a trip or an occasion to see what it cost.</string>
+    <string name="tags_explain">A tag with days can take everything in them by itself, until it ends. Trips are suggested from runs of spending in another currency, worked out on the phone.</string>
+    <string name="tags_none_yet">No tags yet. Name one below.</string>
+    <string name="tag_new">New tag</string>
+    <string name="tag_edit">Tag</string>
+    <string name="tag_new_name">A new tag</string>
+    <string name="tag_name">Name</string>
+    <string name="tag_trip_to">Trip to %1$s</string>
+    <string name="tag_suggest_title">%1$s?</string>
+    <plurals name="tag_suggest_body">
+        <item quantity="one">%1$d purchase in %2$s, %3$s.</item>
+        <item quantity="other">%1$d purchases in %2$s, %3$s.</item>
+    </plurals>
+    <string name="tag_suggest_yes">Tag the trip</string>
+    <string name="tag_suggest_no">Not a trip</string>
+    <plurals name="tag_count">
+        <item quantity="one">%1$d transaction</item>
+        <item quantity="other">%1$d transactions</item>
+    </plurals>
+    <string name="tag_from">from %1$s</string>
+    <string name="tag_between">%1$s to %2$s</string>
+    <string name="tag_starts">Starts</string>
+    <string name="tag_ends">Ends</string>
+    <string name="tag_no_days">No days: tag by hand</string>
+    <string name="tag_running">Still running</string>
+    <string name="tag_clear_days">No days</string>
+    <string name="tag_no_end">No end</string>
+    <string name="tag_ends_before">It ends before it starts.</string>
+    <string name="tag_auto">Tag everything in these days</string>
+    <string name="tag_auto_hint">Including what arrives while it runs. Take it off any one on its detail.</string>
+    <string name="tag_carrying">Spent %1$s</string>
+    <string name="tag_delete_title">Delete %1$s?</string>
+    <string name="tag_delete_body">Its transactions stay; they just lose the tag.</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="cadence_daily">Daily</string>

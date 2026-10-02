@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.em
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
+import bassamalim.halala.features.tags.TransactionTags
 import bassamalim.halala.core.enums.AmountTone
 import bassamalim.halala.core.enums.ExpenseType
 import bassamalim.halala.core.enums.TransactionSource
@@ -184,6 +185,8 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
             if (state.note.isNotBlank()) {
                 DetailRow(stringResource(R.string.transaction_note)) { Value(state.note) }
             }
+            val tagsLabel = stringResource(R.string.tags)
+            TransactionTags(row = { value -> DetailRow(tagsLabel) { value() } })
         }
 
         state.loan?.let { loan -> LoanCard(loan, viewModel) }

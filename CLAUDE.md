@@ -339,6 +339,15 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   bill or subscription its lead time before it is due, a cancel reminder three days (or its lead
   time) before it renews, an open loan on its due day. Names and days, never an amount. Choosing a
   reminder or a due date asks for notification permission.
+- **Tags** cut across categories: a `Tag` has a name and optional days; with `auto` set it takes
+  every transaction in its days (to today while it has no end) as they arrive
+  (`TagsRepository.applyActive`, run as the app opens and after each SMS run). `TransactionTag`
+  rows carry them; taking a tag off a transaction its days cover marks the row `removed`, so it
+  stays off. Suggestions are worked out on the phone (`core/domain/Tags.suggest`, no AI call):
+  three or more purchases in another currency, no more than a week apart, in the last four
+  months, are "Trip to <the country of that currency>?" ("Tag the trip" makes an automatic tag
+  over those days; "Not a trip" is remembered in DataStore by its key). Budgets by tag and a
+  feed filtered by tag aren't built yet.
 - **Undo**: everything you do to filing (an answer, "always", saving, switching or deleting a
   rule, editing or deleting a category, renaming, merging or splitting a merchant, saying what a
   merchant is) is one `AuditBatch`:
@@ -380,7 +389,7 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   a restore needs: raw bank messages, account refs, balance checkpoints, full rule conditions,
   6 people with their aliases, 7 loans with their events, 8 subscriptions and bills, 9 a loan's
   split purchase, 10 budgets, 11 savings goals, 12 assets and their snapshots, 13 the zakat
-  method, 14 retirement scenarios, 15 savings terms),
+  method, 14 retirement scenarios, 15 savings terms, 16 tags and the transactions carrying them),
   keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
 - **Encrypted backups** (Backup and export › Encrypted backups, no board): a `.halala` file
   (`core/backup/BackupFile`) is the JSON export zipped and sealed with AES-256-GCM under a key
@@ -506,6 +515,8 @@ the **Assistant** (Assistant board, with the Digests link; see the product rule)
 **Encrypted backups** (see the product rule), and the **home-screen widget** (`core/widget`,
 no board: this cycle's spending against the total budget with its state colour, the Review
 count, and "+ Cash", which opens the lock as always and then the form on the wallet
-(`QuickAddRequest`); refreshed when the app goes to the background and after each SMS run).
+(`QuickAddRequest`); refreshed when the app goes to the background and after each SMS run),
+and **Tags** (from Settings; a tag's form with what carries it; the Tags row on Transaction
+detail; no board draws them).
 The widget shows amounts outside the lock: it is there only if you add it. The board's
 "See 52 transactions" link waits for a filtered feed.

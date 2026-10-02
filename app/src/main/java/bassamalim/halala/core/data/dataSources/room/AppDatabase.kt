@@ -16,6 +16,7 @@ import bassamalim.halala.core.data.dataSources.room.daos.PeopleDao
 import bassamalim.halala.core.data.dataSources.room.daos.RecurringDao
 import bassamalim.halala.core.data.dataSources.room.daos.RestoreDao
 import bassamalim.halala.core.data.dataSources.room.daos.SavingsDao
+import bassamalim.halala.core.data.dataSources.room.daos.TagsDao
 import bassamalim.halala.core.data.dataSources.room.daos.ScenariosDao
 import bassamalim.halala.core.data.dataSources.room.daos.SmsDao
 import bassamalim.halala.core.data.dataSources.room.daos.TransactionsDao
@@ -44,6 +45,8 @@ import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsTerms
+import bassamalim.halala.core.data.dataSources.room.entities.Tag
+import bassamalim.halala.core.data.dataSources.room.entities.TransactionTag
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.dataSources.room.entities.ZakatProfile
 
@@ -74,9 +77,11 @@ import bassamalim.halala.core.data.dataSources.room.entities.ZakatProfile
         NetWorthSnapshot::class,
         ZakatProfile::class,
         RetirementScenario::class,
-        SavingsTerms::class
+        SavingsTerms::class,
+        Tag::class,
+        TransactionTag::class
     ],
-    version = 16,
+    version = 17,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -97,5 +102,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun zakatDao(): ZakatDao
     abstract fun scenariosDao(): ScenariosDao
     abstract fun savingsDao(): SavingsDao
+    abstract fun tagsDao(): TagsDao
     abstract fun restoreDao(): RestoreDao
 }

@@ -23,6 +23,8 @@ import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsTerms
+import bassamalim.halala.core.data.dataSources.room.entities.Tag
+import bassamalim.halala.core.data.dataSources.room.entities.TransactionTag
 import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
 import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
@@ -70,7 +72,9 @@ class Importer @Inject constructor(
         snapshots = snapshot.snapshots,
         zakat = snapshot.zakat,
         scenarios = snapshot.scenarios,
-        savingsTerms = snapshot.savingsTerms
+        savingsTerms = snapshot.savingsTerms,
+        tags = snapshot.tags,
+        transactionTags = snapshot.transactionTags
     )
 
     companion object {
@@ -370,6 +374,14 @@ class Importer @Inject constructor(
             }
             val snapshots = file.assetSnapshots.map { NetWorthSnapshot(LocalDate.parse(it.date), it.assetsMinor, it.currency) }
 
+            val tags = file.tags.mapIndexed { index, it ->
+                Tag(
+                    index + 1L, it.uid, it.name, it.startsOn?.let(LocalDate::parse), it.endsOn?.let(LocalDate::parse),
+                    it.auto, Instant.parse(it.createdAt)
+                )
+            }
+            val tagIds = tags.associate { it.uid to it.id }
+
             return LedgerSnapshot(
                 institutions = institutions,
                 accounts = accounts,
@@ -411,6 +423,10 @@ class Importer @Inject constructor(
                         accountIds.named(it.accountUid, "account"), converters.toSavingsKind(it.kind), it.ratePercent,
                         it.startDate?.let(LocalDate::parse), it.tenorMonths, converters.toMaturityChoice(it.maturityChoice)
                     )
+                },
+                tags = tags,
+                transactionTags = file.transactionTags.map {
+                    TransactionTag(transactionIds.named(it.transactionUid, "transaction"), tagIds.named(it.tagUid, "tag"), it.removed)
                 }
             )
         }

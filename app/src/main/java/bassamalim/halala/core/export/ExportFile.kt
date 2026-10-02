@@ -52,10 +52,13 @@ data class ExportFile(
     /** Since schema 14. */
     val scenarios: List<ExportScenario> = emptyList(),
     /** Since schema 15: the terms of savings accounts. */
-    val savingsTerms: List<ExportSavingsTerms> = emptyList()
+    val savingsTerms: List<ExportSavingsTerms> = emptyList(),
+    /** Since schema 16: tags, and which transactions carry them. */
+    val tags: List<ExportTag> = emptyList(),
+    val transactionTags: List<ExportTransactionTag> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 15
+        const val SCHEMA_VERSION = 16
     }
 }
 
@@ -321,6 +324,21 @@ data class ExportSavingsTerms(
     val tenorMonths: Int?,
     val maturityChoice: String?
 )
+
+/** A tag: its days as ISO dates, and whether it takes everything in them. */
+@Serializable
+data class ExportTag(
+    val uid: String,
+    val name: String,
+    val startsOn: String?,
+    val endsOn: String?,
+    val auto: Boolean,
+    val createdAt: String
+)
+
+/** A transaction carries a tag; `removed` is one you took off a transaction its days cover. */
+@Serializable
+data class ExportTransactionTag(val transactionUid: String, val tagUid: String, val removed: Boolean)
 
 @Serializable
 data class ExportInternalTransfer(

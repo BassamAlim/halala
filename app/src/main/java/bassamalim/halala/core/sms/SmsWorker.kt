@@ -10,6 +10,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import bassamalim.halala.core.ai.AiScheduler
+import bassamalim.halala.core.data.repositories.TagsRepository
 import bassamalim.halala.core.widget.HalalaWidget
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -27,7 +28,8 @@ class SmsWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
     private val ingest: SmsIngest,
-    private val ai: AiScheduler
+    private val ai: AiScheduler,
+    private val tags: TagsRepository
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
@@ -40,6 +42,7 @@ class SmsWorker @AssistedInject constructor(
         ingest.processPending(retry = inputData.getBoolean(KEY_RETRY, false))
         // New merchants the rules and the bundled list couldn't place go to the AI, when it is on.
         ai.request()
+        tags.applyActive()
         HalalaWidget.refresh(applicationContext)
         return Result.success()
     }

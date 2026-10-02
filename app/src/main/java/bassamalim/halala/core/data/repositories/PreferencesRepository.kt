@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import bassamalim.halala.core.domain.DigestKind
 import bassamalim.halala.core.models.BackupEvery
 import bassamalim.halala.core.models.BackupSettings
@@ -95,6 +96,13 @@ class PreferencesRepository @Inject constructor(
         dataStore.edit { it[BACKUP_LAST_AT] = at.toEpochMilli() }
     }
 
+    /** Tag suggestions you said no to, by their keys (a currency and a day: nothing about money). */
+    fun observeDismissedTagSuggestions(): Flow<Set<String>> = dataStore.data.map { it[TAG_DISMISSED].orEmpty() }
+
+    suspend fun dismissTagSuggestion(key: String) {
+        dataStore.edit { it[TAG_DISMISSED] = it[TAG_DISMISSED].orEmpty() + key }
+    }
+
     private fun digestKey(kind: DigestKind) = booleanPreferencesKey("digest_${kind.name.lowercase()}")
 
     companion object {
@@ -103,6 +111,7 @@ class PreferencesRepository @Inject constructor(
         private val REVIEW_MINUTE = intPreferencesKey("review_reminder_minute")
         private val ONBOARDED = booleanPreferencesKey("onboarded")
         private val LOCK_TIMEOUT_SECONDS = intPreferencesKey("lock_timeout_seconds")
+        private val TAG_DISMISSED = stringSetPreferencesKey("tag_suggestions_dismissed")
         private val BACKUP_FOLDER = stringPreferencesKey("backup_folder")
         private val BACKUP_EVERY = stringPreferencesKey("backup_every")
         private val BACKUP_KEEP = intPreferencesKey("backup_keep")

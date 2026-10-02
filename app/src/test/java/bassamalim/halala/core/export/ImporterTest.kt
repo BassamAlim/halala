@@ -23,6 +23,8 @@ import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsTerms
+import bassamalim.halala.core.data.dataSources.room.entities.Tag
+import bassamalim.halala.core.data.dataSources.room.entities.TransactionTag
 import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
 import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
@@ -38,6 +40,7 @@ import bassamalim.halala.core.data.repositories.PeopleRepository
 import bassamalim.halala.core.data.repositories.PlannerRepository
 import bassamalim.halala.core.data.repositories.RecurringRepository
 import bassamalim.halala.core.data.repositories.SavingsRepository
+import bassamalim.halala.core.data.repositories.TagsRepository
 import bassamalim.halala.core.data.repositories.RestoreRepository
 import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
@@ -149,7 +152,12 @@ class ImporterTest {
         snapshots = listOf(NetWorthSnapshot(LocalDate.parse("2026-09-28"), 12_345_600, "SAR")),
         zakat = ZakatProfile(hijriMonth = 9, hijriDay = 1, goldPricePerGram = "563.25", includeGold = false, otherDebtsMinor = 5_000, paidHijriYear = 1447, remind = true),
         scenarios = listOf(RetirementScenario(201, "scn-55", "Retire at 55", 32, 55, 26_295_000, 400_000, "6", "2.5", 800_000, "SAR", at)),
-        savingsTerms = listOf(SavingsTerms(22, SavingsKind.AWAEED, "4.40", LocalDate.parse("2026-05-14"), 6, MaturityChoice.RENEW_WITH_PROFIT))
+        savingsTerms = listOf(SavingsTerms(22, SavingsKind.AWAEED, "4.40", LocalDate.parse("2026-05-14"), 6, MaturityChoice.RENEW_WITH_PROFIT)),
+        tags = listOf(
+            Tag(1, "tag-trip", "Trip to Türkiye", LocalDate.parse("2026-09-12"), LocalDate.parse("2026-09-19"), auto = true, createdAt = at),
+            Tag(2, "tag-wedding", "Wedding", createdAt = at)
+        ),
+        transactionTags = listOf(TransactionTag(31, 1), TransactionTag(31, 2), TransactionTag(34, 1, removed = true))
     )
 
     private val json = Exporter.json(snapshot, appVersion = "0.2.0", now = at)
@@ -179,6 +187,7 @@ class ImporterTest {
         ZakatRepository(db.zakatDao(), db.accountsDao(), db.assetsDao(), LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK), TEST_CLOCK),
         PlannerRepository(db.scenariosDao(), db.accountsDao(), db.assetsDao(), db.transactionsDao(), LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK), TEST_CLOCK),
         SavingsRepository(db.savingsDao(), db.accountsDao(), db.transactionsDao(), TEST_CLOCK),
+        TagsRepository(db.tagsDao(), db.transactionsDao(), TEST_CLOCK),
         TEST_CLOCK
     )
 
