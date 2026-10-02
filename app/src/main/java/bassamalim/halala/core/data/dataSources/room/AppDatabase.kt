@@ -81,7 +81,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.ZakatProfile
         Tag::class,
         TransactionTag::class
     ],
-    version = 17,
+    version = 18,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

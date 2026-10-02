@@ -369,7 +369,8 @@ class Importer @Inject constructor(
                     spreadPercent = asset.spreadPercent,
                     depreciationPercent = asset.depreciationPercent,
                     currency = asset.currency,
-                    createdAt = Instant.parse(asset.createdAt)
+                    createdAt = Instant.parse(asset.createdAt),
+                    priceSource = asset.priceSource
                 )
             }
             val snapshots = file.assetSnapshots.map { NetWorthSnapshot(LocalDate.parse(it.date), it.assetsMinor, it.currency) }

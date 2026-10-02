@@ -145,8 +145,8 @@ class ImporterTest {
             SavingsGoal(182, "goal-car", "Car", 9_000_000, "SAR", null, emptyList(), at)
         ),
         assets = listOf(
-            Asset(191, "asset-fund", AssetType.FUND, "Al Rajhi Inclusion", quantity = "1234.5678", unitPrice = "12.3456", priceDate = LocalDate.parse("2026-09-28"), costMinor = 1_400_000, currency = "SAR", createdAt = at),
-            Asset(192, "asset-gold", AssetType.GOLD, "Gold", quantity = "95", karat = 21, unitPrice = "410.5", spreadPercent = "3", currency = "SAR", createdAt = at),
+            Asset(191, "asset-fund", AssetType.FUND, "Al Rajhi Inclusion", quantity = "1234.5678", unitPrice = "12.3456", priceDate = LocalDate.parse("2026-09-28"), costMinor = 1_400_000, currency = "SAR", createdAt = at, priceSource = "fund:6019"),
+            Asset(192, "asset-gold", AssetType.GOLD, "Gold", quantity = "95", karat = 21, unitPrice = "410.5", spreadPercent = "3", currency = "SAR", createdAt = at, priceSource = "gold"),
             Asset(193, "asset-car", AssetType.VEHICLE, "Car", valueMinor = 6_000_000, priceDate = LocalDate.parse("2026-01-01"), depreciationPercent = "15", currency = "SAR", createdAt = at)
         ),
         snapshots = listOf(NetWorthSnapshot(LocalDate.parse("2026-09-28"), 12_345_600, "SAR")),

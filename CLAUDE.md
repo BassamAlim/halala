@@ -316,8 +316,12 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   gram price, less a dealer's spread), and cars, property and the rest (a value you give, less a
   yearly depreciation, compounded). Quantities and prices are exact decimal text; a value is
   rounded once, half up, to minor units, and one that can't be read is worth nothing. **Prices
-  are entered by you**: the spec's NAV scraper and gold-price API aren't built, since they would
-  be network use beyond merchant identification (the owner's call).
+  are fetched for linked assets** (`core/prices`, `Asset.priceSource`): gold from
+  `api.gold-api.com` (USD a troy ounce, turned into SAR a gram at the 3.75 peg, exactly), funds
+  from Mubasher's list of every Saudi fund (one request for the whole list, so nothing says which
+  you hold); linked on the Asset form ("Price from the market" for a fund, "Today's market price"
+  for gold). `PriceWorker` runs daily, online only, and right after you link one; it updates the
+  price and its day and takes a net worth snapshot. Anything not linked is priced as you type it.
 - **Net worth** (`NetWorth`): accounts by class (current/card/wallet/cash, savings, investment),
   assets, owed to you, less what you owe people. The timeline is read back from the ledger (each
   later day's money in and out of your accounts undone, loans as they stood), with assets from a
@@ -406,9 +410,10 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   replace, not a merge. The history of changes (undo) and DataStore settings aren't carried.
   A new table or column that matters must be added to `ExportFile`, `Exporter` and `Importer`
   together; `ImporterTest` checks that a restored export exports again as the same file.
-- **Privacy**: no analytics, no crash reporter. The only network use is Groq (HTTPS, always on
-  in a build with the key): merchant identification (merchants' names and nothing else) and the
-  assistant (the question you type and today's date, nothing else). Nothing about money goes
+- **Privacy**: no analytics, no crash reporter. Network use: Groq (HTTPS, always on in a build
+  with the key) for merchant identification (merchants' names and nothing else) and the
+  assistant (the question you type and today's date, nothing else); and market prices (public
+  gold and fund prices, fetched with nothing of yours, only once you link an asset). Nothing about money goes
   in DataStore (it isn't encrypted).
 - **The assistant** (Assistant tab, Assistant board) is "tool calling" without the round trip:
   `AssistantProtocol` asks Groq to read your question into one `Ask` (a tool from `AskTool`:
@@ -503,8 +508,8 @@ Scenarios), **Compound interest** (no board) and **Savings** (Savings board: ter
 savings account, `SavingsTerms` and `core/domain/Savings`; Awaeed terms run from a start for a
 tenor and roll over when they renew, expected profit is simple on the balance; Hasad pays next
 month on this month's lowest balance, nothing under 5,000; a term maturing within a month shows
-on Wealth and is reminded three days before; the terms form has no board). Not built: fetching
-fund and gold prices (an owner's decision, see Assets).
+on Wealth and is reminded three days before; the terms form has no board), and fetched fund
+and gold prices (see Assets).
 
 **Phase 6 (delight)** is built but for the spending heatmap (it needs a location for each
 transaction, which SMS don't carry, and map tiles from the network: an owner's decision): **Money flow** (Money flow board, Activity's second segment:

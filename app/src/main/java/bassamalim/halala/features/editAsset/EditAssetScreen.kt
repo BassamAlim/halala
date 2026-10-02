@@ -16,6 +16,11 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
+import bassamalim.halala.core.ui.theme.Sizes
+import bassamalim.halala.core.ui.theme.HalalaNumbers
+import bassamalim.halala.core.ui.components.SearchField
+import bassamalim.halala.core.ui.components.HalalaSheet
+import androidx.compose.foundation.layout.heightIn
 import bassamalim.halala.core.domain.Assets
 import bassamalim.halala.core.enums.AssetType
 import bassamalim.halala.core.ui.components.ChoiceChips
@@ -74,6 +79,14 @@ fun EditAssetScreen(viewModel: EditAssetViewModel = hiltViewModel()) {
         when (form.type) {
             AssetType.FUND -> {
                 Field(stringResource(R.string.asset_units), form.quantity, viewModel::onQuantityChange, AssetProblem.QuantityInvalid in problems, R.string.asset_number_invalid)
+                ListCard(Modifier.fillMaxWidth()) {
+                    ListRow(
+                        title = stringResource(R.string.asset_market_price),
+                        subtitle = stringResource(if (form.priceSource != null) R.string.asset_fund_linked else R.string.asset_fund_not_linked),
+                        onClick = viewModel::onLinkFundClick
+                    )
+                }
+                if (form.priceSource != null) HalalaButton(stringResource(R.string.asset_unlink), viewModel::onUnlinkClick, Modifier.fillMaxWidth())
                 Field(stringResource(R.string.asset_unit_price), form.unitPrice, viewModel::onPriceChange, AssetProblem.PriceInvalid in problems, R.string.asset_number_invalid)
             }
             AssetType.GOLD -> {
@@ -84,6 +97,17 @@ fun EditAssetScreen(viewModel: EditAssetViewModel = hiltViewModel()) {
                         selected = form.karat,
                         label = { stringResource(R.string.asset_karat_value, it) },
                         onSelect = viewModel::onKaratClick
+                    )
+                }
+                FormField(
+                    label = stringResource(R.string.asset_gold_source),
+                    error = stringResource(R.string.asset_gold_failed).takeIf { state.goldFailed }
+                ) {
+                    ChoiceChips(
+                        options = listOf(true, false),
+                        selected = form.priceSource != null,
+                        label = { stringResource(if (it) R.string.asset_gold_market else R.string.asset_gold_mine) },
+                        onSelect = viewModel::onGoldMarketClick
                     )
                 }
                 Field(stringResource(R.string.asset_gold_price), form.unitPrice, viewModel::onPriceChange, AssetProblem.PriceInvalid in problems, R.string.asset_number_invalid, hint = stringResource(R.string.asset_gold_price_hint))
@@ -111,6 +135,30 @@ fun EditAssetScreen(viewModel: EditAssetViewModel = hiltViewModel()) {
             destructive = true,
             modifier = Modifier.fillMaxWidth()
         )
+    }
+
+    state.fundSearch?.let { search ->
+        HalalaSheet(viewModel::onFundSearchDismiss) {
+            Text(text = stringResource(R.string.asset_pick_fund), style = HalalaType.Title)
+            SearchField(value = search.query, onValueChange = viewModel::onFundQueryChange, placeholder = stringResource(R.string.asset_fund_search))
+            when {
+                search.results == null -> Text(text = stringResource(R.string.asset_funds_loading), style = HalalaType.Label, color = HalalaColors.TextMuted)
+                search.failed -> Text(text = stringResource(R.string.asset_funds_failed), style = HalalaType.Label, color = HalalaColors.TextMuted)
+                search.results.isEmpty() -> Text(text = stringResource(R.string.asset_funds_none), style = HalalaType.Label, color = HalalaColors.TextMuted)
+                else -> Column(Modifier.heightIn(max = Sizes.sankeyMax).verticalScroll(rememberScrollState())) {
+                    search.results.forEachIndexed { index, fund ->
+                        ListRow(
+                            title = fund.name,
+                            subtitle = listOfNotNull(fund.manager, fund.date).joinToString(" · "),
+                            divider = index > 0,
+                            trailing = { Text(text = fund.price, style = HalalaNumbers.Meta) },
+                            onClick = { viewModel.onFundPicked(fund.id) }
+                        )
+                    }
+                }
+            }
+            Text(text = stringResource(R.string.asset_funds_source), style = HalalaType.Caption, color = HalalaColors.TextMuted)
+        }
     }
 
     if (state.pickingDate) DateDialog(date = state.pickFrom, onPicked = viewModel::onDatePicked, onDismiss = viewModel::onDateDismiss)

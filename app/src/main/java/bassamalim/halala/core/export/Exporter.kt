@@ -369,7 +369,8 @@ class Exporter @Inject constructor(
                         spreadPercent = asset.spreadPercent,
                         depreciationPercent = asset.depreciationPercent,
                         currency = asset.currency,
-                        createdAt = asset.createdAt.toString()
+                        createdAt = asset.createdAt.toString(),
+                        priceSource = asset.priceSource
                     )
                 },
                 assetSnapshots = snapshot.snapshots.map { ExportSnapshot(it.date.toString(), it.assetsMinor, it.currency) },

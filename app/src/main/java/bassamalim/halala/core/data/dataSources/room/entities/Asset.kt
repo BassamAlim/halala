@@ -17,7 +17,8 @@ import java.time.LocalDate
  *   [spreadPercent] (what a dealer takes on resale).
  * - VEHICLE, PROPERTY, OTHER: [valueMinor] as of [priceDate], less [depreciationPercent] a year.
  *
- * [costMinor] is what you paid, for gain or loss.
+ * [costMinor] is what you paid, for gain or loss. [priceSource] is where its price is fetched
+ * from ("gold", or "fund:<Mubasher id>"); null when you type it.
  */
 @Entity(tableName = "assets", indices = [Index(value = ["uid"], unique = true)])
 data class Asset(
@@ -34,5 +35,6 @@ data class Asset(
     val spreadPercent: String? = null,
     val depreciationPercent: String? = null,
     val currency: String,
-    val createdAt: Instant
+    val createdAt: Instant,
+    val priceSource: String? = null
 )

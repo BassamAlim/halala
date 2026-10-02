@@ -58,7 +58,7 @@ data class ExportFile(
     val transactionTags: List<ExportTransactionTag> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 16
+        const val SCHEMA_VERSION = 17
     }
 }
 
@@ -275,7 +275,9 @@ data class ExportAsset(
     val spreadPercent: String?,
     val depreciationPercent: String?,
     val currency: String,
-    val createdAt: String
+    val createdAt: String,
+    /** Since schema 17: "gold", or "fund:<Mubasher id>", when its price is fetched. */
+    val priceSource: String? = null
 )
 
 /** What assets were worth on a day. */

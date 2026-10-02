@@ -10,6 +10,10 @@ import java.math.BigDecimal
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
+import bassamalim.halala.core.prices.GoldPrice
+import bassamalim.halala.core.prices.ListedFund
+import bassamalim.halala.core.prices.PriceProtocol
+import bassamalim.halala.core.prices.Prices
 import javax.inject.Inject
 
 /** An asset as the form holds it: text as typed. */
@@ -26,15 +30,23 @@ data class AssetForm(
     val depreciation: String = "",
     val currency: String = Globals.PRIMARY_CURRENCY,
     val uid: String = "",
-    val createdAt: Instant = Instant.EPOCH
+    val createdAt: Instant = Instant.EPOCH,
+    /** Where its price is fetched from, when it is: see [PriceProtocol]. */
+    val priceSource: String? = null
 )
 
 enum class AssetProblem { NameMissing, QuantityInvalid, PriceInvalid, ValueInvalid, CostInvalid, PercentInvalid }
 
 class EditAssetDomain @Inject constructor(
     private val assetsRepository: AssetsRepository,
+    private val prices: Prices,
     private val clock: Clock
 ) {
+
+    /** Every listed fund, to link one; null when the list can't be had (offline). */
+    suspend fun funds(): List<ListedFund>? = prices.funds()
+
+    suspend fun gold(): GoldPrice? = prices.gold()
 
     fun today(): LocalDate = LocalDate.now(clock)
 
@@ -52,7 +64,8 @@ class EditAssetDomain @Inject constructor(
             depreciation = it.depreciationPercent.orEmpty(),
             currency = it.currency,
             uid = it.uid,
-            createdAt = it.createdAt
+            createdAt = it.createdAt,
+            priceSource = it.priceSource
         )
     }
 
@@ -62,6 +75,7 @@ class EditAssetDomain @Inject constructor(
         if (asset != null) {
             assetsRepository.save(asset)
             assetsRepository.snapshot(form.currency)
+            if (asset.priceSource != null) prices.refreshSoon()
         }
         return problems
     }
@@ -105,7 +119,11 @@ class EditAssetDomain @Inject constructor(
                 spreadPercent = parsedPercent?.toPlainString().takeIf { form.type == AssetType.GOLD },
                 depreciationPercent = parsedPercent?.toPlainString().takeIf { !priced },
                 currency = form.currency,
-                createdAt = form.createdAt
+                createdAt = form.createdAt,
+                priceSource = form.priceSource.takeIf {
+                    (form.type == AssetType.GOLD && it == PriceProtocol.GOLD_SOURCE) ||
+                        (form.type == AssetType.FUND && PriceProtocol.fundIdOf(it) != null)
+                }
             ) to emptySet()
         }
     }

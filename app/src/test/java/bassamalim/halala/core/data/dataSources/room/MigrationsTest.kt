@@ -277,6 +277,12 @@ class MigrationsTest {
         helper.runMigrationsAndValidate(DB, 17, true, *MIGRATIONS).close()
     }
 
+    @Test
+    fun `17 to 18 lets an asset name its price source and matches the schema`() {
+        helper.createDatabase(DB, 17).use { }
+        helper.runMigrationsAndValidate(DB, 18, true, *MIGRATIONS).close()
+    }
+
     private companion object {
         const val DB = "migration-test"
     }
