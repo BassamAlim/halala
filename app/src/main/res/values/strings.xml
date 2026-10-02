@@ -66,7 +66,6 @@
     <string name="activity_no_match">Nothing matches.</string>
 
     <!-- Placeholders -->
-    <string name="plan_placeholder">The planner comes next.</string>
     <string name="wealth_placeholder">Net worth, savings, funds, gold and what people owe you will live here.</string>
     <string name="wealth_accounts">Accounts and cash</string>
     <string name="assistant_placeholder">Ask about your money in plain words here.</string>
@@ -749,6 +748,38 @@
         <item>Dhu al-Qadah</item>
         <item>Dhu al-Hijjah</item>
     </string-array>
+    <string name="retirement_scenarios">Scenarios</string>
+    <string name="retirement_at">At %1$d you would have</string>
+    <string name="retirement_today">About %1$s in today\'s riyals. That supports %2$s a month.</string>
+    <string name="retirement_age">Age %1$d</string>
+    <string name="retirement_chart">How the pot grows, and what you put in</string>
+    <string name="retirement_legend">The solid line is with returns; the dashed one is what you put in.</string>
+    <string name="retirement_fill">Enter your age to see where you would stand.</string>
+    <string name="retirement_age_now">Age now</string>
+    <string name="retirement_retire_at">Retire at</string>
+    <string name="retirement_monthly">Monthly saving</string>
+    <string name="retirement_return">Return a year, %</string>
+    <string name="retirement_inflation">Inflation, %</string>
+    <string name="retirement_wanted">Income wanted</string>
+    <string name="retirement_start">Starting pot</string>
+    <string name="retirement_start_hint">From your savings, funds and gold. The monthly saving starts from what you saved over the last three months.</string>
+    <string name="retirement_short">You are %1$s a month short</string>
+    <string name="retirement_extra">Save about %1$s more each month to close it. The income is what a 4%% yearly withdrawal gives.</string>
+    <string name="retirement_on_track">On track for the income you want.</string>
+    <string name="retirement_save">Save as a scenario</string>
+    <string name="retirement_no_scenarios">No scenarios yet. Save one to compare.</string>
+    <string name="retirement_scenario_detail">%1$d to %2$d at %3$s%%</string>
+    <string name="retirement_plan_card">Plan it</string>
+    <string name="compound">Compound interest</string>
+    <string name="compound_principal">Starting sum</string>
+    <string name="compound_years">Years</string>
+    <string name="compound_frequency">Compounded</string>
+    <string name="compound_quarterly">Quarterly</string>
+    <string name="compound_final">It grows to</string>
+    <string name="compound_put_in">You put in</string>
+    <string name="compound_returns">Returns</string>
+    <string name="compound_year_0">Now</string>
+    <string name="compound_year_n">Year %1$s</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="cadence_daily">Daily</string>

@@ -19,6 +19,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.Person
 import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
+import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
@@ -66,7 +67,8 @@ class Importer @Inject constructor(
         goals = snapshot.goals,
         assets = snapshot.assets,
         snapshots = snapshot.snapshots,
-        zakat = snapshot.zakat
+        zakat = snapshot.zakat,
+        scenarios = snapshot.scenarios
     )
 
     companion object {
@@ -394,6 +396,12 @@ class Importer @Inject constructor(
                         includeAccounts = it.includeAccounts, includeSavings = it.includeSavings, includeFunds = it.includeFunds,
                         includeGold = it.includeGold, includeOwed = it.includeOwed, otherDebtsMinor = it.otherDebtsMinor,
                         paidHijriYear = it.paidHijriYear, remind = it.remind
+                    )
+                },
+                scenarios = file.scenarios.mapIndexed { index, it ->
+                    RetirementScenario(
+                        index + 1L, it.uid, it.name, it.ageNow, it.retireAt, it.startMinor, it.monthlyMinor, it.returnPercent,
+                        it.inflationPercent, it.wantedMinor, it.currency, Instant.parse(it.createdAt)
                     )
                 }
             )

@@ -95,6 +95,9 @@ object DataSourceModule {
     fun provideZakatDao(database: AppDatabase) = database.zakatDao()
 
     @Provides @Singleton
+    fun provideScenariosDao(database: AppDatabase) = database.scenariosDao()
+
+    @Provides @Singleton
     fun provideRestoreDao(database: AppDatabase) = database.restoreDao()
 
     @Provides @Singleton

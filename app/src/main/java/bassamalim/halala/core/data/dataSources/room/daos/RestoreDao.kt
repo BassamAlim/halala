@@ -20,6 +20,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.Person
 import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
+import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
@@ -55,7 +56,8 @@ interface RestoreDao {
         goals: List<SavingsGoal>,
         assets: List<Asset>,
         snapshots: List<NetWorthSnapshot>,
-        zakat: ZakatProfile?
+        zakat: ZakatProfile?,
+        scenarios: List<RetirementScenario>
     ) {
         // What points at a row goes before the row. The history of changes names rows by the
         // ids they had, so it can't outlive them.
@@ -70,6 +72,7 @@ interface RestoreDao {
         clearAssets()
         clearSnapshots()
         clearZakat()
+        clearScenarios()
         clearTransfers()
         clearCheckpoints()
         clearRefs()
@@ -105,6 +108,7 @@ interface RestoreDao {
         insertAssets(assets)
         insertSnapshots(snapshots)
         zakat?.let { insertZakat(it) }
+        insertScenarios(scenarios)
     }
 
     @Query("DELETE FROM audit_changes") suspend fun clearAuditChanges()
@@ -127,6 +131,7 @@ interface RestoreDao {
     @Query("DELETE FROM assets") suspend fun clearAssets()
     @Query("DELETE FROM net_worth_snapshots") suspend fun clearSnapshots()
     @Query("DELETE FROM zakat_profile") suspend fun clearZakat()
+    @Query("DELETE FROM retirement_scenarios") suspend fun clearScenarios()
     @Query("DELETE FROM person_aliases") suspend fun clearPersonAliases()
     @Query("DELETE FROM people") suspend fun clearPeople()
     @Query("DELETE FROM categories") suspend fun clearCategories()
@@ -154,4 +159,5 @@ interface RestoreDao {
     @Insert suspend fun insertAssets(rows: List<Asset>)
     @Insert suspend fun insertSnapshots(rows: List<NetWorthSnapshot>)
     @Insert suspend fun insertZakat(row: ZakatProfile)
+    @Insert suspend fun insertScenarios(rows: List<RetirementScenario>)
 }

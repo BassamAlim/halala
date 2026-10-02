@@ -17,6 +17,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.Person
 import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
+import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
@@ -29,6 +30,7 @@ import bassamalim.halala.core.data.repositories.GoalsRepository
 import bassamalim.halala.core.data.repositories.InstitutionsRepository
 import bassamalim.halala.core.data.repositories.LoansRepository
 import bassamalim.halala.core.data.repositories.PeopleRepository
+import bassamalim.halala.core.data.repositories.PlannerRepository
 import bassamalim.halala.core.data.repositories.RecurringRepository
 import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
@@ -70,7 +72,8 @@ data class LedgerSnapshot(
     val goals: List<SavingsGoal> = emptyList(),
     val assets: List<Asset> = emptyList(),
     val snapshots: List<NetWorthSnapshot> = emptyList(),
-    val zakat: ZakatProfile? = null
+    val zakat: ZakatProfile? = null,
+    val scenarios: List<RetirementScenario> = emptyList()
 ) {
     /** The merchant each transaction's title names, by transaction id. */
     fun merchantOf(): Map<Long, Merchant> {
@@ -99,6 +102,7 @@ class Exporter @Inject constructor(
     private val goalsRepository: GoalsRepository,
     private val assetsRepository: AssetsRepository,
     private val zakatRepository: ZakatRepository,
+    private val plannerRepository: PlannerRepository,
     private val clock: Clock
 ) {
 
@@ -124,7 +128,8 @@ class Exporter @Inject constructor(
         goals = goalsRepository.getAll(),
         assets = assetsRepository.getAll(),
         snapshots = assetsRepository.getSnapshots(),
-        zakat = zakatRepository.get().takeIf { it != ZakatProfile() }
+        zakat = zakatRepository.get().takeIf { it != ZakatProfile() },
+        scenarios = plannerRepository.getScenarios()
     )
 
     fun fileStem(): String = "halala-${clock.instant().atZone(clock.zone).toLocalDate()}"
@@ -359,6 +364,12 @@ class Exporter @Inject constructor(
                     ExportZakat(
                         it.hijriMonth, it.hijriDay, it.goldPricePerGram, it.includeAccounts, it.includeSavings,
                         it.includeFunds, it.includeGold, it.includeOwed, it.otherDebtsMinor, it.paidHijriYear, it.remind
+                    )
+                },
+                scenarios = snapshot.scenarios.map {
+                    ExportScenario(
+                        it.uid, it.name, it.ageNow, it.retireAt, it.startMinor, it.monthlyMinor, it.returnPercent,
+                        it.inflationPercent, it.wantedMinor, it.currency, it.createdAt.toString()
                     )
                 }
             )

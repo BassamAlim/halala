@@ -259,6 +259,12 @@ class MigrationsTest {
         helper.runMigrationsAndValidate(DB, 14, true, *MIGRATIONS).close()
     }
 
+    @Test
+    fun `14 to 15 adds retirement scenarios and matches the schema`() {
+        helper.createDatabase(DB, 14).use { }
+        helper.runMigrationsAndValidate(DB, 15, true, *MIGRATIONS).close()
+    }
+
     private companion object {
         const val DB = "migration-test"
     }

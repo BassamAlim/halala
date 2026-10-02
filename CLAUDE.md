@@ -327,6 +327,13 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   reaches the nisab of 85 g of gold at the price you give (else your gold's); due on your Hijri
   day in the Umm al-Qura calendar (`java.time.chrono.HijrahDate`), the hawl the year before it.
   "Mark as paid" records the Hijri year; a reminder two weeks before is optional.
+- **Retirement and compound interest** (`Planner`): exact decimals throughout (BigDecimal,
+  128-bit), saving compounding monthly at the yearly rate over twelve, inflation taken off by
+  the year, the income a pot supports at a 4% yearly withdrawal, and the extra monthly saving
+  that would close a gap; rounded to minor units once. The planner starts from your savings,
+  funds and gold and from what you saved a month over the last three; scenarios are kept
+  (`retirement_scenarios`) to compare. The board's illustration compounds yearly, so its
+  figures differ slightly from these.
 - **Reminders for what is due** (`DueReminders`, daily at nine, periodic WorkManager work): a
   bill or subscription its lead time before it is due, a cancel reminder three days (or its lead
   time) before it renews, an open loan on its due day. Names and days, never an amount. Choosing a
@@ -372,7 +379,7 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   a restore needs: raw bank messages, account refs, balance checkpoints, full rule conditions,
   6 people with their aliases, 7 loans with their events, 8 subscriptions and bills, 9 a loan's
   split purchase, 10 budgets, 11 savings goals, 12 assets and their snapshots, 13 the zakat
-  method),
+  method, 14 retirement scenarios),
   keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
 - **Restore** (same screen, "Restore from JSON"): `Importer.read` turns a schema-5 or later export into
   rows numbered afresh (pure; refuses older or newer schemas and dangling uids), you confirm,
@@ -464,5 +471,6 @@ Open, Normal for it and Dismiss), **Digest** (Digest board, minus net worth) and
 **Phase 5 (wealth)** has begun: the **Wealth** tab is the Net worth board (total, this month and
 year, the timeline over 3M/1Y/All, the breakdown, then Accounts, Assets, People and Zakat),
 **Assets** and **Asset** (no board: the list and the form), and **Zakat** (Zakat board; reached
-from Wealth and the Plan board's Zakat card). Still to come: the retirement planner and compound
-interest calculator, and the Savings board's Awaeed and Hasad details.
+from Wealth and the Plan board's Zakat card), **Retirement** (Retirement board, with
+Scenarios) and **Compound interest** (no board). Still to come: the Savings board's Awaeed and
+Hasad details, and fetching fund and gold prices (an owner's decision, see Assets).

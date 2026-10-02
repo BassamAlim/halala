@@ -48,10 +48,12 @@ data class ExportFile(
     val assets: List<ExportAsset> = emptyList(),
     val assetSnapshots: List<ExportSnapshot> = emptyList(),
     /** Since schema 13: how you work out zakat, once you have set it. */
-    val zakat: ExportZakat? = null
+    val zakat: ExportZakat? = null,
+    /** Since schema 14. */
+    val scenarios: List<ExportScenario> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 13
+        const val SCHEMA_VERSION = 14
     }
 }
 
@@ -289,6 +291,22 @@ data class ExportZakat(
     val otherDebtsMinor: Long,
     val paidHijriYear: Int?,
     val remind: Boolean
+)
+
+/** A retirement scenario: ages, amounts in minor units, rates as decimal text. */
+@Serializable
+data class ExportScenario(
+    val uid: String,
+    val name: String,
+    val ageNow: Int,
+    val retireAt: Int,
+    val startMinor: Long,
+    val monthlyMinor: Long,
+    val returnPercent: String,
+    val inflationPercent: String,
+    val wantedMinor: Long,
+    val currency: String,
+    val createdAt: String
 )
 
 @Serializable

@@ -7,7 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * The phone is the only place the full ledger lives: every schema change is a migration, never
  * a destructive rebuild. Add each one here, in order, against the schemas in `app/schemas`.
  */
-val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6, Migration6To7, Migration7To8, Migration8To9, Migration9To10, Migration10To11, Migration11To12, Migration12To13, Migration13To14)
+val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6, Migration6To7, Migration7To8, Migration8To9, Migration9To10, Migration10To11, Migration11To12, Migration12To13, Migration13To14, Migration14To15)
 
 /** Phase 1: raw bank SMS, the digits learned per bank, reported balances, and SMS links. */
 private object Migration1To2 : Migration(1, 2) {
@@ -313,5 +313,18 @@ private object Migration13To14 : Migration(13, 14) {
                     "`includeFunds` INTEGER NOT NULL, `includeGold` INTEGER NOT NULL, `includeOwed` INTEGER NOT NULL, " +
                     "`otherDebtsMinor` INTEGER NOT NULL, `paidHijriYear` INTEGER, `remind` INTEGER NOT NULL, PRIMARY KEY(`id`))"
         )
+    }
+}
+
+/** Phase 5: retirement scenarios you keep to compare. */
+private object Migration14To15 : Migration(14, 15) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `retirement_scenarios` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`uid` TEXT NOT NULL, `name` TEXT NOT NULL, `ageNow` INTEGER NOT NULL, `retireAt` INTEGER NOT NULL, " +
+                    "`startMinor` INTEGER NOT NULL, `monthlyMinor` INTEGER NOT NULL, `returnPercent` TEXT NOT NULL, " +
+                    "`inflationPercent` TEXT NOT NULL, `wantedMinor` INTEGER NOT NULL, `currency` TEXT NOT NULL, `createdAt` INTEGER NOT NULL)"
+        )
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_retirement_scenarios_uid` ON `retirement_scenarios` (`uid`)")
     }
 }

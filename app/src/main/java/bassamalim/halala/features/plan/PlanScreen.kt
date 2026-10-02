@@ -34,8 +34,8 @@ import bassamalim.halala.core.ui.theme.Spacing
 import bassamalim.halala.features.budgets.BudgetRowsList
 
 /**
- * The Plan board, as far as it is built: this pay cycle, its budgets, savings goals,
- * subscriptions and bills, and the forecast. The calculators come with Phase 5.
+ * The Plan board: this pay cycle, its budgets, savings goals, subscriptions and bills, the
+ * forecast, zakat and retirement.
  */
 @Composable
 fun PlanScreen(viewModel: PlanViewModel = hiltViewModel()) {
@@ -126,8 +126,9 @@ fun PlanScreen(viewModel: PlanViewModel = hiltViewModel()) {
             )
             SummaryCard(
                 label = stringResource(R.string.retirement),
-                amount = "—",
-                caption = stringResource(R.string.plan_placeholder),
+                amount = stringResource(R.string.retirement_plan_card),
+                caption = stringResource(R.string.compound),
+                onClick = viewModel::onRetirementClick,
                 modifier = Modifier.weight(1f).fillMaxHeight()
             )
         }

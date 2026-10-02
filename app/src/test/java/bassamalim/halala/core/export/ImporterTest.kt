@@ -19,6 +19,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.Person
 import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
+import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
@@ -33,6 +34,7 @@ import bassamalim.halala.core.data.repositories.GoalsRepository
 import bassamalim.halala.core.data.repositories.InstitutionsRepository
 import bassamalim.halala.core.data.repositories.LoansRepository
 import bassamalim.halala.core.data.repositories.PeopleRepository
+import bassamalim.halala.core.data.repositories.PlannerRepository
 import bassamalim.halala.core.data.repositories.RecurringRepository
 import bassamalim.halala.core.data.repositories.RestoreRepository
 import bassamalim.halala.core.data.repositories.SmsRepository
@@ -141,7 +143,8 @@ class ImporterTest {
             Asset(193, "asset-car", AssetType.VEHICLE, "Car", valueMinor = 6_000_000, priceDate = LocalDate.parse("2026-01-01"), depreciationPercent = "15", currency = "SAR", createdAt = at)
         ),
         snapshots = listOf(NetWorthSnapshot(LocalDate.parse("2026-09-28"), 12_345_600, "SAR")),
-        zakat = ZakatProfile(hijriMonth = 9, hijriDay = 1, goldPricePerGram = "563.25", includeGold = false, otherDebtsMinor = 5_000, paidHijriYear = 1447, remind = true)
+        zakat = ZakatProfile(hijriMonth = 9, hijriDay = 1, goldPricePerGram = "563.25", includeGold = false, otherDebtsMinor = 5_000, paidHijriYear = 1447, remind = true),
+        scenarios = listOf(RetirementScenario(201, "scn-55", "Retire at 55", 32, 55, 26_295_000, 400_000, "6", "2.5", 800_000, "SAR", at))
     )
 
     private val json = Exporter.json(snapshot, appVersion = "0.2.0", now = at)
@@ -169,6 +172,7 @@ class ImporterTest {
         GoalsRepository(db.goalsDao(), db.accountsDao(), db.transactionsDao(), TEST_CLOCK),
         AssetsRepository(db.assetsDao(), TEST_CLOCK),
         ZakatRepository(db.zakatDao(), db.accountsDao(), db.assetsDao(), LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK), TEST_CLOCK),
+        PlannerRepository(db.scenariosDao(), db.accountsDao(), db.assetsDao(), db.transactionsDao(), LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK), TEST_CLOCK),
         TEST_CLOCK
     )
 
