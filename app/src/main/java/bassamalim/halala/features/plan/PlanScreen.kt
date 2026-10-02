@@ -2,7 +2,10 @@ package bassamalim.halala.features.plan
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -28,8 +31,8 @@ import bassamalim.halala.core.ui.theme.Spacing
 import bassamalim.halala.features.budgets.BudgetRowsList
 
 /**
- * The Plan board, as far as it is built: this pay cycle, its budgets, and subscriptions and
- * bills. Savings goals, the forecast and the calculators fill in the rest.
+ * The Plan board, as far as it is built: this pay cycle, its budgets, subscriptions and bills,
+ * and the forecast. Savings goals and the calculators fill in the rest.
  */
 @Composable
 fun PlanScreen(viewModel: PlanViewModel = hiltViewModel()) {
@@ -64,13 +67,22 @@ fun PlanScreen(viewModel: PlanViewModel = hiltViewModel()) {
             ) else BudgetRowsList(state.budgets)
         }
 
-        SummaryCard(
-            label = stringResource(R.string.recurring_title),
-            amount = stringResource(R.string.recurring_per_month, state.monthly),
-            caption = state.next?.let { stringResource(R.string.recurring_plan_next, it.first, it.second) },
-            onClick = viewModel::onRecurringClick,
-            modifier = Modifier.fillMaxWidth()
-        )
+        Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(Insets.grid)) {
+            SummaryCard(
+                label = stringResource(R.string.recurring_title),
+                amount = stringResource(R.string.recurring_per_month, state.monthly),
+                caption = state.next?.let { stringResource(R.string.recurring_plan_next, it.first, it.second) },
+                onClick = viewModel::onRecurringClick,
+                modifier = Modifier.weight(1f).fillMaxHeight()
+            )
+            SummaryCard(
+                label = stringResource(R.string.forecast),
+                amount = state.endAbout?.let { stringResource(R.string.home_end_about, it) } ?: "—",
+                caption = stringResource(R.string.forecast_afford),
+                onClick = viewModel::onForecastClick,
+                modifier = Modifier.weight(1f).fillMaxHeight()
+            )
+        }
 
         HalalaCard(modifier = Modifier.fillMaxWidth()) {
             Text(text = stringResource(R.string.plan_placeholder), style = HalalaType.Body, color = HalalaColors.TextMuted)

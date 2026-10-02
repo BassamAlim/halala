@@ -282,6 +282,15 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   `BudgetState` colours it, and spending further through the budget than through the cycle by
   10% or more reads as "spending fast" (the warn look) even under 80%. The Everything budget
   drives Home's balance card.
+- **Forecast** (`Forecasts`, inputs from `ForecastRepository`): spendable money is current,
+  card, wallet and cash accounts (savings and investments are left alone). Variable spending is
+  spending outside what active subscriptions and bills charge; its daily rate per recent cycle
+  (the last three, or this one so far after a week) gives the median and, from the slowest and
+  fastest, the band. End of cycle = balance − scheduled before the next salary − rate × days
+  left. A day-by-day path adds a salary on each expected pay day; "Can I afford it?" puts the
+  amount on its day and reports the lowest balance from then to a month past the cycle, and
+  whether it breaks this cycle's Everything budget. Months ahead: salary − scheduled − a
+  month at the median rate. All in exact integers.
 - **Reminders for what is due** (`DueReminders`, daily at nine, periodic WorkManager work): a
   bill or subscription its lead time before it is due, a cancel reminder three days (or its lead
   time) before it renews, an open loan on its due day. Names and days, never an amount. Choosing a
@@ -405,6 +414,8 @@ Phase 3: the Review board's one-tap loan/split/subscription marks, linking peopl
 contacts.
 
 **Phase 4 (planning)** has begun: pay cycles and budgets. Screens: the **Plan** tab (Plan board:
-the cycle chip, Budgets this cycle, Subscriptions and bills; goals, forecast and calculators to
-come), Home's **balance card** (Home board and its warn/over states), **Budgets** and **Budget**
+the cycle chip, Budgets this cycle, Subscriptions and bills, Forecast; goals and calculators to
+come), Home's **balance card** (Home board and its warn/over states, with the forecast's
+"End ≈"), **Forecast** (Forecast board: the end figure and band, the balance chart drawn on a
+Canvas, left over each month with the dip's biggest payments, and "Can I afford it?"), **Budgets** and **Budget**
 (no board: the Plan board's budget rows full size, and the form).

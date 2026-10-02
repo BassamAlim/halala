@@ -69,6 +69,9 @@ sealed interface Screen {
     /** Adding one by hand, or changing [id]. */
     @Serializable data class EditRecurring(val id: Long = 0) : Screen
 
+    /** Where this cycle should end, the months ahead, and "Can I afford it?". */
+    @Serializable data object Forecast : Screen
+
     /** Every budget this pay cycle. */
     @Serializable data object Budgets : Screen
 

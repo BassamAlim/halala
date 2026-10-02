@@ -3,6 +3,7 @@ package bassamalim.halala.features.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import bassamalim.halala.core.Globals
+import bassamalim.halala.core.domain.Forecasts
 import bassamalim.halala.core.domain.Loans
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.Rules
@@ -32,9 +33,9 @@ class HomeViewModel @Inject constructor(
         domain.observeAccounts(),
         domain.observeTransactions(),
         domain.observeLoans(),
-        domain.observeRecurring(),
+        combine(domain.observeRecurring(), domain.observeForecast(), ::Pair),
         domain.observeOverview()
-    ) { accounts, transactions, loans, recurring, overview ->
+    ) { accounts, transactions, loans, (recurring, forecast), overview ->
         val wallet = accounts.firstOrNull { it.account.type == AccountType.CASH && !it.account.archived }
         val today = domain.today()
 
@@ -69,7 +70,8 @@ class HomeViewModel @Inject constructor(
                         over = (-status.leftMinor).takeIf { it > 0 }?.let { Money.format(it, overview.currency, decimals = false) },
                         progress = BudgetState.progress(status.spentMinor, status.limitMinor),
                         state = if (status.state == BudgetState.OK && status.paceAhead) BudgetState.WARN else status.state,
-                        daysLeft = overview.cycle.daysLeft(today).toInt()
+                        daysLeft = overview.cycle.daysLeft(today).toInt(),
+                        endAbout = Forecasts.endOfCycle(forecast)?.let { Money.format(it.midMinor, overview.currency, decimals = false) }
                     )
                 }
         )

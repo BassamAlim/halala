@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import bassamalim.halala.core.Globals
 import bassamalim.halala.core.data.repositories.BudgetsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
+import bassamalim.halala.core.data.repositories.ForecastRepository
+import bassamalim.halala.core.domain.Forecasts
 import bassamalim.halala.core.data.repositories.RecurringRepository
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.nav.Navigator
@@ -31,7 +33,9 @@ data class PlanUiState(
     /** What subscriptions and bills cost a month, summary style. */
     val monthly: String = "",
     /** The next one due: its name and day ("Netflix", "3 Oct"). */
-    val next: Pair<String, String>? = null
+    val next: Pair<String, String>? = null,
+    /** The forecast end of this cycle, summary style; null until there is one. */
+    val endAbout: String? = null
 )
 
 @HiltViewModel
@@ -39,6 +43,7 @@ class PlanViewModel @Inject constructor(
     recurringRepository: RecurringRepository,
     budgetsRepository: BudgetsRepository,
     classificationRepository: ClassificationRepository,
+    forecastRepository: ForecastRepository,
     private val navigator: Navigator,
     private val clock: Clock
 ) : ViewModel() {
@@ -47,8 +52,9 @@ class PlanViewModel @Inject constructor(
         recurringRepository.observeStates(),
         budgetsRepository.observeOverview(Globals.PRIMARY_CURRENCY),
         classificationRepository.observeCategories(),
-        classificationRepository.observeAllMerchants()
-    ) { states, overview, categories, merchants ->
+        classificationRepository.observeAllMerchants(),
+        forecastRepository.observeInputs(Globals.PRIMARY_CURRENCY)
+    ) { states, overview, categories, merchants, inputs ->
         val today = LocalDate.now(clock)
         val currency = Globals.PRIMARY_CURRENCY
         PlanUiState(
@@ -56,7 +62,8 @@ class PlanViewModel @Inject constructor(
             cycle = BudgetsViewModel.cycleLabel(overview.cycle.start, overview.cycle.end, today),
             budgets = BudgetRows.of(overview.statuses, categories, merchants),
             monthly = Money.format(RecurringDomain.totals(states, currency).first, currency, decimals = false),
-            next = RecurringDomain.upcoming(states).firstOrNull()?.let { it.series.name to shortDateLabel(it.nextDue!!, today) }
+            next = RecurringDomain.upcoming(states).firstOrNull()?.let { it.series.name to shortDateLabel(it.nextDue!!, today) },
+            endAbout = Forecasts.endOfCycle(inputs)?.let { Money.format(it.midMinor, currency, decimals = false) }
         )
     }.stateIn(
         scope = viewModelScope,
@@ -67,6 +74,8 @@ class PlanViewModel @Inject constructor(
     fun onRecurringClick() = navigator.navigate(Screen.Recurring)
 
     fun onBudgetsClick() = navigator.navigate(Screen.Budgets)
+
+    fun onForecastClick() = navigator.navigate(Screen.Forecast)
 
     fun onAddBudgetClick() = navigator.navigate(Screen.EditBudget())
 }

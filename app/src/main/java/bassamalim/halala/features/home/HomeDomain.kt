@@ -6,6 +6,8 @@ import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.BudgetsRepository
 import bassamalim.halala.core.data.repositories.CycleOverview
+import bassamalim.halala.core.data.repositories.ForecastRepository
+import bassamalim.halala.core.domain.ForecastInputs
 import bassamalim.halala.core.data.repositories.LoansRepository
 import bassamalim.halala.core.data.repositories.RecurringRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
@@ -25,8 +27,11 @@ class HomeDomain @Inject constructor(
     private val loansRepository: LoansRepository,
     private val recurringRepository: RecurringRepository,
     private val budgetsRepository: BudgetsRepository,
+    private val forecastRepository: ForecastRepository,
     private val clock: Clock
 ) {
+
+    fun observeForecast(): Flow<ForecastInputs> = forecastRepository.observeInputs(Globals.PRIMARY_CURRENCY)
 
     fun observeOverview(): Flow<CycleOverview> = budgetsRepository.observeOverview(Globals.PRIMARY_CURRENCY)
 
