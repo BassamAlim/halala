@@ -4,6 +4,8 @@ import bassamalim.halala.core.data.dataSources.room.Converters
 import bassamalim.halala.core.data.dataSources.room.Seed
 import bassamalim.halala.core.data.dataSources.room.entities.Account
 import bassamalim.halala.core.data.dataSources.room.entities.AccountRef
+import bassamalim.halala.core.data.dataSources.room.entities.Asset
+import bassamalim.halala.core.data.dataSources.room.entities.NetWorthSnapshot
 import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
 import bassamalim.halala.core.data.dataSources.room.entities.Budget
 import bassamalim.halala.core.data.dataSources.room.entities.Category
@@ -22,6 +24,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
 import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
+import bassamalim.halala.core.data.dataSources.room.entities.ZakatProfile
 import bassamalim.halala.core.data.repositories.RestoreRepository
 import bassamalim.halala.core.domain.Merchants
 import bassamalim.halala.core.enums.Direction
@@ -60,7 +63,10 @@ class Importer @Inject constructor(
         loanEvents = snapshot.loanEvents,
         recurring = snapshot.recurring,
         budgets = snapshot.budgets,
-        goals = snapshot.goals
+        goals = snapshot.goals,
+        assets = snapshot.assets,
+        snapshots = snapshot.snapshots,
+        zakat = snapshot.zakat
     )
 
     companion object {
@@ -340,6 +346,26 @@ class Importer @Inject constructor(
                 )
             }
 
+            val assets = file.assets.mapIndexed { index, asset ->
+                Asset(
+                    id = index + 1L,
+                    uid = asset.uid,
+                    type = converters.toAssetType(asset.type),
+                    name = asset.name,
+                    quantity = asset.quantity,
+                    karat = asset.karat,
+                    unitPrice = asset.unitPrice,
+                    priceDate = asset.priceDate?.let(LocalDate::parse),
+                    valueMinor = asset.valueMinor,
+                    costMinor = asset.costMinor,
+                    spreadPercent = asset.spreadPercent,
+                    depreciationPercent = asset.depreciationPercent,
+                    currency = asset.currency,
+                    createdAt = Instant.parse(asset.createdAt)
+                )
+            }
+            val snapshots = file.assetSnapshots.map { NetWorthSnapshot(LocalDate.parse(it.date), it.assetsMinor, it.currency) }
+
             return LedgerSnapshot(
                 institutions = institutions,
                 accounts = accounts,
@@ -359,7 +385,17 @@ class Importer @Inject constructor(
                 loanEvents = loanEvents,
                 recurring = recurring,
                 budgets = budgets,
-                goals = goals
+                goals = goals,
+                assets = assets,
+                snapshots = snapshots,
+                zakat = file.zakat?.let {
+                    ZakatProfile(
+                        hijriMonth = it.hijriMonth, hijriDay = it.hijriDay, goldPricePerGram = it.goldPricePerGram,
+                        includeAccounts = it.includeAccounts, includeSavings = it.includeSavings, includeFunds = it.includeFunds,
+                        includeGold = it.includeGold, includeOwed = it.includeOwed, otherDebtsMinor = it.otherDebtsMinor,
+                        paidHijriYear = it.paidHijriYear, remind = it.remind
+                    )
+                }
             )
         }
 

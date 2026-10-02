@@ -7,7 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * The phone is the only place the full ledger lives: every schema change is a migration, never
  * a destructive rebuild. Add each one here, in order, against the schemas in `app/schemas`.
  */
-val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6, Migration6To7, Migration7To8, Migration8To9, Migration9To10, Migration10To11, Migration11To12)
+val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6, Migration6To7, Migration7To8, Migration8To9, Migration9To10, Migration10To11, Migration11To12, Migration12To13, Migration13To14)
 
 /** Phase 1: raw bank SMS, the digits learned per bank, reported balances, and SMS links. */
 private object Migration1To2 : Migration(1, 2) {
@@ -284,5 +284,34 @@ private object Migration10To11 : Migration(10, 11) {
 private object Migration11To12 : Migration(11, 12) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("CREATE TABLE IF NOT EXISTS `dismissed_alerts` (`key` TEXT NOT NULL, `at` INTEGER NOT NULL, PRIMARY KEY(`key`))")
+    }
+}
+
+/** Phase 5: assets outside your accounts, and a daily snapshot of their worth for the timeline. */
+private object Migration12To13 : Migration(12, 13) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `assets` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`uid` TEXT NOT NULL, `type` TEXT NOT NULL, `name` TEXT NOT NULL, `quantity` TEXT, `karat` INTEGER, " +
+                    "`unitPrice` TEXT, `priceDate` INTEGER, `valueMinor` INTEGER, `costMinor` INTEGER, " +
+                    "`spreadPercent` TEXT, `depreciationPercent` TEXT, `currency` TEXT NOT NULL, `createdAt` INTEGER NOT NULL)"
+        )
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_assets_uid` ON `assets` (`uid`)")
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `net_worth_snapshots` (`date` INTEGER NOT NULL, `assetsMinor` INTEGER NOT NULL, " +
+                    "`currency` TEXT NOT NULL, PRIMARY KEY(`date`))"
+        )
+    }
+}
+
+/** Phase 5: how you work out zakat (one row, made when you first change it). */
+private object Migration13To14 : Migration(13, 14) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `zakat_profile` (`id` INTEGER NOT NULL, `hijriMonth` INTEGER, `hijriDay` INTEGER, " +
+                    "`goldPricePerGram` TEXT, `includeAccounts` INTEGER NOT NULL, `includeSavings` INTEGER NOT NULL, " +
+                    "`includeFunds` INTEGER NOT NULL, `includeGold` INTEGER NOT NULL, `includeOwed` INTEGER NOT NULL, " +
+                    "`otherDebtsMinor` INTEGER NOT NULL, `paidHijriYear` INTEGER, `remind` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+        )
     }
 }

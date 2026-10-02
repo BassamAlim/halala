@@ -7,6 +7,7 @@ import bassamalim.halala.core.data.repositories.BudgetsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.ForecastRepository
 import bassamalim.halala.core.data.repositories.GoalsRepository
+import bassamalim.halala.core.data.repositories.ZakatRepository
 import bassamalim.halala.core.domain.BudgetState
 import bassamalim.halala.core.utils.monthYearLabel
 import bassamalim.halala.core.domain.Forecasts
@@ -26,6 +27,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import java.time.Clock
 import java.time.LocalDate
+import java.time.temporal.ChronoField
 import javax.inject.Inject
 
 data class PlanUiState(
@@ -39,7 +41,10 @@ data class PlanUiState(
     val next: Pair<String, String>? = null,
     /** The forecast end of this cycle, summary style; null until there is one. */
     val endAbout: String? = null,
-    val goals: List<GoalCard> = emptyList()
+    val goals: List<GoalCard> = emptyList(),
+    /** Zakat due, summary style, and its Hijri day (day, month 1–12, year); null until set. */
+    val zakat: String? = null,
+    val zakatDay: Triple<Int, Int, Int>? = null
 )
 
 /**
@@ -65,17 +70,18 @@ class PlanViewModel @Inject constructor(
     classificationRepository: ClassificationRepository,
     forecastRepository: ForecastRepository,
     goalsRepository: GoalsRepository,
+    zakatRepository: ZakatRepository,
     private val navigator: Navigator,
     private val clock: Clock
 ) : ViewModel() {
 
     val uiState: StateFlow<PlanUiState> = combine(
-        combine(recurringRepository.observeStates(), goalsRepository.observeStates(), ::Pair),
+        combine(recurringRepository.observeStates(), goalsRepository.observeStates(), zakatRepository.observeState(Globals.PRIMARY_CURRENCY), ::Triple),
         budgetsRepository.observeOverview(Globals.PRIMARY_CURRENCY),
         classificationRepository.observeCategories(),
         classificationRepository.observeAllMerchants(),
         forecastRepository.observeInputs(Globals.PRIMARY_CURRENCY)
-    ) { (states, goals), overview, categories, merchants, inputs ->
+    ) { (states, goals, zakat), overview, categories, merchants, inputs ->
         val today = LocalDate.now(clock)
         val currency = Globals.PRIMARY_CURRENCY
         PlanUiState(
@@ -85,6 +91,10 @@ class PlanViewModel @Inject constructor(
             monthly = Money.format(RecurringDomain.totals(states, currency).first, currency, decimals = false),
             next = RecurringDomain.upcoming(states).firstOrNull()?.let { it.series.name to shortDateLabel(it.nextDue!!, today) },
             endAbout = Forecasts.endOfCycle(inputs)?.let { Money.format(it.midMinor, currency, decimals = false) },
+            zakat = zakat.second.dueMinor?.let { Money.format(it, currency, decimals = false) },
+            zakatDay = zakat.second.dueHijri?.let {
+                Triple(it.get(ChronoField.DAY_OF_MONTH), it.get(ChronoField.MONTH_OF_YEAR), it.get(ChronoField.YEAR))
+            },
             goals = goals.map { goal ->
                 val c = goal.goal.currency
                 GoalCard(
@@ -115,6 +125,8 @@ class PlanViewModel @Inject constructor(
     fun onGoalClick(id: Long) = navigator.navigate(Screen.EditGoal(id))
 
     fun onAddGoalClick() = navigator.navigate(Screen.EditGoal())
+
+    fun onZakatClick() = navigator.navigate(Screen.Zakat)
 
     fun onAddBudgetClick() = navigator.navigate(Screen.EditBudget())
 }

@@ -43,10 +43,15 @@ data class ExportFile(
     /** Since schema 10. */
     val budgets: List<ExportBudget> = emptyList(),
     /** Since schema 11. */
-    val goals: List<ExportGoal> = emptyList()
+    val goals: List<ExportGoal> = emptyList(),
+    /** Since schema 12: assets outside your accounts, and the daily worth of them. */
+    val assets: List<ExportAsset> = emptyList(),
+    val assetSnapshots: List<ExportSnapshot> = emptyList(),
+    /** Since schema 13: how you work out zakat, once you have set it. */
+    val zakat: ExportZakat? = null
 ) {
     companion object {
-        const val SCHEMA_VERSION = 11
+        const val SCHEMA_VERSION = 13
     }
 }
 
@@ -242,6 +247,48 @@ data class ExportGoal(
     val targetDate: String?,
     val accountUids: List<String>,
     val createdAt: String
+)
+
+/**
+ * An asset (`type` FUND, GOLD, VEHICLE, PROPERTY or OTHER). `quantity`, `unitPrice`,
+ * `spreadPercent` and `depreciationPercent` are exact decimal text; `valueMinor` and
+ * `costMinor` minor units.
+ */
+@Serializable
+data class ExportAsset(
+    val uid: String,
+    val type: String,
+    val name: String,
+    val quantity: String?,
+    val karat: Int?,
+    val unitPrice: String?,
+    val priceDate: String?,
+    val valueMinor: Long?,
+    val costMinor: Long?,
+    val spreadPercent: String?,
+    val depreciationPercent: String?,
+    val currency: String,
+    val createdAt: String
+)
+
+/** What assets were worth on a day. */
+@Serializable
+data class ExportSnapshot(val date: String, val assetsMinor: Long, val currency: String)
+
+/** The zakat method: the Hijri day, today's gold price (decimal text), what counts, other debts, the year last paid. */
+@Serializable
+data class ExportZakat(
+    val hijriMonth: Int?,
+    val hijriDay: Int?,
+    val goldPricePerGram: String?,
+    val includeAccounts: Boolean,
+    val includeSavings: Boolean,
+    val includeFunds: Boolean,
+    val includeGold: Boolean,
+    val includeOwed: Boolean,
+    val otherDebtsMinor: Long,
+    val paidHijriYear: Int?,
+    val remind: Boolean
 )
 
 @Serializable

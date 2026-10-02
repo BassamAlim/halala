@@ -247,6 +247,18 @@ class MigrationsTest {
         helper.runMigrationsAndValidate(DB, 12, true, *MIGRATIONS).close()
     }
 
+    @Test
+    fun `12 to 13 adds assets and snapshots and matches the schema`() {
+        helper.createDatabase(DB, 12).use { }
+        helper.runMigrationsAndValidate(DB, 13, true, *MIGRATIONS).close()
+    }
+
+    @Test
+    fun `13 to 14 adds the zakat profile and matches the schema`() {
+        helper.createDatabase(DB, 13).use { }
+        helper.runMigrationsAndValidate(DB, 14, true, *MIGRATIONS).close()
+    }
+
     private companion object {
         const val DB = "migration-test"
     }

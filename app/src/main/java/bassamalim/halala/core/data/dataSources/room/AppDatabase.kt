@@ -5,6 +5,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import bassamalim.halala.core.data.dataSources.room.daos.AccountsDao
 import bassamalim.halala.core.data.dataSources.room.daos.AlertsDao
+import bassamalim.halala.core.data.dataSources.room.daos.AssetsDao
 import bassamalim.halala.core.data.dataSources.room.daos.BudgetsDao
 import bassamalim.halala.core.data.dataSources.room.daos.ClassificationDao
 import bassamalim.halala.core.data.dataSources.room.daos.GoalsDao
@@ -16,8 +17,11 @@ import bassamalim.halala.core.data.dataSources.room.daos.RecurringDao
 import bassamalim.halala.core.data.dataSources.room.daos.RestoreDao
 import bassamalim.halala.core.data.dataSources.room.daos.SmsDao
 import bassamalim.halala.core.data.dataSources.room.daos.TransactionsDao
+import bassamalim.halala.core.data.dataSources.room.daos.ZakatDao
 import bassamalim.halala.core.data.dataSources.room.entities.Account
 import bassamalim.halala.core.data.dataSources.room.entities.AccountRef
+import bassamalim.halala.core.data.dataSources.room.entities.Asset
+import bassamalim.halala.core.data.dataSources.room.entities.NetWorthSnapshot
 import bassamalim.halala.core.data.dataSources.room.entities.AuditBatch
 import bassamalim.halala.core.data.dataSources.room.entities.AuditChange
 import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
@@ -37,6 +41,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
+import bassamalim.halala.core.data.dataSources.room.entities.ZakatProfile
 
 @Database(
     entities = [
@@ -60,9 +65,12 @@ import bassamalim.halala.core.data.dataSources.room.entities.Transaction
         RecurringSeries::class,
         Budget::class,
         SavingsGoal::class,
-        DismissedAlert::class
+        DismissedAlert::class,
+        Asset::class,
+        NetWorthSnapshot::class,
+        ZakatProfile::class
     ],
-    version = 12,
+    version = 14,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -79,5 +87,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun budgetsDao(): BudgetsDao
     abstract fun goalsDao(): GoalsDao
     abstract fun alertsDao(): AlertsDao
+    abstract fun assetsDao(): AssetsDao
+    abstract fun zakatDao(): ZakatDao
     abstract fun restoreDao(): RestoreDao
 }

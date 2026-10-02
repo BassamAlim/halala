@@ -4,6 +4,8 @@ import bassamalim.halala.core.data.dataSources.room.AppDatabase
 import bassamalim.halala.core.data.dataSources.room.Seed
 import bassamalim.halala.core.data.dataSources.room.entities.Account
 import bassamalim.halala.core.data.dataSources.room.entities.AccountRef
+import bassamalim.halala.core.data.dataSources.room.entities.Asset
+import bassamalim.halala.core.data.dataSources.room.entities.NetWorthSnapshot
 import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
 import bassamalim.halala.core.data.dataSources.room.entities.Budget
 import bassamalim.halala.core.data.dataSources.room.entities.Category
@@ -22,7 +24,9 @@ import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
 import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
+import bassamalim.halala.core.data.dataSources.room.entities.ZakatProfile
 import bassamalim.halala.core.data.repositories.AccountsRepository
+import bassamalim.halala.core.data.repositories.AssetsRepository
 import bassamalim.halala.core.data.repositories.BudgetsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.GoalsRepository
@@ -33,10 +37,12 @@ import bassamalim.halala.core.data.repositories.RecurringRepository
 import bassamalim.halala.core.data.repositories.RestoreRepository
 import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
+import bassamalim.halala.core.data.repositories.ZakatRepository
 import bassamalim.halala.core.data.TEST_CLOCK
 import bassamalim.halala.core.data.testDatabase
 import bassamalim.halala.core.enums.AccountType
 import bassamalim.halala.core.enums.AliasMatch
+import bassamalim.halala.core.enums.AssetType
 import bassamalim.halala.core.enums.BudgetScope
 import bassamalim.halala.core.enums.CadenceUnit
 import bassamalim.halala.core.enums.RecurringKind
@@ -128,7 +134,14 @@ class ImporterTest {
         goals = listOf(
             SavingsGoal(181, "goal-fund", "Emergency fund", 6_000_000, "SAR", LocalDate.parse("2027-03-31"), listOf(22, 21), at),
             SavingsGoal(182, "goal-car", "Car", 9_000_000, "SAR", null, emptyList(), at)
-        )
+        ),
+        assets = listOf(
+            Asset(191, "asset-fund", AssetType.FUND, "Al Rajhi Inclusion", quantity = "1234.5678", unitPrice = "12.3456", priceDate = LocalDate.parse("2026-09-28"), costMinor = 1_400_000, currency = "SAR", createdAt = at),
+            Asset(192, "asset-gold", AssetType.GOLD, "Gold", quantity = "95", karat = 21, unitPrice = "410.5", spreadPercent = "3", currency = "SAR", createdAt = at),
+            Asset(193, "asset-car", AssetType.VEHICLE, "Car", valueMinor = 6_000_000, priceDate = LocalDate.parse("2026-01-01"), depreciationPercent = "15", currency = "SAR", createdAt = at)
+        ),
+        snapshots = listOf(NetWorthSnapshot(LocalDate.parse("2026-09-28"), 12_345_600, "SAR")),
+        zakat = ZakatProfile(hijriMonth = 9, hijriDay = 1, goldPricePerGram = "563.25", includeGold = false, otherDebtsMinor = 5_000, paidHijriYear = 1447, remind = true)
     )
 
     private val json = Exporter.json(snapshot, appVersion = "0.2.0", now = at)
@@ -154,6 +167,8 @@ class ImporterTest {
         RecurringRepository(db.recurringDao(), db.transactionsDao(), TEST_CLOCK),
         BudgetsRepository(db.budgetsDao(), db.transactionsDao(), TEST_CLOCK),
         GoalsRepository(db.goalsDao(), db.accountsDao(), db.transactionsDao(), TEST_CLOCK),
+        AssetsRepository(db.assetsDao(), TEST_CLOCK),
+        ZakatRepository(db.zakatDao(), db.accountsDao(), db.assetsDao(), LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK), TEST_CLOCK),
         TEST_CLOCK
     )
 

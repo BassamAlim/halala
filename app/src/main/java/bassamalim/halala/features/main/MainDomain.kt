@@ -2,6 +2,8 @@ package bassamalim.halala.features.main
 
 import bassamalim.halala.core.ai.AiScheduler
 import bassamalim.halala.core.data.repositories.ClassificationRepository
+import bassamalim.halala.core.Globals
+import bassamalim.halala.core.data.repositories.AssetsRepository
 import bassamalim.halala.core.data.repositories.RecurringRepository
 import bassamalim.halala.core.reminders.DueReminders
 import javax.inject.Inject
@@ -10,7 +12,8 @@ class MainDomain @Inject constructor(
     private val classificationRepository: ClassificationRepository,
     private val ai: AiScheduler,
     private val recurringRepository: RecurringRepository,
-    private val dueReminders: DueReminders
+    private val dueReminders: DueReminders,
+    private val assetsRepository: AssetsRepository
 ) {
 
     /**
@@ -23,6 +26,7 @@ class MainDomain @Inject constructor(
         classificationRepository.applyRules()
         recurringRepository.detect()
         dueReminders.ensureScheduled()
+        assetsRepository.snapshot(Globals.PRIMARY_CURRENCY)
         ai.request()
     }
 }

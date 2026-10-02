@@ -16,7 +16,9 @@ import bassamalim.halala.R
 import bassamalim.halala.core.Globals
 import bassamalim.halala.core.data.repositories.AlertsRepository
 import bassamalim.halala.core.data.repositories.DigestRepository
+import bassamalim.halala.core.data.repositories.AssetsRepository
 import bassamalim.halala.core.data.repositories.PreferencesRepository
+import bassamalim.halala.core.data.repositories.ZakatRepository
 import bassamalim.halala.core.domain.DigestKind
 import bassamalim.halala.core.domain.DigestPeriod
 import bassamalim.halala.core.domain.Digests
@@ -56,6 +58,11 @@ sealed interface DueNotice {
     /** A loan with [person] is due today: owed to you when [lent]. */
     data class Loan(override val key: Int, val person: String, val lent: Boolean) : DueNotice
 
+    /** Zakat falls due on [due], two weeks from now (you asked to be reminded). */
+    data class Zakat(val due: LocalDate) : DueNotice {
+        override val key get() = ZAKAT_KEY
+    }
+
     /** A digest is ready for the period that just ended. */
     data class DigestReady(val kind: DigestKind, val period: DigestPeriod) : DueNotice {
         override val key get() = DIGEST_KEY + kind.ordinal
@@ -69,6 +76,8 @@ sealed interface DueNotice {
 
 private const val ALERTS_KEY = 400_000
 private const val DIGEST_KEY = 500_000
+private const val ZAKAT_KEY = 600_000
+private const val ZAKAT_LEAD_DAYS = 14L
 private val DIGEST_TITLE_MONTH = DateTimeFormatter.ofPattern("MMMM", Locale.US)
 
 /**
@@ -158,6 +167,8 @@ class DueReminders @Inject constructor(
                     ) to context.getString(R.string.due_loan_text)
                     is DueNotice.Alerts -> context.resources.getQuantityString(R.plurals.alert_count, notice.count, notice.count) to
                             context.getString(R.string.alerts_hint)
+                    is DueNotice.Zakat -> context.getString(R.string.due_zakat_title) to
+                            context.getString(R.string.due_bill_text, shortDateLabel(notice.due, today))
                     is DueNotice.DigestReady -> context.getString(
                         when (notice.kind) {
                             DigestKind.WEEK -> R.string.digest_ready_week
@@ -193,6 +204,8 @@ class DueReminderWorker @AssistedInject constructor(
     private val alerts: AlertsRepository,
     private val digests: DigestRepository,
     private val preferences: PreferencesRepository,
+    private val zakat: ZakatRepository,
+    private val assets: AssetsRepository,
     private val clock: Clock
 ) : CoroutineWorker(context, params) {
 
@@ -208,7 +221,15 @@ class DueReminderWorker @AssistedInject constructor(
             val period = Digests.periodOf(kind, today).previous()
             if (period.end == today && digests.hadSpending(period, Globals.PRIMARY_CURRENCY)) DueNotice.DigestReady(kind, period) else null
         }
-        DueReminders.notify(applicationContext, notices + ready + listOfNotNull(DueNotice.Alerts(fresh).takeIf { fresh > 0 }), today)
+        // Zakat, two weeks before its day, if you asked and haven't paid.
+        val (profile, state) = zakat.observeState(Globals.PRIMARY_CURRENCY).first()
+        val zakatDue = state.dueOn?.takeIf { profile.remind && !state.paid && it.minusDays(ZAKAT_LEAD_DAYS) == today }
+        DueReminders.notify(
+            applicationContext,
+            notices + ready + listOfNotNull(zakatDue?.let { DueNotice.Zakat(it) }, DueNotice.Alerts(fresh).takeIf { fresh > 0 }),
+            today
+        )
+        assets.snapshot(Globals.PRIMARY_CURRENCY)
         return Result.success()
     }
 }

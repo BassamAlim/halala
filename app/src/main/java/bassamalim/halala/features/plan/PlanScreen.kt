@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -113,8 +114,22 @@ fun PlanScreen(viewModel: PlanViewModel = hiltViewModel()) {
             )
         }
 
-        HalalaCard(modifier = Modifier.fillMaxWidth()) {
-            Text(text = stringResource(R.string.plan_placeholder), style = HalalaType.Body, color = HalalaColors.TextMuted)
+        val months = stringArrayResource(R.array.hijri_months)
+        Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(Insets.grid)) {
+            SummaryCard(
+                label = stringResource(R.string.zakat),
+                amount = state.zakat ?: "—",
+                caption = state.zakatDay?.let { (day, month, year) -> stringResource(R.string.zakat_plan_due, day, months[month - 1], year) }
+                    ?: stringResource(R.string.zakat_day_unset),
+                onClick = viewModel::onZakatClick,
+                modifier = Modifier.weight(1f).fillMaxHeight()
+            )
+            SummaryCard(
+                label = stringResource(R.string.retirement),
+                amount = "—",
+                caption = stringResource(R.string.plan_placeholder),
+                modifier = Modifier.weight(1f).fillMaxHeight()
+            )
         }
     }
 }

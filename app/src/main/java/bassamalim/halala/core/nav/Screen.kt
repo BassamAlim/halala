@@ -84,6 +84,15 @@ sealed interface Screen {
     /** Every past digest. */
     @Serializable data object Digests : Screen
 
+    /** Funds, gold and other things you own. */
+    @Serializable data object Assets : Screen
+
+    /** Adding an asset, or changing [id]. */
+    @Serializable data class EditAsset(val id: Long = 0) : Screen
+
+    /** The zakat calculator. */
+    @Serializable data object Zakat : Screen
+
     /** Every budget this pay cycle. */
     @Serializable data object Budgets : Screen
 

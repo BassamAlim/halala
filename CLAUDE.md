@@ -311,6 +311,22 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   weeks (rule-based; AI-written ones come with the assistant). Each kind is off until you turn
   it on in Settings; the daily reminder work notifies the morning after a period with spending
   ends. Net worth's change joins with Phase 5.
+- **Assets** (`Asset`, `Assets`): funds (units × unit price), gold (grams × karat/24 × the 24k
+  gram price, less a dealer's spread), and cars, property and the rest (a value you give, less a
+  yearly depreciation, compounded). Quantities and prices are exact decimal text; a value is
+  rounded once, half up, to minor units, and one that can't be read is worth nothing. **Prices
+  are entered by you**: the spec's NAV scraper and gold-price API aren't built, since they would
+  be network use beyond merchant identification (the owner's call).
+- **Net worth** (`NetWorth`): accounts by class (current/card/wallet/cash, savings, investment),
+  assets, owed to you, less what you owe people. The timeline is read back from the ledger (each
+  later day's money in and out of your accounts undone, loans as they stood), with assets from a
+  daily snapshot (`net_worth_snapshots`, taken on opening, by the daily work and on saving an
+  asset).
+- **Zakat** (`Zakat`, `ZakatProfile`): 2.5% of what you choose to count (accounts, savings,
+  funds, gold, owed to you) less debts due now (what you owe people plus any you add), when it
+  reaches the nisab of 85 g of gold at the price you give (else your gold's); due on your Hijri
+  day in the Umm al-Qura calendar (`java.time.chrono.HijrahDate`), the hawl the year before it.
+  "Mark as paid" records the Hijri year; a reminder two weeks before is optional.
 - **Reminders for what is due** (`DueReminders`, daily at nine, periodic WorkManager work): a
   bill or subscription its lead time before it is due, a cancel reminder three days (or its lead
   time) before it renews, an open loan on its due day. Names and days, never an amount. Choosing a
@@ -355,7 +371,8 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   and rules, 3 merchants with their aliases, 4 business types on merchants and categories, 5 all
   a restore needs: raw bank messages, account refs, balance checkpoints, full rule conditions,
   6 people with their aliases, 7 loans with their events, 8 subscriptions and bills, 9 a loan's
-  split purchase, 10 budgets, 11 savings goals),
+  split purchase, 10 budgets, 11 savings goals, 12 assets and their snapshots, 13 the zakat
+  method),
   keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
 - **Restore** (same screen, "Restore from JSON"): `Importer.read` turns a schema-5 or later export into
   rows numbered afresh (pure; refuses older or newer schemas and dangling uids), you confirm,
@@ -443,3 +460,9 @@ Canvas, left over each month with the dip's biggest payments, and "Can I afford 
 cards** and **Savings goal** (no board: the form), **Alerts** (no board: a card per alert with
 Open, Normal for it and Dismiss), **Digest** (Digest board, minus net worth) and **Digests**
 (the archive, from the Assistant tab and Settings' Digests sheet).
+
+**Phase 5 (wealth)** has begun: the **Wealth** tab is the Net worth board (total, this month and
+year, the timeline over 3M/1Y/All, the breakdown, then Accounts, Assets, People and Zakat),
+**Assets** and **Asset** (no board: the list and the form), and **Zakat** (Zakat board; reached
+from Wealth and the Plan board's Zakat card). Still to come: the retirement planner and compound
+interest calculator, and the Savings board's Awaeed and Hasad details.

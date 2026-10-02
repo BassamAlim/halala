@@ -2,6 +2,8 @@ package bassamalim.halala.core.export
 
 import bassamalim.halala.core.data.dataSources.room.entities.Account
 import bassamalim.halala.core.data.dataSources.room.entities.AccountRef
+import bassamalim.halala.core.data.dataSources.room.entities.Asset
+import bassamalim.halala.core.data.dataSources.room.entities.NetWorthSnapshot
 import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
 import bassamalim.halala.core.data.dataSources.room.entities.Budget
 import bassamalim.halala.core.data.dataSources.room.entities.Category
@@ -18,7 +20,9 @@ import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
+import bassamalim.halala.core.data.dataSources.room.entities.ZakatProfile
 import bassamalim.halala.core.data.repositories.AccountsRepository
+import bassamalim.halala.core.data.repositories.AssetsRepository
 import bassamalim.halala.core.data.repositories.BudgetsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.GoalsRepository
@@ -28,6 +32,7 @@ import bassamalim.halala.core.data.repositories.PeopleRepository
 import bassamalim.halala.core.data.repositories.RecurringRepository
 import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
+import bassamalim.halala.core.data.repositories.ZakatRepository
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.utils.accountLabel
@@ -62,7 +67,10 @@ data class LedgerSnapshot(
     val loanEvents: List<LoanEvent> = emptyList(),
     val recurring: List<RecurringSeries> = emptyList(),
     val budgets: List<Budget> = emptyList(),
-    val goals: List<SavingsGoal> = emptyList()
+    val goals: List<SavingsGoal> = emptyList(),
+    val assets: List<Asset> = emptyList(),
+    val snapshots: List<NetWorthSnapshot> = emptyList(),
+    val zakat: ZakatProfile? = null
 ) {
     /** The merchant each transaction's title names, by transaction id. */
     fun merchantOf(): Map<Long, Merchant> {
@@ -89,6 +97,8 @@ class Exporter @Inject constructor(
     private val recurringRepository: RecurringRepository,
     private val budgetsRepository: BudgetsRepository,
     private val goalsRepository: GoalsRepository,
+    private val assetsRepository: AssetsRepository,
+    private val zakatRepository: ZakatRepository,
     private val clock: Clock
 ) {
 
@@ -111,7 +121,10 @@ class Exporter @Inject constructor(
         loanEvents = loansRepository.getEvents(),
         recurring = recurringRepository.getAll(),
         budgets = budgetsRepository.getAll(),
-        goals = goalsRepository.getAll()
+        goals = goalsRepository.getAll(),
+        assets = assetsRepository.getAll(),
+        snapshots = assetsRepository.getSnapshots(),
+        zakat = zakatRepository.get().takeIf { it != ZakatProfile() }
     )
 
     fun fileStem(): String = "halala-${clock.instant().atZone(clock.zone).toLocalDate()}"
@@ -322,6 +335,30 @@ class Exporter @Inject constructor(
                         targetDate = goal.targetDate?.toString(),
                         accountUids = goal.accountIds.mapNotNull(accountUids::get),
                         createdAt = goal.createdAt.toString()
+                    )
+                },
+                assets = snapshot.assets.map { asset ->
+                    ExportAsset(
+                        uid = asset.uid,
+                        type = asset.type.name,
+                        name = asset.name,
+                        quantity = asset.quantity,
+                        karat = asset.karat,
+                        unitPrice = asset.unitPrice,
+                        priceDate = asset.priceDate?.toString(),
+                        valueMinor = asset.valueMinor,
+                        costMinor = asset.costMinor,
+                        spreadPercent = asset.spreadPercent,
+                        depreciationPercent = asset.depreciationPercent,
+                        currency = asset.currency,
+                        createdAt = asset.createdAt.toString()
+                    )
+                },
+                assetSnapshots = snapshot.snapshots.map { ExportSnapshot(it.date.toString(), it.assetsMinor, it.currency) },
+                zakat = snapshot.zakat?.let {
+                    ExportZakat(
+                        it.hijriMonth, it.hijriDay, it.goldPricePerGram, it.includeAccounts, it.includeSavings,
+                        it.includeFunds, it.includeGold, it.includeOwed, it.otherDebtsMinor, it.paidHijriYear, it.remind
                     )
                 }
             )

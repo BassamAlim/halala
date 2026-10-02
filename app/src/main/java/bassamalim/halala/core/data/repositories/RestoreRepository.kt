@@ -3,6 +3,8 @@ package bassamalim.halala.core.data.repositories
 import bassamalim.halala.core.data.dataSources.room.daos.RestoreDao
 import bassamalim.halala.core.data.dataSources.room.entities.Account
 import bassamalim.halala.core.data.dataSources.room.entities.AccountRef
+import bassamalim.halala.core.data.dataSources.room.entities.Asset
+import bassamalim.halala.core.data.dataSources.room.entities.NetWorthSnapshot
 import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
 import bassamalim.halala.core.data.dataSources.room.entities.Budget
 import bassamalim.halala.core.data.dataSources.room.entities.Category
@@ -19,6 +21,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
+import bassamalim.halala.core.data.dataSources.room.entities.ZakatProfile
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -45,9 +48,13 @@ class RestoreRepository @Inject constructor(
         loanEvents: List<LoanEvent>,
         recurring: List<RecurringSeries>,
         budgets: List<Budget>,
-        goals: List<SavingsGoal>
+        goals: List<SavingsGoal>,
+        assets: List<Asset>,
+        snapshots: List<NetWorthSnapshot>,
+        zakat: ZakatProfile?
     ) = restoreDao.replaceAll(
         institutions, accounts, refs, rawMessages, categories, rules, merchants, aliases,
-        transactions, transfers, checkpoints, people, personAliases, loans, loanEvents, recurring, budgets, goals
+        transactions, transfers, checkpoints, people, personAliases, loans, loanEvents, recurring, budgets, goals,
+        assets, snapshots, zakat
     )
 }

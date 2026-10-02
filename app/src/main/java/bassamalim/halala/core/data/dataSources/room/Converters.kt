@@ -3,6 +3,7 @@ package bassamalim.halala.core.data.dataSources.room
 import androidx.room.TypeConverter
 import bassamalim.halala.core.enums.AccountType
 import bassamalim.halala.core.enums.AliasMatch
+import bassamalim.halala.core.enums.AssetType
 import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
 import bassamalim.halala.core.data.dataSources.room.entities.RuleConditions
 import bassamalim.halala.core.enums.AuditAction
@@ -194,4 +195,10 @@ class Converters {
 
     @TypeConverter
     fun fromIds(ids: List<Long>): String = ids.joinToString(",")
+
+    @TypeConverter
+    fun toAssetType(name: String): AssetType = AssetType.entries.firstOrNull { it.name == name } ?: AssetType.OTHER
+
+    @TypeConverter
+    fun fromAssetType(type: AssetType): String = type.name
 }

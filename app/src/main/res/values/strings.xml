@@ -66,7 +66,7 @@
     <string name="activity_no_match">Nothing matches.</string>
 
     <!-- Placeholders -->
-    <string name="plan_placeholder">The zakat and retirement calculators will live here.</string>
+    <string name="plan_placeholder">The planner comes next.</string>
     <string name="wealth_placeholder">Net worth, savings, funds, gold and what people owe you will live here.</string>
     <string name="wealth_accounts">Accounts and cash</string>
     <string name="assistant_placeholder">Ask about your money in plain words here.</string>
@@ -653,6 +653,102 @@
     <string name="digest_ready_month">Your %1$s digest</string>
     <string name="digest_ready_year">%2$s in review</string>
     <string name="digest_ready_text">Open Halala to read it.</string>
+    <string name="net_worth">Net worth</string>
+    <string name="net_worth_month">%1$s this month</string>
+    <string name="net_worth_month_percent">%1$s (%2$s%%) this month</string>
+    <string name="net_worth_year">%1$s this year</string>
+    <string name="net_worth_chart">Net worth over time</string>
+    <string name="net_worth_hint">Everything you own, less what you owe. Funds and gold are valued at the prices you give them.</string>
+    <string name="range_3m">3M</string>
+    <string name="range_1y">1Y</string>
+    <string name="range_all">All</string>
+    <string name="wealth_savings">Savings</string>
+    <string name="wealth_funds">Funds</string>
+    <string name="wealth_gold">Gold</string>
+    <string name="wealth_other">Other assets</string>
+    <string name="assets">Assets</string>
+    <string name="assets_summary">Funds, gold, a car, property</string>
+    <plurals name="asset_count">
+        <item quantity="one">%1$d asset</item>
+        <item quantity="other">%1$d assets</item>
+    </plurals>
+    <string name="assets_empty">Nothing yet. Add a fund, gold, a car or property you own.</string>
+    <string name="assets_hint">Prices are the ones you give: update them when you like, and net worth follows.</string>
+    <string name="asset">Asset</string>
+    <string name="asset_new">New asset</string>
+    <string name="asset_fund">Fund</string>
+    <string name="asset_gold">Gold</string>
+    <string name="asset_vehicle">Car</string>
+    <string name="asset_property">Property</string>
+    <string name="asset_other">Other</string>
+    <string name="asset_fund_detail">%1$s units at %2$s</string>
+    <string name="asset_gold_detail">%1$s g · %2$dk</string>
+    <string name="asset_valued_on">Valued %1$s</string>
+    <string name="asset_units">Units</string>
+    <string name="asset_unit_price">Unit price</string>
+    <string name="asset_grams">Grams</string>
+    <string name="asset_karat">Karat</string>
+    <string name="asset_karat_value">%1$dk</string>
+    <string name="asset_gold_price">Price of a gram of 24k</string>
+    <string name="asset_gold_price_hint">Lower karats are worked out from it.</string>
+    <string name="asset_spread">Dealer\'s spread, %</string>
+    <string name="asset_spread_hint">What a dealer keeps when buying it back. Optional.</string>
+    <string name="asset_value">Value</string>
+    <string name="asset_depreciation">Loses each year, %</string>
+    <string name="asset_depreciation_hint">For a car, say 15. Optional.</string>
+    <string name="asset_priced_on">Price as of</string>
+    <string name="asset_valued_as_of">Value as of</string>
+    <string name="asset_cost">What you paid</string>
+    <string name="asset_manual_hint">Halala doesn\'t fetch prices: they are what you enter here.</string>
+    <string name="asset_number_invalid">Enter a number, like 12.3456</string>
+    <string name="asset_percent_invalid">Enter a percentage from 0 to 100</string>
+    <string name="asset_delete_body">Net worth drops by its value. Its history stays in past snapshots.</string>
+    <string name="zakat">Zakat</string>
+    <string name="zakat_summary">What is due, on your Hijri date</string>
+    <string name="zakat_due">Zakat due</string>
+    <string name="zakat_method">2.5%% of %1$s.</string>
+    <string name="zakat_below_nisab">%1$s is below the nisab, so none is due.</string>
+    <string name="zakat_needs_price">Give today\'s gold price to work out the nisab.</string>
+    <string name="zakat_due_on">Due %1$d %2$s %3$d, about %4$s.</string>
+    <string name="zakat_paid">Paid for this year.</string>
+    <string name="zakat_hawl">Hawl</string>
+    <string name="zakat_hawl_days">%1$d of %2$d days</string>
+    <string name="zakat_nisab">Nisab today · 85 g gold</string>
+    <string name="zakat_funds">Funds · market value</string>
+    <string name="zakat_owed">Owed to you, expected back</string>
+    <string name="zakat_debts">Debts due now</string>
+    <string name="zakat_other_debts">Debts beyond what you owe people</string>
+    <string name="zakat_other_debts_hint">What you owe people in Halala is already taken off.</string>
+    <string name="zakat_day">Zakat day</string>
+    <string name="zakat_day_value">%1$d %2$s</string>
+    <string name="zakat_day_unset">Set your zakat day</string>
+    <string name="zakat_month">Month</string>
+    <string name="zakat_day_of_month">Day</string>
+    <string name="zakat_gold_price">Gold price</string>
+    <string name="zakat_gold_price_unset">From your gold, if you have any</string>
+    <string name="zakat_gold_price_hint">Today\'s price of a gram of 24k gold.</string>
+    <string name="zakat_note">All gold counts, as it is held as an investment, and funds are valued at their unit price. Opinions differ, so choose what counts: this is a calculator, not a ruling. The year is Hijri, Umm al-Qura.</string>
+    <string name="zakat_remind">Remind me 2 weeks before</string>
+    <string name="zakat_reminding">Reminding 2 weeks before</string>
+    <string name="zakat_mark_paid">Mark as paid</string>
+    <string name="zakat_unmark_paid">Not paid yet</string>
+    <string name="zakat_plan_due">Due %1$d %2$s %3$d</string>
+    <string name="due_zakat_title">Zakat is coming up</string>
+    <string name="retirement">Retirement</string>
+    <string-array name="hijri_months">
+        <item>Muharram</item>
+        <item>Safar</item>
+        <item>Rabi al-Awwal</item>
+        <item>Rabi al-Thani</item>
+        <item>Jumada al-Ula</item>
+        <item>Jumada al-Akhirah</item>
+        <item>Rajab</item>
+        <item>Shaban</item>
+        <item>Ramadan</item>
+        <item>Shawwal</item>
+        <item>Dhu al-Qadah</item>
+        <item>Dhu al-Hijjah</item>
+    </string-array>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="cadence_daily">Daily</string>

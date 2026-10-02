@@ -5,6 +5,8 @@ import androidx.room.Insert
 import androidx.room.Query
 import bassamalim.halala.core.data.dataSources.room.entities.Account
 import bassamalim.halala.core.data.dataSources.room.entities.AccountRef
+import bassamalim.halala.core.data.dataSources.room.entities.Asset
+import bassamalim.halala.core.data.dataSources.room.entities.NetWorthSnapshot
 import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
 import bassamalim.halala.core.data.dataSources.room.entities.Budget
 import bassamalim.halala.core.data.dataSources.room.entities.Category
@@ -21,6 +23,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
+import bassamalim.halala.core.data.dataSources.room.entities.ZakatProfile
 
 /**
  * Restoring an export: the whole ledger is replaced by the rows given, which carry their own
@@ -49,7 +52,10 @@ interface RestoreDao {
         loanEvents: List<LoanEvent>,
         recurring: List<RecurringSeries>,
         budgets: List<Budget>,
-        goals: List<SavingsGoal>
+        goals: List<SavingsGoal>,
+        assets: List<Asset>,
+        snapshots: List<NetWorthSnapshot>,
+        zakat: ZakatProfile?
     ) {
         // What points at a row goes before the row. The history of changes names rows by the
         // ids they had, so it can't outlive them.
@@ -61,6 +67,9 @@ interface RestoreDao {
         clearRecurring()
         clearBudgets()
         clearGoals()
+        clearAssets()
+        clearSnapshots()
+        clearZakat()
         clearTransfers()
         clearCheckpoints()
         clearRefs()
@@ -93,6 +102,9 @@ interface RestoreDao {
         insertRecurring(recurring)
         insertBudgets(budgets)
         insertGoals(goals)
+        insertAssets(assets)
+        insertSnapshots(snapshots)
+        zakat?.let { insertZakat(it) }
     }
 
     @Query("DELETE FROM audit_changes") suspend fun clearAuditChanges()
@@ -112,6 +124,9 @@ interface RestoreDao {
     @Query("DELETE FROM recurring_series") suspend fun clearRecurring()
     @Query("DELETE FROM budgets") suspend fun clearBudgets()
     @Query("DELETE FROM savings_goals") suspend fun clearGoals()
+    @Query("DELETE FROM assets") suspend fun clearAssets()
+    @Query("DELETE FROM net_worth_snapshots") suspend fun clearSnapshots()
+    @Query("DELETE FROM zakat_profile") suspend fun clearZakat()
     @Query("DELETE FROM person_aliases") suspend fun clearPersonAliases()
     @Query("DELETE FROM people") suspend fun clearPeople()
     @Query("DELETE FROM categories") suspend fun clearCategories()
@@ -136,4 +151,7 @@ interface RestoreDao {
     @Insert suspend fun insertRecurring(rows: List<RecurringSeries>)
     @Insert suspend fun insertBudgets(rows: List<Budget>)
     @Insert suspend fun insertGoals(rows: List<SavingsGoal>)
+    @Insert suspend fun insertAssets(rows: List<Asset>)
+    @Insert suspend fun insertSnapshots(rows: List<NetWorthSnapshot>)
+    @Insert suspend fun insertZakat(row: ZakatProfile)
 }
