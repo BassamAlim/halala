@@ -4,8 +4,12 @@ data class ExportUiState(
     /** While a file is being written or read; the rows wait for it. */
     val isWorking: Boolean = false,
     /** A file was read and fits: what it holds, to confirm before it replaces the ledger. */
-    val restore: RestoreSummary? = null
+    val restore: RestoreSummary? = null,
+    /** A backup was picked: its passphrase is asked for. */
+    val passphrase: PassphraseAsk? = null
 )
+
+data class PassphraseAsk(val text: String = "", val wrong: Boolean = false)
 
 data class RestoreSummary(
     /** "2,412" */

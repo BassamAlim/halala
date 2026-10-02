@@ -370,7 +370,7 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   is refused loudly, never replaced with an empty one.
 - **No Android backup**: `allowBackup="false"` and every domain excluded from cloud backup and
   device transfer — a copy could never be decrypted elsewhere. Data moves by Halala's own export
-  (and, in Phase 6, the encrypted `.halala` backup).
+  and the encrypted `.halala` backup.
 - **Exports** (Settings › Backup and export) are written to a file you pick (SAF). CSV: a zip of
   `accounts.csv` and `transactions.csv` (UTF-8 with BOM, CRLF, signed decimal amounts plus exact
   `amount_minor`, local times, text cells defused against spreadsheet formula injection). JSON:
@@ -381,7 +381,16 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   split purchase, 10 budgets, 11 savings goals, 12 assets and their snapshots, 13 the zakat
   method, 14 retirement scenarios, 15 savings terms),
   keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
-- **Restore** (same screen, "Restore from JSON"): `Importer.read` turns a schema-5 or later export into
+- **Encrypted backups** (Backup and export › Encrypted backups, no board): a `.halala` file
+  (`core/backup/BackupFile`) is the JSON export zipped and sealed with AES-256-GCM under a key
+  stretched from your passphrase by Argon2id (Bouncy Castle; the stretch and salt are in the
+  file's header, which is authenticated too). The passphrase is never stored: the key it makes is
+  kept wrapped by Keystore (`BackupKeyStore`, `noBackupFilesDir`) so scheduled backups run
+  unattended. `Backups` writes to a folder you grant (SAF tree, persisted), daily or weekly as
+  WorkManager work, keeping the last 5, 10 (default) or 20. Restoring a `.halala` asks for the
+  passphrase, then is the same full replace as JSON. Not yet: restoring from onboarding, and
+  the spec's passphrase hint and printed recovery key.
+- **Restore** (same screen, "Restore", a backup or a JSON export): `Importer.read` turns a schema-5 or later export into
   rows numbered afresh (pure; refuses older or newer schemas and dangling uids), you confirm,
   and `RestoreDao.replaceAll` replaces the whole ledger in one transaction. It is a full
   replace, not a merge. The history of changes (undo) and DataStore settings aren't carried.
@@ -492,5 +501,6 @@ for a month and an account, salary or what came in, a Sankey (`Sankey` component
 `core/domain/MoneyFlow`) of moves to each of your accounts, what was spent from it and what
 stayed; a leg the bank called a move with no other side is "no match": "It went to someone"
 makes it a plain transfer, "Pick the account" records the other leg there and pairs them) and
-the **Assistant** (Assistant board, with the Digests link; see the product rule). The board's
+the **Assistant** (Assistant board, with the Digests link; see the product rule), and
+**Encrypted backups** (see the product rule). The board's
 "See 52 transactions" link waits for a filtered feed.

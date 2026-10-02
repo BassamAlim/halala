@@ -5,13 +5,17 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import bassamalim.halala.core.domain.DigestKind
+import bassamalim.halala.core.models.BackupEvery
+import bassamalim.halala.core.models.BackupSettings
 import bassamalim.halala.core.models.ReminderMode
 import bassamalim.halala.core.models.ReviewSchedule
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalTime
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -65,6 +69,32 @@ class PreferencesRepository @Inject constructor(
         dataStore.edit { it[digestKey(kind)] = on }
     }
 
+    /** Where scheduled backups go and how often: never money, never the passphrase. */
+    fun observeBackupSettings(): Flow<BackupSettings> = dataStore.data.map { preferences ->
+        BackupSettings(
+            folder = preferences[BACKUP_FOLDER],
+            every = BackupEvery.entries.firstOrNull { it.name == preferences[BACKUP_EVERY] } ?: BackupEvery.OFF,
+            keep = preferences[BACKUP_KEEP] ?: BackupSettings.DEFAULT_KEEP,
+            lastAt = preferences[BACKUP_LAST_AT]?.let(Instant::ofEpochMilli)
+        )
+    }
+
+    suspend fun setBackupFolder(uri: String?) {
+        dataStore.edit { if (uri == null) it.remove(BACKUP_FOLDER) else it[BACKUP_FOLDER] = uri }
+    }
+
+    suspend fun setBackupEvery(every: BackupEvery) {
+        dataStore.edit { it[BACKUP_EVERY] = every.name }
+    }
+
+    suspend fun setBackupKeep(keep: Int) {
+        dataStore.edit { it[BACKUP_KEEP] = keep.coerceAtLeast(1) }
+    }
+
+    suspend fun setBackedUp(at: Instant) {
+        dataStore.edit { it[BACKUP_LAST_AT] = at.toEpochMilli() }
+    }
+
     private fun digestKey(kind: DigestKind) = booleanPreferencesKey("digest_${kind.name.lowercase()}")
 
     companion object {
@@ -73,6 +103,10 @@ class PreferencesRepository @Inject constructor(
         private val REVIEW_MINUTE = intPreferencesKey("review_reminder_minute")
         private val ONBOARDED = booleanPreferencesKey("onboarded")
         private val LOCK_TIMEOUT_SECONDS = intPreferencesKey("lock_timeout_seconds")
+        private val BACKUP_FOLDER = stringPreferencesKey("backup_folder")
+        private val BACKUP_EVERY = stringPreferencesKey("backup_every")
+        private val BACKUP_KEEP = intPreferencesKey("backup_keep")
+        private val BACKUP_LAST_AT = longPreferencesKey("backup_last_at")
 
         /** The spec's default: a minute in the background asks again. */
         const val DEFAULT_LOCK_TIMEOUT_SECONDS = 60

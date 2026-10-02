@@ -38,6 +38,7 @@ import bassamalim.halala.features.editAsset.EditAssetScreen
 import bassamalim.halala.features.zakat.ZakatScreen
 import bassamalim.halala.features.retirement.CompoundScreen
 import bassamalim.halala.features.savings.SavingsScreen
+import bassamalim.halala.features.backup.BackupScreen
 import bassamalim.halala.features.savings.SavingsTermsScreen
 import bassamalim.halala.features.retirement.RetirementScreen
 import bassamalim.halala.features.digest.DigestScreen
@@ -135,6 +136,8 @@ fun NavGraph(navController: NavHostController, startDestination: Screen) {
         screen<Screen.Compound> { CompoundScreen() }
 
         screen<Screen.Savings> { SavingsScreen() }
+
+        screen<Screen.Backup> { BackupScreen() }
 
         screen<Screen.SavingsTerms> { SavingsTermsScreen() }
 

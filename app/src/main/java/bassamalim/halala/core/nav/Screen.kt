@@ -90,6 +90,9 @@ sealed interface Screen {
     /** Adding an asset, or changing [id]. */
     @Serializable data class EditAsset(val id: Long = 0) : Screen
 
+    /** Encrypted backups: passphrase, folder, schedule. */
+    @Serializable data object Backup : Screen
+
     /** Savings: Awaeed terms and Hasad. */
     @Serializable data object Savings : Screen
 

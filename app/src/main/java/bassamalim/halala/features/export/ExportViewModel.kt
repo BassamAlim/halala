@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import bassamalim.halala.BuildConfig
 import bassamalim.halala.core.di.IoDispatcher
 import bassamalim.halala.core.export.LedgerSnapshot
+import bassamalim.halala.core.backup.WrongPassphrase
 import bassamalim.halala.core.nav.Navigator
+import bassamalim.halala.core.nav.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
@@ -46,25 +48,63 @@ class ExportViewModel @Inject constructor(
 
     fun onJsonPicked(write: (ByteArray) -> Boolean) = export(write) { domain.json(BuildConfig.VERSION_NAME) }
 
+    /** A backup picked for restoring, held while its passphrase is asked for. */
+    private var sealed: ByteArray? = null
+
+    fun onBackupsClick() = navigator.navigate(Screen.Backup)
+
     /** The screen owns the file; this reads and checks it, then asks before replacing anything. */
     fun onRestorePicked(read: () -> ByteArray?) {
         state.update { it.copy(isWorking = true) }
         viewModelScope.launch {
-            val snapshot = withContext(io) { runCatching { domain.read(checkNotNull(read())) }.getOrNull() }
-            pending = snapshot
-            state.update {
-                it.copy(
-                    isWorking = false,
-                    restore = snapshot?.let { ledger ->
-                        RestoreSummary(
-                            transactions = COUNT.format(Locale.US, ledger.transactions.size),
-                            accounts = COUNT.format(Locale.US, ledger.accounts.size)
-                        )
-                    }
-                )
+            val bytes = withContext(io) { runCatching { read() }.getOrNull() }
+            if (bytes != null && domain.isBackup(bytes)) {
+                sealed = bytes
+                state.update { it.copy(isWorking = false, passphrase = PassphraseAsk()) }
+                return@launch
             }
-            if (snapshot == null) _events.send(ExportEvent.Unreadable)
+            offer(withContext(io) { runCatching { domain.read(checkNotNull(bytes)) }.getOrNull() })
         }
+    }
+
+    fun onPassphraseChange(text: String) = state.update { it.copy(passphrase = it.passphrase?.copy(text = text, wrong = false)) }
+
+    fun onPassphraseDismiss() {
+        sealed = null
+        state.update { it.copy(passphrase = null) }
+    }
+
+    /** Opens the backup (slow: the passphrase is stretched), then offers it like an export. */
+    fun onPassphraseSubmit() {
+        val bytes = sealed ?: return
+        val passphrase = state.value.passphrase?.text?.takeIf { it.isNotEmpty() } ?: return
+        state.update { it.copy(isWorking = true) }
+        viewModelScope.launch {
+            val result = withContext(io) { runCatching { domain.readBackup(bytes, passphrase.toCharArray()) } }
+            if (result.exceptionOrNull() is WrongPassphrase) {
+                state.update { it.copy(isWorking = false, passphrase = it.passphrase?.copy(wrong = true)) }
+                return@launch
+            }
+            sealed = null
+            state.update { it.copy(passphrase = null) }
+            offer(result.getOrNull())
+        }
+    }
+
+    private suspend fun offer(snapshot: LedgerSnapshot?) {
+        pending = snapshot
+        state.update {
+            it.copy(
+                isWorking = false,
+                restore = snapshot?.let { ledger ->
+                    RestoreSummary(
+                        transactions = COUNT.format(Locale.US, ledger.transactions.size),
+                        accounts = COUNT.format(Locale.US, ledger.accounts.size)
+                    )
+                }
+            )
+        }
+        if (snapshot == null) _events.send(ExportEvent.Unreadable)
     }
 
     fun onRestoreDismiss() {

@@ -24,7 +24,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
+import androidx.compose.ui.text.input.ImeAction
+import bassamalim.halala.core.ui.components.ButtonKind
 import bassamalim.halala.core.ui.components.ConfirmSheet
+import bassamalim.halala.core.ui.components.FormField
+import bassamalim.halala.core.ui.components.HalalaButton
+import bassamalim.halala.core.ui.components.HalalaSheet
+import bassamalim.halala.core.ui.components.HalalaTextField
 import bassamalim.halala.core.ui.components.ListCard
 import bassamalim.halala.core.ui.components.ListRow
 import bassamalim.halala.core.ui.components.TopBar
@@ -35,8 +41,9 @@ import bassamalim.halala.core.ui.theme.Sizes
 import bassamalim.halala.core.ui.theme.Spacing
 
 /**
- * Backup and export. For now: CSV for spreadsheets and JSON for your own scripts, written to a
- * file you choose. Neither is encrypted, and the screen says so.
+ * Backup and export: encrypted backups (their own screen), CSV for spreadsheets and JSON for
+ * your own scripts, written to a file you choose, and restoring from a backup or a JSON export.
+ * Exports aren't encrypted, and the screen says so.
  */
 @Composable
 fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
@@ -102,6 +109,15 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
 
             ListCard(Modifier.fillMaxWidth()) {
                 ListRow(
+                    title = stringResource(R.string.backup_title),
+                    subtitle = stringResource(R.string.backup_summary),
+                    leading = { ExportIcon() },
+                    onClick = viewModel::onBackupsClick
+                )
+            }
+
+            ListCard(Modifier.fillMaxWidth()) {
+                ListRow(
                     title = stringResource(R.string.export_csv),
                     subtitle = stringResource(R.string.export_csv_summary),
                     leading = { ExportIcon() },
@@ -128,6 +144,32 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
                 text = stringResource(R.string.export_warning),
                 style = HalalaType.Caption,
                 color = HalalaColors.TextMuted
+            )
+        }
+    }
+
+    state.passphrase?.let { ask ->
+        HalalaSheet(viewModel::onPassphraseDismiss) {
+            Text(text = stringResource(R.string.backup_open_title), style = HalalaType.Title)
+            FormField(
+                label = stringResource(R.string.backup_passphrase),
+                error = stringResource(R.string.backup_wrong).takeIf { ask.wrong }
+            ) {
+                HalalaTextField(
+                    value = ask.text,
+                    onValueChange = viewModel::onPassphraseChange,
+                    secret = true,
+                    isError = ask.wrong,
+                    imeAction = ImeAction.Done,
+                    onImeAction = viewModel::onPassphraseSubmit
+                )
+            }
+            HalalaButton(
+                text = stringResource(if (state.isWorking) R.string.backup_opening else R.string.backup_open),
+                onClick = viewModel::onPassphraseSubmit,
+                kind = ButtonKind.Primary,
+                enabled = !state.isWorking,
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }
