@@ -1,5 +1,6 @@
 package bassamalim.halala.features.history
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -47,7 +48,10 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
     ) {
         TopBar(title = stringResource(R.string.history), onBack = viewModel::onBackClick)
 
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         if (state.changes.isEmpty()) {
             Text(

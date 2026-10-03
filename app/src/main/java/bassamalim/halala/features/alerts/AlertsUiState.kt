@@ -1,11 +1,12 @@
 package bassamalim.halala.features.alerts
 
 /** What kind of alert, which picks its words. */
-enum class AlertKind { DUPLICATE, LARGE, FOREIGN, DECLINED, MISMATCH }
+enum class AlertKind { DUPLICATE, LARGE, FOREIGN, DECLINED, MISMATCH, PARSER }
 
 /**
  * One alert as the list shows it: [name] is the merchant, account or bank; [amount] and [other]
- * are formatted figures (the usual amount, the bank's balance, or the foreign currency's code).
+ * are formatted figures (the usual amount, the bank's balance, the foreign currency's code, or
+ * for parser health how many messages failed of how many).
  */
 data class AlertItem(
     val key: String,

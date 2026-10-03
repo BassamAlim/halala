@@ -6,6 +6,8 @@ import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.relations.MerchantWithStats
 import bassamalim.halala.core.data.repositories.BudgetsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
+import bassamalim.halala.core.data.repositories.TagsRepository
+import bassamalim.halala.core.data.dataSources.room.entities.Tag
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.enums.BudgetScope
 import bassamalim.halala.core.enums.ExpenseType
@@ -18,6 +20,7 @@ data class BudgetForm(
     val categoryId: Long? = null,
     val expenseType: ExpenseType? = null,
     val merchantId: Long? = null,
+    val tagId: Long? = null,
     val amount: String = "",
     val rollover: Boolean = false,
     val currency: String = Globals.PRIMARY_CURRENCY,
@@ -29,10 +32,13 @@ enum class BudgetProblem { AmountInvalid, ChoiceMissing }
 
 class EditBudgetDomain @Inject constructor(
     private val budgetsRepository: BudgetsRepository,
-    private val classificationRepository: ClassificationRepository
+    private val classificationRepository: ClassificationRepository,
+    private val tagsRepository: TagsRepository
 ) {
 
     fun observeCategories(): Flow<List<Category>> = classificationRepository.observeCategories()
+
+    fun observeTags(): Flow<List<Tag>> = tagsRepository.observeAll()
 
     fun observeMerchants(): Flow<List<MerchantWithStats>> = classificationRepository.observeMerchants()
 
@@ -42,7 +48,8 @@ class EditBudgetDomain @Inject constructor(
             categoryId = it.categoryId,
             expenseType = it.expenseType,
             merchantId = it.merchantId,
-            amount = Money.plain(it.amountMinor, it.currency),
+            tagId = it.tagId,
+            amount = Money.input(it.amountMinor, it.currency),
             rollover = it.rollover,
             currency = it.currency,
             uid = it.uid,
@@ -70,6 +77,7 @@ class EditBudgetDomain @Inject constructor(
                 BudgetScope.CATEGORY -> form.categoryId != null
                 BudgetScope.EXPENSE_TYPE -> form.expenseType != null
                 BudgetScope.MERCHANT -> form.merchantId != null
+                BudgetScope.TAG -> form.tagId != null
             }
             if (!chosen) problems += BudgetProblem.ChoiceMissing
             if (problems.isNotEmpty()) return null to problems
@@ -85,7 +93,8 @@ class EditBudgetDomain @Inject constructor(
                 amountMinor = amount!!,
                 currency = form.currency,
                 rollover = form.rollover,
-                createdAt = form.createdAt
+                createdAt = form.createdAt,
+                tagId = form.tagId.takeIf { form.scope == BudgetScope.TAG }
             ) to emptySet()
         }
     }

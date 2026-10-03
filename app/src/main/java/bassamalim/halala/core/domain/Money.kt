@@ -18,6 +18,15 @@ object Money {
     /** U+2212, the true minus sign. A hyphen is never shown in front of an amount. */
     const val MINUS = '−'
 
+    /** What an amount reads as while amounts are hidden. */
+    const val MASK = "••••"
+
+    /**
+     * Hide amounts: every amount on screen reads as [MASK], so the app can be shown to someone.
+     * Set from the preference as the app starts and by Settings; files ([plain]) are untouched.
+     */
+    @Volatile var masked = false
+
     /** How many minor units a currency has: 2 for SAR and USD, 0 for JPY, 3 for KWD. */
     fun fractionDigits(currency: String): Int =
         runCatching { Currency.getInstance(currency.uppercase()).defaultFractionDigits }
@@ -60,6 +69,8 @@ object Money {
         decimals: Boolean = true,
         showPlus: Boolean = false
     ): String {
+        if (masked) return MASK
+
         var value = BigDecimal.valueOf(minor, fractionDigits(currency))
         if (!decimals) value = value.setScale(0, RoundingMode.HALF_UP)
 
@@ -86,6 +97,9 @@ object Money {
      */
     fun plain(minor: Long, currency: String): String =
         BigDecimal.valueOf(minor, fractionDigits(currency)).toPlainString()
+
+    /** [plain] for a form's amount field: empty while amounts are hidden, to be typed afresh. */
+    fun input(minor: Long, currency: String): String = if (masked) "" else plain(minor, currency)
 
     /** A sum that fails loudly on overflow rather than wrapping round to a wrong balance. */
     fun sum(amounts: Iterable<Long>): Long = amounts.fold(0L, Math::addExact)

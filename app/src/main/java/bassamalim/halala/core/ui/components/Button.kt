@@ -14,6 +14,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -54,10 +58,11 @@ fun HalalaButton(
         modifier = modifier
             .heightIn(min = Sizes.touchTarget)
             .clip(Radius.md)
-            .background(if (primary) HalalaColors.Accent else HalalaColors.Surface2)
-            .then(if (primary) Modifier else Modifier.border(Sizes.border, HalalaColors.Line, Radius.md))
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .alpha(if (enabled) 1f else DISABLED_ALPHA)
+            // Before the fill, so a press sinks the whole button.
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .background(if (primary) PrimaryFill else SecondaryFill)
+            .border(Sizes.border, if (primary) PrimaryEdge else SolidColor(HalalaColors.Line), Radius.md)
             .padding(horizontal = Insets.button),
         contentAlignment = Alignment.Center
     ) {
@@ -75,6 +80,11 @@ fun HalalaButton(
         )
     }
 }
+
+/** Jade with a sheen across its top; the secondary fill lit as a card is. */
+private val PrimaryFill = Brush.verticalGradient(listOf(lerp(HalalaColors.Accent, Color.White, 0.12f), HalalaColors.Accent))
+private val PrimaryEdge = Brush.verticalGradient(listOf(HalalaColors.Sheen, Color.Transparent))
+private val SecondaryFill = Brush.verticalGradient(listOf(lerp(HalalaColors.Surface2, Color.White, 0.03f), HalalaColors.Surface2))
 
 /** A disabled control is dimmed rather than recoloured, so it keeps its kind. */
 internal const val DISABLED_ALPHA = 0.4f

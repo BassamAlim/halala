@@ -1,10 +1,13 @@
 package bassamalim.halala.core.sms
 
+import bassamalim.halala.core.data.dataSources.definitions.DefinitionsFile
+import androidx.test.core.app.ApplicationProvider
 import bassamalim.halala.core.data.TEST_CLOCK
 import bassamalim.halala.core.data.dataSources.room.AppDatabase
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.InstitutionsRepository
+import bassamalim.halala.core.data.repositories.SavingsRepository
 import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
 import bassamalim.halala.core.data.testDatabase
@@ -49,7 +52,8 @@ class SmsIngestTest {
             transactions,
             accounts,
             InstitutionsRepository(db.institutionsDao()),
-            ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), db.peopleDao(), TEST_CLOCK),
+            ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), db.peopleDao(), DefinitionsFile(ApplicationProvider.getApplicationContext()), TEST_CLOCK),
+            SavingsRepository(db.savingsDao(), db.accountsDao(), db.transactionsDao(), db.goalsDao(), transactions, TEST_CLOCK),
             TEST_CLOCK
         )
         val banks = db.institutionsDao().getAll().associate { it.name to it.id }
@@ -232,7 +236,7 @@ class SmsIngestTest {
     }
 
     @Test
-    fun `an Awaeed deposit moves into one Awaeed account, and isn't spending`() = runTest {
+    fun `each Awaeed deposit is its own, in one hidden holding account, and isn't spending`() = runTest {
         val deposit = """
             انشاء حساب عوائد
             مبلغ:SR 5000
@@ -243,11 +247,27 @@ class SmsIngestTest {
         receive("AlRajhiBank", deposit.replace("5000", "3000"), minutes = 60)
 
         val awaeed = accounts.getAll().single { it.nickname == "Awaeed" }
+        assertEquals(AccountType.DEPOSIT, awaeed.type)
         assertEquals(800_000L, balance(awaeed.id))
+        val savings = SavingsRepository(db.savingsDao(), db.accountsDao(), db.transactionsDao(), db.goalsDao(), transactions, TEST_CLOCK)
+        assertEquals(listOf(500_000L, 300_000L), savings.observeDeposits().first().map { it.amountMinor })
         assertEquals(-800_000L, balance(rajhiSavings))
         assertEquals(2, transactions.getAllTransfers().size)
         assertEquals(false, TransactionKind.SAVINGS_DEPOSIT.countsInTotals)
         assertEquals(false, TransactionKind.INVESTMENT_BUY.countsInTotals)
+
+        // Paying one out moves it back where it came from and leaves the other running.
+        savings.payOut(savings.getDeposits().first().id)
+        assertEquals(listOf(300_000L), savings.observeDeposits().first().map { it.amountMinor })
+        assertEquals(300_000L, balance(awaeed.id))
+        assertEquals(-300_000L, balance(rajhiSavings))
+
+        // The bank's own closing SMS ends the one it fits; what is above what went in is profit.
+        receive("AlRajhiBank", deposit.replace("انشاء", "اقفال").replace("من:", "الى:").replace("5000", "3068.64"), minutes = 120)
+        assertEquals(emptyList<Long>(), savings.observeDeposits().first().map { it.amountMinor })
+        assertEquals(0L, balance(awaeed.id))
+        assertEquals(6_864L, balance(rajhiSavings))
+        assertEquals(TransactionKind.OTHER, transactions.getAll().single { it.amountMinor == 6_864L }.kind)
     }
 
     @Test

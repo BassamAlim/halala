@@ -31,6 +31,12 @@ class ReviewViewModel @Inject constructor(
     private val justFiled = MutableStateFlow<JustFiled?>(null)
     private val filter = MutableStateFlow(ReviewFilter.All)
 
+    /**
+     * Cards filed (or being filed): a second tap before the card leaves would file it twice, and
+     * Undo would undo only the second.
+     */
+    private val filing = mutableSetOf<String>()
+
     val uiState: StateFlow<ReviewUiState> = combine(
         // The cards read their merchants for what each was identified as.
         combine(domain.observeTransactions(), domain.observeMerchants(), ::Pair),
@@ -63,10 +69,14 @@ class ReviewViewModel @Inject constructor(
                 businessType = ReviewDomain.evidenceOf(merchant),
                 identifiedBy = merchant?.identifiedBy,
                 confidence = merchant?.confidence?.takeIf { merchant.identifiedBy == IdentifiedBy.AI },
+                webTitle = merchant?.webTitle?.takeIf { merchant.identifiedBy == IdentifiedBy.AI },
+                webUrl = merchant?.webUrl?.takeIf { merchant.identifiedBy == IdentifiedBy.AI },
                 suggestion = suggestion?.let { Suggestion(CategoryOption(it.id, it.name), it.expenseType) }
             )
         }
         val suggested = cards.filter { it.suggestion != null }
+        // A filed card that has left can be filed again if it comes back (new spending, or Undo).
+        filing.retainAll(cards.map { it.key }.toSet())
 
         ReviewUiState(
             isLoading = false,
@@ -108,6 +118,16 @@ class ReviewViewModel @Inject constructor(
         file(card, suggestion.category)
     }
 
+    /** Swiped toward the end: the suggestion confirmed or, with none, its category asked for. */
+    fun onSwipeAccept(card: ReviewCard) = if (card.suggestion != null) onConfirmClick(card) else onChooseClick(card)
+
+    /** The Split mark: one purchase, opened on its split sheet. */
+    fun onSplitClick(card: ReviewCard) = navigator.navigate(Screen.Transaction(card.transactionId, split = true))
+
+    /** The Subscription and Bill marks: the series form, started from the newest charge. */
+    fun onRecurringClick(card: ReviewCard, subscription: Boolean) =
+        navigator.navigate(Screen.EditRecurring(fromTransaction = card.transactionId, subscription = subscription))
+
     fun onPickDismiss() = picking.update { null }
 
     fun onCategoryPick(category: CategoryOption) {
@@ -117,8 +137,10 @@ class ReviewViewModel @Inject constructor(
     }
 
     private fun file(card: ReviewCard, category: CategoryOption) {
+        if (!filing.add(card.key)) return
         viewModelScope.launch {
             val batchId = domain.learn(card.descriptor, category.id)
+            if (batchId == null) filing.remove(card.key)
             justFiled.update { batchId?.let { JustFiled(it, card.title, category.name) } }
         }
     }

@@ -1,5 +1,6 @@
 package bassamalim.halala.features.budgets
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -45,7 +46,10 @@ fun BudgetsScreen(viewModel: BudgetsViewModel = hiltViewModel()) {
             actionLabel = stringResource(R.string.recurring_add),
             onAction = viewModel::onAddClick
         )
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         HalalaChip(label = state.cycle)
         if (state.rows.isEmpty()) Text(

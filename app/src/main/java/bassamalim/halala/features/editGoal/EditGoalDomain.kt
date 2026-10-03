@@ -22,7 +22,7 @@ data class GoalForm(
     val createdAt: Instant = Instant.EPOCH
 )
 
-enum class GoalProblem { NameMissing, TargetInvalid, AccountsMissing }
+enum class GoalProblem { NameMissing, TargetInvalid }
 
 class EditGoalDomain @Inject constructor(
     private val goalsRepository: GoalsRepository,
@@ -35,7 +35,7 @@ class EditGoalDomain @Inject constructor(
     fun today(): LocalDate = LocalDate.now(clock)
 
     suspend fun load(id: Long): GoalForm? = goalsRepository.get(id)?.let {
-        GoalForm(it.name, Money.plain(it.targetMinor, it.currency), it.targetDate, it.accountIds, it.currency, it.uid, it.createdAt)
+        GoalForm(it.name, Money.input(it.targetMinor, it.currency), it.targetDate, it.accountIds, it.currency, it.uid, it.createdAt)
     }
 
     suspend fun save(id: Long, form: GoalForm): Set<GoalProblem> {
@@ -52,7 +52,6 @@ class EditGoalDomain @Inject constructor(
             if (form.name.isBlank()) problems += GoalProblem.NameMissing
             val target = Money.parse(form.target, form.currency)?.takeIf { it > 0 }
             if (target == null) problems += GoalProblem.TargetInvalid
-            if (form.accountIds.isEmpty()) problems += GoalProblem.AccountsMissing
             if (problems.isNotEmpty()) return null to problems
             return SavingsGoal(id, form.uid, form.name.trim(), target!!, form.currency, form.targetDate, form.accountIds, form.createdAt) to emptySet()
         }

@@ -1,5 +1,6 @@
 package bassamalim.halala.features.categories
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -62,7 +63,10 @@ fun CategoriesScreen(viewModel: CategoriesViewModel = hiltViewModel()) {
             onAction = viewModel::onAddClick
         )
 
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         if (state.categories.isNotEmpty()) {
             ListCard(Modifier.fillMaxWidth()) {

@@ -14,5 +14,15 @@ data class SettingsUiState(
     val isPickingReminderTime: Boolean = false,
     /** The digests you are told about. */
     val digests: Set<DigestKind> = emptySet(),
-    val isEditingDigests: Boolean = false
-)
+    val isEditingDigests: Boolean = false,
+    /** Every amount reads as dots until you show them again, which asks who you are. */
+    val hideAmounts: Boolean = false,
+    /** How long Halala can be in the background before it asks who you are again. */
+    val lockTimeoutSeconds: Int = 60,
+    val isEditingLock: Boolean = false
+) {
+    companion object {
+        /** The lock's choices: at once, a minute (the default), five and fifteen. */
+        val LOCK_TIMEOUTS = listOf(0, 60, 300, 900)
+    }
+}

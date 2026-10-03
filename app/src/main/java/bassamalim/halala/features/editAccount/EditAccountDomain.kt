@@ -60,10 +60,14 @@ class EditAccountDomain @Inject constructor(
     suspend fun save(id: Long, form: AccountForm): AccountSave {
         // An account found in SMS that quote no digits (a wallet's) has none to give.
         val hasNoDigits = id != 0L && accountsRepository.get(id)?.last4 == null
-        val draft = when (val checked = validate(form, last4Optional = hasNoDigits)) {
+        val checked = when (val checked = validate(form, last4Optional = hasNoDigits)) {
             is Checked.Invalid -> return AccountSave.Invalid(checked.problems)
             is Checked.Valid -> checked.draft
         }
+        // While amounts are hidden the form starts blank: blank leaves the opening balance be.
+        val draft = if (id != 0L && Money.masked && form.openingBalance.isBlank())
+            checked.copy(openingBalanceMinor = accountsRepository.get(id)?.openingBalanceMinor ?: 0)
+        else checked
 
         if (draft.institutionId != null && draft.last4 != null) {
             val holder = accountsRepository.findByLast4(draft.institutionId, draft.last4)

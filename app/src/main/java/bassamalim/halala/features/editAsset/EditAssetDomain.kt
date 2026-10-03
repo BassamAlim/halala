@@ -54,12 +54,12 @@ class EditAssetDomain @Inject constructor(
         AssetForm(
             type = it.type,
             name = it.name,
-            quantity = it.quantity.orEmpty(),
+            quantity = if (Money.masked) "" else it.quantity.orEmpty(),
             karat = it.karat ?: 21,
             unitPrice = it.unitPrice.orEmpty(),
             priceDate = it.priceDate,
-            value = it.valueMinor?.let { minor -> Money.plain(minor, it.currency) }.orEmpty(),
-            cost = it.costMinor?.let { minor -> Money.plain(minor, it.currency) }.orEmpty(),
+            value = it.valueMinor?.let { minor -> Money.input(minor, it.currency) }.orEmpty(),
+            cost = it.costMinor?.let { minor -> Money.input(minor, it.currency) }.orEmpty(),
             spread = it.spreadPercent.orEmpty(),
             depreciation = it.depreciationPercent.orEmpty(),
             currency = it.currency,
@@ -71,7 +71,11 @@ class EditAssetDomain @Inject constructor(
 
     /** Checks and writes, then takes today's snapshot so net worth moves with it. */
     suspend fun save(id: Long, form: AssetForm): Set<AssetProblem> {
-        val (asset, problems) = validate(id, form, today())
+        val (checked, problems) = validate(id, form, today())
+        // While amounts are hidden the form starts blank: blank leaves what it cost be.
+        val asset = if (checked != null && Money.masked && form.cost.isBlank())
+            checked.copy(costMinor = assetsRepository.get(id)?.costMinor)
+        else checked
         if (asset != null) {
             assetsRepository.save(asset)
             assetsRepository.snapshot(form.currency)

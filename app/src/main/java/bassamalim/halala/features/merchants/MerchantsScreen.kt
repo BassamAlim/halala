@@ -1,5 +1,6 @@
 package bassamalim.halala.features.merchants
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -42,7 +43,10 @@ fun MerchantsScreen(viewModel: MerchantsViewModel = hiltViewModel()) {
     ) {
         TopBar(title = stringResource(R.string.merchants), onBack = viewModel::onBackClick)
 
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         if (!state.hasAny) {
             Text(

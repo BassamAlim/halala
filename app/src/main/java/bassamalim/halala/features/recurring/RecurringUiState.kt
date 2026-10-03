@@ -35,6 +35,20 @@ sealed interface RecurringAlert {
     /** [name] was expected [expected] and hasn't arrived. */
     data class Missed(override val seriesId: Long, val name: String, val expected: String) : RecurringAlert
 
+    /**
+     * [name] charges [amount] on [due]: a yearly renewal ([firstCharge] false) or a free trial
+     * ending. "Keep it" quiets it by [key].
+     */
+    data class Upcoming(
+        override val seriesId: Long,
+        val key: String,
+        val name: String,
+        val firstCharge: Boolean,
+        val due: String,
+        val amount: String,
+        val currency: String
+    ) : RecurringAlert
+
     /** Detection found [name], [amount] every [every] [unit]: add it? */
     data class Proposed(
         override val seriesId: Long,

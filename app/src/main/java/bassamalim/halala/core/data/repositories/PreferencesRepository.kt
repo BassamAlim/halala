@@ -9,15 +9,18 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import bassamalim.halala.core.domain.DigestKind
+import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.models.BackupEvery
 import bassamalim.halala.core.models.BackupSettings
 import bassamalim.halala.core.models.ReminderMode
 import bassamalim.halala.core.models.ReviewSchedule
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalTime
+import java.time.YearMonth
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -96,6 +99,14 @@ class PreferencesRepository @Inject constructor(
         dataStore.edit { it[BACKUP_LAST_AT] = at.toEpochMilli() }
     }
 
+    /** Hide amounts. [Money.masked] is kept in step, since formatting can't wait on a flow. */
+    fun observeHideAmounts(): Flow<Boolean> = dataStore.data.map { it[HIDE_AMOUNTS] ?: false }
+
+    suspend fun setHideAmounts(hide: Boolean) {
+        dataStore.edit { it[HIDE_AMOUNTS] = hide }
+        Money.masked = hide
+    }
+
     /** Whether location was asked for once, after onboarding (the map asks again on its own). */
     fun observeLocationAsked(): Flow<Boolean> = dataStore.data.map { it[LOCATION_ASKED] ?: false }
 
@@ -110,6 +121,48 @@ class PreferencesRepository @Inject constructor(
         dataStore.edit { it[TAG_DISMISSED] = it[TAG_DISMISSED].orEmpty() + key }
     }
 
+    /**
+     * Pairs of people the AI read as one, and pairs you said aren't, by `People.pairKey` (their
+     * uids, never a name).
+     */
+    fun observePeopleSame(): Flow<Set<String>> = dataStore.data.map { it[PEOPLE_SAME].orEmpty() }
+
+    fun observePeopleDismissed(): Flow<Set<String>> = dataStore.data.map { it[PEOPLE_DISMISSED].orEmpty() }
+
+    suspend fun dismissPeoplePair(key: String) {
+        dataStore.edit { it[PEOPLE_DISMISSED] = it[PEOPLE_DISMISSED].orEmpty() + key }
+    }
+
+    /** Budget alerts already sent, by `Budgets.toldKey` (a budget id, a day and a percent: no amount). */
+    suspend fun budgetAlertsTold(): Set<String> = dataStore.data.first()[BUDGET_TOLD].orEmpty()
+
+    suspend fun setBudgetAlertsTold(keys: Set<String>) {
+        dataStore.edit { it[BUDGET_TOLD] = keys }
+    }
+
+    /** How many web searches were made in [month], for the monthly cap: a count, never what was searched. */
+    suspend fun webSearches(month: YearMonth): Int =
+        dataStore.data.first().let { if (it[WEB_SEARCH_MONTH] == month.toString()) it[WEB_SEARCH_COUNT] ?: 0 else 0 }
+
+    suspend fun countWebSearch(month: YearMonth) {
+        dataStore.edit {
+            val same = it[WEB_SEARCH_MONTH] == month.toString()
+            it[WEB_SEARCH_MONTH] = month.toString()
+            it[WEB_SEARCH_COUNT] = (if (same) it[WEB_SEARCH_COUNT] ?: 0 else 0) + 1
+        }
+    }
+
+    /** The people (uids) the AI has already been asked about. */
+    suspend fun peopleAsked(): Set<String> = dataStore.data.first()[PEOPLE_ASKED].orEmpty()
+
+    /** [asked] is everyone the AI has now seen, [same] the pairs it found among them. */
+    suspend fun recordPeopleMatches(asked: Set<String>, same: Set<String>) {
+        dataStore.edit {
+            it[PEOPLE_ASKED] = asked
+            it[PEOPLE_SAME] = it[PEOPLE_SAME].orEmpty() + same
+        }
+    }
+
     private fun digestKey(kind: DigestKind) = booleanPreferencesKey("digest_${kind.name.lowercase()}")
 
     companion object {
@@ -118,8 +171,15 @@ class PreferencesRepository @Inject constructor(
         private val REVIEW_MINUTE = intPreferencesKey("review_reminder_minute")
         private val ONBOARDED = booleanPreferencesKey("onboarded")
         private val LOCK_TIMEOUT_SECONDS = intPreferencesKey("lock_timeout_seconds")
+        private val HIDE_AMOUNTS = booleanPreferencesKey("hide_amounts")
         private val LOCATION_ASKED = booleanPreferencesKey("location_asked")
         private val TAG_DISMISSED = stringSetPreferencesKey("tag_suggestions_dismissed")
+        private val PEOPLE_SAME = stringSetPreferencesKey("people_same")
+        private val PEOPLE_DISMISSED = stringSetPreferencesKey("people_merge_dismissed")
+        private val PEOPLE_ASKED = stringSetPreferencesKey("people_asked")
+        private val BUDGET_TOLD = stringSetPreferencesKey("budget_alerts_told")
+        private val WEB_SEARCH_MONTH = stringPreferencesKey("web_search_month")
+        private val WEB_SEARCH_COUNT = intPreferencesKey("web_search_count")
         private val BACKUP_FOLDER = stringPreferencesKey("backup_folder")
         private val BACKUP_EVERY = stringPreferencesKey("backup_every")
         private val BACKUP_KEEP = intPreferencesKey("backup_keep")

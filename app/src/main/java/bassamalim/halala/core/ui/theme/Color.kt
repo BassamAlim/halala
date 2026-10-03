@@ -61,4 +61,13 @@ object HalalaColors {
 
     /** Scrim behind a sheet or dialog. */
     val Scrim = Color(0x99000000)
+
+    /** Cards: borderless, a step above [Bg] and [Surface], told apart by tone alone. */
+    val Card = Color(0xFF181B1E)
+
+    /** A press: the pressed thing is washed with this, as well as shrinking a little. */
+    val Pressed = Color(0x0FECEEF0)
+
+    /** The highlight across a filled object's top (the balance card, primary buttons). */
+    val Sheen = Color(0x29FFFFFF)
 }

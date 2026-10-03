@@ -28,7 +28,7 @@ data class RetirementForm(
     val retireAt: String = "60",
     val start: String = "",
     val monthly: String = "",
-    val returnPercent: String = "6",
+    val returnPercent: String = "5",
     val inflationPercent: String = "2.5",
     val wanted: String = ""
 )
@@ -74,8 +74,8 @@ class RetirementViewModel @Inject constructor(
         // Starts from what you have invested and what you have been saving.
         viewModelScope.launch {
             form.value = RetirementForm(
-                start = Money.plain(plannerRepository.investedNow(currency), currency),
-                monthly = Money.plain(plannerRepository.averageSaving(currency), currency)
+                start = Money.input(plannerRepository.investedNow(currency), currency),
+                monthly = Money.input(plannerRepository.averageSaving(currency), currency)
             )
         }
     }
@@ -157,11 +157,11 @@ class RetirementViewModel @Inject constructor(
         form.value = RetirementForm(
             ageNow = scenario.ageNow.toString(),
             retireAt = scenario.retireAt.toString(),
-            start = Money.plain(scenario.startMinor, scenario.currency),
-            monthly = Money.plain(scenario.monthlyMinor, scenario.currency),
+            start = Money.input(scenario.startMinor, scenario.currency),
+            monthly = Money.input(scenario.monthlyMinor, scenario.currency),
             returnPercent = scenario.returnPercent,
             inflationPercent = scenario.inflationPercent,
-            wanted = Money.plain(scenario.wantedMinor, scenario.currency)
+            wanted = Money.input(scenario.wantedMinor, scenario.currency)
         )
     }
 

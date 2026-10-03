@@ -60,9 +60,7 @@ sealed interface DueNotice {
     data class Loan(override val key: Int, val person: String, val lent: Boolean) : DueNotice
 
     /** An Awaeed term ([name]) matures on [due], in a few days: time to confirm what happens. */
-    data class Maturing(val accountId: Long, val name: String, val due: LocalDate) : DueNotice {
-        override val key get() = MATURING_KEY + accountId.toInt()
-    }
+    data class Maturing(override val key: Int, val name: String, val due: LocalDate) : DueNotice
 
     /** Zakat falls due on [due], two weeks from now (you asked to be reminded). */
     data class Zakat(val due: LocalDate) : DueNotice {
@@ -74,6 +72,9 @@ sealed interface DueNotice {
         override val key get() = DIGEST_KEY + kind.ordinal
     }
 
+    /** The budget called [name] reached [percent]% this cycle (50, 80 or 100). */
+    data class Budget(override val key: Int, val name: String, val percent: Int) : DueNotice
+
     /** [count] things looked unusual since yesterday (anomaly alerts). */
     data class Alerts(val count: Int) : DueNotice {
         override val key get() = ALERTS_KEY
@@ -84,6 +85,7 @@ private const val ALERTS_KEY = 400_000
 private const val DIGEST_KEY = 500_000
 private const val ZAKAT_KEY = 600_000
 private const val MATURING_KEY = 700_000
+private const val DEPOSIT_KEY = 800_000
 private const val MATURING_LEAD_DAYS = 3L
 private const val ZAKAT_LEAD_DAYS = 14L
 private val DIGEST_TITLE_MONTH = DateTimeFormatter.ofPattern("MMMM", Locale.US)
@@ -173,7 +175,11 @@ class DueReminders @Inject constructor(
                     is DueNotice.Loan -> context.getString(
                         if (notice.lent) R.string.due_loan_lent_title else R.string.due_loan_borrowed_title, notice.person
                     ) to context.getString(R.string.due_loan_text)
-                    is DueNotice.Alerts -> context.resources.getQuantityString(R.plurals.alert_count, notice.count, notice.count) to
+                    is DueNotice.Budget -> (
+                        if (notice.percent >= 100) context.getString(R.string.budget_alert_full_title, notice.name)
+                        else context.getString(R.string.budget_alert_title, notice.name, notice.percent)
+                    ) to context.getString(R.string.budget_alert_text)
+                    is DueNotice.Alerts ->context.resources.getQuantityString(R.plurals.alert_count, notice.count, notice.count) to
                             context.getString(R.string.alerts_hint)
                     is DueNotice.Maturing -> context.getString(R.string.due_maturing_title, notice.name) to
                             context.getString(R.string.due_maturing_text, shortDateLabel(notice.due, today))
@@ -217,6 +223,7 @@ class DueReminderWorker @AssistedInject constructor(
     private val zakat: ZakatRepository,
     private val assets: AssetsRepository,
     private val savings: SavingsRepository,
+    private val budgetAlerts: BudgetAlerts,
     private val clock: Clock
 ) : CoroutineWorker(context, params) {
 
@@ -237,7 +244,7 @@ class DueReminderWorker @AssistedInject constructor(
         val zakatDue = state.dueOn?.takeIf { profile.remind && !state.paid && it.minusDays(ZAKAT_LEAD_DAYS) == today }
         DueReminders.notify(
             applicationContext,
-            notices + ready + maturing(today) + listOfNotNull(zakatDue?.let { DueNotice.Zakat(it) }, DueNotice.Alerts(fresh).takeIf { fresh > 0 }),
+            notices + ready + maturing(today) + budgetAlerts.notices() + listOfNotNull(zakatDue?.let { DueNotice.Zakat(it) }, DueNotice.Alerts(fresh).takeIf { fresh > 0 }),
             today
         )
         assets.snapshot(Globals.PRIMARY_CURRENCY)
@@ -248,6 +255,10 @@ class DueReminderWorker @AssistedInject constructor(
     private suspend fun maturing(today: LocalDate) = savings.observe().first().mapNotNull { saved ->
         val term = saved.term ?: return@mapNotNull null
         if (term.maturity.minusDays(MATURING_LEAD_DAYS) != today) return@mapNotNull null
-        DueNotice.Maturing(saved.account.account.id, saved.account.account.nickname, term.maturity)
+        DueNotice.Maturing(MATURING_KEY + saved.account.account.id.toInt(), saved.account.account.nickname, term.maturity)
+    } + savings.observeDeposits().first().mapNotNull { held ->
+        val term = held.term ?: return@mapNotNull null
+        if (term.maturity.minusDays(MATURING_LEAD_DAYS) != today) return@mapNotNull null
+        DueNotice.Maturing(DEPOSIT_KEY + held.deposit.id.toInt(), held.goalName ?: applicationContext.getString(R.string.savings_awaeed), term.maturity)
     }
 }

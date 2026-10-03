@@ -27,6 +27,7 @@ abstract class AiModule {
         @Provides @Singleton
         fun provideApiKeys(): ApiKeys = object : ApiKeys {
             override fun groq() = BuildConfig.GROQ_API_KEY.ifBlank { null }
+            override fun tavily() = BuildConfig.TAVILY_API_KEY.ifBlank { null }
         }
     }
 }

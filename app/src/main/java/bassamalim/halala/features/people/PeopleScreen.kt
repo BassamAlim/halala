@@ -1,5 +1,6 @@
 package bassamalim.halala.features.people
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,7 +21,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
+import bassamalim.halala.core.Globals
+import bassamalim.halala.core.domain.People
 import bassamalim.halala.core.ui.components.GroupLabel
+import bassamalim.halala.core.ui.components.HalalaButton
+import bassamalim.halala.core.ui.components.HalalaCard
 import bassamalim.halala.core.ui.components.SearchField
 import bassamalim.halala.core.ui.components.SegmentedControl
 import bassamalim.halala.core.ui.components.SummaryCard
@@ -32,7 +38,8 @@ import bassamalim.halala.core.ui.theme.Spacing
 
 /**
  * The People board: what is owed each way, then the loans (open, then settled) or everyone you
- * transfer with, the latest first, each with what came back less what went.
+ * transfer with, the latest first, each with what came back less what went. Above either, with
+ * no board: the pairs that may be one person, to merge or not.
  */
 @Composable
 fun PeopleScreen(viewModel: PeopleViewModel = hiltViewModel()) {
@@ -47,18 +54,23 @@ fun PeopleScreen(viewModel: PeopleViewModel = hiltViewModel()) {
     ) {
         TopBar(title = stringResource(R.string.people), onBack = viewModel::onBackClick)
 
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         Row(horizontalArrangement = Arrangement.spacedBy(Insets.grid)) {
             SummaryCard(
                 label = stringResource(R.string.people_owed_to_you),
                 amount = state.owedToYou,
+                currency = Globals.PRIMARY_CURRENCY,
                 amountColor = HalalaColors.Income,
                 modifier = Modifier.weight(1f)
             )
             SummaryCard(
                 label = stringResource(R.string.people_you_owe),
                 amount = state.youOwe,
+                currency = Globals.PRIMARY_CURRENCY,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -80,9 +92,37 @@ fun PeopleScreen(viewModel: PeopleViewModel = hiltViewModel()) {
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(bottom = Spacing.section)
         ) {
+            suggestions(state, viewModel)
             when (state.view) {
                 PeopleView.LOANS -> loans(state, viewModel)
                 PeopleView.TRANSFERS -> transfers(state, viewModel)
+            }
+        }
+    }
+}
+
+/** Pairs that may be one person, above either view: you say, Halala never merges on its own. */
+private fun LazyListScope.suggestions(state: PeopleUiState, viewModel: PeopleViewModel) {
+    if (state.suggestions.isEmpty()) return
+    item(key = "same") { GroupLabel(stringResource(R.string.people_same_title), Modifier.padding(top = Spacing.xs)) }
+    items(state.suggestions, key = { "same-${it.key}" }) { row ->
+        HalalaCard(
+            modifier = Modifier.padding(bottom = Spacing.sm),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md)
+        ) {
+            Text(text = stringResource(R.string.people_same_pair, row.goesName, row.keepName), style = HalalaType.Body)
+            Text(
+                text = when (row.reason) {
+                    People.MergeReason.SPELLING -> stringResource(R.string.people_same_spelling, row.keepName)
+                    People.MergeReason.ACCOUNT -> stringResource(R.string.people_same_account, row.keepName, row.ref.orEmpty())
+                    People.MergeReason.AI -> stringResource(R.string.people_same_ai, row.keepName)
+                },
+                style = HalalaType.Caption,
+                color = HalalaColors.TextMuted
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                HalalaButton(stringResource(R.string.people_same_merge), { viewModel.onMerge(row) }, Modifier.weight(1f))
+                HalalaButton(stringResource(R.string.people_same_not), { viewModel.onNotSame(row) }, Modifier.weight(1f))
             }
         }
     }

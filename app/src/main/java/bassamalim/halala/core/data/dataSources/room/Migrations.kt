@@ -7,7 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * The phone is the only place the full ledger lives: every schema change is a migration, never
  * a destructive rebuild. Add each one here, in order, against the schemas in `app/schemas`.
  */
-val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6, Migration6To7, Migration7To8, Migration8To9, Migration9To10, Migration10To11, Migration11To12, Migration12To13, Migration13To14, Migration14To15, Migration15To16, Migration16To17, Migration17To18, Migration18To19)
+val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6, Migration6To7, Migration7To8, Migration8To9, Migration9To10, Migration10To11, Migration11To12, Migration12To13, Migration13To14, Migration14To15, Migration15To16, Migration16To17, Migration17To18, Migration18To19, Migration19To20, Migration20To21, Migration21To22, Migration22To23)
 
 /** Phase 1: raw bank SMS, the digits learned per bank, reported balances, and SMS links. */
 private object Migration1To2 : Migration(1, 2) {
@@ -374,5 +374,66 @@ private object Migration18To19 : Migration(18, 19) {
                     "`longitudeE7` INTEGER NOT NULL, `accuracyMeters` INTEGER NOT NULL, PRIMARY KEY(`transactionId`), " +
                     "FOREIGN KEY(`transactionId`) REFERENCES `transactions`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )"
         )
+    }
+}
+
+/**
+ * Term deposits each on their own. The account an SMS made for a bank's product ("Awaeed")
+ * becomes its hidden holding account, each amount that arrived in it becomes a deposit (taking
+ * the terms you gave the account, which then go), and its balance is unchanged.
+ */
+private object Migration19To20 : Migration(19, 20) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `deposits` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `uid` TEXT NOT NULL, " +
+                    "`transactionId` INTEGER NOT NULL, `goalId` INTEGER, `ratePercent` TEXT, `tenorMonths` INTEGER, " +
+                    "`maturityChoice` TEXT, `closedOn` INTEGER, " +
+                    "FOREIGN KEY(`transactionId`) REFERENCES `transactions`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , " +
+                    "FOREIGN KEY(`goalId`) REFERENCES `savings_goals`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )"
+        )
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_deposits_uid` ON `deposits` (`uid`)")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_deposits_transactionId` ON `deposits` (`transactionId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_deposits_goalId` ON `deposits` (`goalId`)")
+        db.execSQL("UPDATE `accounts` SET `type` = 'DEPOSIT' WHERE `id` IN (SELECT `accountId` FROM `account_refs` WHERE `ref` LIKE 'product:%')")
+        db.execSQL(
+            "INSERT INTO `deposits` (`uid`, `transactionId`, `ratePercent`, `tenorMonths`, `maturityChoice`) " +
+                    "SELECT lower(hex(randomblob(16))), t.`id`, s.`ratePercent`, s.`tenorMonths`, s.`maturityChoice` " +
+                    "FROM `transactions` t JOIN `accounts` a ON a.`id` = t.`accountId` " +
+                    "LEFT JOIN `savings_terms` s ON s.`accountId` = a.`id` AND s.`kind` = 'AWAEED' " +
+                    "WHERE a.`type` = 'DEPOSIT' AND t.`direction` = 'CREDIT'"
+        )
+        db.execSQL("DELETE FROM `savings_terms` WHERE `accountId` IN (SELECT `id` FROM `accounts` WHERE `type` = 'DEPOSIT')")
+    }
+}
+
+/** Budgets on a tag. SQLite adds a column with its foreign key when it defaults to null. */
+private object Migration20To21 : Migration(20, 21) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `budgets` ADD COLUMN `tagId` INTEGER REFERENCES `tags`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_budgets_tagId` ON `budgets` (`tagId`)")
+    }
+}
+
+/** Merchants looked up online: once each, and the page that said what they are. */
+private object Migration21To22 : Migration(21, 22) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `merchants` ADD COLUMN `searchedOnline` INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE `merchants` ADD COLUMN `webUrl` TEXT")
+        db.execSQL("ALTER TABLE `merchants` ADD COLUMN `webTitle` TEXT")
+    }
+}
+
+/** Money put toward a savings goal somewhere the ledger has no account for (a broker). */
+private object Migration22To23 : Migration(22, 23) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `goal_contributions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `uid` TEXT NOT NULL, " +
+                    "`goalId` INTEGER NOT NULL, `transactionId` INTEGER NOT NULL, `withdrawn` INTEGER NOT NULL, `kindBefore` TEXT, " +
+                    "FOREIGN KEY(`transactionId`) REFERENCES `transactions`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , " +
+                    "FOREIGN KEY(`goalId`) REFERENCES `savings_goals`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )"
+        )
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_goal_contributions_uid` ON `goal_contributions` (`uid`)")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_goal_contributions_transactionId` ON `goal_contributions` (`transactionId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_goal_contributions_goalId` ON `goal_contributions` (`goalId`)")
     }
 }

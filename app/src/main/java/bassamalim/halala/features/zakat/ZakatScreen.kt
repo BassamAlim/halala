@@ -1,5 +1,6 @@
 package bassamalim.halala.features.zakat
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -68,7 +69,10 @@ fun ZakatScreen(viewModel: ZakatViewModel = hiltViewModel()) {
         verticalArrangement = Arrangement.spacedBy(Spacing.card)
     ) {
         TopBar(title = stringResource(R.string.zakat), onBack = viewModel::onBackClick)
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
             Text(text = stringResource(R.string.zakat_due), style = HalalaType.Label, color = HalalaColors.TextMuted)

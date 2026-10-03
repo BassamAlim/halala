@@ -3,7 +3,9 @@ package bassamalim.halala.features.recurring
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import bassamalim.halala.core.Globals
+import bassamalim.halala.core.domain.HeadsUp
 import bassamalim.halala.core.domain.Money
+import bassamalim.halala.core.domain.Recurring
 import bassamalim.halala.core.domain.SeriesState
 import bassamalim.halala.core.enums.SeriesStatus
 import bassamalim.halala.core.nav.Navigator
@@ -14,7 +16,7 @@ import bassamalim.halala.core.utils.shortDateLabel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -31,7 +33,7 @@ class RecurringViewModel @Inject constructor(
         viewModelScope.launch { domain.detect() }
     }
 
-    val uiState: StateFlow<RecurringUiState> = domain.observeStates().map { states ->
+    val uiState: StateFlow<RecurringUiState> = combine(domain.observeStates(), domain.observeDismissed()) { states, dismissed ->
         val today = domain.today()
         val currency = Globals.PRIMARY_CURRENCY
         val (monthly, yearly) = RecurringDomain.totals(states, currency)
@@ -43,7 +45,7 @@ class RecurringViewModel @Inject constructor(
             currency = currency,
             monthly = Money.format(monthly, currency, decimals = false),
             yearly = Money.format(yearly, currency, decimals = false),
-            alerts = alertsOf(states, today),
+            alerts = alertsOf(states, dismissed, today),
             soon = upcoming.filter { !it.nextDue!!.isAfter(horizon) }.map { rowOf(it, today) },
             later = upcoming.filter { it.nextDue!!.isAfter(horizon) }.map { rowOf(it, today) }
         )
@@ -53,7 +55,7 @@ class RecurringViewModel @Inject constructor(
         initialValue = RecurringUiState()
     )
 
-    private fun alertsOf(states: List<SeriesState>, today: LocalDate): List<RecurringAlert> {
+    private fun alertsOf(states: List<SeriesState>, dismissed: Set<String>, today: LocalDate): List<RecurringAlert> {
         val active = states.filter { it.series.status == SeriesStatus.ACTIVE }
         val raised = active.filter { it.raisedTo != null && !it.series.cancelReminder }.map {
             RecurringAlert.PriceUp(
@@ -80,7 +82,21 @@ class RecurringViewModel @Inject constructor(
                 unit = it.series.unit
             )
         }
-        return raised + missed + proposed
+        val upcoming = active.mapNotNull { state ->
+            val heads = Recurring.headsUp(state, today) ?: return@mapNotNull null
+            val key = Recurring.headsUpKey(state)
+            if (key in dismissed) return@mapNotNull null
+            RecurringAlert.Upcoming(
+                seriesId = state.series.id,
+                key = key,
+                name = state.series.name,
+                firstCharge = heads == HeadsUp.FIRST_CHARGE,
+                due = shortDateLabel(state.nextDue!!, today),
+                amount = Money.format(state.series.amountMinor, state.series.currency),
+                currency = state.series.currency
+            )
+        }
+        return raised + missed + upcoming + proposed
     }
 
     private fun rowOf(state: SeriesState, today: LocalDate): SeriesRow {
@@ -122,5 +138,14 @@ class RecurringViewModel @Inject constructor(
 
     fun onRemindToCancel(alert: RecurringAlert.PriceUp) {
         viewModelScope.launch { domain.remindToCancel(alert.seriesId, alert.toMinor) }
+    }
+
+    fun onKeep(alert: RecurringAlert.Upcoming) {
+        viewModelScope.launch { domain.keep(alert.key) }
+    }
+
+    /** Before a renewal or a trial's end: remind me to cancel, at the price it has. */
+    fun onRemindToCancel(alert: RecurringAlert.Upcoming) {
+        viewModelScope.launch { domain.remindToCancel(alert.seriesId, null) }
     }
 }

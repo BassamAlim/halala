@@ -1,5 +1,6 @@
 package bassamalim.halala.core.data.repositories
 
+import bassamalim.halala.core.data.dataSources.definitions.DefinitionsFile
 import bassamalim.halala.core.data.dataSources.room.daos.ClassificationDao
 import bassamalim.halala.core.data.dataSources.room.daos.MerchantsDao
 import bassamalim.halala.core.data.dataSources.room.daos.PeopleDao
@@ -64,6 +65,7 @@ class ClassificationRepository @Inject constructor(
     private val merchantsDao: MerchantsDao,
     private val transactionsDao: TransactionsDao,
     private val peopleDao: PeopleDao,
+    private val definitions: DefinitionsFile,
     private val clock: Clock
 ) {
 
@@ -403,6 +405,67 @@ class ClassificationRepository @Inject constructor(
         fileByRules()
     }
 
+    /** The AI's unsure answers worth looking up online, the most money first. */
+    suspend fun toSearch(below: Int, floorMinor: Long): List<ToIdentify> = merchantsDao.getToSearch(below, floorMinor)
+
+    /**
+     * What a web search made of a merchant: it is never searched again. A surer [answer] than
+     * the AI's first replaces it, with the page it came from ([url], [title]); only while the AI's
+     * answer still stands (the list's or yours is never touched).
+     */
+    suspend fun recordSearch(id: Long, answer: IdentifiedAs?, url: String?, title: String?) = writing.withLock {
+        val merchant = merchantsDao.getMerchant(id) ?: return@withLock
+        val surer = answer != null && merchant.identifiedBy == IdentifiedBy.AI && answer.confidence > (merchant.confidence ?: 0)
+        merchantsDao.updateMerchant(
+            if (surer) merchant.copy(
+                name = answer!!.name.trim().takeIf { it.isNotEmpty() && it.length <= MAX_NAME && !merchant.namedByYou } ?: merchant.name,
+                businessType = answer.type,
+                confidence = answer.confidence.coerceIn(0, 100),
+                searchedOnline = true,
+                webUrl = url,
+                webTitle = title
+            ) else merchant.copy(searchedOnline = true)
+        )
+        if (surer) {
+            syncAutoRules()
+            fileByRules()
+        }
+    }
+
+    suspend fun descriptorOf(id: Long): String? = merchantsDao.getDescriptor(id)
+
+    /**
+     * What looking [id] up when you asked found: [answer] stands when nothing else has
+     * identified it yet, or the AI's earlier answer was no surer (the list's or yours is never
+     * touched). [url] and [title] are the page it rests on, when it was searched for online,
+     * which also stops it being searched again on its own. True when it changed what it is.
+     */
+    suspend fun recordLookup(id: Long, answer: IdentifiedAs, url: String?, title: String?, searched: Boolean): Boolean =
+        writing.withLock {
+            val merchant = merchantsDao.getMerchant(id) ?: return@withLock false
+            val open = merchant.identifiedBy == null || merchant.identifiedBy == IdentifiedBy.AI
+            val takes = open && answer.type != BusinessType.UNKNOWN &&
+                    (merchant.identifiedBy == null || answer.confidence >= (merchant.confidence ?: 0))
+            if (!takes) {
+                if (searched && !merchant.searchedOnline) merchantsDao.updateMerchant(merchant.copy(searchedOnline = true))
+                return@withLock false
+            }
+            merchantsDao.updateMerchant(
+                merchant.copy(
+                    name = answer.name.trim().takeIf { it.isNotEmpty() && it.length <= MAX_NAME && !merchant.namedByYou } ?: merchant.name,
+                    businessType = answer.type,
+                    identifiedBy = IdentifiedBy.AI,
+                    confidence = answer.confidence.coerceIn(0, 100),
+                    searchedOnline = merchant.searchedOnline || searched,
+                    webUrl = url ?: merchant.webUrl.takeIf { merchant.identifiedBy == IdentifiedBy.AI },
+                    webTitle = title ?: merchant.webTitle.takeIf { merchant.identifiedBy == IdentifiedBy.AI }
+                )
+            )
+            syncAutoRules()
+            fileByRules()
+            true
+        }
+
     /** Merchants whose name is never sent (it may hold more than a shop's name): left for you. */
     suspend fun withhold(ids: Collection<Long>) = writing.withLock {
         for (id in ids) {
@@ -411,17 +474,31 @@ class ClassificationRepository @Inject constructor(
         }
     }
 
-    /** The well-known merchants, from the bundled list: no call, and before any is made. */
+    /**
+     * The well-known merchants, from the bundled list and the definitions file: no call, and
+     * before any is made. The list beats what the AI said, never what you said; the file's
+     * categories are made when missing (one you delete comes back while the file names it).
+     */
     private suspend fun identifyKnown() {
+        val defined = definitions.read()
+        val have = classificationDao.getCategories().map { it.name.lowercase() }
+        for ((name, type) in defined.categories)
+            if (name.isNotBlank() && name.lowercase() !in have) addCategory(name.trim(), type)
+
         val keys = merchantsDao.getAliases().groupBy({ it.merchantId }, { it.aliasKey })
         for (merchant in merchantsDao.getMerchants()) {
-            if (merchant.identifiedBy != null) continue
-            val known = KnownMerchants.identify(keys[merchant.id].orEmpty()) ?: continue
+            if (merchant.identifiedBy == IdentifiedBy.YOU) continue
+            val known = KnownMerchants.identify(keys[merchant.id].orEmpty(), defined) ?: continue
+            val name = if (merchant.namedByYou) merchant.name else known.name
+            val same = merchant.businessType == known.type
+            if (same && merchant.identifiedBy == IdentifiedBy.LIST && merchant.name == name) continue
             merchantsDao.updateMerchant(
                 merchant.copy(
-                    name = if (merchant.namedByYou) merchant.name else known.name,
+                    name = name,
                     businessType = known.type,
-                    identifiedBy = IdentifiedBy.LIST
+                    identifiedBy = IdentifiedBy.LIST,
+                    confidence = null,
+                    autoRuled = merchant.autoRuled && same
                 )
             )
         }
@@ -431,9 +508,12 @@ class ClassificationRepository @Inject constructor(
      * Keeps one automatic rule ("Merchant is Panda → Groceries", source AI) for each merchant
      * whose spending files itself (`Tier.AUTO`), pointing at the category that takes its business
      * type, and none for the rest. A rule you delete isn't made again ([Merchant.autoRuled]); one
-     * you turn off stays off. Your rules and learned ones still beat it.
+     * you turn off stays off. Your rules and learned ones still beat it. A merchant the definitions
+     * file sends to a category goes there, whatever its type.
      */
     private suspend fun syncAutoRules() {
+        val defined = definitions.read()
+        val keys = merchantsDao.getAliases().groupBy({ it.merchantId }, { it.aliasKey })
         val categories = classificationDao.getCategories()
         val merchants = merchantsDao.getMerchants()
         val autoRules = classificationDao.getRules().filter { it.source == RuleSource.AI }
@@ -443,7 +523,10 @@ class ClassificationRepository @Inject constructor(
 
         for (merchant in merchants) {
             val rules = rulesOf[merchant.id].orEmpty()
-            val category = Identification.categoryFor(merchant.businessType, categories)
+            val defined = merchant.takeIf { it.identifiedBy == IdentifiedBy.LIST }
+                ?.let { KnownMerchants.identify(keys[it.id].orEmpty(), defined)?.category }
+                ?.let { name -> categories.firstOrNull { it.name.equals(name.trim(), ignoreCase = true) } }
+            val category = defined ?: Identification.categoryFor(merchant.businessType, categories)
                 ?.takeIf { Identification.tierOf(merchant, categories) == Tier.AUTO }
 
             if (category == null) {

@@ -30,13 +30,15 @@ class SettingsViewModel @Inject constructor(
     private val editingReminder = MutableStateFlow(false)
     private val pickingReminderTime = MutableStateFlow(false)
     private val editingDigests = MutableStateFlow(false)
+    private val editingLock = MutableStateFlow(false)
     val uiState: StateFlow<SettingsUiState> = combine(
         domain.observeAccounts(),
         domain.observeReviewSchedule(),
-        combine(editingReminder, pickingReminderTime, editingDigests, ::Triple),
-        domain.observeDigests()
-    ) { accounts, reminder, (editingReminder, pickingReminderTime, editingDigests), digests ->
-        val active = accounts.filter { !it.account.archived }
+        combine(editingReminder, pickingReminderTime, editingDigests, editingLock) { a, b, c, d -> listOf(a, b, c, d) },
+        domain.observeDigests(),
+        combine(domain.observeHideAmounts(), domain.observeLockTimeoutSeconds(), ::Pair)
+    ) { accounts, reminder, (editingReminder, pickingReminderTime, editingDigests, editingLock), digests, (hideAmounts, lockTimeout) ->
+        val active = accounts.filter { !it.account.archived && it.account.type.listed }
 
         SettingsUiState(
             accountCount = active.size,
@@ -47,7 +49,10 @@ class SettingsViewModel @Inject constructor(
             isEditingReminder = editingReminder,
             isPickingReminderTime = pickingReminderTime,
             digests = digests,
-            isEditingDigests = editingDigests
+            isEditingDigests = editingDigests,
+            hideAmounts = hideAmounts,
+            lockTimeoutSeconds = lockTimeout,
+            isEditingLock = editingLock
         )
     }.stateIn(
         scope = viewModelScope,
@@ -91,6 +96,28 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { domain.setReviewSchedule(changed) }
     }
 
+    /**
+     * The screen has already asked who you are before showing amounts again. Every screen holds
+     * amounts already turned into words, so the app starts over from Home with fresh ones.
+     */
+    fun onHideAmounts(hide: Boolean) {
+        viewModelScope.launch {
+            domain.setHideAmounts(hide)
+            navigator.navigate(Screen.Main) {
+                popUpTo<Screen.Main> { inclusive = true }
+            }
+        }
+    }
+
+    fun onLockClick() = editingLock.update { true }
+
+    fun onLockDismiss() = editingLock.update { false }
+
+    fun onLockPicked(seconds: Int) {
+        editingLock.update { false }
+        viewModelScope.launch { domain.setLockTimeoutSeconds(seconds) }
+    }
+
     fun onBackClick() = navigator.popBackStack()
 
     fun onAccountsClick() = navigator.navigate(Screen.Accounts)
@@ -99,13 +126,9 @@ class SettingsViewModel @Inject constructor(
 
     fun onCategoriesClick() = navigator.navigate(Screen.Categories)
 
-    fun onTagsClick() = navigator.navigate(Screen.Tags)
-
     fun onHistoryClick() = navigator.navigate(Screen.History)
 
     fun onRulesClick() = navigator.navigate(Screen.Rules)
-
-    fun onMerchantsClick() = navigator.navigate(Screen.Merchants)
 
     fun onMessagesClick() = navigator.navigate(Screen.Onboarding(fromSettings = true))
 }

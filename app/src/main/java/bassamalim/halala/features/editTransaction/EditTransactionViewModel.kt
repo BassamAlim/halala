@@ -1,5 +1,6 @@
 package bassamalim.halala.features.editTransaction
 
+import bassamalim.halala.core.utils.OneAtATime
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -29,6 +30,8 @@ class EditTransactionViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
+    private val saving = OneAtATime()
+
     private val route = savedStateHandle.toRoute<Screen.EditTransaction>()
     private val id = route.id
 
@@ -48,7 +51,7 @@ class EditTransactionViewModel @Inject constructor(
         val today = domain.now().toLocalDate()
         // Archived accounts drop out of the choice, unless this transaction is already on one.
         val options = accounts
-            .filter { !it.account.archived || it.account.id == form.accountId || it.account.id == form.toAccountId }
+            .filter { (!it.account.archived && it.account.type.listed) || it.account.id == form.accountId || it.account.id == form.toAccountId }
             .map {
                 AccountOption(
                     id = it.account.id,
@@ -133,11 +136,12 @@ class EditTransactionViewModel @Inject constructor(
         val state = uiState.value
         if (state.isLoading) return
 
-        viewModelScope.launch {
+        saving.launch(viewModelScope) {
             val problems = domain.save(id, local.value.form, state.accounts)
 
             if (problems.isEmpty()) navigator.popBackStack()
             else local.update { it.copy(problems = problems) }
+            problems.isEmpty()
         }
     }
 

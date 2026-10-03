@@ -22,6 +22,8 @@ import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
+import bassamalim.halala.core.data.dataSources.room.entities.Deposit
+import bassamalim.halala.core.data.dataSources.room.entities.GoalContribution
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsTerms
 import bassamalim.halala.core.data.dataSources.room.entities.Tag
 import bassamalim.halala.core.data.dataSources.room.entities.TransactionTag
@@ -76,7 +78,9 @@ class Importer @Inject constructor(
         savingsTerms = snapshot.savingsTerms,
         tags = snapshot.tags,
         transactionTags = snapshot.transactionTags,
-        places = snapshot.places
+        places = snapshot.places,
+        deposits = snapshot.deposits,
+        goalContributions = snapshot.goalContributions
     )
 
     companion object {
@@ -168,7 +172,10 @@ class Importer @Inject constructor(
                     identifiedBy = converters.toIdentifiedBy(merchant.identifiedBy),
                     confidence = merchant.confidence,
                     namedByYou = merchant.namedByYou,
-                    autoRuled = merchant.autoRuled
+                    autoRuled = merchant.autoRuled,
+                    searchedOnline = merchant.searchedOnline,
+                    webUrl = merchant.webUrl,
+                    webTitle = merchant.webTitle
                 )
             }
             val merchantIds = merchants.associate { it.uid to it.id }
@@ -326,6 +333,14 @@ class Importer @Inject constructor(
                 )
             }
 
+            val tags = file.tags.mapIndexed { index, it ->
+                Tag(
+                    index + 1L, it.uid, it.name, it.startsOn?.let(LocalDate::parse), it.endsOn?.let(LocalDate::parse),
+                    it.auto, Instant.parse(it.createdAt)
+                )
+            }
+            val tagIds = tags.associate { it.uid to it.id }
+
             val budgets = file.budgets.mapIndexed { index, budget ->
                 require(budget.amountMinor > 0) { "Budget ${budget.uid} has no positive amount." }
                 Budget(
@@ -338,7 +353,8 @@ class Importer @Inject constructor(
                     amountMinor = budget.amountMinor,
                     currency = budget.currency,
                     rollover = budget.rollover,
-                    createdAt = Instant.parse(budget.createdAt)
+                    createdAt = Instant.parse(budget.createdAt),
+                    tagId = budget.tagUid?.let { tagIds.named(it, "tag") }
                 )
             }
 
@@ -376,14 +392,6 @@ class Importer @Inject constructor(
                 )
             }
             val snapshots = file.assetSnapshots.map { NetWorthSnapshot(LocalDate.parse(it.date), it.assetsMinor, it.currency) }
-
-            val tags = file.tags.mapIndexed { index, it ->
-                Tag(
-                    index + 1L, it.uid, it.name, it.startsOn?.let(LocalDate::parse), it.endsOn?.let(LocalDate::parse),
-                    it.auto, Instant.parse(it.createdAt)
-                )
-            }
-            val tagIds = tags.associate { it.uid to it.id }
 
             return LedgerSnapshot(
                 institutions = institutions,
@@ -433,6 +441,22 @@ class Importer @Inject constructor(
                 },
                 places = file.places.map {
                     TransactionPlace(transactionIds.named(it.transactionUid, "transaction"), it.latitudeE7, it.longitudeE7, it.accuracyMeters)
+                },
+                deposits = goals.associate { it.uid to it.id }.let { goalIds ->
+                    file.deposits.mapIndexed { index, it ->
+                        Deposit(
+                            index + 1L, it.uid, transactionIds.named(it.transactionUid, "transaction"), it.goalUid?.let { uid -> goalIds.named(uid, "goal") },
+                            it.ratePercent, it.tenorMonths, converters.toMaturityChoice(it.maturityChoice), it.closedOn?.let(LocalDate::parse)
+                        )
+                    }
+                },
+                goalContributions = goals.associate { it.uid to it.id }.let { goalIds ->
+                    file.goalContributions.mapIndexed { index, it ->
+                        GoalContribution(
+                            index + 1L, it.uid, goalIds.named(it.goalUid, "goal"), transactionIds.named(it.transactionUid, "transaction"),
+                            it.withdrawn, it.kindBefore?.let(converters::toTransactionKind)
+                        )
+                    }
                 }
             )
         }

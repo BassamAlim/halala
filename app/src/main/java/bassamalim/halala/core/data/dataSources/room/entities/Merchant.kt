@@ -34,7 +34,13 @@ data class Merchant(
      * unless what the merchant is changes.
      */
     @ColumnInfo(defaultValue = "0")
-    val autoRuled: Boolean = false
+    val autoRuled: Boolean = false,
+    /** Looked up online once, when the AI wasn't sure: never again, whatever it found. */
+    @ColumnInfo(defaultValue = "0")
+    val searchedOnline: Boolean = false,
+    /** The page the answer came from, when one did ("Found online"), and its title. */
+    val webUrl: String? = null,
+    val webTitle: String? = null
 )
 
 /**

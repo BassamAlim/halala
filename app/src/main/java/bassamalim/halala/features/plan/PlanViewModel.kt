@@ -87,7 +87,7 @@ class PlanViewModel @Inject constructor(
         PlanUiState(
             isLoading = false,
             cycle = BudgetsViewModel.cycleLabel(overview.cycle.start, overview.cycle.end, today),
-            budgets = BudgetRows.of(overview.statuses, categories, merchants),
+            budgets = BudgetRows.of(overview.statuses, categories, merchants, overview.tagNames),
             monthly = Money.format(RecurringDomain.totals(states, currency).first, currency, decimals = false),
             next = RecurringDomain.upcoming(states).firstOrNull()?.let { it.series.name to shortDateLabel(it.nextDue!!, today) },
             endAbout = Forecasts.endOfCycle(inputs)?.let { Money.format(it.midMinor, currency, decimals = false) },
@@ -129,6 +129,8 @@ class PlanViewModel @Inject constructor(
     fun onZakatClick() = navigator.navigate(Screen.Zakat)
 
     fun onRetirementClick() = navigator.navigate(Screen.Retirement)
+
+    fun onCompoundClick() = navigator.navigate(Screen.Compound)
 
     fun onAddBudgetClick() = navigator.navigate(Screen.EditBudget())
 }

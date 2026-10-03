@@ -12,10 +12,10 @@ object Spacing {
     val sm = 8.dp
     /** space-3: avatar to text in a row; card inner gap. */
     val md = 12.dp
-    /** space-4: card padding, and the gap between stacked cards. */
-    val card = 14.dp
+    /** space-4: the gap between stacked cards (their padding is [Insets.card]). */
+    val card = 16.dp
     /** space-5: screen side padding. */
-    val screen = 18.dp
+    val screen = 20.dp
     /** space-6: between major screen sections. */
     val section = 24.dp
 }
@@ -25,7 +25,7 @@ object Sizes {
     /** Minimum height and width of anything tappable. */
     val touchTarget = 44.dp
     /** Merchant and person avatars in rows. */
-    val avatar = 36.dp
+    val avatar = 40.dp
     /** Onboarding's progress dots; the current step's is stretched. */
     val stepDot = 8.dp
     val stepDotCurrent = 22.dp
@@ -37,23 +37,30 @@ object Sizes {
     val icon = 22.dp
     val iconSmall = 18.dp
     val chip = 32.dp
-    /** Home's review pill. */
+    /** A pill's height (the widget's review count). */
     val pill = 36.dp
     val border = 1.dp
     val progress = 4.dp
     /** The balance card's own track, thicker than a [progress] bar. */
     val balanceTrack = 8.dp
     /** Settings-style rows inside a card. */
-    val listRow = 52.dp
+    val listRow = 56.dp
     val fab = 56.dp
-    /** A Sankey node's bar, and the least height a node is drawn at so its label fits. */
+    /** The Sankey's bars (its ends, and the account between them), and the least width a part is drawn at. */
     val sankeyBar = 8.dp
     val sankeyNode = 22.dp
+    val sankeyMin = 3.dp
+    /** The gap between parts at an end, and how far the bands run from an end to the account. */
+    val sankeyGap = 6.dp
+    val sankeyFlowIn = 56.dp
+    val sankeyFlowOut = 88.dp
     val sankeyMax = 300.dp
     /** The mark on the lock screen. */
     val lockMark = 64.dp
     /** The mark beside the wordmark on Home (the board's size). */
     val logo = 26.dp
+    /** The card-shaped block a loading screen starts with. */
+    val skeletonCard = 88.dp
 }
 
 /** Component insets from the boards that are not on the spacing scale. */
@@ -61,14 +68,16 @@ object Insets {
     /** Balance card padding, and the gap between its lines. */
     val balanceCard = 20.dp
     val balanceCardGap = 10.dp
+    /** Padding inside a card. */
+    val card = 18.dp
     /** The two-up summary-card grid on Home and Activity. */
-    val grid = 10.dp
+    val grid = 12.dp
     /** Vertical padding of a transaction row. */
-    val row = 10.dp
+    val row = 12.dp
     /** Chip label padding. */
     val chip = 11.dp
     /** Top padding of a screen's content. */
-    val screenTop = 16.dp
+    val screenTop = 20.dp
     /** Bottom nav: padding above and below its items. */
     val navTop = 10.dp
     val navBottom = 14.dp

@@ -53,7 +53,14 @@ data class TransactionUiState(
     val loan: LoanLink? = null,
     /** Spending you paid can be split with others; once split, how. */
     val canSplit: Boolean = false,
+    /** Spending you paid that isn't a transfer can be marked as paid for someone, all of it owed to you. */
+    val canPayFor: Boolean = false,
     val split: SplitInfo? = null,
+    /** The savings goal it went toward (or came out of), once marked. */
+    val goal: GoalLink? = null,
+    /** It can be marked toward a goal: money to or from a broker, say, or a move. */
+    val canMarkGoal: Boolean = false,
+    val goals: List<PersonChoice> = emptyList(),
     /** Everyone to split with, the latest first. */
     val people: List<PersonChoice> = emptyList(),
     val sheet: TransactionSheet? = null
@@ -73,18 +80,25 @@ data class FiledBy(
     val confidence: Int? = null
 )
 
-/** A bill you split: each person's share ("100.00") and what is left as yours. */
-data class SplitInfo(val shares: List<Pair<String, String>>, val yours: String, val currency: String)
+/**
+ * A bill you split: each person's share ("100.00") and what is left as yours; [whole] when one
+ * person's share is all of it (you paid it for them).
+ */
+data class SplitInfo(val shares: List<Pair<String, String>>, val yours: String, val currency: String, val whole: Boolean = false)
 
 data class PersonChoice(val id: Long, val name: String)
+
+/** Toward [name] (or, [withdrawn], taken out of it). */
+data class GoalLink(val name: String, val withdrawn: Boolean)
 
 /** A transfer to or from someone, and loans. */
 sealed interface LoanLink {
     /**
-     * A plain transfer: it can be marked as lending ([lent]) or borrowing, to or from [person].
+     * A plain transfer: it can be marked as lending ([lent]) or borrowing, to or from [person]
+     * ([personId], null when it names nobody) or someone else.
      * [suggestion] is the open loan it would pay back, to ask about.
      */
-    data class Open(val lent: Boolean, val person: String, val suggestion: Suggestion?) : LoanLink
+    data class Open(val lent: Boolean, val person: String, val personId: Long?, val suggestion: Suggestion?) : LoanLink
 
     /** Part of a loan: [repays] it or lent it; [remaining] is what is still owed ("1,000.00"). */
     data class Part(
@@ -103,11 +117,17 @@ data class Suggestion(val loanId: Long, val lent: Boolean, val remaining: String
 
 sealed interface TransactionSheet {
     /**
-     * Marking it as a loan, due [dueOn] ("15 Oct", or none); [picking] the day, from [pickFrom]
-     * until one is chosen.
+     * Marking it as a loan with [personId] (the person it names to begin with, or anyone else:
+     * someone can ask you to pay for something for them), or, [forPurchase], marking spending as
+     * paid for someone; [newName] someone to add. Due [dueOn] ("15 Oct", or none); [picking] the
+     * day, from [pickFrom] until one is chosen. [noOne] when it was confirmed with nobody chosen.
      */
     data class MarkLoan(
         val pickFrom: LocalDate,
+        val forPurchase: Boolean = false,
+        val personId: Long? = null,
+        val newName: String = "",
+        val noOne: Boolean = false,
         val dueOn: LocalDate? = null,
         val dueLabel: String? = null,
         val picking: Boolean = false
@@ -115,6 +135,15 @@ sealed interface TransactionSheet {
 
     /** "Not part of a loan", to confirm. */
     data object Unlink : TransactionSheet
+
+    /**
+     * Marking it toward a savings goal: [goalId] chosen, put in or [withdrawn] (guessed from where
+     * the money went); [noGoal] when confirmed with none chosen.
+     */
+    data class Goal(val goalId: Long?, val withdrawn: Boolean, val noGoal: Boolean = false) : TransactionSheet
+
+    /** "Not toward a goal", to confirm. */
+    data object Ungoal : TransactionSheet
 
     /**
      * Splitting it with [selected] people, equally or [byAmount] (each person's [amounts] as
@@ -131,7 +160,8 @@ sealed interface TransactionSheet {
         val yours: String = ""
     ) : TransactionSheet
 
-    data object Unsplit : TransactionSheet
+    /** Undoing the split, or, [whole], that it was paid for someone. */
+    data class Unsplit(val whole: Boolean) : TransactionSheet
 
     data object Category : TransactionSheet
     data object Type : TransactionSheet

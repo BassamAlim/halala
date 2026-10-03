@@ -15,8 +15,8 @@ object Radius {
     /** radius-md: buttons, search field. */
     val md = RoundedCornerShape(14.dp)
     /** radius-lg: cards and the balance card. */
-    val lg = RoundedCornerShape(16.dp)
-    val lgSize = 16.dp
+    val lgSize = 20.dp
+    val lg = RoundedCornerShape(lgSize)
     /** The selected segment inside a [sm] segmented control: its radius less the 3dp inset. */
     val segment = RoundedCornerShape(9.dp)
     /** The progress tracks. */

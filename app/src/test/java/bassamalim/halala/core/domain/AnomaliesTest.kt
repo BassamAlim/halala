@@ -5,6 +5,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.enums.Direction
+import bassamalim.halala.core.enums.IdentifiedBy
 import bassamalim.halala.core.enums.RawStatus
 import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.enums.TransactionSource
@@ -55,6 +56,24 @@ class AnomaliesTest {
         val abroad = tx("2026-10-10T10:00:00Z", 5_000, original = "USD")
         val declined = RawMessage(id = 9, sender = "AlRajhiBank", body = "Declined", receivedAt = Instant.parse("2026-10-11T10:00:00Z"), hash = "h", status = RawStatus.DECLINED, parserVersion = 1)
         assertEquals(listOf("declined:h", "foreign:${abroad.transaction.id}"), find(listOf(abroad), messages = listOf(declined)).map { it.key })
+        val known = tx("2026-10-10T11:00:00Z", 7_500, original = "USD").copy(merchantIdentifiedBy = IdentifiedBy.LIST)
+        assertEquals(emptyList<Anomaly>(), find(listOf(known)))
+    }
+
+    @Test
+    fun `a sender whose messages fail to parse above 5% this week is raised`() {
+        fun sms(n: Int, status: RawStatus, day: String = "2026-10-12", sender: String = "AlRajhiBank") =
+            RawMessage(id = n.toLong(), sender = sender, body = "", receivedAt = Instant.parse("${day}T10:0${n % 10}:00Z"), hash = "h$n", status = status, parserVersion = 1)
+        val good = (1..19).map { sms(it, RawStatus.RECORDED) }
+        val notices = (40..60).map { sms(it, RawStatus.IGNORED) }
+        val lastMonth = (70..75).map { sms(it, RawStatus.UNRECOGNISED, day = "2026-09-20") }
+        // 1 of 20 is exactly 5%: not yet.
+        assertEquals(emptyList<Anomaly>(), find(emptyList(), messages = good + notices + lastMonth + sms(20, RawStatus.UNRECOGNISED)))
+        val found = find(emptyList(), messages = good + sms(20, RawStatus.UNRECOGNISED) + sms(21, RawStatus.UNRECOGNISED, day = "2026-10-13"))
+            .single() as Anomaly.ParserFailing
+        assertEquals(listOf(2, 21, "h21"), listOf(found.failed, found.total, found.newest.hash))
+        val otherBank = (80..99).map { sms(it, RawStatus.RECORDED, sender = "SNB") }
+        assertEquals(listOf("AlRajhiBank"), find(emptyList(), messages = good + otherBank + sms(20, RawStatus.UNRECOGNISED) + sms(21, RawStatus.UNRECOGNISED)).map { (it as Anomaly.ParserFailing).sender })
     }
 
     @Test

@@ -289,6 +289,59 @@ class MigrationsTest {
         helper.runMigrationsAndValidate(DB, 19, true, *MIGRATIONS).close()
     }
 
+    @Test
+    fun `19 to 20 makes each amount in the Awaeed account a deposit with its terms, and matches the schema`() {
+        helper.createDatabase(DB, 19).use { db ->
+            db.execSQL("INSERT INTO institutions (id, name, senderIds, parserVersion) VALUES (1, 'Al Rajhi', '', 0)")
+            for ((id, type) in listOf(1 to "CURRENT", 2 to "SAVINGS", 3 to "SAVINGS")) db.execSQL(
+                "INSERT INTO accounts (id, uid, institutionId, nickname, type, currency, openingBalanceMinor, archived, createdAt) " +
+                        "VALUES ($id, 'a$id', 1, 'A$id', '$type', 'SAR', 0, 0, 0)"
+            )
+            // 2 is the account the SMS made for Awaeed; 3 is a savings account you made.
+            db.execSQL("INSERT INTO account_refs (institutionId, ref, accountId) VALUES (1, 'product:Awaeed', 2)")
+            db.execSQL("INSERT INTO savings_terms (accountId, kind, ratePercent, tenorMonths) VALUES (2, 'AWAEED', '4.4', 6), (3, 'HASAD', '2', NULL)")
+            for ((id, account, direction) in listOf(Triple(1, 1, "DEBIT"), Triple(2, 2, "CREDIT"), Triple(3, 2, "CREDIT"), Triple(4, 3, "CREDIT"))) db.execSQL(
+                "INSERT INTO transactions (id, uid, accountId, direction, amountMinor, currency, occurredAt, kind, title, note, source, createdAt, merchantKey) " +
+                        "VALUES ($id, 't$id', $account, '$direction', 500000, 'SAR', 0, 'SAVINGS_DEPOSIT', '', '', 'SMS', 0, '')"
+            )
+        }
+
+        helper.runMigrationsAndValidate(DB, 20, true, *MIGRATIONS).use { db ->
+            db.query("SELECT type FROM accounts ORDER BY id").use { cursor ->
+                assertEquals(listOf("CURRENT", "DEPOSIT", "SAVINGS"), generateSequence { if (cursor.moveToNext()) cursor.getString(0) else null }.toList())
+            }
+            db.query("SELECT transactionId, ratePercent, tenorMonths FROM deposits ORDER BY transactionId").use { cursor ->
+                assertEquals(
+                    listOf("2 4.4 6", "3 4.4 6"),
+                    generateSequence { if (cursor.moveToNext()) "${cursor.getLong(0)} ${cursor.getString(1)} ${cursor.getInt(2)}" else null }.toList()
+                )
+            }
+            db.query("SELECT accountId FROM savings_terms").use { cursor ->
+                assertEquals(true, cursor.moveToFirst())
+                assertEquals(3L, cursor.getLong(0))
+                assertEquals(false, cursor.moveToNext())
+            }
+        }
+    }
+
+    @Test
+    fun `20 to 21 lets a budget be on a tag and matches the schema`() {
+        helper.createDatabase(DB, 20).use { }
+        helper.runMigrationsAndValidate(DB, 21, true, *MIGRATIONS).close()
+    }
+
+    @Test
+    fun `21 to 22 remembers merchants looked up online and matches the schema`() {
+        helper.createDatabase(DB, 21).use { }
+        helper.runMigrationsAndValidate(DB, 22, true, *MIGRATIONS).close()
+    }
+
+    @Test
+    fun `22 to 23 adds goal contributions and matches the schema`() {
+        helper.createDatabase(DB, 22).use { }
+        helper.runMigrationsAndValidate(DB, 23, true, *MIGRATIONS).close()
+    }
+
     private companion object {
         const val DB = "migration-test"
     }

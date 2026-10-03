@@ -1,5 +1,6 @@
 package bassamalim.halala.features.retirement
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -64,7 +65,10 @@ fun RetirementScreen(viewModel: RetirementViewModel = hiltViewModel()) {
             actionLabel = stringResource(R.string.retirement_scenarios),
             onAction = viewModel::onScenariosClick
         )
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         state.result?.let { result ->
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {

@@ -154,8 +154,8 @@ object HalalaNumbers {
     val AmountLg = TextStyle(
         fontFamily = PlexMono,
         fontWeight = FontWeight.Medium,
-        fontSize = 20.sp,
-        lineHeight = 24.sp,
+        fontSize = 22.sp,
+        lineHeight = 26.sp,
         letterSpacing = (-0.01).em,
         fontFeatureSettings = TABULAR
     )

@@ -1,6 +1,12 @@
 package bassamalim.halala.core.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import bassamalim.halala.core.ui.settle
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +40,10 @@ val BudgetState.color: Color
  */
 @Composable
 fun ProgressBar(progress: Float, modifier: Modifier = Modifier, state: BudgetState = BudgetState.OK) {
+    // Fills from empty when it first shows, and glides when the figure moves.
+    val shown = remember { Animatable(0f) }
+    LaunchedEffect(progress) { shown.animateTo(progress.coerceIn(0f, 1f), settle()) }
+    val fill by animateColorAsState(state.color, label = "bar fill")
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -43,10 +53,10 @@ fun ProgressBar(progress: Float, modifier: Modifier = Modifier, state: BudgetSta
     ) {
         Box(
             Modifier
-                .fillMaxWidth(progress.coerceIn(0f, 1f))
+                .fillMaxWidth(shown.value)
                 .fillMaxHeight()
                 .clip(Radius.bar)
-                .background(state.color)
+                .background(fill)
         )
     }
 }

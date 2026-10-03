@@ -3,7 +3,9 @@ package bassamalim.halala.features.editRecurring
 import bassamalim.halala.core.Globals
 import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.repositories.RecurringRepository
+import bassamalim.halala.core.data.repositories.TransactionsRepository
 import bassamalim.halala.core.domain.Money
+import bassamalim.halala.core.domain.Recurring
 import bassamalim.halala.core.enums.CadenceUnit
 import bassamalim.halala.core.enums.RecurringKind
 import bassamalim.halala.core.enums.SeriesStatus
@@ -43,10 +45,26 @@ sealed interface CheckedSeries {
 
 class EditRecurringDomain @Inject constructor(
     private val recurringRepository: RecurringRepository,
+    private val transactionsRepository: TransactionsRepository,
     private val clock: Clock
 ) {
 
     fun today(): LocalDate = LocalDate.now(clock)
+
+    /** A new series started from one charge (Review's subscription and bill marks). */
+    suspend fun fromCharge(transactionId: Long, kind: RecurringKind): SeriesForm? {
+        val detail = transactionsRepository.observe(transactionId).first() ?: return null
+        val tx = detail.transaction
+        return fromCharge(
+            name = detail.merchantName ?: detail.personName ?: tx.title,
+            merchantId = detail.merchantId,
+            amountMinor = tx.amountMinor,
+            currency = tx.currency,
+            on = tx.occurredAt.atZone(clock.zone).toLocalDate(),
+            kind = kind,
+            today = today()
+        )
+    }
 
     /** The series as a form, due on the day it is next due (its charges so far counted). */
     suspend fun load(id: Long): SeriesForm? {
@@ -55,7 +73,7 @@ class EditRecurringDomain @Inject constructor(
         return SeriesForm(
             name = series.name,
             kind = series.kind,
-            amount = Money.plain(state.raisedTo ?: series.amountMinor, series.currency),
+            amount = Money.input(state.raisedTo ?: series.amountMinor, series.currency),
             every = series.every.toString(),
             unit = series.unit,
             nextDue = state.nextDue ?: series.anchor,
@@ -86,6 +104,33 @@ class EditRecurringDomain @Inject constructor(
     companion object {
 
         const val MAX_EVERY = 365
+
+        /**
+         * The form for a series that charged [amountMinor] on [on]: monthly, next due the first
+         * month after it that is today or later, linked to its merchant. A subscription renews
+         * on its own; a bill doesn't say.
+         */
+        fun fromCharge(
+            name: String,
+            merchantId: Long?,
+            amountMinor: Long,
+            currency: String,
+            on: LocalDate,
+            kind: RecurringKind,
+            today: LocalDate
+        ): SeriesForm {
+            var k = 1L
+            while (Recurring.occurrence(on, 1, CadenceUnit.MONTH, k).isBefore(today)) k++
+            return SeriesForm(
+                name = name,
+                kind = kind,
+                amount = Money.input(amountMinor, currency),
+                nextDue = Recurring.occurrence(on, 1, CadenceUnit.MONTH, k),
+                autoRenew = kind == RecurringKind.SUBSCRIPTION,
+                currency = currency,
+                merchantId = merchantId
+            )
+        }
 
         /** The reminder lead times offered, in days. */
         val REMINDERS = listOf(1, 3, 7, 30)

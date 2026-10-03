@@ -1,7 +1,17 @@
 package bassamalim.halala.features.review
 
+import bassamalim.halala.core.ui.components.Skeleton
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.draw.clip
+import bassamalim.halala.core.ui.theme.Radius
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +32,7 @@ import bassamalim.halala.R
 import bassamalim.halala.core.enums.AmountTone
 import bassamalim.halala.core.enums.AuditAction
 import bassamalim.halala.core.ui.components.ChoiceSheet
+import bassamalim.halala.core.ui.components.FoundOnline
 import bassamalim.halala.core.ui.components.HalalaButton
 import bassamalim.halala.core.ui.components.HalalaCard
 import bassamalim.halala.core.ui.components.TopBar
@@ -45,8 +56,8 @@ import androidx.compose.ui.text.SpanStyle
  * The review inbox, from the Review board: uncategorised spending a merchant at a time, the most
  * money first, each card filed with one answer that is remembered. A merchant that was
  * identified shows what it is (and, from the AI, how sure) with its category chosen, one tap
- * from confirmed; the rest need you. Swiping, loans and splits, and the snooze row arrive with
- * people and reminders.
+ * from confirmed; the rest need you. Swiping toward the end accepts and toward the start edits;
+ * each card can be marked as a split, a subscription or a bill, which opens that form.
  */
 @Composable
 fun ReviewScreen(viewModel: ReviewViewModel = hiltViewModel()) {
@@ -60,7 +71,10 @@ fun ReviewScreen(viewModel: ReviewViewModel = hiltViewModel()) {
     ) {
         TopBar(title = stringResource(R.string.review), onBack = viewModel::onBackClick)
 
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         LazyColumn(
             modifier = Modifier.weight(1f),
@@ -101,60 +115,87 @@ fun ReviewScreen(viewModel: ReviewViewModel = hiltViewModel()) {
             }
 
             items(state.cards, key = { it.key }) { card ->
-                HalalaCard(Modifier.fillMaxWidth()) {
-                    TransactionRow(
-                        title = card.title,
-                        meta = if (card.count > 1)
-                            pluralStringResource(R.plurals.review_cluster_meta, card.count, card.count, card.since)
-                        else stringResource(R.string.meta_pair, dayText(card.day), card.accountLabel),
-                        amount = card.amount,
-                        currency = card.currency,
-                        tone = AmountTone.Spending,
-                        initial = card.initial,
-                        // One transaction opens itself; many open their merchant.
-                        onClick = if (card.count == 1 || card.merchantId != null) ({ viewModel.onCardClick(card) }) else null
-                    )
-                    card.businessType?.let { type ->
-                        val evidence = stringResource(R.string.identified_as, businessTypeLabel(type))
-                        Text(
-                            text = card.confidence
-                                ?.let { stringResource(R.string.meta_pair, evidence, stringResource(R.string.review_sure, it)) }
-                                ?: evidence,
-                            style = HalalaType.Label,
-                            color = HalalaColors.TextMuted
+                SwipeCard(
+                    acceptLabel = stringResource(if (card.suggestion != null) R.string.review_swipe_confirm else R.string.choose_category),
+                    onAccept = { viewModel.onSwipeAccept(card) },
+                    onEdit = { viewModel.onChooseClick(card) }
+                ) {
+                    HalalaCard(Modifier.fillMaxWidth()) {
+                        TransactionRow(
+                            title = card.title,
+                            meta = if (card.count > 1)
+                                pluralStringResource(R.plurals.review_cluster_meta, card.count, card.count, card.since)
+                            else stringResource(R.string.meta_pair, dayText(card.day), card.accountLabel),
+                            amount = card.amount,
+                            currency = card.currency,
+                            tone = AmountTone.Spending,
+                            initial = card.initial,
+                            // One transaction opens itself; many open their merchant.
+                            onClick = if (card.count == 1 || card.merchantId != null) ({ viewModel.onCardClick(card) }) else null
                         )
-                    }
-
-                    val suggestion = card.suggestion
-                    if (suggestion == null) {
-                        HalalaButton(
-                            text = stringResource(R.string.choose_category),
-                            onClick = { viewModel.onChooseClick(card) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    } else {
-                        Text(
-                            text = buildAnnotatedString {
-                                append(suggestion.category.name)
-                                suggestion.expenseType?.let { type ->
-                                    withStyle(SpanStyle(color = HalalaColors.TextMuted)) {
-                                        append(stringResource(R.string.separator))
-                                        append(expenseTypeLabel(type))
-                                    }
-                                }
-                            },
-                            style = HalalaType.Body
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                            HalalaButton(
-                                text = pluralStringResource(R.plurals.review_confirm_all, card.count, card.count),
-                                onClick = { viewModel.onConfirmClick(card) },
-                                kind = ButtonKind.Primary,
-                                modifier = Modifier.weight(1f)
+                        card.businessType?.let { type ->
+                            val evidence = stringResource(R.string.identified_as, businessTypeLabel(type))
+                            Text(
+                                text = card.confidence
+                                    ?.let { stringResource(R.string.meta_pair, evidence, stringResource(R.string.review_sure, it)) }
+                                    ?: evidence,
+                                style = HalalaType.Label,
+                                color = HalalaColors.TextMuted
                             )
+                        }
+                        card.webUrl?.let { url -> FoundOnline(card.webTitle ?: url, url) }
+    
+                        val suggestion = card.suggestion
+                        if (suggestion == null) {
                             HalalaButton(
-                                text = stringResource(R.string.review_change),
-                                onClick = { viewModel.onChooseClick(card) }
+                                text = stringResource(R.string.choose_category),
+                                onClick = { viewModel.onChooseClick(card) },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        } else {
+                            Text(
+                                text = buildAnnotatedString {
+                                    append(suggestion.category.name)
+                                    suggestion.expenseType?.let { type ->
+                                        withStyle(SpanStyle(color = HalalaColors.TextMuted)) {
+                                            append(stringResource(R.string.separator))
+                                            append(expenseTypeLabel(type))
+                                        }
+                                    }
+                                },
+                                style = HalalaType.Body
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                                HalalaButton(
+                                    text = pluralStringResource(R.plurals.review_confirm_all, card.count, card.count),
+                                    onClick = { viewModel.onConfirmClick(card) },
+                                    kind = ButtonKind.Primary,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                HalalaButton(
+                                    text = stringResource(R.string.review_change),
+                                    onClick = { viewModel.onChooseClick(card) }
+                                )
+                            }
+                        }
+    
+                        // The spec's one-tap marks, each opening its own form. Loans are for
+                        // transfers, which never reach Review.
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                            if (card.count == 1) HalalaChip(
+                                label = stringResource(R.string.review_mark_split),
+                                style = ChipStyle.Outline,
+                                onClick = { viewModel.onSplitClick(card) }
+                            )
+                            HalalaChip(
+                                label = stringResource(R.string.review_mark_subscription),
+                                style = ChipStyle.Outline,
+                                onClick = { viewModel.onRecurringClick(card, subscription = true) }
+                            )
+                            HalalaChip(
+                                label = stringResource(R.string.review_mark_bill),
+                                style = ChipStyle.Outline,
+                                onClick = { viewModel.onRecurringClick(card, subscription = false) }
                             )
                         }
                     }
@@ -192,4 +233,43 @@ fun ReviewScreen(viewModel: ReviewViewModel = hiltViewModel()) {
             onDismiss = viewModel::onPickDismiss
         )
     }
+}
+
+/**
+ * The spec's swipes: toward the end accepts (confirms the suggestion, or asks for the category
+ * when there is none), toward the start edits (asks for the category). The card springs back
+ * either way; filing takes it off the list. Start and end follow the reading direction.
+ */
+@Composable
+private fun SwipeCard(acceptLabel: String, onAccept: () -> Unit, onEdit: () -> Unit, content: @Composable () -> Unit) {
+    val state = rememberSwipeToDismissBoxState()
+    LaunchedEffect(state.currentValue) {
+        when (state.currentValue) {
+            SwipeToDismissBoxValue.StartToEnd -> onAccept()
+            SwipeToDismissBoxValue.EndToStart -> onEdit()
+            SwipeToDismissBoxValue.Settled -> return@LaunchedEffect
+        }
+        state.reset()
+    }
+    SwipeToDismissBox(
+        state = state,
+        backgroundContent = {
+            val direction = state.dismissDirection
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(Radius.lg)
+                    .background(HalalaColors.Surface)
+                    .padding(horizontal = Spacing.card),
+                contentAlignment = if (direction == SwipeToDismissBoxValue.EndToStart) Alignment.CenterEnd else Alignment.CenterStart
+            ) {
+                if (direction != SwipeToDismissBoxValue.Settled) Text(
+                    text = if (direction == SwipeToDismissBoxValue.StartToEnd) acceptLabel else stringResource(R.string.review_change),
+                    style = HalalaType.BodyStrong,
+                    color = if (direction == SwipeToDismissBoxValue.StartToEnd) HalalaColors.Accent else HalalaColors.TextMuted
+                )
+            }
+        },
+        content = { content() }
+    )
 }

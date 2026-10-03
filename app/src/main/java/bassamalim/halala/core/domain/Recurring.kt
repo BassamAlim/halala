@@ -31,6 +31,15 @@ data class SeriesState(
     val monthlyMinor: Long
 )
 
+/** A heads-up before a charge worth deciding on. */
+enum class HeadsUp {
+    /** A yearly (or longer) one renews within [Recurring.RENEWAL_LEAD_DAYS] days. */
+    RENEWAL,
+
+    /** A subscription's first charge is within [Recurring.FIRST_CHARGE_LEAD_DAYS] days: a free trial ending. */
+    FIRST_CHARGE
+}
+
 /** A series detection found, for you to confirm. */
 data class Proposal(
     val kind: RecurringKind,
@@ -61,6 +70,34 @@ object Recurring {
 
     /** Days past its due date before a missing charge is worth saying. */
     const val GRACE_DAYS = 3L
+
+    const val RENEWAL_LEAD_DAYS = 30L
+    const val FIRST_CHARGE_LEAD_DAYS = 7L
+
+    /**
+     * The spec's "a free trial about to convert" and "a yearly renewal coming up". A trial is a
+     * subscription not charged yet whose first day (its anchor) is close: set the anchor to the
+     * day the trial ends. Nothing once you asked to be reminded to cancel it: you have decided.
+     */
+    fun headsUp(state: SeriesState, today: LocalDate): HeadsUp? {
+        val series = state.series
+        val due = state.nextDue ?: return null
+        if (series.status != SeriesStatus.ACTIVE || series.cancelReminder || due.isBefore(today)) return null
+        val days = ChronoUnit.DAYS.between(today, due)
+        return when {
+            series.kind == RecurringKind.SUBSCRIPTION && state.lastCharge == null && due == series.anchor &&
+                    days <= FIRST_CHARGE_LEAD_DAYS -> HeadsUp.FIRST_CHARGE
+            series.kind != RecurringKind.PLANNED && cadenceDays(series.every, series.unit) >= YEARLY_DAYS &&
+                    days <= RENEWAL_LEAD_DAYS -> HeadsUp.RENEWAL
+            else -> null
+        }
+    }
+
+    /** Remembers "keep it" for one heads-up: the series and the day it was due. */
+    fun headsUpKey(state: SeriesState) = "series:${state.series.id}:${state.nextDue}"
+
+    /** Twelve months count as yearly though [cadenceDays] makes them 360. */
+    private const val YEARLY_DAYS = 360L
 
     /** The [k]th occurrence from [anchor], counted from the anchor so months never drift. */
     fun occurrence(anchor: LocalDate, every: Int, unit: CadenceUnit, k: Long): LocalDate {

@@ -76,6 +76,13 @@ sender: AlRajhiBank
 expect: SAVINGS_DEPOSIT DEBIT 5000.00 SAR own=2222
 ===
 sender: AlRajhiBank
+اقفال حساب عوائد
+مبلغ:SR 5114.40
+الى:2222
+26/10/3 01:50
+expect: SAVINGS_WITHDRAWAL CREDIT 5114.40 SAR own=2222
+===
+sender: AlRajhiBank
 حوالة واردة راتب
 مبلغ:SAR 21000
 الى:2222

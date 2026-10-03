@@ -1,5 +1,6 @@
 package bassamalim.halala.features.merchant
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,11 +22,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
+import bassamalim.halala.core.ai.LookupOutcome
 import bassamalim.halala.core.ui.aliasMatchLabel
 import bassamalim.halala.core.ui.components.Avatar
 import bassamalim.halala.core.ui.components.ButtonKind
 import bassamalim.halala.core.ui.components.ConfirmSheet
 import bassamalim.halala.core.ui.components.FormField
+import bassamalim.halala.core.ui.components.FoundOnline
 import bassamalim.halala.core.ui.components.GroupLabel
 import bassamalim.halala.core.ui.components.HalalaButton
 import bassamalim.halala.core.ui.components.HalalaSheet
@@ -70,7 +73,10 @@ fun MerchantScreen(viewModel: MerchantViewModel = hiltViewModel()) {
             onAction = viewModel::onRenameClick
         )
 
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         // Cards are a card's gap apart; the transactions under them run on like a feed.
         LazyColumn(
@@ -121,6 +127,23 @@ fun MerchantScreen(viewModel: MerchantViewModel = hiltViewModel()) {
                                 else -> identified ?: filesUnder
                             },
                             onClick = viewModel::onBusinessTypeClick
+                        )
+                    }
+                    state.webUrl?.let { url -> FoundOnline(state.webTitle ?: url, url) }
+                    if (state.canLookUp) {
+                        val working = state.lookup?.working == true
+                        HalalaButton(
+                            text = stringResource(if (working) R.string.merchant_looking_up else R.string.merchant_look_up),
+                            onClick = viewModel::onLookUpClick,
+                            enabled = !working,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    state.lookup?.outcome?.let { outcome ->
+                        Text(
+                            text = stringResource(lookupLabel(outcome)),
+                            style = HalalaType.Label,
+                            color = HalalaColors.TextMuted
                         )
                     }
                 }
@@ -254,4 +277,15 @@ fun MerchantScreen(viewModel: MerchantViewModel = hiltViewModel()) {
 
         null -> Unit
     }
+}
+
+/** How looking it up went, in words. */
+private fun lookupLabel(outcome: LookupOutcome): Int = when (outcome) {
+    LookupOutcome.UPDATED -> R.string.merchant_lookup_updated
+    LookupOutcome.NOTHING_NEW -> R.string.merchant_lookup_nothing_new
+    LookupOutcome.WITHHELD -> R.string.merchant_lookup_withheld
+    LookupOutcome.OFFLINE -> R.string.merchant_lookup_offline
+    LookupOutcome.LIMITED -> R.string.merchant_lookup_limited
+    LookupOutcome.FAILED -> R.string.merchant_lookup_failed
+    LookupOutcome.UNAVAILABLE -> R.string.merchant_lookup_unavailable
 }

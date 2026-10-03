@@ -1,5 +1,7 @@
 package bassamalim.halala.features.tags
 
+import bassamalim.halala.core.ui.components.HalalaChip
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -56,7 +58,10 @@ fun TagsScreen(viewModel: TagsViewModel = hiltViewModel()) {
             actionLabel = stringResource(R.string.tag_new),
             onAction = viewModel::onNewClick
         )
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         state.suggestions.forEach { s ->
             val name = stringResource(R.string.tag_trip_to, s.place)
@@ -117,7 +122,10 @@ fun EditTagScreen(viewModel: EditTagViewModel = hiltViewModel()) {
             actionEnabled = !state.isLoading,
             onAction = viewModel::onSaveClick
         )
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         FormField(label = stringResource(R.string.tag_name), error = stringResource(R.string.merchant_name_missing).takeIf { state.nameMissing }) {
             HalalaTextField(value = form.name, onValueChange = viewModel::onNameChange, isError = state.nameMissing, capitalization = KeyboardCapitalization.Words)
@@ -127,20 +135,18 @@ fun EditTagScreen(viewModel: EditTagViewModel = hiltViewModel()) {
                 ListRow(
                     title = stringResource(R.string.tag_starts),
                     subtitle = state.startLabel ?: stringResource(R.string.tag_no_days),
+                    trailing = if (form.startsOn == null) null else ({ HalalaChip(label = stringResource(R.string.remove_date), onClick = viewModel::onStartClear) }),
                     onClick = { viewModel.onDateClick(TagDate.START) }
                 )
                 ListRow(
                     title = stringResource(R.string.tag_ends),
                     subtitle = state.endLabel ?: stringResource(R.string.tag_running),
                     divider = true,
+                    trailing = if (form.endsOn == null) null else ({ HalalaChip(label = stringResource(R.string.remove_date), onClick = viewModel::onEndClear) }),
                     onClick = { viewModel.onDateClick(TagDate.END) }
                 )
             }
             if (state.endsBeforeStart) Text(text = stringResource(R.string.tag_ends_before), style = HalalaType.Label, color = HalalaColors.StateOver)
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                if (form.startsOn != null) HalalaButton(stringResource(R.string.tag_clear_days), viewModel::onStartClear, Modifier.weight(1f))
-                if (form.endsOn != null) HalalaButton(stringResource(R.string.tag_no_end), viewModel::onEndClear, Modifier.weight(1f))
-            }
         }
         if (form.startsOn != null) FormField(label = stringResource(R.string.tag_auto), hint = stringResource(R.string.tag_auto_hint)) {
             ChoiceChips(

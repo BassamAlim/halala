@@ -49,7 +49,7 @@ import javax.inject.Inject
 data class CompoundForm(
     val principal: String = "",
     val monthly: String = "",
-    val returnPercent: String = "6",
+    val returnPercent: String = "5",
     /** Compounding periods a year: 12, 4 or 1. */
     val perYear: Int = 12,
     val years: String = "10"
@@ -145,8 +145,8 @@ fun CompoundScreen(viewModel: CompoundViewModel = hiltViewModel()) {
         state.final?.let { final ->
             SummaryCard(label = stringResource(R.string.compound_final), amount = final, currency = Globals.PRIMARY_CURRENCY)
             Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(Insets.grid)) {
-                SummaryCard(stringResource(R.string.compound_put_in), state.contributed, Modifier.weight(1f).fillMaxHeight())
-                SummaryCard(stringResource(R.string.compound_returns), state.returns, Modifier.weight(1f).fillMaxHeight(), amountColor = HalalaColors.Income)
+                SummaryCard(stringResource(R.string.compound_put_in), state.contributed, Modifier.weight(1f).fillMaxHeight(), currency = Globals.PRIMARY_CURRENCY)
+                SummaryCard(stringResource(R.string.compound_returns), state.returns, Modifier.weight(1f).fillMaxHeight(), amountColor = HalalaColors.Income, currency = Globals.PRIMARY_CURRENCY)
             }
             LineChart(
                 values = state.curve,

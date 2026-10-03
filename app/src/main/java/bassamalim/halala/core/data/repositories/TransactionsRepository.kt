@@ -97,11 +97,22 @@ class TransactionsRepository @Inject constructor(
         val oldOut = checkNotNull(transactionsDao.get(pair.outTransactionId))
         val oldIn = checkNotNull(transactionsDao.get(pair.inTransactionId))
         val (outLeg, inLeg) = legsOf(draft)
+        // The form only tells cash from the rest; a move the bank called a savings deposit or
+        // an investment stays one.
+        val kind = if (oldOut.kind in FORM_MOVE_KINDS) draft.kind else oldOut.kind
 
-        transactionsDao.updatePair(
-            outLeg.copy(id = oldOut.id, uid = oldOut.uid, createdAt = oldOut.createdAt),
-            inLeg.copy(id = oldIn.id, uid = oldIn.uid, createdAt = oldIn.createdAt)
-        )
+        // What the form doesn't show (where it came from, its SMS, the foreign amount) is kept.
+        fun Transaction.rewrite(leg: Transaction) = copy(
+            accountId = leg.accountId,
+            amountMinor = leg.amountMinor,
+            currency = leg.currency,
+            occurredAt = leg.occurredAt,
+            kind = kind,
+            title = leg.title,
+            note = leg.note
+        ).keyed()
+
+        transactionsDao.updatePair(oldOut.rewrite(outLeg), oldIn.rewrite(inLeg))
     }
 
     /**
@@ -225,6 +236,11 @@ class TransactionsRepository @Inject constructor(
             direction = Direction.CREDIT
         )
         return outLeg to inLeg
+    }
+
+    private companion object {
+        /** The kinds the form gives a move ([TransactionKind.forMove]). */
+        val FORM_MOVE_KINDS = setOf(TransactionKind.INTERNAL_TRANSFER, TransactionKind.ATM_WITHDRAWAL, TransactionKind.CASH_DEPOSIT)
     }
 
     /** The merchant key its title reads as. */

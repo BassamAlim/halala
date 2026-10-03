@@ -1,5 +1,6 @@
 package bassamalim.halala.features.assets
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -77,7 +78,7 @@ class AssetsViewModel @Inject constructor(
                     id = asset.id,
                     type = asset.type,
                     name = asset.name,
-                    quantity = asset.quantity,
+                    quantity = asset.quantity?.let { if (Money.masked) Money.MASK else it },
                     karat = asset.karat,
                     unitPrice = asset.unitPrice,
                     priced = asset.priceDate?.let { shortDateLabel(it, today) },
@@ -114,7 +115,10 @@ fun AssetsScreen(viewModel: AssetsViewModel = hiltViewModel()) {
             actionLabel = stringResource(R.string.recurring_add),
             onAction = viewModel::onAddClick
         )
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
         if (state.assets.isEmpty()) Text(text = stringResource(R.string.assets_empty), style = HalalaType.Body, color = HalalaColors.TextMuted)
 
         state.assets.groupBy { it.type }.forEach { (type, rows) ->

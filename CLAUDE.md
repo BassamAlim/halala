@@ -147,6 +147,12 @@ Don't hardcode hex values or `.dp` literals that aren't a named token in `Dimens
   the same 108dp adaptive grid (`ic_launcher_foreground` over bg, plus a monochrome layer for
   themed icons). The small `halala-glyph` (no ring, for under 32dp) is for the notification
   icon when notifications arrive.
+- **Motion and depth** (`core/ui/Animation.kt`): every `clickable` sinks a few dp and springs
+  back (`PressIndication`, the theme's indication; put `clickable` before a fill so the whole
+  thing sinks). Cards are borderless on the `Card` tone, radius 20 (`Radius.lg`), padded 18 (`Insets.card`) and stacked 16 apart; screens
+  stand on `ground()` (opaque Bg; no glows or coloured shadows anywhere). Figures settle in
+  as one (a short rise, the bars' spring a touch quicker; no per-digit stagger: clean, not playful) and change through `RollingAmount` (only moved, never computed); bars fill with `settle()`; pushes
+  glide a fifth of the width (`Emphasized`), tabs fade through. Tabs and segments tick (haptics).
 - **Touch targets are at least 44dp** (`Sizes.touchTarget`); a 32dp chip pads its hit area.
 - Components (`core/ui/components`): `HalalaCard`/`SummaryCard`/`ListCard`+`ListRow`,
   `BalanceCard`, `HalalaButton` (Primary: one per section; Secondary; destructive = secondary with
@@ -227,13 +233,35 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   category, one tap to confirm, which learns as usual); the rest is **Ask**. `applyRules`
   identifies from the bundled list first, with no call; the AI only sees merchants still unknown
   that have unfiled spending. **Only a merchant's name, as the bank wrote it (digits kept), ever
-  leaves the phone** for identification (the assistant sends your question, see below), and never one holding your accounts' or cards' last four digits, ten or
+  leaves the phone** for identification (the assistant sends your question, and people's names go to find one person under two names, see below and People), and never one holding your accounts' or cards' last four digits, ten or
   more digits, or an IBAN (`Identification.sendable`; those are `WITHHELD` for you). The AI is
   Groq (`qwen/qwen3.8-27b`, strict JSON schema, reasoning off), always on, with no setting. Its key is built in, not typed: `BuildConfig.GROQ_API_KEY`, from `GROQ_API_KEY` in
   `.env` locally or the repository secret of that name in CI (a build without it
   identifies from the bundled list only). `IdentifyWorker` (online only, one at a time)
   runs after every SMS run and as the app opens, in batches of 40 names, the busiest first;
   what it says is recorded without a batch (the rule names why), and each merchant is asked once.
+  **Web search** (`core/ai/WebSearch.kt`, `WebLookup`, the spec's Tavily step): after
+  identifying, a merchant the AI said at under 80 with 100 or more of spending (small one-offs
+  never) is looked up once, the most money first: its name and "Saudi Arabia" (in Arabic for an
+  Arabic name) go to Tavily (basic search, five results), then the name and those public results
+  go to Groq, which answers again and names the result it rests on. A surer answer replaces the
+  first, keeping the page (`Merchant.webUrl`, `webTitle`), shown as "Found online: <title>" (it
+  opens the page) on Review and the Merchant screen; either way `searchedOnline` stops it being
+  searched again. At most 800 searches a month (a count in DataStore). The Merchant screen's
+  "Look it up" (for one nothing surer than the AI has identified) does the same at once
+  (`WebLookup.lookUpNow`; the AI from the name alone when no search can be had), and its answer
+  stands unless the AI had said something surer. The key is
+  `BuildConfig.TAVILY_API_KEY`, as Groq's (`TAVILY_API_KEY`); a build without it never searches.
+- **The owner's definitions** (no board, no screen): Halala is the owner's first. Places anyone
+  pays at go in the bundled `KnownMerchants` list (a new build); the owner's own merchants and
+  categories go in `definitions.json` at the repository root, pushed to the phone with no
+  reinstall: `adb push definitions.json /sdcard/Android/data/bassamalim.halala/files/` (read by
+  `DefinitionsFile` each time `applyRules` runs, so on next opening). `categories` (name,
+  optional `expenseType`) are made when missing; each of `merchants` has a `name`, an optional
+  `type` (a `BusinessType`), `spellings`, and an optional `category` it files under whatever its
+  type (`KnownMerchants.parse`). The file beats the bundled list, the list beats the AI, and
+  neither beats what you said on the Merchant screen. A file that can't be read is ignored whole
+  (logcat tag `Halala`). A merchant the list or you identified raises no foreign-currency alert.
 - **People** (the spec's counterparties): a transfer's title (`People.KINDS`: transfers and the
   loan kinds, never a move between your own accounts) names a `Person`, found as merchants are,
   through a `PersonAlias` keyed by the transaction's `merchantKey`, so merging or splitting moves
@@ -242,10 +270,22 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   joins a look-alike ("Ahmed Ali" and "Ahmed Saleh" are two people). Feeds show the person's
   name. You rename, merge ("Same as another person") and split ("Not this one") on the Person
   screen; these aren't audited (nothing is filed by them, and each can be taken back by hand).
-  Known IBANs and phone contacts aren't linked yet.
+  **Halala suggests merges and never makes one** (a merge moves loans): People shows "Same
+  person?" cards (no board) for pairs `People.suggest` finds, the surest reason first: spelled
+  the same (`People.canonical`: spaces and the ways an Arabic letter is written dropped, never
+  a fuzzy score, since siblings share two names of three), the same last four digits quoted for
+  their account (banks quote no more than four, so no IBAN; read again from the transfers' SMS,
+  `PeopleRepository.observeAccountRefs`), or the AI read the names as one (another language, an
+  initial, a name cut short). `PeopleMatching` runs after merchant identification in
+  `IdentifyWorker`, only when someone new has appeared, and sends every person's names as banks
+  wrote them (`Identification.sendable` ones, at most 300 people) and nothing else. Merging keeps
+  the one you named, else the one with more transfers; "Not the same" is remembered. What the AI
+  said and what you dismissed are in DataStore by `People.pairKey` (uids, never a name). Phone
+  contacts aren't linked yet.
 - **Loans** are only ever made by your say. Marking a plain transfer to or from someone
-  (`Loans.MARKABLE`, never a paired move) as lent or borrowed opens a `Loan` with that person
-  (optional due date); marking a transfer back as repaying it pays it down; forgiving lets go of
+  (`Loans.MARKABLE`, never a paired move) as lent or borrowed opens a `Loan` with that person,
+  or with anyone else you choose (someone asked you to pay a third person for them; a transfer
+  naming nobody can be marked this way too) (optional due date); marking a transfer back as repaying it pays it down; forgiving lets go of
   the rest. A loan is its `LoanEvent`s (lent, repaid, forgiven): one linked to a transaction takes
   that transaction's amount and time, so editing the transfer never leaves the loan behind; what
   is owed is lent less repaid and forgiven, never below zero. A linked transfer's kind becomes
@@ -256,7 +296,8 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   yours, or by amount, no more than the whole): each share is a loan owed to you with
   `splitOf` the purchase and an event without a transfer, and only your share counts as
   spending (`TransactionDetail.yourMinor`, used by `inOut` and a merchant's spent). Someone no
-  transfer names can be added by name to split with. Undoing a split drops its loans and frees
+  transfer names can be added by name to split with. "Paid for someone else" (spending that
+  isn't a transfer) is a split whose one share is the whole, with an optional due date. Undoing a split drops its loans and frees
   their repayments. Transaction detail asks whether a transfer repays the person's oldest open loan
   (`Loans.repaidBy`) and offers marking it as a loan. Merging people moves their loans.
 - **Subscriptions, bills and planned payments** are one `RecurringSeries` (the spec's
@@ -268,7 +309,11 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   early) moves the next due date on, and a series with neither merchant nor person is taken as
   paid when its day passes. A linked one whose charge is more than `Recurring.GRACE_DAYS` late is
   "missed"; a last charge above the known price is a price rise ("Keep it" takes the new price,
-  "Remind me to cancel" also asks for a reminder before it renews). `Recurring.detect` proposes
+  "Remind me to cancel" also asks for a reminder before it renews). Heads-ups
+  (`Recurring.headsUp`): a yearly (or 12-month) one renewing within 30 days, and a subscription
+  not charged yet whose first day (its anchor: a free trial's end) is within a week; each is a card
+  with "Keep it" (remembered in `dismissed_alerts` by series and day) and "Remind me to cancel",
+  and counts in the Inbox. Nothing once a cancel reminder is set. `Recurring.detect` proposes
   (status `PROPOSED`) a payee charged three times or more at a steady week, month or year, the
   last recently: a subscription when the amount barely moves (5%), a bill when it moves some
   (50%), planned for a person; you add or dismiss it (dismissed stays dismissed). It runs on
@@ -279,11 +324,15 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   a cycle); the cycle ends a month after the last, and runs on while a salary is late. With no
   salary in 45 days it is the calendar month.
 - **Budgets** (`Budget`, `core/domain/Budgets`): a limit each pay cycle on everything, a category,
-  an expense type or a merchant, optionally rolling over what was left last cycle. Spending is
+  an expense type, a merchant or a tag (what carries it, `Tags.byTransaction`), optionally
+  rolling over what was left last cycle. Spending is
   money out that counts in totals, your share of it; never stored, read from the ledger.
   `BudgetState` colours it, and spending further through the budget than through the cycle by
   10% or more reads as "spending fast" (the warn look) even under 80%. The Everything budget
-  drives Home's balance card.
+  drives Home's balance card. Every budget notifies once a cycle at 50, 80 and 100%
+  (`Budgets.alerts`, `core/reminders/BudgetAlerts`; the highest reached only, its name and the
+  percent, never an amount), looked at after each SMS run and by the daily reminder work; what
+  was told is in DataStore by `Budgets.toldKey` (budget id, cycle start, percent).
 - **Forecast** (`Forecasts`, inputs from `ForecastRepository`): spendable money is current,
   card, wallet and cash accounts (savings and investments are left alone). Variable spending is
   spending outside what active subscriptions and bills charge; its daily rate per recent cycle
@@ -294,14 +343,36 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   whether it breaks this cycle's Everything budget. Months ahead: salary − scheduled − a
   month at the median rate. All in exact integers.
 - **Savings goals** (`SavingsGoal`, `Goals`): a target, an optional date and the accounts it is
-  saved in; what is saved is their balances. A month's saving needed = what is left over the
+  saved in (none is fine: a goal can be held in deposits alone); what is saved is their balances
+  plus the running term deposits filed under it, plus what you marked toward it on Transaction
+  detail (`GoalContribution`: a transfer, move or investment, "Put in" or "Took out", for money
+  kept where Halala has no account, like Al Rajhi Capital; a plain one becomes `SAVINGS_DEPOSIT`
+  or `SAVINGS_WITHDRAWAL`, so neither spending nor income, and goes back to its `kindBefore`
+  when unmarked; a move is marked by its sending leg, and none is counted that an account the
+  goal holds already counts). A month's saving needed = what is left over the
   months to the target month (rounded up); "you averaged" = the net flow into those accounts
   over the last three months, a third of it.
+- **Term deposits** (`Deposit`, no board): an Awaeed isn't an account of yours. The bank opens
+  a numberless one per deposit, so each creation SMS is one `Deposit`, linked to the leg that
+  arrived (its amount and start are that transaction's, as a loan event's are). The ledger
+  still needs somewhere for the money: one holding account a bank (`AccountType.DEPOSIT`, found
+  by the `product:` ref), counted as savings in net worth and **never listed, chosen or edited**
+  (`AccountType.listed`; filter any new account list by it). The SMS gives no terms: rate,
+  tenor and what happens at maturity are yours to add on the Deposit form, with its purpose,
+  which is a savings goal (`goalId`). Al Rajhi's closing SMS ("اقفال حساب عوائد", one amount,
+  naming no deposit) ends the running deposit it fits (`SavingsRepository.closePaid`: the
+  largest that went in before, at 80% or more of what came back): what went in moves back, and
+  the rest is profit (an `OTHER` credit, so income). "It was paid out" does the same by hand,
+  without profit, for a bank that sends none. Messages an older parser couldn't read are tried
+  again once after `BankFormats.PARSER_VERSION` is bumped. Savings accounts you make yourself
+  keep `SavingsTerms`.
 - **Anomaly alerts** (`Anomalies`, last 30 days, found in the ledger, never stored): the same
   merchant, amount and account twice within a day; a charge over three times the merchant's
   median (four or more before it) and at least 100 above it; a foreign-currency charge; a
   declined card (a `DECLINED` message); a bank balance that isn't the one before plus what was
-  recorded between (a missed or doubled SMS). Only dismissals are stored (`dismissed_alerts`, by
+  recorded between (a missed or doubled SMS); parser health: a sender more than 5% of whose
+  last week of messages (notices and OTPs aside) are `UNRECOGNISED`, keyed by the newest
+  failure so another brings it back. Only dismissals are stored (`dismissed_alerts`, by
   key; "Normal for it" quiets a merchant's large ones); a restore clears them. Home shows a row
   while any stand; the daily reminder work notifies a count of new ones, never what or how much.
 - **Digests** (`Digests`, `DigestRepository`): weekly (Sunday to Saturday, the Saudi week),
@@ -351,8 +422,8 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   stays off. Suggestions are worked out on the phone (`core/domain/Tags.suggest`, no AI call):
   three or more purchases in another currency, no more than a week apart, in the last four
   months, are "Trip to <the country of that currency>?" ("Tag the trip" makes an automatic tag
-  over those days; "Not a trip" is remembered in DataStore by its key). Budgets by tag and a
-  feed filtered by tag aren't built yet.
+  over those days; "Not a trip" is remembered in DataStore by its key). A budget can be on a
+  tag; a tag's own screen is its feed (everything carrying it, and what was spent).
 - **Where you spend** (the spec's heatmap; no board). There is no setting: whenever location is
   allowed all the time (it must be, since SMS arrive while the app is closed), `SmsWorker` asks
   Android's own location (`PlaceCapture`, no Play services) for the purchases its run recorded
@@ -385,11 +456,19 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   identified as, by whom and how sure).
 - **Lock**: `BiometricPrompt` on every cold start (the graph starts on `Screen.Lock`) and after
   a minute in the background (`LockManager`, monotonic clock; the minute is a preference,
-  `PreferencesRepository.lockTimeoutSeconds`, with no UI yet). Always on, so Settings has no row for it; strong (class 3)
+  `PreferencesRepository.lockTimeoutSeconds`, chosen in Settings › Privacy: at once, 1, 5 or 15
+  minutes). The lock itself is always on; strong (class 3)
   biometrics with the device credential as fallback (Android 10 can't combine those, so there it
   accepts any biometric plus credential). A phone with no screen lock opens straight through —
   you can never lock yourself out. `FLAG_SECURE` is always set (no screenshots, blank in
   recents); the spec's toggle for it comes with the security settings.
+- **Hide amounts** (Settings › Privacy, no board): `Money.masked` makes `Money.format` return
+  `••••` everywhere (screens, the widget, the assistant's answers), so the app can be shown to
+  someone. Turning it on is one tap; turning it off asks for the fingerprint (the lock's prompt).
+  It is a preference, so it survives a restart. Either way the app starts over from Home, since
+  screens hold amounts already formatted. Forms prefill amounts through `Money.input` (empty while
+  hidden); files (`Money.plain`: exports, backups) stay exact. An amount shown any other way than
+  `Money.format` isn't hidden: don't add one.
 - **Encryption at rest**: the whole Room database is SQLCipher. Its 32-byte random passphrase is
   stored only wrapped by an AES-256-GCM key in Android Keystore (`DatabaseKey`), in
   `noBackupFilesDir`. That Keystore key is **not** bound to user authentication, on purpose: the
@@ -409,7 +488,8 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   6 people with their aliases, 7 loans with their events, 8 subscriptions and bills, 9 a loan's
   split purchase, 10 budgets, 11 savings goals, 12 assets and their snapshots, 13 the zakat
   method, 14 retirement scenarios, 15 savings terms, 16 tags and the transactions carrying them,
-  17 an asset's price source, 18 the places of purchases),
+  17 an asset's price source, 18 the places of purchases, 19 term deposits, 20 a budget's tag,
+  21 merchants looked up online, 22 goal contributions),
   keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
 - **Encrypted backups** (Backup and export › Encrypted backups, no board): a `.halala` file
   (`core/backup/BackupFile`) is the JSON export zipped and sealed with AES-256-GCM under a key
@@ -427,18 +507,28 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   A new table or column that matters must be added to `ExportFile`, `Exporter` and `Importer`
   together; `ImporterTest` checks that a restored export exports again as the same file.
 - **Privacy**: no analytics, no crash reporter. Network use: Groq (HTTPS, always on in a build
-  with the key) for merchant identification (merchants' names and nothing else) and the
+  with the key) for merchant identification (merchants' names and nothing else, with public web
+  results for one it was unsure of), Tavily for those web searches (a merchant's name and the
+  country, nothing else), for finding
+  one person under two names (the names banks wrote for people you transfer with, nothing else) and the
   assistant (the question you type and today's date, nothing else); and market prices (public
   gold and fund prices, fetched with nothing of yours, only once you link an asset); and the
   spending map's OpenStreetMap tiles (the area you look at, never your purchases). Nothing about money goes
   in DataStore (it isn't encrypted).
-- **The assistant** (Assistant tab, Assistant board) is "tool calling" without the round trip:
-  `AssistantProtocol` asks Groq to read your question into one `Ask` (a tool from `AskTool`:
-  spending, income, bills, owed, afford, balance, or unsupported; your words for the topic,
-  the AI's business type for it, the days, an amount), under a strict schema. The phone runs it
-  (`AssistantDomain`, `core/domain/Answers`: your topic matches your categories, then merchants,
-  then merchants of that business type) and words the answer; no figure, category or name of
-  yours goes back to the AI. The conversation lives in memory only.
+- **The assistant** ("Ask", from the icon beside Home's gear; the Assistant board without the
+  conversation, and no tab) is text-to-SQL: `AssistantProtocol` gives Groq your question, today's
+  date and the columns of `tx`, and gets one SELECT back under a strict schema. `tx`
+  (`core/domain/Asking.VIEW`, prepended to every query) is the ledger read flat with its rules
+  applied: `flow` (spent / income / moved, as `countsInTotals` and paired moves say),
+  `amount_minor` (your share of a split), merchant and person by alias, local day, month,
+  weekday and hour, tags. The query runs on the phone on its own **read-only** SQLCipher
+  connection (`LedgerQueryRepository`), at most 50 rows; one SQLite refuses goes back once with
+  SQLite's reason (the query's own words). No row, figure, category or name of yours goes to
+  the AI. Columns named `…_minor` are money and go through `Money.format`; while amounts are
+  hidden every figure is. Headings are the query's own column names (the one place words on
+  screen aren't string resources), and "How this was worked out" shows the query. Only the
+  latest answer is kept, in memory. A new ledger rule that changes what counts must be put in
+  `Asking.VIEW` too; `AskingTest` checks it against `inOut`.
 - The spec's global quick-add is a flat jade `QuickAddButton` on Home and Activity (the boards
   don't draw one). It opens the transaction form on the cash wallet: Out / In / Move, amount,
   account, kind, where or who, when, note.
@@ -451,8 +541,8 @@ archive, several per bank by last four), manual transactions and moves, the cash
 count, CSV/JSON export, and the CI and release workflows.
 
 Screens and where they come from: **Home** (Home board: mark and wordmark, wallet and banks in the
-summary-card grid, Recent; the balance card waits for budgets, the review pill for the inbox),
-**Activity** (Activity board: search, account filter chips, month In/Out, rows by day; Money flow
+summary-card grid, Recent; the balance card waits for budgets; the board's review pill is gone, replaced by the Inbox tab),
+**Activity** (Activity board: search, a row of plain chips to browse by (Merchants, People, Where you spend, Tags, Digests; no board), account filter chips, month In/Out, rows by day; Money flow
 waits for Phase 6), **Transaction** (Transaction detail board, minus category, tags, location
 and SMS), **Settings** (Settings board, only the rows that are true today; reached from a gear
 on Home, since the boards don't show where Settings lives), and **Plan**, **Wealth**,
@@ -465,32 +555,37 @@ exist.
 **Phase 1 (SMS core)** is built in `core/sms`: the receiver and worker (`SmsReceiver`,
 `SmsWorker`), per-bank parsers (`BankFormats`, `SmsParser`) with fixture tests, the ingest
 pipeline (`SmsIngest`: routing by last four, dedupe, pairing internal transfers, balance
-checkpoints) and back-import (`SmsImport`), plus **Onboarding** (the onboarding board).
+checkpoints) and back-import (`SmsImport`; run again on every opening while READ_SMS is
+allowed, so SMS missed without the permission come in; kept ones are skipped by hash), plus **Onboarding** (the onboarding board).
 Amounts show the riyal sign for SAR (`Currency.kt`), the ISO code otherwise.
 
 **Phase 2 (classification and learning)** is built: categories and expense types (seeded;
 `Category`, `ExpenseType`), rules (`Rule`, `core/domain/Rules`, `ClassificationRepository`), the
 history of changes with undo (`AuditBatch`, `AuditChange`), the review reminder
 (`core/reminders`), and merchant identification (business types, the bundled list, Groq in
-`core/ai`). Screens: **Review** (Review board: one card per merchant, biggest first, with what it
+`core/ai`). Screens: **Review** (Review board: one card per merchant (never a person: transfers are filed on their own detail), biggest first, with what it
 was identified as, the chosen category to confirm for the ones sure enough, the All / Suggested /
-Needs you filter, and the last answer's undo; reached from Home's review pill), **Rules** (Rules
+Needs you filter, and the last answer's undo; reached from the Inbox tab), **Rules** (Rules
 board; from Settings and from a transaction's "Filed automatically" card), category and type on
 Transaction detail, and, with no board, built from the system's components:
 **Categories** (add; tap to rename, change the type and the business types it takes, or
 delete), **Rule** (the form: merchant is, description contains, account, amount range →
 category and type), **Recent changes** (each with Undo), the reminder sheet in Settings, and
-**Merchants** (from Settings: every merchant, busiest first, with search) and **Merchant** (from
+**Merchants** (from Activity: every merchant, busiest first, with search) and **Merchant** (from
 Transaction detail's Merchant row, a Review card for many, or the list: rename, what was spent,
 what it is (tap to say), how the bank writes it with how each spelling joined, "Not this one",
-"Same as another merchant", its transactions). Still to come in Phase 2: web search for
-cryptic names (Tavily), the Review board's swiping and its loan/split marks (with Phase 3),
-the usage cap in Settings, and merchant logos and locations.
+"Same as another merchant", its transactions). Review also swipes (toward the end accepts: the
+suggestion, or the category sheet when there is none; toward the start changes) and marks a
+card as a split (one purchase: Transaction detail opens on its split sheet), a subscription or a
+bill (the series form, started from the newest charge: monthly, next due on or after today,
+linked to the merchant); loans are marked on transfers, which never reach Review. Web search
+for cryptic names is built (see Identifying merchants). Still to come in Phase 2: the usage cap
+in Settings, and merchant logos and locations.
 
 **Phase 3 (people and recurring)** has begun: people (`Person`, `PersonAlias`, `PeopleRepository`,
 found by `applyRules`) and loans (`Loan`, `LoanEvent`, `LoansRepository`, `core/domain/Loans`).
 Screens: **People** (People board: owed to you and you owe, then Loans, open and settled, or All
-transfers, everyone the latest first with what came back less what went; reached from Wealth),
+transfers, everyone the latest first with what came back less what went; reached from Activity, Home and the loan lines of Wealth's breakdown),
 **Person** (Person board: each open loan with what is still owed, its caption and progress,
 "Send reminder" (the share sheet, so WhatsApp or SMS, with a polite message) and "Record
 repayment" (choose their transfer, or forgive what is left), "This loan" with its due date and
@@ -501,44 +596,48 @@ buttons), **Subscriptions and bills** (Recurring board: a month and a year, aler
 price rise, a missed charge and what was found, Next 30 days and Later, each with its badges;
 reached from the Plan tab's card and Home's Coming up), **Subscription or bill** (no board: the
 form, from the list or its + Add), Home's **People owe you** and **Coming up** cards (Home
-board), and the Plan tab's Subscriptions and bills card (Plan board; the rest of Plan comes with
+board; always shown, so they are a way in even when empty), and the Plan tab's Subscriptions and bills card (Plan board; the rest of Plan comes with
 Phase 4), and Transaction detail's **Split** card and sheet (no board). Still to come in
-Phase 3: the Review board's one-tap loan/split/subscription marks, linking people to IBANs and
-contacts.
+Phase 3: linking people to IBANs and contacts.
 
 **Phase 4 (planning)** is built: pay cycles, budgets, savings goals, the forecast, anomaly
 alerts and digests. Screens: the **Plan** tab (Plan board:
-the cycle chip, Budgets this cycle, savings goals, Subscriptions and bills, Forecast; calculators come
+the cycle chip, Subscriptions and bills and Forecast first, Budgets this cycle, savings goals, Zakat, then Retirement and Compound interest as list rows; calculators come
 with Phase 5), Home's **balance card** (Home board and its warn/over states, with the forecast's
 "End ≈"), **Forecast** (Forecast board: the end figure and band, the balance chart drawn on a
 Canvas, left over each month with the dip's biggest payments, and "Can I afford it?"), **Budgets** and **Budget**
 (no board: the Plan board's budget rows full size, and the form), the Plan board's **goal
 cards** and **Savings goal** (no board: the form), **Alerts** (no board: a card per alert with
 Open, Normal for it and Dismiss), **Digest** (Digest board, minus net worth) and **Digests**
-(the archive, from the Assistant tab and Settings' Digests sheet).
+(the archive, from Activity and Settings' Digests sheet).
 
 **Phase 5 (wealth)** is built: the **Wealth** tab is the Net worth board (total, this month and
-year, the timeline over 3M/1Y/All, the breakdown, then Accounts, Assets, People and Zakat),
+year, the timeline over 3M/1Y/All, the breakdown, then Savings, Accounts and Assets),
 **Assets** and **Asset** (no board: the list and the form), and **Zakat** (Zakat board; reached
-from Wealth and the Plan board's Zakat card), **Retirement** (Retirement board, with
-Scenarios), **Compound interest** (no board) and **Savings** (Savings board: terms attached to a
+from the Plan board's Zakat card), **Retirement** (Retirement board, with
+Scenarios), **Compound interest** (no board) and **Savings** (Savings board: a card per Awaeed deposit (see Term deposits; its
+form, **Deposit**, has no board), and terms attached to a
 savings account, `SavingsTerms` and `core/domain/Savings`; Awaeed terms run from a start for a
 tenor and roll over when they renew, expected profit is simple on the balance; Hasad pays next
 month on this month's lowest balance, nothing under 5,000; a term maturing within a month shows
 on Wealth and is reminded three days before; the terms form has no board), and fetched fund
 and gold prices (see Assets).
 
-**Phase 6 (delight)** is built: **Money flow** (Money flow board, Activity's second segment:
-for a month and an account, salary or what came in, a Sankey (`Sankey` component,
-`core/domain/MoneyFlow`) of moves to each of your accounts, what was spent from it and what
-stayed; a leg the bank called a move with no other side is "no match": "It went to someone"
+**Phase 6 (delight)** is built: **Money flow** (Money flow board, Activity's second segment,
+redrawn top to bottom for a phone: for a month and an account, salary or what came in, the share
+spent and kept and spending against the month before, then a vertical Sankey (`Sankey`
+component, `core/domain/MoneyFlow`) from where the money came from (salary, your accounts,
+people, refunds, what was already there) through the account to where it went (your accounts,
+saved, people, the top five categories and the rest, not filed yet, what stayed); tap a part on
+the chart or in the "Came in" and "Went out" lists below it to light it up and see its biggest
+transactions; a leg the bank called a move with no other side is "no match": "It went to someone"
 makes it a plain transfer, "Pick the account" records the other leg there and pairs them) and
-the **Assistant** (Assistant board, with the Digests link; see the product rule),
+the **Assistant** (see the product rule; first built as a fifth tab, now Ask behind Home's icon), the **Inbox** tab in its place (no board: one row for each kind of thing waiting for your say, with its count, opening where it is answered: merchants to file → Review, alerts → Alerts, a subscription found, missed or dearer → Subscriptions and bills, "Same person?" → People, trips to tag → Tags; `InboxDomain` counts what those screens would show and stores nothing; no badge on the tab, as the design system says),
 **Encrypted backups** (see the product rule), and the **home-screen widget** (`core/widget`,
 no board: this cycle's spending against the total budget with its state colour, the Review
 count, and "+ Cash", which opens the lock as always and then the form on the wallet
 (`QuickAddRequest`); refreshed when the app goes to the background and after each SMS run),
-**Tags** (from Settings; a tag's form with what carries it; the Tags row on Transaction
+**Tags** (from Activity; a tag's form with what carries it; the Tags row on Transaction
 detail; no board draws them), and **Where you spend** (see the product rule).
 The widget shows amounts outside the lock: it is there only if you add it. The board's
 "See 52 transactions" link waits for a filtered feed.

@@ -6,7 +6,6 @@ import bassamalim.halala.core.Globals
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.AssetsRepository
 import bassamalim.halala.core.data.repositories.LoansRepository
-import bassamalim.halala.core.data.repositories.PeopleRepository
 import bassamalim.halala.core.data.repositories.SavingsRepository
 import bassamalim.halala.core.utils.shortDateLabel
 import bassamalim.halala.core.data.repositories.TransactionsRepository
@@ -54,7 +53,6 @@ data class WealthUiState(
     val parts: List<WealthPart> = emptyList(),
     val accountCount: Int = 0,
     val assetCount: Int = 0,
-    val peopleCount: Int = 0,
     /** An Awaeed term maturing within a month: its months, the day, the profit expected. */
     val maturing: Triple<Int, String, String>? = null
 )
@@ -64,7 +62,6 @@ class WealthViewModel @Inject constructor(
     accountsRepository: AccountsRepository,
     assetsRepository: AssetsRepository,
     loansRepository: LoansRepository,
-    peopleRepository: PeopleRepository,
     transactionsRepository: TransactionsRepository,
     savingsRepository: SavingsRepository,
     private val navigator: Navigator,
@@ -75,11 +72,11 @@ class WealthViewModel @Inject constructor(
 
     val uiState: StateFlow<WealthUiState> = combine(
         combine(accountsRepository.observeAll(), assetsRepository.observeAll(), ::Pair),
-        combine(loansRepository.observeStates(), peopleRepository.observePeople(), ::Pair),
+        loansRepository.observeStates(),
         transactionsRepository.observeAll(),
-        combine(assetsRepository.observeSnapshots(), savingsRepository.observe(), ::Pair),
+        combine(assetsRepository.observeSnapshots(), savingsRepository.observe(), savingsRepository.observeDeposits(), ::Triple),
         range
-    ) { (accounts, assets), (loans, people), details, (snapshots, savings), range ->
+    ) { (accounts, assets), loans, details, (snapshots, savings, deposits), range ->
         val today = LocalDate.now(clock)
         val currency = Globals.PRIMARY_CURRENCY
         val now = NetWorth.now(accounts, assets, loans, currency, today)
@@ -93,7 +90,7 @@ class WealthViewModel @Inject constructor(
         }.coerceAtLeast(earliest.minusDays(1)).coerceAtMost(today.minusDays(1))
         val timeline = NetWorth.timeline(
             now.totalMinor, assetsNow, minOf(from, today.minusYears(1)), today, details,
-            included.map { it.account.id }.toSet(), loans, snapshots, clock.zone
+            included.map { it.account.id }.toSet(), loans, currency, snapshots, clock.zone
         )
         val shown = timeline.filter { !it.first.isBefore(from) }
         fun valueOn(day: LocalDate) = timeline.firstOrNull { !it.first.isBefore(day) }?.second
@@ -126,17 +123,17 @@ class WealthViewModel @Inject constructor(
                     }
                 )
             },
-            accountCount = included.size,
+            accountCount = included.count { it.account.type.listed },
             assetCount = assets.size,
-            peopleCount = people.size,
-            maturing = savings.mapNotNull { saved -> saved.term?.let { saved to it } }
+            maturing = (savings.mapNotNull { saved -> saved.term?.let { Triple(saved.terms?.tenorMonths ?: 0, it, saved.account.account.currency) } } +
+                    deposits.mapNotNull { held -> held.term?.let { Triple(held.deposit.tenorMonths ?: 0, it, held.currency) } })
                 .filter { (_, term) -> !term.maturity.isAfter(today.plusDays(MATURING_DAYS)) }
                 .minByOrNull { (_, term) -> term.maturity }
-                ?.let { (saved, term) ->
+                ?.let { (months, term, termCurrency) ->
                     Triple(
-                        saved.terms?.tenorMonths ?: 0,
+                        months,
                         shortDateLabel(term.maturity, today),
-                        Money.format(term.expectedProfitMinor, saved.account.account.currency, decimals = false, showPlus = true)
+                        Money.format(term.expectedProfitMinor, termCurrency, decimals = false, showPlus = true)
                     )
                 }
         )
@@ -150,7 +147,6 @@ class WealthViewModel @Inject constructor(
 
     fun onAssetsClick() = navigator.navigate(Screen.Assets)
 
-    fun onZakatClick() = navigator.navigate(Screen.Zakat)
 
     fun onSavingsClick() = navigator.navigate(Screen.Savings)
 

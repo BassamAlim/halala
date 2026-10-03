@@ -1,5 +1,6 @@
 package bassamalim.halala.features.savings
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,10 +25,12 @@ import bassamalim.halala.core.enums.MaturityChoice
 import bassamalim.halala.core.enums.SavingsKind
 import bassamalim.halala.core.ui.components.ButtonKind
 import bassamalim.halala.core.ui.components.ChoiceChips
+import bassamalim.halala.core.ui.components.ConfirmSheet
 import bassamalim.halala.core.ui.components.DateDialog
 import bassamalim.halala.core.ui.components.FormField
 import bassamalim.halala.core.ui.components.GroupLabel
 import bassamalim.halala.core.ui.components.HalalaButton
+import bassamalim.halala.core.ui.components.HalalaChip
 import bassamalim.halala.core.ui.components.HalalaCard
 import bassamalim.halala.core.ui.components.HalalaTextField
 import bassamalim.halala.core.ui.components.ListCard
@@ -44,8 +47,8 @@ import bassamalim.halala.core.ui.theme.Spacing
 
 /**
  * The Savings board: what is in savings, each Awaeed term (locked until, how far, the profit
- * expected, what happens at maturity) and Hasad (the month's lowest balance, next month's
- * profit on it). An account with no terms yet asks for them.
+ * expected, what happens at maturity, the goal it is for; one card per deposit) and Hasad (the
+ * month's lowest balance, next month's profit on it). One with no terms yet asks for them.
  */
 @Composable
 fun SavingsScreen(viewModel: SavingsViewModel = hiltViewModel()) {
@@ -60,7 +63,10 @@ fun SavingsScreen(viewModel: SavingsViewModel = hiltViewModel()) {
         verticalArrangement = Arrangement.spacedBy(Spacing.card)
     ) {
         TopBar(title = stringResource(R.string.wealth_savings), onBack = viewModel::onBackClick)
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
             Text(text = stringResource(R.string.savings_in), style = HalalaType.Label, color = HalalaColors.TextMuted)
@@ -80,10 +86,11 @@ fun SavingsScreen(viewModel: SavingsViewModel = hiltViewModel()) {
             if (cards.isEmpty()) continue
             GroupLabel(stringResource(label))
             cards.forEach { card ->
-                HalalaCard(modifier = Modifier.fillMaxWidth(), onClick = { viewModel.onCardClick(card.accountId) }, verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                HalalaCard(modifier = Modifier.fillMaxWidth(), onClick = { viewModel.onCardClick(card) }, verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(
-                            text = card.tenorMonths?.takeIf { kind == SavingsKind.AWAEED }?.let { pluralStringResource(R.plurals.savings_months, it, it) } ?: card.name,
+                            text = card.tenorMonths?.takeIf { kind == SavingsKind.AWAEED }?.let { pluralStringResource(R.plurals.savings_months, it, it) }
+                                ?: card.name.ifEmpty { stringResource(R.string.savings_awaeed) },
                             style = HalalaType.BodyStrong
                         )
                         card.rate?.let { Text(text = stringResource(R.string.savings_rate, it), style = HalalaType.Caption, color = HalalaColors.TextMuted) }
@@ -104,6 +111,9 @@ fun SavingsScreen(viewModel: SavingsViewModel = hiltViewModel()) {
                                 card.profit?.let { Text(text = stringResource(R.string.savings_profit_about, it), style = HalalaType.Caption, color = HalalaColors.Income) }
                             }
                             card.choice?.let { Text(text = stringResource(R.string.savings_at_maturity, stringResource(choiceLabel(it))), style = HalalaType.Label, color = HalalaColors.TextMuted) }
+                            card.goal?.let { Text(text = stringResource(R.string.deposit_for_goal, it), style = HalalaType.Label, color = HalalaColors.TextMuted) }
+                            if (card.depositId != null && (card.rate == null || card.tenorMonths == null))
+                                Text(text = stringResource(R.string.savings_set_terms), style = HalalaType.Label, color = HalalaColors.Accent)
                         }
                         SavingsKind.HASAD -> {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -151,7 +161,10 @@ fun SavingsTermsScreen(viewModel: SavingsTermsViewModel = hiltViewModel()) {
             actionEnabled = !state.isLoading,
             onAction = viewModel::onSaveClick
         )
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         FormField(label = stringResource(R.string.recurring_kind)) {
             ChoiceChips(
@@ -194,4 +207,83 @@ fun SavingsTermsScreen(viewModel: SavingsTermsViewModel = hiltViewModel()) {
     }
 
     if (state.picking) DateDialog(date = state.pickFrom, onPicked = viewModel::onStartPicked, onDismiss = viewModel::onStartDismiss)
+}
+
+/**
+ * One term deposit: what went in and when (its transfer's, so not edited here), the terms the
+ * SMS doesn't give, the goal it is for, and paying it out. No board draws it.
+ */
+@Composable
+fun DepositScreen(viewModel: DepositViewModel = hiltViewModel()) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val form = state.form
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = Spacing.screen)
+            .padding(top = Insets.screenTop, bottom = Spacing.section),
+        verticalArrangement = Arrangement.spacedBy(Spacing.section)
+    ) {
+        TopBar(
+            title = stringResource(R.string.deposit_title),
+            onBack = viewModel::onBackClick,
+            actionLabel = stringResource(R.string.save),
+            actionEnabled = !state.isLoading,
+            onAction = viewModel::onSaveClick
+        )
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+            Text(text = state.amount, style = HalalaNumbers.AmountXl)
+            Text(text = stringResource(R.string.savings_started, state.started), style = HalalaType.Label, color = HalalaColors.TextMuted)
+        }
+        FormField(label = stringResource(R.string.deposit_for), hint = stringResource(R.string.deposit_for_hint)) {
+            ChoiceChips(
+                options = state.goals,
+                selected = state.goals.firstOrNull { it.first == form.goalId },
+                label = { it.second.ifEmpty { stringResource(R.string.deposit_no_goal) } },
+                onSelect = { viewModel.onGoalClick(it.first) },
+                trailing = { HalalaChip(label = stringResource(R.string.goal_new_chip), onClick = viewModel::onNewGoalClick) }
+            )
+        }
+        FormField(
+            label = stringResource(R.string.savings_rate_label),
+            error = stringResource(R.string.asset_percent_invalid).takeIf { state.rateInvalid }
+        ) {
+            HalalaTextField(value = form.rate, onValueChange = viewModel::onRateChange, numeric = true, isError = state.rateInvalid)
+        }
+        FormField(label = stringResource(R.string.savings_tenor)) {
+            ChoiceChips(
+                options = SavingsTermsViewModel.TENORS,
+                selected = form.tenorMonths,
+                label = { pluralStringResource(R.plurals.savings_months, it, it) },
+                onSelect = viewModel::onTenorClick
+            )
+        }
+        FormField(label = stringResource(R.string.savings_maturity)) {
+            ChoiceChips(
+                options = MaturityChoice.entries,
+                selected = form.choice,
+                label = { stringResource(choiceLabel(it)) },
+                onSelect = viewModel::onChoiceClick
+            )
+        }
+        HalalaButton(stringResource(R.string.save), viewModel::onSaveClick, Modifier.fillMaxWidth(), kind = ButtonKind.Primary)
+        HalalaButton(stringResource(R.string.deposit_pay_out), viewModel::onPayOutClick, Modifier.fillMaxWidth())
+    }
+
+    if (state.confirmingPayOut) ConfirmSheet(
+        title = stringResource(R.string.deposit_pay_out_title),
+        body = stringResource(R.string.deposit_pay_out_body),
+        confirmLabel = stringResource(R.string.deposit_pay_out),
+        dismissLabel = stringResource(R.string.cancel),
+        onConfirm = viewModel::onPayOutConfirm,
+        onDismiss = viewModel::onPayOutDismiss,
+        destructive = false
+    )
 }

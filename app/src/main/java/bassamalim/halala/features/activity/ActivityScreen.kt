@@ -1,5 +1,6 @@
 package bassamalim.halala.features.activity
 
+import bassamalim.halala.core.ui.components.SkeletonRows
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
@@ -82,7 +83,11 @@ fun ActivityScreen(viewModel: ActivityViewModel = hiltViewModel()) {
         onQueryChange = viewModel::onQueryChange,
         onAccountFilterClick = viewModel::onAccountFilterClick,
         onTransactionClick = viewModel::onTransactionClick,
-        onMapClick = viewModel::onMapClick
+        onMerchantsClick = viewModel::onMerchantsClick,
+        onPeopleClick = viewModel::onPeopleClick,
+        onMapClick = viewModel::onMapClick,
+        onTagsClick = viewModel::onTagsClick,
+        onDigestsClick = viewModel::onDigestsClick
     )
 }
 
@@ -93,7 +98,11 @@ private fun ActivityContent(
     onQueryChange: (String) -> Unit,
     onAccountFilterClick: (Long?) -> Unit,
     onTransactionClick: (Long) -> Unit,
-    onMapClick: () -> Unit
+    onMerchantsClick: () -> Unit,
+    onPeopleClick: () -> Unit,
+    onMapClick: () -> Unit,
+    onTagsClick: () -> Unit,
+    onDigestsClick: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -116,14 +125,25 @@ private fun ActivityContent(
             )
         }
 
+        // Other ways into the same spending: plain chips, so they don't read as filters.
         item {
             LazyRow(
                 modifier = Modifier.padding(top = Spacing.xs),
                 horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
             ) {
-                item {
-                    HalalaChip(label = stringResource(R.string.map_title), style = ChipStyle.Outline, onClick = onMapClick)
-                }
+                item { HalalaChip(label = stringResource(R.string.merchants), onClick = onMerchantsClick) }
+                item { HalalaChip(label = stringResource(R.string.people), onClick = onPeopleClick) }
+                item { HalalaChip(label = stringResource(R.string.map_title), onClick = onMapClick) }
+                item { HalalaChip(label = stringResource(R.string.tags), onClick = onTagsClick) }
+                item { HalalaChip(label = stringResource(R.string.digests), onClick = onDigestsClick) }
+            }
+        }
+
+        item {
+            LazyRow(
+                modifier = Modifier.padding(top = Spacing.xs),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+            ) {
                 item {
                     HalalaChip(
                         label = stringResource(R.string.all_accounts),
@@ -174,6 +194,8 @@ private fun ActivityContent(
                 )
             }
         }
+
+        if (state.isLoading) item { SkeletonRows() }
 
         state.groups.forEach { group ->
             item(key = "day-${group.items.first().date}") { GroupLabel(dayText(group.day)) }

@@ -3,7 +3,11 @@ package bassamalim.halala
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import bassamalim.halala.core.data.repositories.PreferencesRepository
+import bassamalim.halala.core.domain.Money
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 /**
@@ -15,6 +19,15 @@ import javax.inject.Inject
 class App : Application(), Configuration.Provider {
 
     @Inject lateinit var workerFactory: HiltWorkerFactory
+
+    @Inject lateinit var preferences: PreferencesRepository
+
+    override fun onCreate() {
+        super.onCreate()
+        // Before anything formats an amount (a worker, the widget, the first screen).
+        // ponytail: one blocking DataStore read at start; cache it elsewhere if start-up ever drags.
+        Money.masked = runBlocking { preferences.observeHideAmounts().first() }
+    }
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()

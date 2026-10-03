@@ -8,6 +8,7 @@ import bassamalim.halala.core.data.repositories.TagsRepository
 import bassamalim.halala.core.prices.Prices
 import bassamalim.halala.core.data.repositories.RecurringRepository
 import bassamalim.halala.core.reminders.DueReminders
+import bassamalim.halala.core.sms.SmsImport
 import javax.inject.Inject
 
 class MainDomain @Inject constructor(
@@ -17,16 +18,19 @@ class MainDomain @Inject constructor(
     private val dueReminders: DueReminders,
     private val assetsRepository: AssetsRepository,
     private val tagsRepository: TagsRepository,
-    private val prices: Prices
+    private val prices: Prices,
+    private val smsImport: SmsImport
 ) {
 
     /**
      * Catches up as the app opens: new descriptors find their merchant, well-known merchants are
      * identified and the rules file what they can, then the AI is asked about the rest (when it
      * is on). After an upgrade, this is what fills in the merchants of the history. Then what
-     * repeats is proposed as a subscription, bill or planned payment.
+     * repeats is proposed as a subscription, bill or planned payment. Bank SMS missed while
+     * Halala couldn't receive them are read from the inbox.
      */
     suspend fun catchUp() {
+        smsImport.catchUp()
         classificationRepository.applyRules()
         recurringRepository.detect()
         tagsRepository.applyActive()

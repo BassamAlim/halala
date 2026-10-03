@@ -42,7 +42,7 @@ class ActivityViewModel @Inject constructor(
             query = filters.query,
             selectedAccountId = filters.accountId,
             accountFilters = accounts
-                .filter { !it.account.archived }
+                .filter { !it.account.archived && it.account.type.listed }
                 .map { AccountFilter(it.account.id, accountLabel(it.institutionName, it.account.nickname)) },
             monthIn = Money.format(month.inMinor, Globals.PRIMARY_CURRENCY, decimals = false, showPlus = true),
             monthOut = Money.format(-month.outMinor, Globals.PRIMARY_CURRENCY, decimals = false),
@@ -68,6 +68,14 @@ class ActivityViewModel @Inject constructor(
     fun onTransactionClick(id: Long) = navigator.navigate(Screen.Transaction(id))
 
     fun onMapClick() = navigator.navigate(Screen.SpendingMap)
+
+    fun onMerchantsClick() = navigator.navigate(Screen.Merchants)
+
+    fun onPeopleClick() = navigator.navigate(Screen.People)
+
+    fun onTagsClick() = navigator.navigate(Screen.Tags)
+
+    fun onDigestsClick() = navigator.navigate(Screen.Digests)
 
     private data class Filters(val query: String = "", val accountId: Long? = null)
 }

@@ -1,5 +1,6 @@
 package bassamalim.halala.features.editBudget
 
+import bassamalim.halala.core.utils.OneAtATime
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -26,6 +27,8 @@ class EditBudgetViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
+    private val saving = OneAtATime()
+
     private val id = savedStateHandle.toRoute<Screen.EditBudget>().id
 
     private val form = MutableStateFlow(if (id == 0L) BudgetForm() else null)
@@ -39,11 +42,11 @@ class EditBudgetViewModel @Inject constructor(
 
     val uiState: StateFlow<EditBudgetUiState> = combine(
         combine(form, problems, ::Pair),
-        domain.observeCategories(),
+        combine(domain.observeCategories(), domain.observeTags(), ::Pair),
         domain.observeMerchants(),
         query,
         confirmingDelete
-    ) { (form, problems), categories, merchants, query, confirming ->
+    ) { (form, problems), (categories, tags), merchants, query, confirming ->
         val chosen = merchants.firstOrNull { it.merchant.id == form?.merchantId }
         val matching = merchants.filter { it.merchant.name.contains(query.trim(), ignoreCase = true) }.take(MERCHANT_CHOICES)
         EditBudgetUiState(
@@ -55,6 +58,7 @@ class EditBudgetViewModel @Inject constructor(
             merchants = (listOfNotNull(chosen) + matching).distinctBy { it.merchant.id }
                 .map { CategoryOption(it.merchant.id, it.merchant.name) },
             merchantQuery = query,
+            tags = tags.map { CategoryOption(it.id, it.name) },
             problems = problems,
             isConfirmingDelete = confirming
         )
@@ -69,6 +73,8 @@ class EditBudgetViewModel @Inject constructor(
     fun onTypeClick(type: ExpenseType) = edit { it.copy(expenseType = type) }
 
     fun onMerchantClick(option: CategoryOption) = edit { it.copy(merchantId = option.id) }
+
+    fun onTagClick(option: CategoryOption) = edit { it.copy(tagId = option.id) }
 
     fun onMerchantQueryChange(text: String) = query.update { text }
 
@@ -90,10 +96,11 @@ class EditBudgetViewModel @Inject constructor(
 
     fun onSaveClick() {
         val current = form.value ?: return
-        viewModelScope.launch {
+        saving.launch(viewModelScope) {
             val found = domain.save(id, current)
             problems.update { found }
             if (found.isEmpty()) navigator.popBackStack()
+            found.isEmpty()
         }
     }
 

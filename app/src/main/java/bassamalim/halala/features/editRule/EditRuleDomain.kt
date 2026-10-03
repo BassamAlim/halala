@@ -58,8 +58,8 @@ class EditRuleDomain @Inject constructor(
             merchantName = merchant?.name.orEmpty(),
             contains = conditions.contains.orEmpty(),
             accountId = conditions.accountId,
-            min = conditions.minMinor?.let { Money.plain(it, currency) }.orEmpty(),
-            max = conditions.maxMinor?.let { Money.plain(it, currency) }.orEmpty(),
+            min = conditions.minMinor?.let { Money.input(it, currency) }.orEmpty(),
+            max = conditions.maxMinor?.let { Money.input(it, currency) }.orEmpty(),
             categoryId = rule.actions.categoryId,
             expenseType = rule.actions.expenseType
         )
@@ -70,7 +70,13 @@ class EditRuleDomain @Inject constructor(
         when (val checked = validate(form, currency)) {
             is CheckedRule.Invalid -> checked.problems
             is CheckedRule.Valid -> {
-                classificationRepository.saveRule(id, checked.conditions, checked.actions)
+                // While amounts are hidden the form starts blank: blank leaves the range be.
+                val before = classificationRepository.getRule(id)?.conditions?.takeIf { Money.masked }
+                val conditions = checked.conditions.copy(
+                    minMinor = checked.conditions.minMinor ?: before?.minMinor?.takeIf { form.min.isBlank() },
+                    maxMinor = checked.conditions.maxMinor ?: before?.maxMinor?.takeIf { form.max.isBlank() }
+                )
+                classificationRepository.saveRule(id, conditions, checked.actions)
                 emptySet()
             }
         }

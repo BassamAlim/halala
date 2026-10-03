@@ -4,6 +4,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.enums.Direction
+import bassamalim.halala.core.enums.IdentifiedBy
 import bassamalim.halala.core.enums.RawStatus
 import java.time.Duration
 import java.time.Instant
@@ -50,11 +51,22 @@ sealed interface Anomaly {
     ) : Anomaly {
         override val key get() = "mismatch:$accountId:${at.toEpochMilli()}"
     }
+
+    /**
+     * More than one in twenty of [sender]'s messages this week quoted money in a layout no parser
+     * knows ([failed] of [total]): the bank has likely changed its SMS. Keyed by the newest
+     * failure, so a dismissed alert comes back when another fails.
+     */
+    data class ParserFailing(val sender: String, val failed: Int, val total: Int, val newest: RawMessage) : Anomaly {
+        override val key get() = "parser:$sender:${newest.hash}"
+        override val at: Instant get() = newest.receivedAt
+    }
 }
 
 /**
  * The spec's anomaly alerts, found in the ledger as it is (nothing is stored but what you
- * dismissed): over the last [WINDOW_DAYS] days, newest first.
+ * dismissed): over the last [WINDOW_DAYS] days, newest first. [messages] are the raw SMS to
+ * look at: the declined ones, and all of the last [PARSER_WINDOW_DAYS] days for parser health.
  */
 object Anomalies {
 
@@ -64,6 +76,15 @@ object Anomalies {
     private const val LARGE_FACTOR = 3
     private const val LARGE_FLOOR_MINOR = 10_000L
     private const val LARGE_HISTORY = 4
+
+    private val KNOWN = setOf(IdentifiedBy.LIST, IdentifiedBy.YOU)
+
+    /** Parser health: a week of each sender's messages, failing above 5%. */
+    const val PARSER_WINDOW_DAYS = 7L
+    private const val PARSER_FAILURE_PERCENT = 5
+
+    /** Not counted for parser health: notices and OTPs, and messages not parsed yet. */
+    private val UNCOUNTED = setOf(RawStatus.IGNORED, RawStatus.PENDING)
 
     /** A key that quiets every "unusually large" for a merchant: "this is normal for it". */
     fun normalFor(merchantId: Long) = "large-merchant:$merchantId"
@@ -104,7 +125,10 @@ object Anomalies {
             if (amount > typical * LARGE_FACTOR && amount - typical >= LARGE_FLOOR_MINOR) Anomaly.Large(detail, typical) else null
         }
 
-        val foreign = recent.filter { it.transaction.originalCurrency != null }.map { Anomaly.Foreign(it) }
+        // A merchant the list or you identified is known: its foreign charges are expected.
+        val foreign = recent
+            .filter { it.transaction.originalCurrency != null && it.merchantIdentifiedBy !in KNOWN }
+            .map { Anomaly.Foreign(it) }
 
         val declined = messages.filter { it.status == RawStatus.DECLINED && it.receivedAt.isAfter(since) }.map { Anomaly.Declined(it) }
 
@@ -121,7 +145,18 @@ object Anomalies {
             }
         }
 
-        return (duplicates + large + foreign + declined + mismatches)
+        val weekAgo = now.minus(Duration.ofDays(PARSER_WINDOW_DAYS))
+        val parser = messages
+            .filter { it.status !in UNCOUNTED && it.receivedAt.isAfter(weekAgo) }
+            .groupBy { it.sender }
+            .mapNotNull { (sender, sent) ->
+                val failed = sent.filter { it.status == RawStatus.UNRECOGNISED }
+                if (failed.size * 100 > sent.size * PARSER_FAILURE_PERCENT)
+                    Anomaly.ParserFailing(sender, failed.size, sent.size, failed.maxBy { it.receivedAt })
+                else null
+            }
+
+        return (duplicates + large + foreign + declined + mismatches + parser)
             .filter { it.key !in dismissed }
             .sortedByDescending { it.at }
     }

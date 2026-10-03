@@ -46,9 +46,37 @@
     <!-- Tabs -->
     <string name="tab_home">Home</string>
     <string name="tab_activity">Activity</string>
+    <string name="tab_inbox">Inbox</string>
     <string name="tab_plan">Plan</string>
     <string name="tab_wealth">Wealth</string>
-    <string name="tab_assistant">Assistant</string>
+
+    <!-- Inbox -->
+    <string name="inbox_empty">Nothing needs you right now.</string>
+    <plurals name="inbox_merchants">
+        <item quantity="one">%d merchant to file</item>
+        <item quantity="other">%d merchants to file</item>
+    </plurals>
+    <string name="inbox_merchants_hint">Say what each is for, once.</string>
+    <plurals name="inbox_alerts">
+        <item quantity="one">%d alert</item>
+        <item quantity="other">%d alerts</item>
+    </plurals>
+    <string name="inbox_alerts_hint">Charges that look wrong.</string>
+    <plurals name="inbox_recurring">
+        <item quantity="one">%d subscription or bill to look at</item>
+        <item quantity="other">%d subscriptions and bills to look at</item>
+    </plurals>
+    <string name="inbox_recurring_hint">Found, missed, or a price that rose.</string>
+    <plurals name="inbox_people">
+        <item quantity="one">%d pair may be the same person</item>
+        <item quantity="other">%d pairs may be the same person</item>
+    </plurals>
+    <string name="inbox_people_hint">Merge them, or say they aren\'t.</string>
+    <plurals name="inbox_trips">
+        <item quantity="one">%d trip to tag</item>
+        <item quantity="other">%d trips to tag</item>
+    </plurals>
+    <string name="inbox_trips_hint">Spending abroad that looks like a trip.</string>
 
     <!-- Home -->
     <string name="home_cash">Cash wallet</string>
@@ -164,6 +192,16 @@
     <string name="settings_privacy">Privacy</string>
     <string name="settings_accounts_summary">%1$s at %2$s</string>
     <string name="settings_export_summary">CSV or JSON, to a file you choose</string>
+    <string name="settings_hide_amounts">Hide amounts</string>
+    <string name="settings_hide_amounts_on">On. Tap to show them again</string>
+    <string name="settings_hide_amounts_off">Show the app without your figures</string>
+    <string name="settings_lock_after">Lock again after</string>
+    <string name="settings_lock_at_once">As soon as you leave</string>
+    <plurals name="settings_lock_minutes">
+        <item quantity="one">%d minute away</item>
+        <item quantity="other">%d minutes away</item>
+    </plurals>
+    <string name="settings_show_amounts">Show amounts</string>
     <string name="settings_version">Halala %1$s</string>
 
     <!-- Export -->
@@ -347,7 +385,6 @@
     <!-- Merchants -->
     <string name="merchants">Merchants</string>
     <string name="merchant">Merchant</string>
-    <string name="settings_merchants_summary">Each business, however its bank spells it</string>
     <string name="merchants_search">Search merchants</string>
     <string name="merchants_empty">No merchants yet. They appear as purchases arrive.</string>
     <string name="merchants_hint">A new spelling joins the merchant it reads like. If one joined the wrong merchant, open it and take that spelling out.</string>
@@ -382,10 +419,13 @@
     <string name="people_empty">No one yet. People appear as transfers to and from them arrive.</string>
     <string name="people_hint">Each name a bank writes is someone new. If two are the same person, open one and choose who they are.</string>
     <string name="people_last">last %1$s</string>
-    <plurals name="people_count">
-        <item quantity="one">%1$d person</item>
-        <item quantity="other">%1$d people</item>
-    </plurals>
+    <string name="people_same_title">Same person?</string>
+    <string name="people_same_pair">%1$s and %2$s</string>
+    <string name="people_same_spelling">Spelled the same, apart from spacing. Merged, they are %1$s.</string>
+    <string name="people_same_account">Both have an account ending %2$s. Merged, they are %1$s.</string>
+    <string name="people_same_ai">The AI reads these as one name. Merged, they are %1$s.</string>
+    <string name="people_same_merge">Merge</string>
+    <string name="people_same_not">Not the same</string>
     <plurals name="transfer_count">
         <item quantity="one">%1$d transfer</item>
         <item quantity="other">%1$d transfers</item>
@@ -445,6 +485,8 @@
     <string name="loan_mark_borrowed_title">Borrowed from %1$s</string>
     <string name="loan_mark_body">It becomes a loan: not spending or income, and Halala keeps count of what is paid back.</string>
     <string name="loan_mark_confirm">Mark as a loan</string>
+    <string name="loan_mark_title_none">Who is it a loan with?</string>
+    <string name="loan_no_one">Choose who it is a loan with</string>
     <string name="loan_suggest_lent">%1$s owes you %2$s from %3$s. Does this repay it?</string>
     <string name="loan_suggest_borrowed">You owe %1$s %2$s from %3$s. Does this repay it?</string>
     <string name="loan_repays">It repays the loan</string>
@@ -487,6 +529,8 @@
     </plurals>
     <string name="recurring_price_up">%1$s went up from %2$s to %3$s %4$s.</string>
     <string name="recurring_missed">%1$s was due %2$s and hasn\'t been charged yet.</string>
+    <string name="recurring_renews_soon">%1$s renews on %2$s for %3$s. Still worth it?</string>
+    <string name="recurring_first_charge">%1$s charges for the first time on %2$s, %3$s. If it\'s a free trial, now is the time to cancel.</string>
     <string name="recurring_found_subscription">Looks like a subscription: %1$s, %2$s %3$s.</string>
     <string name="recurring_found_bill">Looks like a bill: %1$s, about %2$s %3$s.</string>
     <string name="recurring_found_planned">Looks like a planned payment: %1$s, %2$s %3$s.</string>
@@ -502,7 +546,6 @@
     <string name="recurring_next_due">Next due</string>
     <string name="recurring_ends_on">Ends</string>
     <string name="recurring_runs_on">Runs on</string>
-    <string name="recurring_no_end">No end date</string>
     <string name="recurring_ends_before_due">It ends before it is next due</string>
     <string name="recurring_auto_renew">Renews on its own</string>
     <string name="recurring_reminder">Remind me</string>
@@ -511,6 +554,7 @@
     <string name="recurring_plan_next">Next: %1$s, %2$s</string>
     <string name="recurring_per_month">%1$s / mo</string>
     <string name="home_coming_up">Coming up</string>
+    <string name="home_coming_up_empty">Nothing due in the next month. Add a subscription or bill.</string>
     <string name="home_people_owe">People owe you</string>
     <string name="home_you_owe">You owe %1$s</string>
     <string name="due_channel">Bills and loans</string>
@@ -536,6 +580,27 @@
     <string name="split_undo">Undo the split</string>
     <string name="split_undo_title">Undo the split?</string>
     <string name="split_undo_body">The shares are no longer owed, and all of it is your spending again. Repayments of them become plain transfers.</string>
+    <string name="goal_toward_label">Savings goal</string>
+    <string name="goal_toward">Toward %1$s</string>
+    <string name="goal_taken_out_of">Taken out of %1$s</string>
+    <string name="goal_toward_mark">Toward a savings goal</string>
+    <string name="goal_put_in">Put in</string>
+    <string name="goal_took_out">Took out</string>
+    <string name="goal_toward_none">Choose a goal</string>
+    <string name="goal_toward_body">It counts in what the goal has saved, and not as spending or income. For money kept where Halala has no account, like Al Rajhi Capital.</string>
+    <string name="goal_toward_confirm">Count it</string>
+    <string name="goal_toward_undo">Not toward a goal</string>
+    <string name="goal_toward_undo_title">Not toward a goal?</string>
+    <string name="goal_toward_undo_body">It no longer counts in the goal, and counts as it did before.</string>
+    <string name="paid_for">Paid for someone</string>
+    <string name="paid_for_mark">Paid for someone else</string>
+    <string name="paid_for_title">Paid for %1$s</string>
+    <string name="paid_for_title_none">Who did you pay for?</string>
+    <string name="paid_for_body">All of it becomes a loan they owe you: not your spending, and Halala keeps count of what is paid back.</string>
+    <string name="paid_for_no_one">Choose who you paid for</string>
+    <string name="paid_for_undo">It was for me</string>
+    <string name="paid_for_undo_title">It was for you?</string>
+    <string name="paid_for_undo_body">Nothing is owed for it, and all of it is your spending again. Repayments of it become plain transfers.</string>
     <string name="budgets">Budgets</string>
     <string name="budget">Budget</string>
     <string name="budget_new">New budget</string>
@@ -543,7 +608,12 @@
     <string name="budgets_empty">No budgets yet. Set one for everything you spend, or for a category, type or merchant.</string>
     <string name="budgets_hint">Budgets run from one salary to the next. Only your share of a split bill counts, and loans and moves between your accounts don\'t.</string>
     <string name="budget_everything">Everything</string>
+    <string name="budget_alert_title">%1$s: %2$d%% of its budget</string>
+    <string name="budget_alert_full_title">%1$s: budget used up</string>
+    <string name="budget_alert_text">This pay cycle, so far. Open Halala to see where it stands.</string>
     <string name="budget_for">What it limits</string>
+    <string name="budget_tag">Tag</string>
+    <string name="budget_tag_none">No tags yet. Make one on Tags, from Activity.</string>
     <string name="budget_choice_missing">Choose one</string>
     <string name="budget_amount">Each pay cycle</string>
     <string name="budget_amount_hint">From one salary to the next, or a calendar month until a salary arrives.</string>
@@ -583,10 +653,9 @@
     <string name="goal_target">Target</string>
     <string name="goal_by">By</string>
     <string name="goal_no_date">No date</string>
-    <string name="goal_clear_date">No date</string>
+    <string name="remove_date">Remove</string>
     <string name="goal_accounts">Saved in</string>
-    <string name="goal_accounts_hint">Their balances are what is saved.</string>
-    <string name="goal_accounts_missing">Choose at least one account</string>
+    <string name="goal_accounts_hint">Their balances are what is saved. An Awaeed deposit is filed under a goal on Savings.</string>
     <string name="goal_delete_title">Delete %1$s?</string>
     <string name="goal_delete_body">The accounts and their money stay as they are.</string>
     <string name="goal_by_date">by %1$s</string>
@@ -595,6 +664,7 @@
     <string name="goal_averaged">You averaged %1$s a month.</string>
     <string name="goal_reached">Reached.</string>
     <string name="goal_add">Add a savings goal</string>
+    <string name="goal_new_chip">+ New goal</string>
     <string name="goal_add_hint">A target and a date, in the accounts you save in.</string>
     <string name="alerts">Alerts</string>
     <string name="alerts_empty">Nothing looks unusual.</string>
@@ -615,6 +685,8 @@
     <string name="alert_declined_body">%1$s declined a payment on %2$s.</string>
     <string name="alert_mismatch">Balance doesn\'t add up</string>
     <string name="alert_mismatch_body">%1$s: the bank said %2$s, the ledger makes it %3$s, on %4$s. An SMS may have been missed or recorded twice.</string>
+    <string name="alert_parser">Messages Halala can\'t read</string>
+    <string name="alert_parser_body">%1$s: %2$s of %3$s messages this week weren\'t read. The bank may have changed how it writes them. They\'re kept, and will be read once Halala learns the new layout.</string>
     <string name="digests">Digests</string>
     <string name="digests_summary">Each week, month and year in review</string>
     <string name="digests_empty">No digests yet. They appear once a week or month with spending has ended.</string>
@@ -701,7 +773,6 @@
     <string name="asset_percent_invalid">Enter a percentage from 0 to 100</string>
     <string name="asset_delete_body">Net worth drops by its value. Its history stays in past snapshots.</string>
     <string name="zakat">Zakat</string>
-    <string name="zakat_summary">What is due, on your Hijri date</string>
     <string name="zakat_due">Zakat due</string>
     <string name="zakat_method">2.5%% of %1$s.</string>
     <string name="zakat_below_nisab">%1$s is below the nisab, so none is due.</string>
@@ -767,8 +838,9 @@
     <string name="retirement_save">Save as a scenario</string>
     <string name="retirement_no_scenarios">No scenarios yet. Save one to compare.</string>
     <string name="retirement_scenario_detail">%1$d to %2$d at %3$s%%</string>
-    <string name="retirement_plan_card">Plan it</string>
+    <string name="retirement_summary">What you will have, and what it pays you</string>
     <string name="compound">Compound interest</string>
+    <string name="compound_summary">What a sum grows to</string>
     <string name="compound_principal">Starting sum</string>
     <string name="compound_years">Years</string>
     <string name="compound_frequency">Compounded</string>
@@ -808,6 +880,14 @@
     <string name="savings_maturity">At maturity</string>
     <string name="savings_clear">Remove the terms</string>
     <string name="savings_awaeed_months">Awaeed · %1$s</string>
+    <string name="deposit_title">Awaeed deposit</string>
+    <string name="deposit_for">What it is for</string>
+    <string name="deposit_for_hint">It counts toward that goal while it runs.</string>
+    <string name="deposit_no_goal">No goal</string>
+    <string name="deposit_for_goal">For %1$s</string>
+    <string name="deposit_pay_out">It was paid out</string>
+    <string name="deposit_pay_out_title">Paid out?</string>
+    <string name="deposit_pay_out_body">What went in moves back to the account it came from, dated today. The profit arrives as its own message.</string>
     <string name="savings_matures">Matures %1$s · about %2$s profit</string>
     <string name="due_maturing_title">%1$s matures soon</string>
     <string name="due_maturing_text">On %1$s. Check what happens at maturity.</string>
@@ -818,10 +898,31 @@
     <string name="flow_came_in">Came in, %1$s</string>
     <string name="flow_moved">%1$s moved between your accounts. None of it counts as spending.</string>
     <string name="flow_none_moved">Nothing moved between your accounts.</string>
-    <string name="flow_spent_from">Spent from %1$s</string>
     <string name="flow_stays_in">Stays in %1$s</string>
-    <string name="flow_to_accounts">To your accounts</string>
-    <string name="flow_spent">Spent</string>
+    <string name="flow_came">Came in</string>
+    <string name="flow_went">Went out</string>
+    <string name="flow_tap_hint">Tap a part to see what made it up.</string>
+    <string name="flow_shares">You spent %1$d%% of it and kept %2$d%%: moved to your accounts, saved, or left where it was.</string>
+    <string name="flow_spending_up">Spending is up %1$d%% on the month before.</string>
+    <string name="flow_spending_down">Spending is down %1$d%% on the month before.</string>
+    <string name="flow_share">%1$d%% of it</string>
+    <string name="flow_change_up">up %1$d%% on the month before</string>
+    <string name="flow_change_down">down %1$d%% on the month before</string>
+    <string name="flow_part_salary">Salary</string>
+    <string name="flow_part_from_people">From people</string>
+    <string name="flow_part_refunds">Refunds</string>
+    <string name="flow_part_other_in">Other money in</string>
+    <string name="flow_part_from_balance">From what was already there</string>
+    <string name="flow_part_to">To %1$s</string>
+    <string name="flow_part_saved">Saved and invested</string>
+    <string name="flow_part_to_people">To people</string>
+    <string name="flow_part_other_spending">Other spending</string>
+    <string name="flow_part_unfiled">Spending not filed yet</string>
+    <string name="flow_part_other_out">Other money out</string>
+    <plurals name="flow_more">
+        <item quantity="one">and %1$d more</item>
+        <item quantity="other">and %1$d more</item>
+    </plurals>
     <string name="flow_empty">Nothing went in or out of this account this month.</string>
     <plurals name="flow_no_match">
         <item quantity="one">%1$d transfer has no match</item>
@@ -834,52 +935,23 @@
     <string name="flow_pick_account">Pick the account</string>
     <string name="flow_month">Month</string>
     <string name="flow_account">Account</string>
-    <string name="assistant_intro">Ask about your money: what you spent, what came in, your biggest bills, who owes whom, or whether you can afford something. Only your question goes to the AI, to read what you mean; the answer is worked out on your phone.</string>
+    <string name="assistant_title">Ask</string>
+    <string name="assistant_intro">Ask anything about your transactions: totals, averages, by month, weekday, merchant or category, the biggest, the most often. Only your question goes to the AI, which writes the query; it runs on your phone, and nothing it finds is sent back.</string>
     <string name="assistant_ask">Ask about your money</string>
     <string name="assistant_send">Send</string>
     <string name="assistant_thinking">Reading your question…</string>
-    <string name="assistant_suggest_afford">Can I afford 12,000 in Nov?</string>
-    <string name="assistant_suggest_bills">Biggest bills this year</string>
-    <string name="assistant_suggest_owed">Who owes me money?</string>
-    <string name="assistant_suggest_month">How much did I spend this month?</string>
-    <string name="assistant_no_key">The assistant needs the AI to read questions, and this build has no key for it.</string>
+    <string name="assistant_suggest_weekday">Spending by weekday this year</string>
+    <string name="assistant_suggest_average">Average grocery trip this year</string>
+    <string name="assistant_suggest_biggest">Biggest purchases this year</string>
+    <string name="assistant_suggest_months">Restaurants by month</string>
+    <string name="assistant_no_key">Asking needs the AI to read questions, and this build has no key for it.</string>
     <string name="assistant_offline">Couldn\'t reach the AI. Check you\'re online and ask again.</string>
     <string name="assistant_limited">The AI\'s free limit is used up for now. Ask again in a while.</string>
-    <string name="assistant_unreadable">That didn\'t come back as something Halala could read. Try asking another way.</string>
-    <string name="assistant_unsupported">I can answer what you spent, what came in, your biggest bills, who owes whom, your balance, and whether you can afford something.</string>
-    <string name="assistant_no_amount">How much would it be? Ask again with the amount.</string>
-    <string name="assistant_unknown_topic">Nothing of yours is called “%1$s”, so this is all spending.</string>
-    <plurals name="assistant_spent">
-        <item quantity="one">spent %2$s, %1$d purchase</item>
-        <item quantity="other">spent %2$s, %1$d purchases</item>
-    </plurals>
-    <plurals name="assistant_came_in">
-        <item quantity="one">came in %2$s, %1$d time</item>
-        <item quantity="other">came in %2$s, %1$d times</item>
-    </plurals>
-    <plurals name="assistant_balance">
-        <item quantity="one">in your %1$d account now</item>
-        <item quantity="other">across your %1$d accounts now</item>
-    </plurals>
-    <string name="assistant_since">since %1$s</string>
-    <string name="assistant_between">%1$s to %2$s</string>
-    <string name="assistant_all_spending">All spending</string>
-    <string name="assistant_category">Category: %1$s</string>
-    <string name="assistant_merchant">Merchant: %1$s</string>
-    <string name="assistant_type">Kind: %1$s</string>
-    <string name="assistant_top">%1$s is %2$d%% of it.</string>
-    <string name="assistant_highest">%1$s was your highest month.</string>
-    <string name="assistant_bills">Biggest bills %1$s</string>
-    <string name="assistant_no_bills">No bills paid in that time.</string>
-    <string name="assistant_no_one_owes">No one owes you.</string>
-    <string name="assistant_you_owe">You owe</string>
-    <string name="assistant_you_owe_no_one">You don’t owe anyone.</string>
-    <string name="assistant_due">Due %1$s</string>
-    <string name="assistant_afford_once">%1$s on %2$s</string>
-    <string name="assistant_afford_monthly">%1$s a month from %2$s</string>
-    <string name="assistant_afford_yes">Yes, you stay above zero.</string>
-    <string name="assistant_afford_no">Not without going below zero.</string>
-    <string name="assistant_afford_lowest">Your lowest balance would be %1$s, on %2$s, by the forecast.</string>
+    <string name="assistant_unreadable">That didn\'t come back as a query Halala could run. Try asking another way.</string>
+    <string name="assistant_unsupported">This answers questions about your transactions. Balances, the forecast and who owes whom are on their own screens.</string>
+    <string name="assistant_nothing">Nothing found.</string>
+    <string name="assistant_more">The first %1$d are shown.</string>
+    <string name="assistant_how">How this was worked out</string>
     <string name="backup_title">Encrypted backups</string>
     <string name="backup_summary">A .halala file only your passphrase opens, on a schedule</string>
     <string name="backup_explain">Everything in Halala, the bank messages too, sealed with a passphrase only you know, saved to a folder you choose: on the phone, Google Drive, or any app that offers a folder.</string>
@@ -927,7 +999,6 @@
         <item quantity="other">%1$d to review</item>
     </plurals>
     <string name="tags">Tags</string>
-    <string name="settings_tags_summary">Trips and occasions, across categories</string>
     <string name="tags_empty">No tags yet. Tag a trip or an occasion to see what it cost.</string>
     <string name="tags_explain">A tag with days can take everything in them by itself, until it ends. Trips are suggested from runs of spending in another currency, worked out on the phone.</string>
     <string name="tags_none_yet">No tags yet. Name one below.</string>
@@ -953,8 +1024,6 @@
     <string name="tag_ends">Ends</string>
     <string name="tag_no_days">No days: tag by hand</string>
     <string name="tag_running">Still running</string>
-    <string name="tag_clear_days">No days</string>
-    <string name="tag_no_end">No end</string>
     <string name="tag_ends_before">It ends before it starts.</string>
     <string name="tag_auto">Tag everything in these days</string>
     <string name="tag_auto_hint">Including what arrives while it runs. Take it off any one on its detail.</string>
@@ -1108,11 +1177,21 @@
     <string name="merchant_is">What it is</string>
     <string name="merchant_is_title">What is %1$s?</string>
     <string name="merchant_is_unknown">Not identified yet</string>
+    <string name="merchant_look_up">Look it up</string>
+    <string name="merchant_looking_up">Looking it up…</string>
+    <string name="merchant_lookup_updated">Found it. What it is has been updated.</string>
+    <string name="merchant_lookup_nothing_new">Nothing surer than what it says now.</string>
+    <string name="merchant_lookup_withheld">Its name holds digits that could be yours, so it is never sent. Say what it is yourself.</string>
+    <string name="merchant_lookup_offline">Couldn\'t reach the lookup. Try again once you\'re online.</string>
+    <string name="merchant_lookup_limited">The lookup is busy for now. Try again later.</string>
+    <string name="merchant_lookup_failed">The answer couldn\'t be read. Try again.</string>
+    <string name="merchant_lookup_unavailable">This build can\'t look merchants up.</string>
     <string name="identified_list">From Halala\'s list of known merchants</string>
     <string name="identified_ai">Identified by AI, %1$d%% sure</string>
     <string name="identified_you">Said by you</string>
     <string name="identified_withheld">Not sent to AI: its name may hold an account number</string>
     <string name="identified_as">Identified as: %1$s</string>
+    <string name="found_online">Found online: %1$s</string>
     <string name="review_all">All %1$d</string>
     <string name="review_suggested">Suggested %1$d</string>
     <string name="review_needs_you">Needs you %1$d</string>
@@ -1123,4 +1202,8 @@
         <item quantity="other">Confirm all %1$d</item>
     </plurals>
     <string name="review_change">Change</string>
+    <string name="review_swipe_confirm">Confirm</string>
+    <string name="review_mark_split">Split</string>
+    <string name="review_mark_subscription">Subscription</string>
+    <string name="review_mark_bill">Bill</string>
 </resources>

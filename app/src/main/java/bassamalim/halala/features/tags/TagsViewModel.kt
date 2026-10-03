@@ -1,5 +1,6 @@
 package bassamalim.halala.features.tags
 
+import bassamalim.halala.core.utils.OneAtATime
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -50,6 +51,7 @@ class TagsViewModel @Inject constructor(
     private val navigator: Navigator,
     private val clock: Clock
 ) : ViewModel() {
+
 
     private var suggested: List<TagSuggestion> = emptyList()
 
@@ -132,6 +134,8 @@ class EditTagViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
+    private val saving = OneAtATime()
+
     private val id = savedStateHandle.toRoute<Screen.EditTag>().id
     private data class Local(val form: TagForm? = null, val nameMissing: Boolean = false, val endsBeforeStart: Boolean = false, val picking: TagDate? = null, val confirmingDelete: Boolean = false)
     private val local = MutableStateFlow(Local())
@@ -186,21 +190,24 @@ class EditTagViewModel @Inject constructor(
         val form = local.value.form ?: return
         if (form.name.isBlank()) return local.update { it.copy(nameMissing = true) }
         if (form.startsOn != null && form.endsOn != null && form.endsOn.isBefore(form.startsOn)) return local.update { it.copy(endsBeforeStart = true) }
-        viewModelScope.launch {
+        saving.launch(viewModelScope) {
             val auto = form.auto && form.startsOn != null
             val tag = original
             if (tag == null) tagsRepository.add(form.name, form.startsOn, form.endsOn, auto)
             else tagsRepository.update(tag.copy(name = form.name, startsOn = form.startsOn, endsOn = form.endsOn, auto = auto))
             navigator.popBackStack()
+            true
         }
     }
 
     fun onDeleteClick() = local.update { it.copy(confirmingDelete = true) }
     fun onDeleteDismiss() = local.update { it.copy(confirmingDelete = false) }
     fun onDeleteConfirm() {
-        viewModelScope.launch {
+        local.update { it.copy(confirmingDelete = false) }
+        saving.launch(viewModelScope) {
             tagsRepository.delete(id)
             navigator.popBackStack()
+            true
         }
     }
 }

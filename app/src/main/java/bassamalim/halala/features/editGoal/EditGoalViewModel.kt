@@ -1,5 +1,6 @@
 package bassamalim.halala.features.editGoal
 
+import bassamalim.halala.core.utils.OneAtATime
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -26,6 +27,8 @@ class EditGoalViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
+    private val saving = OneAtATime()
+
     private val id = savedStateHandle.toRoute<Screen.EditGoal>().id
 
     private val form = MutableStateFlow(if (id == 0L) GoalForm() else null)
@@ -47,7 +50,7 @@ class EditGoalViewModel @Inject constructor(
             form = form ?: GoalForm(),
             dateLabel = form?.targetDate?.let(::monthYearLabel),
             accounts = accounts
-                .filter { !it.account.archived || it.account.id in form?.accountIds.orEmpty() }
+                .filter { (!it.account.archived && it.account.type.listed) || it.account.id in form?.accountIds.orEmpty() }
                 .map { AccountChoice(it.account.id, accountLabel(it.institutionName, it.account.nickname)) },
             problems = problems,
             pickingDate = picking,
@@ -91,10 +94,11 @@ class EditGoalViewModel @Inject constructor(
 
     fun onSaveClick() {
         val current = form.value ?: return
-        viewModelScope.launch {
+        saving.launch(viewModelScope) {
             val found = domain.save(id, current)
             problems.update { found }
             if (found.isEmpty()) navigator.popBackStack()
+            found.isEmpty()
         }
     }
 

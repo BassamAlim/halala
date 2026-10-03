@@ -43,10 +43,7 @@ class AiIdentification @Inject constructor(
     suspend fun run() {
         if (!isOn()) return
         // The digits that name your accounts and cards: a name holding one is never sent.
-        val last4s = (accounts.getAll().mapNotNull { it.last4 } + sms.getRefs().map { it.ref })
-            .map { it.filter(Char::isDigit).takeLast(4) }
-            .filter { it.length == 4 }
-            .toSet()
+        val last4s = ownLast4s(accounts, sms)
 
         repeat(MAX_BATCHES) {
             val waiting = classification.toIdentify()
@@ -74,6 +71,13 @@ class AiIdentification @Inject constructor(
     }
 }
 
+/** The digits that name your accounts and cards, last four each. */
+internal suspend fun ownLast4s(accounts: AccountsRepository, sms: SmsRepository): Set<String> =
+    (accounts.getAll().mapNotNull { it.last4 } + sms.getRefs().map { it.ref })
+        .map { it.filter(Char::isDigit).takeLast(4) }
+        .filter { it.length == 4 }
+        .toSet()
+
 /** Starts identifying in the background, when the build has a key: after SMS arrive, and as the app opens. */
 class AiScheduler @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -85,16 +89,23 @@ class AiScheduler @Inject constructor(
     }
 }
 
-/** One run of [AiIdentification], online only. A problem worth trying again is retried later. */
+/**
+ * One run of [AiIdentification], then [WebLookup] for what it was unsure of, then [PeopleMatching],
+ * online only. A problem worth trying again is retried later.
+ */
 @HiltWorker
 class IdentifyWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
-    private val identification: AiIdentification
+    private val identification: AiIdentification,
+    private val webLookup: WebLookup,
+    private val peopleMatching: PeopleMatching
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result = try {
         identification.run()
+        webLookup.run()
+        peopleMatching.run()
         Result.success()
     } catch (failure: IdentifyFailure) {
         if (failure.problem.retry) Result.retry() else Result.success()

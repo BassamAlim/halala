@@ -33,17 +33,28 @@ object Budgets {
     fun isSpending(detail: TransactionDetail) =
         detail.transaction.direction == Direction.DEBIT && detail.transaction.kind.countsInTotals && !detail.isInternalTransfer
 
-    fun matches(budget: Budget, detail: TransactionDetail): Boolean = when (budget.scope) {
+    /** [tags] are the tags [detail] carries (`Tags.byTransaction`), for a budget on a tag. */
+    fun matches(budget: Budget, detail: TransactionDetail, tags: Set<Long> = emptySet()): Boolean = when (budget.scope) {
         BudgetScope.TOTAL -> true
         BudgetScope.CATEGORY -> detail.transaction.categoryId == budget.categoryId
         BudgetScope.EXPENSE_TYPE -> detail.transaction.expenseType == budget.expenseType
         BudgetScope.MERCHANT -> detail.merchantId == budget.merchantId
+        BudgetScope.TAG -> budget.tagId in tags
     }
 
-    /** What [budget]'s scope spent in [cycle]. */
-    fun spent(budget: Budget, details: List<TransactionDetail>, cycle: PayCycle, zone: ZoneId): Long = Money.sum(
+    /** What [budget]'s scope spent in [cycle]. [tagged] is each transaction's tags, by its id. */
+    fun spent(
+        budget: Budget,
+        details: List<TransactionDetail>,
+        cycle: PayCycle,
+        zone: ZoneId,
+        tagged: Map<Long, Set<Long>> = emptyMap()
+    ): Long = Money.sum(
         details
-            .filter { isSpending(it) && it.transaction.currency == budget.currency && matches(budget, it) }
+            .filter {
+                isSpending(it) && it.transaction.currency == budget.currency &&
+                        matches(budget, it, tagged[it.transaction.id].orEmpty())
+            }
             .filter { cycle.contains(it.transaction.occurredAt.atZone(zone).toLocalDate()) }
             .map { it.yourMinor }
     )
@@ -54,12 +65,13 @@ object Budgets {
         cycle: PayCycle,
         previous: PayCycle?,
         today: LocalDate,
-        zone: ZoneId
+        zone: ZoneId,
+        tagged: Map<Long, Set<Long>> = emptyMap()
     ): BudgetStatus {
         val rolled = if (budget.rollover && previous != null)
-            maxOf(0, budget.amountMinor - spent(budget, details, previous, zone)) else 0
+            maxOf(0, budget.amountMinor - spent(budget, details, previous, zone, tagged)) else 0
         val limit = Math.addExact(budget.amountMinor, rolled)
-        val spent = spent(budget, details, cycle, zone)
+        val spent = spent(budget, details, cycle, zone, tagged)
         val share = if (limit == 0L) 0.0 else spent.toDouble() / limit
         return BudgetStatus(
             budget = budget,
@@ -69,6 +81,28 @@ object Budgets {
             paceAhead = spent <= limit && share > cycle.elapsed(today) + PACE_MARGIN
         )
     }
+
+    /** How far through a budget you are told about, in percent: each once a cycle. */
+    val ALERT_PERCENTS = listOf(50, 80, 100)
+
+    /** The highest of [ALERT_PERCENTS] [status] has reached, in exact integers; null below the first. */
+    fun reached(status: BudgetStatus): Int? = ALERT_PERCENTS.lastOrNull {
+        Math.multiplyExact(status.spentMinor, 100L) >= Math.multiplyExact(status.limitMinor, it.toLong())
+    }
+
+    /** Remembers that [budgetId] was told about [percent] in the cycle starting [cycleStart]. */
+    fun toldKey(budgetId: Long, cycleStart: LocalDate, percent: Int) = "$budgetId:$cycleStart:$percent"
+
+    /**
+     * The budgets to tell about now, with the percent each reached: only past a threshold higher
+     * than any already [told] this [cycle] (so a jump from 40% to 110% tells once, at 100).
+     */
+    fun alerts(statuses: List<BudgetStatus>, cycle: PayCycle, told: Set<String>): List<Pair<BudgetStatus, Int>> =
+        statuses.mapNotNull { status ->
+            val percent = reached(status) ?: return@mapNotNull null
+            val already = ALERT_PERCENTS.filter { it >= percent }.any { toldKey(status.budget.id, cycle.start, it) in told }
+            if (already) null else status to percent
+        }
 
     /** Salary credits, for the pay cycle. */
     fun salaries(details: List<TransactionDetail>, zone: ZoneId): List<SalaryCredit> = details

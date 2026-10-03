@@ -1,5 +1,6 @@
 package bassamalim.halala.features.forecast
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -68,7 +69,10 @@ fun ForecastScreen(viewModel: ForecastViewModel = hiltViewModel()) {
         verticalArrangement = Arrangement.spacedBy(Spacing.card)
     ) {
         TopBar(title = stringResource(R.string.forecast), onBack = viewModel::onBackClick)
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         val end = state.end
         if (end == null) {

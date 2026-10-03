@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.NotificationManagerCompat
 import bassamalim.halala.core.models.ReminderMode
 import bassamalim.halala.core.ui.components.ChoiceChips
+import bassamalim.halala.core.ui.components.ChoiceSheet
 import bassamalim.halala.core.ui.components.HalalaButton
 import bassamalim.halala.core.ui.components.HalalaSheet
 import bassamalim.halala.core.ui.components.TimeDialog
@@ -32,6 +33,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
+import bassamalim.halala.features.lock.canAuthenticate
+import bassamalim.halala.features.lock.findFragmentActivity
+import bassamalim.halala.features.lock.promptForUnlock
 import androidx.compose.foundation.layout.FlowRow
 import bassamalim.halala.core.ui.components.HalalaChip
 import bassamalim.halala.core.ui.components.ChipStyle
@@ -48,13 +52,15 @@ import bassamalim.halala.core.ui.theme.Spacing
 
 /**
  * Settings, from the Settings board, holding only the rows that are true today: accounts, bank
- * messages, categories, rules, recent changes, the review reminder, and backup and export. What
- * is always on (the lock, merchant identification) has no row. Digests, web search and the usage
+ * messages, categories, rules, recent changes, the review reminder, backup and export, and how
+ * soon the lock asks again. What is always on (the lock itself, merchant identification) has no row. Digests, web search and the usage
  * cap join as they are built.
  */
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val activity = LocalContext.current.findFragmentActivity()
+    val showAmountsTitle = stringResource(R.string.settings_show_amounts)
 
     Column(
         modifier = Modifier
@@ -87,18 +93,6 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 subtitle = stringResource(R.string.settings_categories_summary),
                 divider = true,
                 onClick = viewModel::onCategoriesClick
-            )
-            ListRow(
-                title = stringResource(R.string.tags),
-                subtitle = stringResource(R.string.settings_tags_summary),
-                divider = true,
-                onClick = viewModel::onTagsClick
-            )
-            ListRow(
-                title = stringResource(R.string.merchants),
-                subtitle = stringResource(R.string.settings_merchants_summary),
-                divider = true,
-                onClick = viewModel::onMerchantsClick
             )
             ListRow(
                 title = stringResource(R.string.rules),
@@ -140,6 +134,27 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 subtitle = stringResource(R.string.settings_export_summary),
                 onClick = viewModel::onExportClick
             )
+            ListRow(
+                title = stringResource(R.string.settings_hide_amounts),
+                subtitle = stringResource(
+                    if (state.hideAmounts) R.string.settings_hide_amounts_on else R.string.settings_hide_amounts_off
+                ),
+                divider = true,
+                onClick = {
+                    when {
+                        !state.hideAmounts -> viewModel.onHideAmounts(true)
+                        // No screen lock at all: as with the lock, you can never lock yourself out.
+                        activity == null || !activity.canAuthenticate() -> viewModel.onHideAmounts(false)
+                        else -> activity.promptForUnlock(showAmountsTitle) { viewModel.onHideAmounts(false) }
+                    }
+                }
+            )
+            ListRow(
+                title = stringResource(R.string.settings_lock_after),
+                subtitle = lockTimeoutLabel(state.lockTimeoutSeconds),
+                divider = true,
+                onClick = viewModel::onLockClick
+            )
         }
 
         Text(
@@ -159,8 +174,22 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         ReminderSheet(state, viewModel)
     } else if (state.isEditingDigests) {
         DigestsSheet(state, viewModel)
+    } else if (state.isEditingLock) {
+        ChoiceSheet(
+            title = stringResource(R.string.settings_lock_after),
+            options = SettingsUiState.LOCK_TIMEOUTS,
+            selected = state.lockTimeoutSeconds,
+            label = { lockTimeoutLabel(it) },
+            onPick = viewModel::onLockPicked,
+            onDismiss = viewModel::onLockDismiss
+        )
     }
 }
+
+@Composable
+private fun lockTimeoutLabel(seconds: Int): String =
+    if (seconds == 0) stringResource(R.string.settings_lock_at_once)
+    else pluralStringResource(R.plurals.settings_lock_minutes, seconds / 60, seconds / 60)
 
 private fun digestLabel(kind: DigestKind) = when (kind) {
     DigestKind.WEEK -> R.string.digest_weekly

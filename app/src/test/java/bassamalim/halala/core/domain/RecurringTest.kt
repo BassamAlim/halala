@@ -75,6 +75,23 @@ class RecurringTest {
     }
 
     @Test
+    fun `a yearly renewal within a month, and a trial's first charge within a week, are heads-ups`() {
+        // Insurance renews yearly: 20 days away is a heads-up, 40 isn't; monthly ones never are.
+        val renewal = Recurring.stateOf(series("2025-10-20", unit = CadenceUnit.YEAR), listOf(charge("2025-10-20")), today)
+        assertEquals(HeadsUp.RENEWAL, Recurring.headsUp(renewal, today))
+        assertNull(Recurring.headsUp(Recurring.stateOf(series("2025-11-09", unit = CadenceUnit.YEAR), listOf(charge("2025-11-09")), today), today))
+        assertEquals(HeadsUp.RENEWAL, Recurring.headsUp(Recurring.stateOf(series("2025-10-20", every = 12), listOf(charge("2025-10-20")), today), today))
+        assertNull(Recurring.headsUp(Recurring.stateOf(series("2026-09-03"), listOf(charge("2026-08-03"), charge("2026-09-01")), today), today))
+
+        // A trial: no charge yet, first one in five days; not once charged, nor ten days out.
+        val trial = Recurring.stateOf(series("2026-10-05"), emptyList(), today)
+        assertEquals(HeadsUp.FIRST_CHARGE, Recurring.headsUp(trial, today))
+        assertNull(Recurring.headsUp(Recurring.stateOf(series("2026-10-10"), emptyList(), today), today))
+        assertNull(Recurring.headsUp(trial.copy(series = trial.series.copy(cancelReminder = true)), today))
+        assertEquals("series:0:2026-10-05", Recurring.headsUpKey(trial))
+    }
+
+    @Test
     fun `yearly and monthly equivalents round half up`() {
         assertEquals(67_200, Recurring.yearly(5_600, 1, CadenceUnit.MONTH))
         assertEquals(2_400, Recurring.yearly(2_400, 1, CadenceUnit.YEAR))

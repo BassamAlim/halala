@@ -1,5 +1,6 @@
 package bassamalim.halala.features.digest
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -25,6 +26,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
+import bassamalim.halala.core.Globals
 import bassamalim.halala.core.domain.DigestKind
 import bassamalim.halala.core.ui.components.GroupLabel
 import bassamalim.halala.core.ui.components.HalalaCard
@@ -68,7 +70,10 @@ fun DigestScreen(viewModel: DigestViewModel = hiltViewModel()) {
             ),
             onBack = viewModel::onBackClick
         )
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         val change = state.changePercent
         val tail = when {
@@ -92,11 +97,13 @@ fun DigestScreen(viewModel: DigestViewModel = hiltViewModel()) {
                 label = stringResource(R.string.digest_saved),
                 amount = state.saved,
                 amountColor = if (state.savedNegative) HalalaColors.Text else HalalaColors.Income,
+                currency = Globals.PRIMARY_CURRENCY,
                 modifier = Modifier.weight(1f).fillMaxHeight()
             )
             SummaryCard(
                 label = stringResource(R.string.people_owed_to_you),
                 amount = state.owedToYou,
+                currency = Globals.PRIMARY_CURRENCY,
                 modifier = Modifier.weight(1f).fillMaxHeight()
             )
         }
@@ -137,7 +144,7 @@ private fun observation(line: ObservationLine): String = when (line) {
     is ObservationLine.LoanDue -> stringResource(if (line.lent) R.string.digest_loan_lent else R.string.digest_loan_borrowed, line.person, line.due)
 }
 
-/** Every past digest with spending: months, weeks and years. Reached from the Assistant tab and Settings. */
+/** Every past digest with spending: months, weeks and years. Reached from Settings. */
 @Composable
 fun DigestsScreen(viewModel: DigestsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -151,7 +158,10 @@ fun DigestsScreen(viewModel: DigestsViewModel = hiltViewModel()) {
         verticalArrangement = Arrangement.spacedBy(Spacing.card)
     ) {
         TopBar(title = stringResource(R.string.digests), onBack = viewModel::onBackClick)
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
         if (state.months.isEmpty() && state.weeks.isEmpty() && state.years.isEmpty())
             Text(text = stringResource(R.string.digests_empty), style = HalalaType.Body, color = HalalaColors.TextMuted)
 

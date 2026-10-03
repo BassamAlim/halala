@@ -1,6 +1,14 @@
 package bassamalim.halala.core.nav
 
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.currentStateAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import bassamalim.halala.core.ui.ground
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
@@ -37,6 +45,7 @@ import bassamalim.halala.features.assets.AssetsScreen
 import bassamalim.halala.features.editAsset.EditAssetScreen
 import bassamalim.halala.features.zakat.ZakatScreen
 import bassamalim.halala.features.retirement.CompoundScreen
+import bassamalim.halala.features.savings.DepositScreen
 import bassamalim.halala.features.savings.SavingsScreen
 import bassamalim.halala.features.backup.BackupScreen
 import bassamalim.halala.features.tags.EditTagScreen
@@ -45,6 +54,7 @@ import bassamalim.halala.features.spendingMap.SpendingMapScreen
 import bassamalim.halala.features.savings.SavingsTermsScreen
 import bassamalim.halala.features.retirement.RetirementScreen
 import bassamalim.halala.features.digest.DigestScreen
+import bassamalim.halala.features.assistant.AssistantScreen
 import bassamalim.halala.features.digest.DigestsScreen
 import bassamalim.halala.features.editGoal.EditGoalScreen
 import bassamalim.halala.features.editBudget.EditBudgetScreen
@@ -86,7 +96,7 @@ fun NavGraph(navController: NavHostController, startDestination: Screen) {
     ) {
         screen<Screen.Lock> { LockScreen() }
 
-        composable<Screen.Main> { MainScreen() }
+        composable<Screen.Main> { Settled { Box(Modifier.fillMaxSize().ground()) { MainScreen() } } }
 
         screen<Screen.Accounts> { AccountsScreen() }
 
@@ -149,10 +159,12 @@ fun NavGraph(navController: NavHostController, startDestination: Screen) {
         screen<Screen.EditTag> { EditTagScreen() }
 
         screen<Screen.SavingsTerms> { SavingsTermsScreen() }
+        screen<Screen.Deposit> { DepositScreen() }
 
         screen<Screen.Digest> { DigestScreen() }
 
         screen<Screen.Digests> { DigestsScreen() }
+        screen<Screen.Ask> { AssistantScreen() }
 
         screen<Screen.EditGoal> { EditGoalScreen() }
 
@@ -170,5 +182,30 @@ fun NavGraph(navController: NavHostController, startDestination: Screen) {
  */
 private inline fun <reified T : Any> NavGraphBuilder.screen(noinline content: @Composable () -> Unit) =
     composable<T> {
-        Box(Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))) { content() }
+        Settled {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .ground()
+                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))
+            ) { content() }
+        }
     }
+
+/**
+ * Touches reach a screen only while it is resumed, not while it slides in or out. Otherwise the
+ * second tap of a double tap lands on the screen that is leaving: Back pops twice (from just
+ * above Main, to a blank graph), a row opens its screen twice, Save saves again.
+ */
+@Composable
+private fun Settled(content: @Composable () -> Unit) {
+    val state by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    val resumed = state.isAtLeast(Lifecycle.State.RESUMED)
+    Box(
+        Modifier.pointerInput(resumed) {
+            if (!resumed) awaitPointerEventScope {
+                while (true) awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() }
+            }
+        }
+    ) { content() }
+}

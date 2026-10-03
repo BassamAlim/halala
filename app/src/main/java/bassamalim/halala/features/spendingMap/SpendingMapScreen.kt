@@ -1,5 +1,6 @@
 package bassamalim.halala.features.spendingMap
 
+import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -58,7 +59,10 @@ fun SpendingMapScreen(viewModel: SpendingMapViewModel = hiltViewModel()) {
         verticalArrangement = Arrangement.spacedBy(Spacing.card)
     ) {
         TopBar(title = stringResource(R.string.map_title), onBack = viewModel::onBackClick)
-        if (state.isLoading) return@Column
+        if (state.isLoading) {
+            Skeleton()
+            return@Column
+        }
 
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             MapPeriod.entries.forEach { period ->

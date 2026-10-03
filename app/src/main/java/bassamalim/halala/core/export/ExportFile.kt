@@ -40,7 +40,7 @@ data class ExportFile(
     val loans: List<ExportLoan> = emptyList(),
     /** Since schema 8: subscriptions, bills and planned payments. */
     val recurring: List<ExportRecurring> = emptyList(),
-    /** Since schema 10. */
+    /** Since schema 10; on a tag since 20. */
     val budgets: List<ExportBudget> = emptyList(),
     /** Since schema 11. */
     val goals: List<ExportGoal> = emptyList(),
@@ -57,10 +57,14 @@ data class ExportFile(
     val tags: List<ExportTag> = emptyList(),
     val transactionTags: List<ExportTransactionTag> = emptyList(),
     /** Since schema 18: where purchases were made, while you had it remembered. */
-    val places: List<ExportPlace> = emptyList()
+    val places: List<ExportPlace> = emptyList(),
+    /** Since schema 19: term deposits, each on its own. */
+    val deposits: List<ExportDeposit> = emptyList(),
+    /** Since schema 22: transactions you marked toward a savings goal. */
+    val goalContributions: List<ExportGoalContribution> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 18
+        const val SCHEMA_VERSION = 22
     }
 }
 
@@ -155,7 +159,11 @@ data class ExportMerchant(
     val confidence: Int? = null,
     /** Since schema 5: you named it; its automatic rule was already made. */
     val namedByYou: Boolean = false,
-    val autoRuled: Boolean = false
+    val autoRuled: Boolean = false,
+    /** Since schema 21: looked up online (never again), and the page it was found on. */
+    val searchedOnline: Boolean = false,
+    val webUrl: String? = null,
+    val webTitle: String? = null
 )
 
 /** One spelling: its key (lower case, letters only), as first written, and how it joined. */
@@ -232,7 +240,7 @@ data class ExportRecurring(
     val createdAt: String
 )
 
-/** A limit on spending each pay cycle: `scope` TOTAL, CATEGORY, EXPENSE_TYPE or MERCHANT. */
+/** A limit on spending each pay cycle: `scope` TOTAL, CATEGORY, EXPENSE_TYPE, MERCHANT or TAG. */
 @Serializable
 data class ExportBudget(
     val uid: String,
@@ -243,7 +251,8 @@ data class ExportBudget(
     val amountMinor: Long,
     val currency: String,
     val rollover: Boolean,
-    val createdAt: String
+    val createdAt: String,
+    val tagUid: String? = null
 )
 
 /** A savings goal: a target, an optional date, and the accounts (by uid) it is saved in. */
@@ -327,6 +336,28 @@ data class ExportSavingsTerms(
     val startDate: String?,
     val tenorMonths: Int?,
     val maturityChoice: String?
+)
+
+/** A term deposit: the leg that arrived (its amount and start), the goal it is for, its terms, the day it was paid out. */
+@Serializable
+data class ExportDeposit(
+    val uid: String,
+    val transactionUid: String,
+    val goalUid: String?,
+    val ratePercent: String?,
+    val tenorMonths: Int?,
+    val maturityChoice: String?,
+    val closedOn: String?
+)
+
+/** A transaction toward a goal (or out of it, [withdrawn]), and the kind it had before (a move's is kept). */
+@Serializable
+data class ExportGoalContribution(
+    val uid: String,
+    val goalUid: String,
+    val transactionUid: String,
+    val withdrawn: Boolean,
+    val kindBefore: String?
 )
 
 /** A tag: its days as ISO dates, and whether it takes everything in them. */

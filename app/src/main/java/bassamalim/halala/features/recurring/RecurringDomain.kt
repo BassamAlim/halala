@@ -1,5 +1,6 @@
 package bassamalim.halala.features.recurring
 
+import bassamalim.halala.core.data.repositories.AlertsRepository
 import bassamalim.halala.core.data.repositories.RecurringRepository
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.SeriesState
@@ -11,10 +12,16 @@ import javax.inject.Inject
 
 class RecurringDomain @Inject constructor(
     private val recurringRepository: RecurringRepository,
+    private val alertsRepository: AlertsRepository,
     private val clock: Clock
 ) {
 
     fun observeStates(): Flow<List<SeriesState>> = recurringRepository.observeStates()
+
+    /** The heads-ups you said "keep it" to. */
+    fun observeDismissed(): Flow<Set<String>> = alertsRepository.observeDismissed()
+
+    suspend fun keep(key: String) = alertsRepository.dismiss(key)
 
     suspend fun detect() = recurringRepository.detect()
 

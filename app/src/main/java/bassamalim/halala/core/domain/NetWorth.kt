@@ -25,7 +25,7 @@ data class NetWorthNow(val parts: Map<WealthClass, Long>, val totalMinor: Long)
 object NetWorth {
 
     fun classOf(type: AccountType): WealthClass = when (type) {
-        AccountType.SAVINGS -> WealthClass.SAVINGS
+        AccountType.SAVINGS, AccountType.DEPOSIT -> WealthClass.SAVINGS
         AccountType.INVESTMENT -> WealthClass.FUNDS
         else -> WealthClass.ACCOUNTS
     }
@@ -66,6 +66,7 @@ object NetWorth {
         details: List<TransactionDetail>,
         accountIds: Set<Long>,
         loans: List<LoanState>,
+        currency: String,
         snapshots: List<NetWorthSnapshot>,
         zone: ZoneId
     ): List<Pair<LocalDate, Long>> {
@@ -74,7 +75,7 @@ object NetWorth {
             .groupBy { it.transaction.occurredAt.atZone(zone).toLocalDate() }
             .mapValues { (_, list) -> list.sumOf { if (it.transaction.direction == Direction.CREDIT) it.transaction.amountMinor else -it.transaction.amountMinor } }
         // What loans owed (to you +, by you −) changed by each day.
-        val loanByDay = loans.flatMap { state ->
+        val loanByDay = loans.filter { it.loan.currency == currency }.flatMap { state ->
             val sign = if (state.loan.direction == LoanDirection.LENT) 1 else -1
             state.events.map { event ->
                 val change = when (event.type) {

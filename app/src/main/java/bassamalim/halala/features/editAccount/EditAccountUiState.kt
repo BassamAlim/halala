@@ -9,7 +9,7 @@ data class EditAccountUiState(
     val isCash: Boolean = false,
     val isArchived: Boolean = false,
     val banks: List<BankOption> = emptyList(),
-    val types: List<AccountType> = AccountType.entries.filter { it != AccountType.CASH },
+    val types: List<AccountType> = AccountType.entries.filter { it != AccountType.CASH && it.listed },
     val form: AccountForm = AccountForm(),
     /** One of [CURRENCY_CHOICES], or null when the currency is typed. */
     val currencyChoice: String? = "SAR",

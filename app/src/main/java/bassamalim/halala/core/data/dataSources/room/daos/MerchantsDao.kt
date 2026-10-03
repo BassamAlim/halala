@@ -64,8 +64,29 @@ interface MerchantsDao {
     )
     suspend fun getToIdentify(): List<ToIdentify>
 
+    /**
+     * Merchants the AI identified at under [below]% sure, not yet looked up online, with spending
+     * nothing has filed of at least [floorMinor] in all (small one-offs are never searched), the
+     * most money first.
+     */
+    @Query(
+        """
+        SELECT m.id AS merchantId,
+            (SELECT a.descriptor FROM merchant_aliases a WHERE a.merchantId = m.id ORDER BY a.id LIMIT 1) AS descriptor
+        FROM merchants m
+        WHERE m.identifiedBy = 'AI' AND m.confidence < :below AND m.searchedOnline = 0 AND $UNFILED
+            AND $SPENT >= :floorMinor
+        ORDER BY $SPENT DESC, m.id
+        """
+    )
+    suspend fun getToSearch(below: Int, floorMinor: Long): List<ToIdentify>
+
     @Query("SELECT * FROM merchants WHERE id = :id")
     suspend fun getMerchant(id: Long): Merchant?
+
+    /** How the bank first wrote it: what is sent when it is looked up. */
+    @Query("SELECT descriptor FROM merchant_aliases WHERE merchantId = :id ORDER BY id LIMIT 1")
+    suspend fun getDescriptor(id: Long): String?
 
     @Insert
     suspend fun insertMerchant(merchant: Merchant): Long
@@ -127,3 +148,7 @@ interface MerchantsDao {
 /** The merchant (`m`) has a transaction no category has been chosen for. */
 private const val UNFILED = "EXISTS (SELECT 1 FROM transactions t JOIN merchant_aliases a ON a.aliasKey = t.merchantKey " +
         "WHERE a.merchantId = m.id AND t.categoryId IS NULL)"
+
+/** All the money the merchant (`m`) has taken, in minor units. */
+private const val SPENT = "(SELECT COALESCE(SUM(t.amountMinor), 0) FROM transactions t JOIN merchant_aliases a " +
+        "ON a.aliasKey = t.merchantKey WHERE a.merchantId = m.id AND t.direction = 'DEBIT')"

@@ -82,8 +82,65 @@ object GroqProtocol {
         }
     }
 
+    /**
+     * Asking again about one [name] the first answer was unsure of, with what a web search found
+     * for it ([results], numbered from 1): public pages, nothing of yours.
+     */
+    fun requestWithResults(name: String, results: List<WebResult>): String = buildJsonObject {
+        put("model", MODEL)
+        put("temperature", 0)
+        put("reasoning_effort", "none")
+        put("max_completion_tokens", MAX_TOKENS)
+        putJsonArray("messages") {
+            addJsonObject {
+                put("role", "system")
+                put("content", INSTRUCTIONS_WITH_RESULTS)
+            }
+            addJsonObject {
+                put("role", "user")
+                put("content", buildJsonObject {
+                    put("name", name)
+                    putJsonArray("results") {
+                        results.forEachIndexed { index, result ->
+                            addJsonObject {
+                                put("source", index + 1)
+                                put("title", result.title)
+                                put("url", result.url)
+                                put("text", result.content.take(MAX_RESULT_CHARS))
+                            }
+                        }
+                    }
+                }.toString())
+            }
+        }
+        putJsonObject("response_format") {
+            put("type", "json_schema")
+            putJsonObject("json_schema") {
+                put("name", "merchant")
+                put("strict", true)
+                put("schema", SCHEMA_WITH_SOURCE)
+            }
+        }
+    }.toString()
+
+    /**
+     * The answer to [requestWithResults], and the result (by its index in the list sent) it rests
+     * on; null when it named none, or one that wasn't sent.
+     */
+    fun parseWithSource(body: String, resultCount: Int): Pair<IdentifiedAs, Int?> {
+        val answer = json.decodeFromString<SourcedAnswer>(contentOf(body))
+        return IdentifiedAs(
+            name = answer.name,
+            type = BusinessType.entries.firstOrNull { it.name == answer.businessType } ?: BusinessType.UNKNOWN,
+            confidence = answer.confidence.coerceIn(0, 100)
+        ) to (answer.source - 1).takeIf { it in 0 until resultCount }
+    }
+
     /** Enough for a batch of 40 short answers, with room to spare. */
     private const val MAX_TOKENS = 4096
+
+    /** Each result's text, cut short: enough to tell what a business is. */
+    private const val MAX_RESULT_CHARS = 600
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -105,6 +162,25 @@ object GroqProtocol {
 
     @Serializable
     private data class Answer(val id: String, val name: String, val businessType: String, val confidence: Int)
+
+    @Serializable
+    private data class SourcedAnswer(val name: String, val businessType: String, val confidence: Int, val source: Int)
+
+    /** One business, and the result it rests on (0 for none). */
+    private val SCHEMA_WITH_SOURCE: JsonObject = buildJsonObject {
+        put("type", "object")
+        putJsonObject("properties") {
+            putJsonObject("name") { put("type", "string") }
+            putJsonObject("businessType") {
+                put("type", "string")
+                putJsonArray("enum") { BusinessType.entries.forEach { add(it.name) } }
+            }
+            putJsonObject("confidence") { put("type", "integer") }
+            putJsonObject("source") { put("type", "integer") }
+        }
+        put("required", JsonArray(listOf("name", "businessType", "confidence", "source").map(::JsonPrimitive)))
+        put("additionalProperties", false)
+    }
 
     /** Strict mode: every field required, no others. */
     private val SCHEMA: JsonObject = buildJsonObject {
@@ -189,6 +265,16 @@ object GroqProtocol {
         - name: the business's usual brand name in English, without branch numbers, city or company words ("PANDA 1042 RIYADH" is "Panda"). If you don't know it, tidy the bank's words.
         - businessType: what the business is, from the list below. Use UNKNOWN when you can't tell; don't guess.
         - confidence: 0 to 100, how sure you are of businessType.
+        Business types:
+    """.trimIndent() + "\n" + BusinessType.entries.joinToString("\n") { "- ${it.name}: ${MEANINGS.getValue(it)}" }
+
+    private val INSTRUCTIONS_WITH_RESULTS = """
+        You identify a business in Saudi Arabia from how a bank wrote a merchant's name on a card payment or bill, with the results of a web search for that name.
+        Answer with:
+        - name: the business's usual brand name in English, without branch numbers, city or company words. If you don't know it, tidy the bank's words.
+        - businessType: what the business is, from the list below. Use UNKNOWN when neither the name nor the results tell you; don't guess.
+        - confidence: 0 to 100, how sure you are of businessType. Only be sure when a result is clearly about this business.
+        - source: the number of the result your answer rests on, or 0 when none does.
         Business types:
     """.trimIndent() + "\n" + BusinessType.entries.joinToString("\n") { "- ${it.name}: ${MEANINGS.getValue(it)}" }
 }

@@ -163,4 +163,19 @@ class MoneyTest {
         assertEquals(0, Money.fractionDigits("JPY"))
         assertEquals(3, Money.fractionDigits("KWD"))
     }
+
+    @Test
+    fun `hidden amounts read as dots on screen and stay exact in files`() {
+        Money.masked = true
+        try {
+            assertEquals(Money.MASK, Money.format(624_000, "SAR"))
+            assertEquals(Money.MASK, Money.format(-21_450, "SAR", decimals = false, showPlus = true))
+            assertEquals("", Money.input(624_000, "SAR"))
+            assertEquals("6240.00", Money.plain(624_000, "SAR"))
+        }
+        finally {
+            Money.masked = false
+        }
+        assertEquals("6240.00", Money.input(624_000, "SAR"))
+    }
 }

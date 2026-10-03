@@ -1,5 +1,7 @@
 package bassamalim.halala.core.export
 
+import bassamalim.halala.core.data.dataSources.definitions.DefinitionsFile
+import androidx.test.core.app.ApplicationProvider
 import bassamalim.halala.core.data.dataSources.room.AppDatabase
 import bassamalim.halala.core.data.dataSources.room.Seed
 import bassamalim.halala.core.data.dataSources.room.entities.Account
@@ -22,6 +24,8 @@ import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
+import bassamalim.halala.core.data.dataSources.room.entities.Deposit
+import bassamalim.halala.core.data.dataSources.room.entities.GoalContribution
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsTerms
 import bassamalim.halala.core.data.dataSources.room.entities.Tag
 import bassamalim.halala.core.data.dataSources.room.entities.TransactionTag
@@ -108,7 +112,7 @@ class ImporterTest {
             Rule(60, "rule-mine", RuleConditions(contains = "olaya", accountId = 22, minMinor = 100, maxMinor = 90_000), RuleActions(47), RuleSource.LEARNED, enabled = false, createdAt = at)
         ),
         merchants = listOf(
-            Merchant(84, "mer-jahez", "Jahez", BusinessType.FOOD_DELIVERY, IdentifiedBy.AI, 93, namedByYou = true, autoRuled = true)
+            Merchant(84, "mer-jahez", "Jahez", BusinessType.FOOD_DELIVERY, IdentifiedBy.AI, 93, namedByYou = true, autoRuled = true, searchedOnline = true, webUrl = "https://jahez.net", webTitle = "Jahez — food delivery")
         ),
         aliases = listOf(MerchantAlias(95, 84, "jahez olaya", "Jahez Olaya", AliasMatch.FIRST)),
         rawMessages = listOf(
@@ -140,7 +144,8 @@ class ImporterTest {
             Budget(171, "bud-all", BudgetScope.TOTAL, amountMinor = 900_000, currency = "SAR", createdAt = at),
             Budget(172, "bud-delivery", BudgetScope.CATEGORY, categoryId = 47, amountMinor = 60_000, currency = "SAR", rollover = true, createdAt = at),
             Budget(173, "bud-jahez", BudgetScope.MERCHANT, merchantId = 84, amountMinor = 30_000, currency = "SAR", createdAt = at),
-            Budget(174, "bud-fun", BudgetScope.EXPENSE_TYPE, expenseType = ExpenseType.VARIABLE_DISCRETIONARY, amountMinor = 350_000, currency = "SAR", createdAt = at)
+            Budget(174, "bud-fun", BudgetScope.EXPENSE_TYPE, expenseType = ExpenseType.VARIABLE_DISCRETIONARY, amountMinor = 350_000, currency = "SAR", createdAt = at),
+            Budget(175, "bud-wedding", BudgetScope.TAG, amountMinor = 2_000_000, currency = "SAR", createdAt = at, tagId = 2)
         ),
         goals = listOf(
             SavingsGoal(181, "goal-fund", "Emergency fund", 6_000_000, "SAR", LocalDate.parse("2027-03-31"), listOf(22, 21), at),
@@ -160,7 +165,14 @@ class ImporterTest {
             Tag(2, "tag-wedding", "Wedding", createdAt = at)
         ),
         transactionTags = listOf(TransactionTag(31, 1), TransactionTag(31, 2), TransactionTag(34, 1, removed = true)),
-        places = listOf(TransactionPlace(31, 247_136_400, 466_753_100, 25))
+        places = listOf(TransactionPlace(31, 247_136_400, 466_753_100, 25)),
+        deposits = listOf(
+            Deposit(1, "dep-car", 31, goalId = 182, ratePercent = "4.40", tenorMonths = 6, maturityChoice = MaturityChoice.PAY_OUT),
+            Deposit(2, "dep-done", 34, closedOn = LocalDate.parse("2026-08-01"))
+        ),
+        goalContributions = listOf(
+            GoalContribution(1, "gc-broker", 182, 32, withdrawn = false, kindBefore = TransactionKind.TRANSFER_OUT)
+        )
     )
 
     private val json = Exporter.json(snapshot, appVersion = "0.2.0", now = at)
@@ -179,17 +191,17 @@ class ImporterTest {
         InstitutionsRepository(db.institutionsDao()),
         AccountsRepository(db.accountsDao(), TEST_CLOCK),
         TransactionsRepository(db.transactionsDao(), db.accountsDao(), TEST_CLOCK),
-        ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), db.peopleDao(), TEST_CLOCK),
+        ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), db.peopleDao(), DefinitionsFile(ApplicationProvider.getApplicationContext()), TEST_CLOCK),
         SmsRepository(db.smsDao()),
         PeopleRepository(db.peopleDao()),
         LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK),
         RecurringRepository(db.recurringDao(), db.transactionsDao(), TEST_CLOCK),
-        BudgetsRepository(db.budgetsDao(), db.transactionsDao(), TEST_CLOCK),
-        GoalsRepository(db.goalsDao(), db.accountsDao(), db.transactionsDao(), TEST_CLOCK),
+        BudgetsRepository(db.budgetsDao(), db.transactionsDao(), db.tagsDao(), TEST_CLOCK),
+        GoalsRepository(db.goalsDao(), db.accountsDao(), db.transactionsDao(), db.savingsDao(), db.loansDao(), TEST_CLOCK),
         AssetsRepository(db.assetsDao(), TEST_CLOCK),
         ZakatRepository(db.zakatDao(), db.accountsDao(), db.assetsDao(), LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK), TEST_CLOCK),
         PlannerRepository(db.scenariosDao(), db.accountsDao(), db.assetsDao(), db.transactionsDao(), LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK), TEST_CLOCK),
-        SavingsRepository(db.savingsDao(), db.accountsDao(), db.transactionsDao(), TEST_CLOCK),
+        SavingsRepository(db.savingsDao(), db.accountsDao(), db.transactionsDao(), db.goalsDao(), TransactionsRepository(db.transactionsDao(), db.accountsDao(), TEST_CLOCK), TEST_CLOCK),
         TagsRepository(db.tagsDao(), db.transactionsDao(), TEST_CLOCK),
         PlacesRepository(db.placesDao()),
         TEST_CLOCK

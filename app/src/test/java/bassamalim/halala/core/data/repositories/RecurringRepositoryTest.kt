@@ -1,5 +1,7 @@
 package bassamalim.halala.core.data.repositories
 
+import bassamalim.halala.core.data.dataSources.definitions.DefinitionsFile
+import androidx.test.core.app.ApplicationProvider
 import bassamalim.halala.core.data.TEST_CLOCK
 import bassamalim.halala.core.data.dataSources.room.AppDatabase
 import bassamalim.halala.core.data.testDatabase
@@ -32,7 +34,7 @@ class RecurringRepositoryTest {
     fun setUp() = runTest {
         db = testDatabase()
         transactions = TransactionsRepository(db.transactionsDao(), db.accountsDao(), TEST_CLOCK)
-        classification = ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), db.peopleDao(), TEST_CLOCK)
+        classification = ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), db.peopleDao(), DefinitionsFile(ApplicationProvider.getApplicationContext()), TEST_CLOCK)
         recurring = RecurringRepository(db.recurringDao(), db.transactionsDao(), TEST_CLOCK)
         cash = db.accountsDao().getCashWallet()!!.id
     }

@@ -12,7 +12,10 @@ import androidx.work.workDataOf
 import bassamalim.halala.core.ai.AiScheduler
 import bassamalim.halala.core.data.repositories.TagsRepository
 import bassamalim.halala.core.places.PlaceCapture
+import bassamalim.halala.core.reminders.BudgetAlerts
+import bassamalim.halala.core.reminders.DueReminders
 import java.time.Clock
+import java.time.LocalDate
 import bassamalim.halala.core.widget.HalalaWidget
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -33,6 +36,7 @@ class SmsWorker @AssistedInject constructor(
     private val ai: AiScheduler,
     private val tags: TagsRepository,
     private val placeCapture: PlaceCapture,
+    private val budgetAlerts: BudgetAlerts,
     private val clock: Clock
 ) : CoroutineWorker(context, params) {
 
@@ -49,6 +53,7 @@ class SmsWorker @AssistedInject constructor(
         ai.request()
         tags.applyActive()
         placeCapture.captureFor(started)
+        DueReminders.notify(applicationContext, budgetAlerts.notices(), LocalDate.now(clock))
         HalalaWidget.refresh(applicationContext)
         return Result.success()
     }

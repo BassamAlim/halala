@@ -1,5 +1,6 @@
 package bassamalim.halala.features.editRecurring
 
+import bassamalim.halala.core.utils.OneAtATime
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -27,16 +28,22 @@ class EditRecurringViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val id = savedStateHandle.toRoute<Screen.EditRecurring>().id
+    private val saving = OneAtATime()
 
-    /** Null until an existing one has been read. */
-    private val form = MutableStateFlow(if (id == 0L) SeriesForm(nextDue = domain.today()) else null)
+    private val route = savedStateHandle.toRoute<Screen.EditRecurring>()
+    private val id = route.id
+
+    /** Null until an existing one, or the charge it starts from, has been read. */
+    private val form = MutableStateFlow(if (id == 0L && route.fromTransaction == 0L) SeriesForm(nextDue = domain.today()) else null)
     private val problems = MutableStateFlow(emptySet<SeriesProblem>())
     private val sheet = MutableStateFlow<EditRecurringSheet?>(null)
 
     init {
         if (id != 0L) viewModelScope.launch {
             form.value = domain.load(id) ?: SeriesForm(nextDue = domain.today())
+        } else if (route.fromTransaction != 0L) viewModelScope.launch {
+            val kind = if (route.subscription) RecurringKind.SUBSCRIPTION else RecurringKind.BILL
+            form.value = domain.fromCharge(route.fromTransaction, kind) ?: SeriesForm(kind = kind, nextDue = domain.today())
         }
     }
 
@@ -109,10 +116,11 @@ class EditRecurringViewModel @Inject constructor(
 
     fun onSaveClick() {
         val current = form.value ?: return
-        viewModelScope.launch {
+        saving.launch(viewModelScope) {
             val found = domain.save(id, current)
             problems.update { found }
             if (found.isEmpty()) navigator.popBackStack()
+            found.isEmpty()
         }
     }
 

@@ -1,5 +1,6 @@
 package bassamalim.halala.features.reconcileCash
 
+import bassamalim.halala.core.utils.OneAtATime
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -24,6 +25,8 @@ class ReconcileCashViewModel @Inject constructor(
     private val navigator: Navigator,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    private val saving = OneAtATime()
 
     private val accountId = savedStateHandle.toRoute<Screen.ReconcileCash>().accountId
 
@@ -78,9 +81,10 @@ class ReconcileCashViewModel @Inject constructor(
         val countedMinor = Money.parse(counted.value, currency)
             ?: return showInvalid.update { true }
 
-        viewModelScope.launch {
+        saving.launch(viewModelScope) {
             domain.reconcile(accountId, recorded, countedMinor)
             navigator.popBackStack()
+            true
         }
     }
 }

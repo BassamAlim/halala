@@ -6,7 +6,10 @@ import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
 import bassamalim.halala.core.domain.Money
+import bassamalim.halala.core.domain.FlowPart
 import bassamalim.halala.core.domain.MoneyFlow
+import bassamalim.halala.core.domain.PartKind
+import bassamalim.halala.core.domain.titleOf
 import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
@@ -26,10 +29,26 @@ import java.time.LocalDate
 import java.time.YearMonth
 import javax.inject.Inject
 
-enum class NodeKind { ACCOUNT, SPENT, KEPT }
+/**
+ * One part of the flow, worded: [name] is the account's or category's (null for the others,
+ * which the screen names by [kind]); [percent] of what came in (or went out, when that was more);
+ * [change] against the month before; [items] the transactions that make it up, biggest first.
+ * [weight] is minor units, for drawing only.
+ */
+data class FlowPartUi(
+    val key: String,
+    val kind: PartKind,
+    val name: String?,
+    val amount: String,
+    val weight: Long,
+    val percent: Int,
+    val change: Int?,
+    val items: List<FlowItem>,
+    val more: Int
+)
 
-/** One band of the Sankey: where some of the money went. [weight] is minor units, for drawing only. */
-data class FlowNode(val label: String?, val amount: String, val weight: Long, val kind: NodeKind)
+/** One transaction in a part. */
+data class FlowItem(val id: Long, val title: String, val day: String, val amount: String)
 
 /** A leg with its other side missing, worded for the card. */
 data class UnmatchedLeg(val id: Long, val amount: String, val account: String, val day: String, val outgoing: Boolean)
@@ -55,8 +74,16 @@ data class MoneyFlowUiState(
     val salaryDay: String? = null,
     val headline: String = "",
     val moved: String? = null,
-    val sourceWeight: Long = 0,
-    val nodes: List<FlowNode> = emptyList(),
+    /** Came in, and went out: the two ends of the chart, each summing to the same. */
+    val sources: List<FlowPartUi> = emptyList(),
+    val uses: List<FlowPartUi> = emptyList(),
+    /** Whole percents of the total: spent (with what went to people), and kept (moved, saved or left). */
+    val spentPercent: Int = 0,
+    val keptPercent: Int = 0,
+    /** Spending against the month before, whole percent; null with nothing then. */
+    val spentChange: Int? = null,
+    /** The part tapped on the chart or in the lists. */
+    val selected: String? = null,
     val unmatched: List<UnmatchedLeg> = emptyList(),
     val sheet: FlowSheet? = null
 )
@@ -74,7 +101,12 @@ class MoneyFlowViewModel @Inject constructor(
     private val clock: Clock
 ) : ViewModel() {
 
-    private data class Picks(val month: YearMonth? = null, val accountId: Long? = null, val sheet: FlowSheet? = null)
+    private data class Picks(
+        val month: YearMonth? = null,
+        val accountId: Long? = null,
+        val sheet: FlowSheet? = null,
+        val selected: String? = null
+    )
 
     private val picks = MutableStateFlow(Picks())
 
@@ -86,7 +118,7 @@ class MoneyFlowViewModel @Inject constructor(
         val zone = clock.zone
         val today = LocalDate.now(clock)
         val month = picks.month ?: YearMonth.from(today)
-        val open = accounts.filter { !it.account.archived }
+        val open = accounts.filter { !it.account.archived && it.account.type.listed }
         val accountId = picks.accountId?.takeIf { id -> open.any { it.account.id == id } }
             ?: MoneyFlow.startingAccount(details, month, zone)
             ?: open.firstOrNull()?.account?.id
@@ -94,13 +126,33 @@ class MoneyFlowViewModel @Inject constructor(
         val names = accounts.associate { it.account.id to accountLabel(it.institutionName, it.account.nickname) }
         val currency = account?.account?.currency.orEmpty()
         val flow = accountId?.let { MoneyFlow.of(details, it, month, zone) }
+        val before = accountId?.let { MoneyFlow.of(details, it, month.minusMonths(1), zone) }
         fun f(minor: Long) = Money.format(minor, currency, decimals = false)
+        val byId = details.associateBy { it.transaction.id }
+        val total = flow?.totalMinor ?: 0
+        val previous = before?.let { (it.sources + it.uses).associate { part -> part.key to part.minor } }.orEmpty()
 
-        val nodes = buildList {
-            flow?.moves?.forEach { (id, amount) -> add(FlowNode(names[id].orEmpty(), f(amount), amount, NodeKind.ACCOUNT)) }
-            if (flow != null && flow.spentMinor > 0) add(FlowNode(null, f(flow.spentMinor), flow.spentMinor, NodeKind.SPENT))
-            if (flow != null && flow.keptMinor > 0) add(FlowNode(null, f(flow.keptMinor), flow.keptMinor, NodeKind.KEPT))
-        }
+        fun worded(part: FlowPart) = FlowPartUi(
+            key = part.key,
+            kind = part.kind,
+            name = part.accountId?.let { names[it] } ?: part.name,
+            amount = f(part.minor),
+            weight = part.minor,
+            percent = MoneyFlow.percentOf(part.minor, total),
+            change = MoneyFlow.change(part.minor, previous[part.key]),
+            items = part.transactionIds.take(ITEMS).mapNotNull(byId::get).map {
+                FlowItem(
+                    id = it.transaction.id,
+                    title = titleOf(it),
+                    day = shortDateLabel(it.transaction.occurredAt.atZone(zone).toLocalDate(), today),
+                    amount = Money.format(it.transaction.amountMinor, it.transaction.currency)
+                )
+            },
+            more = (part.transactionIds.size - ITEMS).coerceAtLeast(0)
+        )
+        val uses = flow?.uses.orEmpty()
+        val spentMinor = Money.sum(uses.filter { it.kind.spending }.map { it.minor })
+        val spentBefore = before?.uses?.filter { it.kind.spending }?.let { list -> Money.sum(list.map { it.minor }) }
         val first = details.minOfOrNull { it.transaction.occurredAt }?.atZone(zone)?.let(YearMonth::from) ?: YearMonth.from(today)
         MoneyFlowUiState(
             isLoading = false,
@@ -116,8 +168,12 @@ class MoneyFlowViewModel @Inject constructor(
             salaryDay = flow?.salaryOn?.takeIf { flow.salaryMinor > 0 }?.let { shortDateLabel(it, today) },
             headline = flow?.let { f(if (it.salaryMinor > 0) it.salaryMinor else it.inMinor) }.orEmpty(),
             moved = flow?.movedMinor?.takeIf { it > 0 }?.let(::f),
-            sourceWeight = flow?.let { maxOf(it.inMinor, Math.addExact(it.movedMinor, it.spentMinor)) } ?: 0,
-            nodes = nodes,
+            sources = flow?.sources.orEmpty().map(::worded),
+            uses = uses.map(::worded),
+            spentPercent = MoneyFlow.percentOf(spentMinor, total),
+            keptPercent = MoneyFlow.percentOf(Money.sum(uses.filter { it.kind.kept }.map { it.minor }), total),
+            spentChange = MoneyFlow.change(spentMinor, spentBefore),
+            selected = picks.selected?.takeIf { key -> (flow?.sources.orEmpty() + uses).any { it.key == key } },
             unmatched = MoneyFlow.unmatched(details).map {
                 UnmatchedLeg(
                     id = it.transaction.id,
@@ -134,8 +190,13 @@ class MoneyFlowViewModel @Inject constructor(
     fun onMonthClick() = picks.update { it.copy(sheet = FlowSheet.Month) }
     fun onAccountClick() = picks.update { it.copy(sheet = FlowSheet.Account) }
     fun onSheetDismiss() = picks.update { it.copy(sheet = null) }
-    fun onMonthPicked(month: YearMonth) = picks.update { it.copy(month = month, sheet = null) }
-    fun onAccountPicked(id: Long) = picks.update { it.copy(accountId = id, sheet = null) }
+    fun onMonthPicked(month: YearMonth) = picks.update { it.copy(month = month, sheet = null, selected = null) }
+    fun onAccountPicked(id: Long) = picks.update { it.copy(accountId = id, sheet = null, selected = null) }
+
+    /** Tapping a part shows what makes it up; tapping it again lets go. */
+    fun onPartClick(key: String) = picks.update { it.copy(selected = key.takeIf { k -> k != it.selected }) }
+
+    fun onItemClick(id: Long) = navigator.navigate(Screen.Transaction(id))
 
     /** "It went to someone": a plain transfer, then its detail to say who. */
     fun onWentToSomeone(legId: Long) {
@@ -163,5 +224,8 @@ class MoneyFlowViewModel @Inject constructor(
 
     private companion object {
         const val MONTHS = 24
+
+        /** Transactions shown under a part when it is tapped. */
+        const val ITEMS = 5
     }
 }

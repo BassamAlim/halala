@@ -1,5 +1,7 @@
 package bassamalim.halala.core.data.repositories
 
+import bassamalim.halala.core.data.dataSources.definitions.DefinitionsFile
+import androidx.test.core.app.ApplicationProvider
 import bassamalim.halala.core.data.TEST_CLOCK
 import bassamalim.halala.core.data.dataSources.room.AppDatabase
 import bassamalim.halala.core.data.dataSources.room.entities.RuleActions
@@ -22,6 +24,9 @@ import bassamalim.halala.features.merchant.MerchantDomain
 import bassamalim.halala.features.merchant.NameProblem
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import java.io.File
+import android.content.Context
+import bassamalim.halala.core.enums.ExpenseType
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -49,7 +54,7 @@ class ClassificationRepositoryTest {
     fun setUp() = runTest {
         db = testDatabase()
         transactions = TransactionsRepository(db.transactionsDao(), db.accountsDao(), TEST_CLOCK)
-        classification = ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), db.peopleDao(), TEST_CLOCK)
+        classification = ClassificationRepository(db.classificationDao(), db.merchantsDao(), db.transactionsDao(), db.peopleDao(), DefinitionsFile(ApplicationProvider.getApplicationContext()), TEST_CLOCK)
         cash = db.accountsDao().getCashWallet()!!.id
         val categories = classification.getCategories().associate { it.name to it.id }
         groceries = categories.getValue("Groceries")
@@ -208,7 +213,7 @@ class ClassificationRepositoryTest {
     }
 
     @Test
-    fun `the inbox groups uncategorised spending by merchant, biggest first, and skips moves`() = runTest {
+    fun `the inbox groups uncategorised spending by merchant, biggest first, and skips moves and people`() = runTest {
         val bank = db.accountsDao().insert(
             db.accountsDao().getCashWallet()!!.copy(id = 0, uid = "b", nickname = "Bank")
         )
@@ -216,6 +221,8 @@ class ClassificationRepositoryTest {
         spend("Nakhl 2", 2000)
         spend("Kutub", 5000)
         spend("", 9000)
+        // A transfer to a person is no merchant to file.
+        transactions.add(TransactionDraft(cash, Direction.DEBIT, 8000, TEST_CLOCK.instant(), TransactionKind.TRANSFER_OUT, "AHMED ALI"))
         transactions.addTransfer(
             TransferDraft(bank, cash, 7000, TEST_CLOCK.instant(), TransactionKind.ATM_WITHDRAWAL, "ATM")
         )
@@ -473,6 +480,41 @@ class ClassificationRepositoryTest {
     }
 
     @Test
+    fun `an unsure answer with money behind it is looked up online once, and a surer one replaces it`() = runTest {
+        val big = spend("ALMTRF TRDG EST 0412", minor = 25_000)
+        val small = spend("QAHWAT HUDA 77", minor = 900)
+        val sure = spend("ZZYZX 9", minor = 50_000)
+        classification.applyRules()
+        classification.recordIdentifications(
+            mapOf(
+                merchantOf(big)!! to IdentifiedAs("", BusinessType.UNKNOWN, 30),
+                merchantOf(small)!! to IdentifiedAs("", BusinessType.UNKNOWN, 30),
+                merchantOf(sure)!! to IdentifiedAs("Zzyzx", BusinessType.CAFE, 85)
+            )
+        )
+
+        // The small one-off and the sure one are never searched.
+        assertEquals(listOf("ALMTRF TRDG EST 0412"), classification.toSearch(80, 10_000).map { it.descriptor })
+
+        classification.recordSearch(
+            merchantOf(big)!!, IdentifiedAs("Al-Mutref Trading", BusinessType.HARDWARE, 92), "https://mutref.sa", "Al-Mutref Trading"
+        )
+        val found = classification.getMerchant(merchantOf(big)!!)!!
+        assertEquals(BusinessType.HARDWARE, found.businessType)
+        assertEquals("https://mutref.sa", found.webUrl)
+        assertEquals(category("Housing").id, transactions.get(big)!!.categoryId)
+        assertTrue(classification.toSearch(80, 10_000).isEmpty())
+
+        // A search that came up with nothing surer leaves the first answer, and isn't made again.
+        val vague = spend("MAKTAB 12", minor = 30_000)
+        classification.applyRules()
+        classification.recordIdentifications(mapOf(merchantOf(vague)!! to IdentifiedAs("", BusinessType.UNKNOWN, 40)))
+        classification.recordSearch(merchantOf(vague)!!, IdentifiedAs("Maktab", BusinessType.BOOKSTORE, 35), null, null)
+        assertEquals(BusinessType.UNKNOWN, classification.getMerchant(merchantOf(vague)!!)!!.businessType)
+        assertTrue(classification.toSearch(80, 10_000).isEmpty())
+    }
+
+    @Test
     fun `a name you gave stays when the AI identifies the merchant`() = runTest {
         val id = spend("ZZYZX 9")
         classification.applyRules()
@@ -510,5 +552,33 @@ class ClassificationRepositoryTest {
 
         assertTrue(classification.toIdentify().isEmpty())
         assertEquals(IdentifiedBy.WITHHELD, classification.getMerchant(merchantOf(id)!!)!!.identifiedBy)
+    }
+
+    @Test
+    fun `the definitions file sends a merchant to a category of its own, over what the AI said`() = runTest {
+        val id = spend("TAMEENI 4")
+        val other = spend("ZZYZX 9")
+        classification.applyRules()
+        assertNull(transactions.get(id)!!.categoryId)
+        classification.recordIdentifications(mapOf(merchantOf(other)!! to IdentifiedAs("Zzyzx", BusinessType.CAFE, 95)))
+
+        val file = File(ApplicationProvider.getApplicationContext<Context>().getExternalFilesDir(null), DefinitionsFile.NAME)
+        file.writeText(
+            """{"categories": [{"name": "Car Insurance", "expenseType": "FIXED_ESSENTIAL"}],
+                "merchants": [{"name": "Tameeni", "category": "Car Insurance", "type": "INSURANCE"},
+                              {"name": "Zzyzx Motors", "type": "CAR_SERVICE", "spellings": ["ZZYZX"]}]}"""
+        )
+        try {
+            classification.applyRules()
+            classification.applyRules()
+
+            assertEquals(category("Car Insurance").id, transactions.get(id)!!.categoryId)
+            assertEquals(ExpenseType.FIXED_ESSENTIAL, transactions.get(id)!!.expenseType)
+            assertEquals(category("Transport").id, transactions.get(other)!!.categoryId)
+            assertEquals("Zzyzx Motors", classification.getMerchant(merchantOf(other)!!)!!.name)
+            assertEquals(2, classification.getRules().size)
+        } finally {
+            file.delete()
+        }
     }
 }

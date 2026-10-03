@@ -64,6 +64,9 @@ class AlertsViewModel @Inject constructor(
                         alert.key, AlertKind.MISMATCH, names[alert.accountId].orEmpty(),
                         Money.format(alert.expectedMinor, alert.currency), Money.format(alert.reportedMinor, alert.currency), day(alert.at)
                     )
+                    is Anomaly.ParserFailing -> AlertItem(
+                        alert.key, AlertKind.PARSER, alert.sender, alert.failed.toString(), alert.total.toString(), day(alert.at)
+                    )
                 }
             }
         )

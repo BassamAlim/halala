@@ -6,7 +6,6 @@ import bassamalim.halala.core.Globals
 import bassamalim.halala.core.domain.Forecasts
 import bassamalim.halala.core.domain.Loans
 import bassamalim.halala.core.domain.Money
-import bassamalim.halala.core.domain.Rules
 import bassamalim.halala.core.domain.feedOf
 import bassamalim.halala.core.domain.toItem
 import bassamalim.halala.core.enums.AccountType
@@ -46,11 +45,9 @@ class HomeViewModel @Inject constructor(
             cashBalance = Money.format(wallet?.balanceMinor ?: 0, wallet?.account?.currency ?: Globals.PRIMARY_CURRENCY, decimals = false),
             bankBalance = Money.format(HomeDomain.bankTotal(accounts), Globals.PRIMARY_CURRENCY, decimals = false),
             bankAccountCount = HomeDomain.bankAccounts(accounts).size,
-            reviewCount = Rules.clusters(transactions).size,
             recent = feedOf(transactions)
                 .take(HomeDomain.RECENT_COUNT)
                 .map { it.toItem(domain.zone(), today) },
-            hasLoans = loans.isNotEmpty(),
             owedToYou = Money.format(Loans.owed(loans, Globals.PRIMARY_CURRENCY).first, Globals.PRIMARY_CURRENCY, decimals = false),
             youOwe = Money.format(Loans.owed(loans, Globals.PRIMARY_CURRENCY).second, Globals.PRIMARY_CURRENCY, decimals = false),
             comingUp = RecurringDomain.upcoming(recurring)
@@ -82,9 +79,9 @@ class HomeViewModel @Inject constructor(
         initialValue = HomeUiState()
     )
 
-    fun onReviewClick() = navigator.navigate(Screen.Review)
-
     fun onSettingsClick() = navigator.navigate(Screen.Settings)
+
+    fun onAskClick() = navigator.navigate(Screen.Ask)
 
     fun onCashClick() {
         uiState.value.cashWalletId?.let { navigator.navigate(Screen.ReconcileCash(it)) }
