@@ -589,7 +589,7 @@ in Settings, and merchant logos and locations.
 **Phase 3 (people and recurring)** has begun: people (`Person`, `PersonAlias`, `PeopleRepository`,
 found by `applyRules`) and loans (`Loan`, `LoanEvent`, `LoansRepository`, `core/domain/Loans`).
 Screens: **People** (People board: owed to you and you owe, then Loans, open and settled, or All
-transfers, everyone the latest first with what came back less what went; reached from Activity, Home and the loan lines of Wealth's breakdown),
+transfers, everyone, the most transfers first, with what came back less what went; reached from Activity, Home and the loan lines of Wealth's breakdown),
 **Person** (Person board: each open loan with what is still owed, its caption and progress,
 "Send reminder" (the share sheet, so WhatsApp or SMS, with a polite message) and "Record
 repayment" (choose their transfer, or forgive what is left), "This loan" with its due date and

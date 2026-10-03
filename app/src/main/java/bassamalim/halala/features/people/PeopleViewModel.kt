@@ -11,6 +11,7 @@ import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
 import bassamalim.halala.core.utils.shortDateLabel
 import bassamalim.halala.core.utils.initialOf
+import bassamalim.halala.core.data.dataSources.room.relations.PersonWithStats
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -82,7 +83,10 @@ class PeopleViewModel @Inject constructor(
             query = query,
             hasAny = people.isNotEmpty(),
             currency = currency,
-            people = PeopleDomain.matching(people, query).map { row ->
+            // Most transfers between you first; among equals, the latest.
+            people = PeopleDomain.matching(people, query)
+                .sortedWith(compareByDescending<PersonWithStats> { it.transactions }.thenByDescending { it.lastAt })
+                .map { row ->
                 val net = flows[row.person.id]?.netMinor ?: 0
                 PersonRow(
                     id = row.person.id,

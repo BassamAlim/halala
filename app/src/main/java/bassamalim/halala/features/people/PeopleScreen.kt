@@ -38,7 +38,7 @@ import bassamalim.halala.core.ui.theme.Spacing
 
 /**
  * The People board: what is owed each way, then the loans (open, then settled) or everyone you
- * transfer with, the latest first, each with what came back less what went. Above either, with
+ * transfer with, the most transfers first, each with what came back less what went. Above either, with
  * no board: the pairs that may be one person, to merge or not.
  */
 @Composable
