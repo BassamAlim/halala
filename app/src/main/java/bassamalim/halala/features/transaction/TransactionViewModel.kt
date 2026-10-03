@@ -8,6 +8,11 @@ import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.domain.LoanState
 import bassamalim.halala.core.domain.Loans
 import bassamalim.halala.core.domain.Splits
+import bassamalim.halala.core.domain.Goals
+import bassamalim.halala.core.data.dataSources.room.entities.GoalContribution
+import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
+import bassamalim.halala.core.enums.AccountType
+import kotlinx.coroutines.flow.first
 import bassamalim.halala.core.data.dataSources.room.relations.PersonWithStats
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.Rules
@@ -51,13 +56,15 @@ class TransactionViewModel @Inject constructor(
     private val confirmingDelete = MutableStateFlow(false)
     private val sheet = MutableStateFlow<TransactionSheet?>(if (route.split) TransactionSheet.Split() else null)
 
+    private data class Savings(val goals: List<SavingsGoal>, val contributions: List<GoalContribution>, val types: Map<Long, AccountType>)
+
     val uiState: StateFlow<TransactionUiState> = combine(
         combine(domain.observe(id), domain.observeLoans(), domain.observePeople(), ::Triple),
-        domain.observeCategories(),
-        domain.observeRules(),
+        combine(domain.observeCategories(), domain.observeRules(), ::Pair),
+        combine(domain.observeGoals(), domain.observeContributions(), domain.observeAccountTypes(), ::Savings),
         confirmingDelete,
         sheet
-    ) { (detail, loans, people), categories, rules, confirming, sheet ->
+    ) { (detail, loans, people), (categories, rules), savings, confirming, sheet ->
         // Gone (deleted from here or elsewhere): the screen stays as it was while it leaves.
         if (detail == null) return@combine TransactionUiState(isLoading = true)
 
@@ -69,6 +76,8 @@ class TransactionViewModel @Inject constructor(
         val here = accountLabel(detail.institutionName, detail.accountNickname)
         val there = detail.counterpartNickname?.let { accountLabel(detail.counterpartInstitutionName, it) }
         val title = titleOf(detail)
+        val contribution = savings.contributions.firstOrNull { it.transactionId == tx.id || it.transactionId == detail.counterpartId }
+        val loanPart = loans.any { state -> state.events.any { it.transactionId == tx.id } }
         val canSplit = tx.direction == Direction.DEBIT && tx.kind.countsInTotals && !detail.isInternalTransfer &&
                 detail.sharedMinor == 0L
 
@@ -118,6 +127,11 @@ class TransactionViewModel @Inject constructor(
             canPayFor = canSplit && tx.kind !in Loans.MARKABLE,
             split = splitOf(detail, loans, people),
             people = people.map { PersonChoice(it.person.id, it.person.name) },
+            goal = contribution?.let { c ->
+                savings.goals.firstOrNull { it.id == c.goalId }?.let { GoalLink(it.name, c.withdrawn) }
+            },
+            canMarkGoal = contribution == null && savings.goals.isNotEmpty() && Goals.canContribute(detail, loanPart),
+            goals = savings.goals.map { PersonChoice(it.id, it.name) },
             sheet = (sheet as? TransactionSheet.Split)?.let { previewed(it, tx.amountMinor, tx.currency) } ?: sheet
         )
     }.stateIn(
@@ -214,6 +228,34 @@ class TransactionViewModel @Inject constructor(
     }
 
     fun onUnlinkClick() = sheet.update { TransactionSheet.Unlink }
+
+    /** "Toward a savings goal": the only goal chosen already, and in or out guessed from where the money went. */
+    fun onGoalClick() {
+        viewModelScope.launch {
+            val detail = domain.observe(id).first() ?: return@launch
+            val types = domain.observeAccountTypes().first()
+            val goals = uiState.value.goals
+            sheet.update { TransactionSheet.Goal(goals.singleOrNull()?.id, Goals.withdrawnByDefault(detail, types)) }
+        }
+    }
+
+    fun onGoalPick(goalId: Long) = sheet.update { (it as? TransactionSheet.Goal)?.copy(goalId = goalId, noGoal = false) ?: it }
+
+    fun onGoalWayClick(withdrawn: Boolean) = sheet.update { (it as? TransactionSheet.Goal)?.copy(withdrawn = withdrawn) ?: it }
+
+    fun onGoalConfirm() {
+        val goal = sheet.value as? TransactionSheet.Goal ?: return
+        val goalId = goal.goalId ?: return sheet.update { goal.copy(noGoal = true) }
+        sheet.update { null }
+        viewModelScope.launch { domain.contribute(id, goalId, goal.withdrawn) }
+    }
+
+    fun onUngoalClick() = sheet.update { TransactionSheet.Ungoal }
+
+    fun onUngoalConfirm() {
+        sheet.update { null }
+        viewModelScope.launch { domain.uncontribute(id) }
+    }
 
     fun onSplitClick() = sheet.update { TransactionSheet.Split() }
 

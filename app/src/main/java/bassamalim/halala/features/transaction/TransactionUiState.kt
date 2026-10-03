@@ -56,6 +56,11 @@ data class TransactionUiState(
     /** Spending you paid that isn't a transfer can be marked as paid for someone, all of it owed to you. */
     val canPayFor: Boolean = false,
     val split: SplitInfo? = null,
+    /** The savings goal it went toward (or came out of), once marked. */
+    val goal: GoalLink? = null,
+    /** It can be marked toward a goal: money to or from a broker, say, or a move. */
+    val canMarkGoal: Boolean = false,
+    val goals: List<PersonChoice> = emptyList(),
     /** Everyone to split with, the latest first. */
     val people: List<PersonChoice> = emptyList(),
     val sheet: TransactionSheet? = null
@@ -82,6 +87,9 @@ data class FiledBy(
 data class SplitInfo(val shares: List<Pair<String, String>>, val yours: String, val currency: String, val whole: Boolean = false)
 
 data class PersonChoice(val id: Long, val name: String)
+
+/** Toward [name] (or, [withdrawn], taken out of it). */
+data class GoalLink(val name: String, val withdrawn: Boolean)
 
 /** A transfer to or from someone, and loans. */
 sealed interface LoanLink {
@@ -127,6 +135,15 @@ sealed interface TransactionSheet {
 
     /** "Not part of a loan", to confirm. */
     data object Unlink : TransactionSheet
+
+    /**
+     * Marking it toward a savings goal: [goalId] chosen, put in or [withdrawn] (guessed from where
+     * the money went); [noGoal] when confirmed with none chosen.
+     */
+    data class Goal(val goalId: Long?, val withdrawn: Boolean, val noGoal: Boolean = false) : TransactionSheet
+
+    /** "Not toward a goal", to confirm. */
+    data object Ungoal : TransactionSheet
 
     /**
      * Splitting it with [selected] people, equally or [byAmount] (each person's [amounts] as

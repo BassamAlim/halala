@@ -1,5 +1,6 @@
 package bassamalim.halala.features.merchant
 
+import bassamalim.halala.core.ai.LookupOutcome
 import bassamalim.halala.core.enums.AliasMatch
 import bassamalim.halala.core.enums.BusinessType
 import bassamalim.halala.core.enums.IdentifiedBy
@@ -22,6 +23,12 @@ data class MerchantUiState(
     /** The page a web search found it on, while the AI's answer stands. */
     val webTitle: String? = null,
     val webUrl: String? = null,
+    /**
+     * It can be looked up (the AI, and online when a search can be had) while nothing surer than
+     * the AI has said what it is; [lookup] is that, under way or how it went.
+     */
+    val canLookUp: Boolean = false,
+    val lookup: Lookup? = null,
     /** The category its spending files under, by what it is: none when no category takes it. */
     val filesUnder: String? = null,
     val spellings: List<SpellingRow> = emptyList(),
@@ -32,6 +39,9 @@ data class MerchantUiState(
     val mergeOptions: List<MerchantOption> = emptyList(),
     val sheet: MerchantSheet? = null
 )
+
+/** Looking it up: [working] while it goes, then its [outcome]. */
+data class Lookup(val working: Boolean, val outcome: LookupOutcome? = null)
 
 /** One way the bank writes it. */
 data class SpellingRow(val id: Long, val descriptor: String, val matchedBy: AliasMatch, val count: Int)

@@ -102,6 +102,44 @@ class WebLookup @Inject constructor(
         }
     }
 
+    /**
+     * Looks [merchantId] up now, because you asked on its page: its name (only if it could be
+     * sent) goes to Tavily while this month's searches last, and the name with what was found
+     * goes to Groq; with no search to be had, Groq is asked from the name alone. A new answer
+     * stands as [ClassificationRepository.recordLookup] says.
+     */
+    suspend fun lookUpNow(merchantId: Long): LookupOutcome {
+        if (!keys.hasGroq()) return LookupOutcome.UNAVAILABLE
+        val descriptor = classification.descriptorOf(merchantId) ?: return LookupOutcome.NOTHING_NEW
+        if (!Identification.sendable(descriptor, ownLast4s(accounts, sms))) return LookupOutcome.WITHHELD
+        val month = YearMonth.now(clock)
+        return try {
+            val canSearch = keys.hasTavily() && preferences.webSearches(month) < MONTHLY_CAP
+            val results = if (!canSearch) emptyList()
+            else search.search(TavilyProtocol.query(descriptor)).also { preferences.countWebSearch(month) }
+            val (answer, page) = if (results.isEmpty()) {
+                val body = groq.post(GroqProtocol.request(listOf(descriptor)))
+                runCatching { GroqProtocol.parse(body, 1).single() }.getOrNull() to null
+            } else {
+                val body = groq.post(GroqProtocol.requestWithResults(descriptor, results))
+                runCatching { GroqProtocol.parseWithSource(body, results.size) }.getOrNull()
+                    ?.let { (answer, source) -> answer to source?.let(results::getOrNull) }
+                    ?: (null to null)
+            }
+            when {
+                answer == null -> LookupOutcome.NOTHING_NEW
+                classification.recordLookup(merchantId, answer, page?.url, page?.title, searched = canSearch) -> LookupOutcome.UPDATED
+                else -> LookupOutcome.NOTHING_NEW
+            }
+        } catch (failure: IdentifyFailure) {
+            when (failure.problem) {
+                IdentifyProblem.UNREACHABLE -> LookupOutcome.OFFLINE
+                IdentifyProblem.LIMITED -> LookupOutcome.LIMITED
+                else -> LookupOutcome.FAILED
+            }
+        }
+    }
+
     companion object {
         const val SURE = 80
         const val FLOOR_MINOR = 10_000L
@@ -109,6 +147,9 @@ class WebLookup @Inject constructor(
         private const val PER_RUN = 20
     }
 }
+
+/** What looking a merchant up when you asked came to. */
+enum class LookupOutcome { UPDATED, NOTHING_NEW, WITHHELD, OFFLINE, LIMITED, FAILED, UNAVAILABLE }
 
 /** Tavily, over HTTPS: [search] sends one query and returns what it found. */
 class TavilySearch @Inject constructor(

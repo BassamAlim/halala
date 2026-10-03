@@ -32,6 +32,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.BalanceCheckpoint
 import bassamalim.halala.core.data.dataSources.room.entities.Budget
 import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.entities.DismissedAlert
+import bassamalim.halala.core.data.dataSources.room.entities.GoalContribution
 import bassamalim.halala.core.data.dataSources.room.entities.Institution
 import bassamalim.halala.core.data.dataSources.room.entities.InternalTransfer
 import bassamalim.halala.core.data.dataSources.room.entities.Loan
@@ -84,9 +85,10 @@ import bassamalim.halala.core.data.dataSources.room.entities.ZakatProfile
         Tag::class,
         TransactionTag::class,
         TransactionPlace::class,
-        Deposit::class
+        Deposit::class,
+        GoalContribution::class
     ],
-    version = 22,
+    version = 23,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

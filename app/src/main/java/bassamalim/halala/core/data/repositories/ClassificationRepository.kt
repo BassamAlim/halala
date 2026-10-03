@@ -432,6 +432,40 @@ class ClassificationRepository @Inject constructor(
         }
     }
 
+    suspend fun descriptorOf(id: Long): String? = merchantsDao.getDescriptor(id)
+
+    /**
+     * What looking [id] up when you asked found: [answer] stands when nothing else has
+     * identified it yet, or the AI's earlier answer was no surer (the list's or yours is never
+     * touched). [url] and [title] are the page it rests on, when it was searched for online,
+     * which also stops it being searched again on its own. True when it changed what it is.
+     */
+    suspend fun recordLookup(id: Long, answer: IdentifiedAs, url: String?, title: String?, searched: Boolean): Boolean =
+        writing.withLock {
+            val merchant = merchantsDao.getMerchant(id) ?: return@withLock false
+            val open = merchant.identifiedBy == null || merchant.identifiedBy == IdentifiedBy.AI
+            val takes = open && answer.type != BusinessType.UNKNOWN &&
+                    (merchant.identifiedBy == null || answer.confidence >= (merchant.confidence ?: 0))
+            if (!takes) {
+                if (searched && !merchant.searchedOnline) merchantsDao.updateMerchant(merchant.copy(searchedOnline = true))
+                return@withLock false
+            }
+            merchantsDao.updateMerchant(
+                merchant.copy(
+                    name = answer.name.trim().takeIf { it.isNotEmpty() && it.length <= MAX_NAME && !merchant.namedByYou } ?: merchant.name,
+                    businessType = answer.type,
+                    identifiedBy = IdentifiedBy.AI,
+                    confidence = answer.confidence.coerceIn(0, 100),
+                    searchedOnline = merchant.searchedOnline || searched,
+                    webUrl = url ?: merchant.webUrl.takeIf { merchant.identifiedBy == IdentifiedBy.AI },
+                    webTitle = title ?: merchant.webTitle.takeIf { merchant.identifiedBy == IdentifiedBy.AI }
+                )
+            )
+            syncAutoRules()
+            fileByRules()
+            true
+        }
+
     /** Merchants whose name is never sent (it may hold more than a shop's name): left for you. */
     suspend fun withhold(ids: Collection<Long>) = writing.withLock {
         for (id in ids) {

@@ -23,6 +23,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.Deposit
+import bassamalim.halala.core.data.dataSources.room.entities.GoalContribution
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsTerms
 import bassamalim.halala.core.data.dataSources.room.entities.Tag
 import bassamalim.halala.core.data.dataSources.room.entities.TransactionTag
@@ -78,7 +79,8 @@ class Importer @Inject constructor(
         tags = snapshot.tags,
         transactionTags = snapshot.transactionTags,
         places = snapshot.places,
-        deposits = snapshot.deposits
+        deposits = snapshot.deposits,
+        goalContributions = snapshot.goalContributions
     )
 
     companion object {
@@ -445,6 +447,14 @@ class Importer @Inject constructor(
                         Deposit(
                             index + 1L, it.uid, transactionIds.named(it.transactionUid, "transaction"), it.goalUid?.let { uid -> goalIds.named(uid, "goal") },
                             it.ratePercent, it.tenorMonths, converters.toMaturityChoice(it.maturityChoice), it.closedOn?.let(LocalDate::parse)
+                        )
+                    }
+                },
+                goalContributions = goals.associate { it.uid to it.id }.let { goalIds ->
+                    file.goalContributions.mapIndexed { index, it ->
+                        GoalContribution(
+                            index + 1L, it.uid, goalIds.named(it.goalUid, "goal"), transactionIds.named(it.transactionUid, "transaction"),
+                            it.withdrawn, it.kindBefore?.let(converters::toTransactionKind)
                         )
                     }
                 }

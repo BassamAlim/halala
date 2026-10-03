@@ -4,6 +4,11 @@ import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
+import bassamalim.halala.core.data.repositories.GoalsRepository
+import bassamalim.halala.core.data.dataSources.room.entities.GoalContribution
+import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
+import bassamalim.halala.core.enums.AccountType
+import kotlinx.coroutines.flow.map
 import bassamalim.halala.core.data.repositories.LoansRepository
 import bassamalim.halala.core.data.repositories.PeopleRepository
 import bassamalim.halala.core.data.dataSources.room.relations.PersonWithStats
@@ -25,8 +30,22 @@ class TransactionDomain @Inject constructor(
     private val accountsRepository: AccountsRepository,
     private val loansRepository: LoansRepository,
     private val peopleRepository: PeopleRepository,
+    private val goalsRepository: GoalsRepository,
     private val clock: Clock
 ) {
+
+    fun observeGoals(): Flow<List<SavingsGoal>> = goalsRepository.observeAll()
+
+    fun observeContributions(): Flow<List<GoalContribution>> = goalsRepository.observeContributions()
+
+    fun observeAccountTypes(): Flow<Map<Long, AccountType>> =
+        accountsRepository.observeAll().map { accounts -> accounts.associate { it.account.id to it.account.type } }
+
+    /** It went toward [goalId] (or came out of it): saving, not spending or income. */
+    suspend fun contribute(id: Long, goalId: Long, withdrawn: Boolean) = goalsRepository.contribute(id, goalId, withdrawn)
+
+    /** Not toward a goal: it counts as it did before. */
+    suspend fun uncontribute(id: Long) = goalsRepository.uncontribute(id)
 
     fun observePeople(): Flow<List<PersonWithStats>> = peopleRepository.observePeople()
 

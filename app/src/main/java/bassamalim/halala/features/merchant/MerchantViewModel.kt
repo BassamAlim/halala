@@ -34,6 +34,7 @@ class MerchantViewModel @Inject constructor(
     private val id = savedStateHandle.toRoute<Screen.Merchant>().id
 
     private val sheet = MutableStateFlow<MerchantSheet?>(null)
+    private val lookup = MutableStateFlow<Lookup?>(null)
 
     val uiState: StateFlow<MerchantUiState> = combine(
         // What it is reads against the categories, which change with it.
@@ -41,8 +42,8 @@ class MerchantViewModel @Inject constructor(
         domain.observeAliases(id),
         domain.observeMerchants(),
         domain.observeTransactions(),
-        sheet
-    ) { (merchant, categories), aliases, merchants, details, sheet ->
+        combine(sheet, lookup, ::Pair)
+    ) { (merchant, categories), aliases, merchants, details, (sheet, lookup) ->
         // Gone (merged into another): the screen stays as it was while it leaves.
         if (merchant == null) return@combine MerchantUiState(isLoading = true)
 
@@ -64,6 +65,8 @@ class MerchantViewModel @Inject constructor(
             confidence = merchant.confidence,
             webTitle = merchant.webTitle.takeIf { merchant.identifiedBy == IdentifiedBy.AI },
             webUrl = merchant.webUrl.takeIf { merchant.identifiedBy == IdentifiedBy.AI },
+            canLookUp = domain.canAsk() && (merchant.identifiedBy == null || merchant.identifiedBy == IdentifiedBy.AI),
+            lookup = lookup,
             filesUnder = Identification.categoryFor(merchant.businessType, categories)?.name,
             spellings = aliases.map { SpellingRow(it.alias.id, it.alias.descriptor, it.alias.matchedBy, it.transactions) },
             canSplit = aliases.size > 1,
@@ -109,6 +112,16 @@ class MerchantViewModel @Inject constructor(
     }
 
     fun onMergeClick() = sheet.update { MerchantSheet.Merge() }
+
+    /** "Look it up": asked once at a time; what it found shows where it says what it is. */
+    fun onLookUpClick() {
+        if (lookup.value?.working == true) return
+        lookup.update { Lookup(working = true) }
+        viewModelScope.launch {
+            val outcome = domain.lookUp(id)
+            lookup.update { Lookup(working = false, outcome = outcome) }
+        }
+    }
 
     fun onBusinessTypeClick() = sheet.update { MerchantSheet.BusinessType }
 

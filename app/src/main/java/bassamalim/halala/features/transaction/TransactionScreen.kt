@@ -195,6 +195,27 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
 
         state.loan?.let { loan -> LoanCard(loan, viewModel) }
 
+        state.goal?.let { goal ->
+            HalalaCard(label = stringResource(R.string.goal_toward_label)) {
+                Text(
+                    text = stringResource(if (goal.withdrawn) R.string.goal_taken_out_of else R.string.goal_toward, goal.name),
+                    style = HalalaType.Body
+                )
+                HalalaButton(
+                    text = stringResource(R.string.goal_toward_undo),
+                    onClick = viewModel::onUngoalClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = Spacing.xs)
+                )
+            }
+        }
+        if (state.canMarkGoal) HalalaButton(
+            text = stringResource(R.string.goal_toward_mark),
+            onClick = viewModel::onGoalClick,
+            modifier = Modifier.fillMaxWidth()
+        )
+
         state.split?.let { split ->
             HalalaCard(label = stringResource(if (split.whole) R.string.paid_for else R.string.split)) {
                 split.shares.forEach { (name, share) ->
@@ -501,6 +522,34 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
             confirmLabel = stringResource(if (sheet.whole) R.string.paid_for_undo else R.string.split_undo),
             dismissLabel = stringResource(R.string.cancel),
             onConfirm = viewModel::onUnsplitConfirm,
+            onDismiss = viewModel::onSheetDismiss,
+            destructive = false
+        )
+
+        is TransactionSheet.Goal -> HalalaSheet(onDismiss = viewModel::onSheetDismiss) {
+            Text(text = stringResource(R.string.goal_toward_mark), style = HalalaType.Title)
+            SegmentedControl(
+                options = listOf(stringResource(R.string.goal_put_in), stringResource(R.string.goal_took_out)),
+                selectedIndex = if (sheet.withdrawn) 1 else 0,
+                onSelect = { viewModel.onGoalWayClick(it == 1) }
+            )
+            ChoiceChipsMulti(options = state.goals, selected = listOfNotNull(sheet.goalId), onToggle = viewModel::onGoalPick)
+            if (sheet.noGoal) Text(text = stringResource(R.string.goal_toward_none), style = HalalaType.Label, color = HalalaColors.StateOver)
+            Text(text = stringResource(R.string.goal_toward_body), style = HalalaType.Label, color = HalalaColors.TextMuted)
+            HalalaButton(
+                text = stringResource(R.string.goal_toward_confirm),
+                onClick = viewModel::onGoalConfirm,
+                kind = ButtonKind.Primary,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        TransactionSheet.Ungoal -> ConfirmSheet(
+            title = stringResource(R.string.goal_toward_undo_title),
+            body = stringResource(R.string.goal_toward_undo_body),
+            confirmLabel = stringResource(R.string.goal_toward_undo),
+            dismissLabel = stringResource(R.string.cancel),
+            onConfirm = viewModel::onUngoalConfirm,
             onDismiss = viewModel::onSheetDismiss,
             destructive = false
         )
