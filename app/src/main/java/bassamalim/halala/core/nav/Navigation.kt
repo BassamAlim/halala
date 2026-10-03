@@ -7,6 +7,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.currentStateAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import bassamalim.halala.core.ui.ground
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
@@ -94,7 +96,7 @@ fun NavGraph(navController: NavHostController, startDestination: Screen) {
     ) {
         screen<Screen.Lock> { LockScreen() }
 
-        composable<Screen.Main> { Settled { MainScreen() } }
+        composable<Screen.Main> { Settled { Box(Modifier.fillMaxSize().ground()) { MainScreen() } } }
 
         screen<Screen.Accounts> { AccountsScreen() }
 
@@ -181,7 +183,12 @@ fun NavGraph(navController: NavHostController, startDestination: Screen) {
 private inline fun <reified T : Any> NavGraphBuilder.screen(noinline content: @Composable () -> Unit) =
     composable<T> {
         Settled {
-            Box(Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))) { content() }
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .ground()
+                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))
+            ) { content() }
         }
     }
 

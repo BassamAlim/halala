@@ -1,6 +1,5 @@
 package bassamalim.halala.core.ui.components
 
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
@@ -35,8 +35,9 @@ import bassamalim.halala.core.ui.theme.Sizes
 import bassamalim.halala.core.ui.theme.Spacing
 
 /**
- * The default container: surface fill, 1dp line border, radius-lg, space-4 padding. It starts
- * with a muted label when given one. No shadows, no coloured borders, no coloured edges.
+ * The default container: a surface fill lit faintly from above, a 1dp line border that catches
+ * the light along its top, radius-lg, space-4 padding. It starts with a muted label when given
+ * one. No shadows, no coloured borders, no coloured edges.
  */
 @Composable
 fun HalalaCard(
@@ -50,9 +51,10 @@ fun HalalaCard(
     Column(
         modifier = modifier
             .clip(Radius.lg)
-            .background(HalalaColors.Surface)
-            .border(Sizes.border, HalalaColors.Line, Radius.lg)
+            // Before the fill, so a press sinks the whole card, border and all.
             .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+            .background(CardFill)
+            .border(Sizes.border, CardEdge, Radius.lg)
             .padding(contentPadding),
         verticalArrangement = verticalArrangement
     ) {
@@ -60,6 +62,10 @@ fun HalalaCard(
         content()
     }
 }
+
+/** A card's fill and border, lit from above. */
+internal val CardFill = Brush.verticalGradient(listOf(HalalaColors.SurfaceLit, HalalaColors.Surface))
+internal val CardEdge = Brush.verticalGradient(listOf(HalalaColors.LineLit, HalalaColors.Line))
 
 /** The muted `label` a card or section starts with. */
 @Composable
@@ -80,17 +86,13 @@ fun SummaryCard(
     onClick: (() -> Unit)? = null
 ) {
     HalalaCard(modifier = modifier, label = label, onClick = onClick) {
-        Text(
-            text = buildAnnotatedString {
-                append(amount)
-                // A blank figure (still loading) gets no sign either.
-                if (currency != null && amount.isNotEmpty()) appendCurrency(currency)
-            },
+        // A blank figure (still loading) is a shimmering bar; when it arrives its digits rise in.
+        if (amount.isEmpty()) Text(
+            text = "",
             style = HalalaNumbers.AmountLg,
-            color = amountColor,
-            inlineContent = currencyInlineContent(amountColor),
-            modifier = if (amount.isEmpty()) Modifier.fillMaxWidth(0.6f).clip(Radius.xs).shimmer() else Modifier
+            modifier = Modifier.fillMaxWidth(0.6f).clip(Radius.xs).shimmer()
         )
+        else RollingAmount(text = amount, style = HalalaNumbers.AmountLg, color = amountColor, currency = currency)
         if (caption != null)
             Text(text = caption, style = HalalaType.Caption, color = captionColor)
     }

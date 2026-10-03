@@ -8,7 +8,8 @@ import android.view.WindowManager
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.background
+import androidx.compose.ui.draw.drawBehind
+import bassamalim.halala.core.ui.drawGround
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,7 +27,6 @@ import kotlinx.coroutines.launch
 import bassamalim.halala.core.nav.Navigation
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
-import bassamalim.halala.core.ui.theme.HalalaColors
 import bassamalim.halala.core.ui.theme.HalalaTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -60,7 +60,7 @@ class Activity : FragmentActivity() {
                 Box(
                     Modifier
                         .fillMaxSize()
-                        .background(HalalaColors.Bg)
+                        .drawBehind { drawGround() }
                         .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
                 ) {
                     // Every cold start opens on the lock; nothing is on screen before it.

@@ -1,6 +1,7 @@
 package bassamalim.halala.features.export
 
 import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.ui.graphics.Color
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -94,7 +95,7 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
     }
 
     Scaffold(
-        containerColor = HalalaColors.Bg,
+        containerColor = Color.Transparent,
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Column(

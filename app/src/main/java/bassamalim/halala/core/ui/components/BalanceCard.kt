@@ -1,5 +1,24 @@
 package bassamalim.halala.core.ui.components
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.unit.LayoutDirection
+import bassamalim.halala.core.ui.settle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,12 +33,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import bassamalim.halala.core.domain.BudgetState
 import bassamalim.halala.core.ui.theme.HalalaColors
@@ -51,11 +66,40 @@ fun BalanceCard(
     footEnd: String,
     modifier: Modifier = Modifier
 ) {
+    // The state's colour eases across when it changes, and the bar fills from empty on arrival.
+    val fill by animateColorAsState(state.color, tween(FADE_MS), label = "balance fill")
+    val shown = remember { Animatable(0f) }
+    LaunchedEffect(progress) { shown.animateTo(progress.coerceIn(0f, 1f), settle()) }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
             .clip(Radius.lg)
-            .background(state.color)
+            .drawBehind {
+                // The fill deepens toward the bottom end, a sheen lights the top, and the coin's
+                // rings (the mark's) sit large and faint in the top end corner.
+                drawRect(
+                    Brush.linearGradient(
+                        listOf(lerp(fill, Color.White, 0.10f), fill, lerp(fill, HalalaColors.Bg, 0.22f)),
+                        start = Offset.Zero,
+                        end = Offset(size.width, size.height)
+                    )
+                )
+                val corner = Offset(if (layoutDirection == LayoutDirection.Rtl) 0f else size.width, 0f)
+                drawCircle(HalalaColors.BalancePill, radius = size.height * 0.95f, center = corner, style = Stroke(RING.toPx()))
+                drawCircle(HalalaColors.BalancePill, radius = size.height * 0.72f, center = corner, style = Stroke(RING.toPx() / 2))
+                drawCircle(
+                    Brush.radialGradient(listOf(HalalaColors.Sheen, Color.Transparent), center = corner, radius = size.height * 0.6f),
+                    radius = size.height * 0.6f,
+                    center = corner
+                )
+                drawLine(
+                    Brush.horizontalGradient(listOf(Color.Transparent, HalalaColors.Sheen, Color.Transparent)),
+                    start = Offset.Zero,
+                    end = Offset(size.width, 0f),
+                    strokeWidth = Sizes.border.toPx() * 2
+                )
+            }
             .padding(Insets.balanceCard),
         verticalArrangement = Arrangement.spacedBy(Insets.balanceCardGap)
     ) {
@@ -66,25 +110,29 @@ fun BalanceCard(
         ) {
             Text(text = overline.uppercase(), style = HalalaType.Overline, color = HalalaColors.OnAccent)
 
-            Text(
-                text = status,
-                style = HalalaType.Caption.copy(fontWeight = FontWeight(600)),
-                color = HalalaColors.OnAccent,
-                modifier = Modifier
-                    .clip(Radius.pill)
-                    .background(HalalaColors.BalancePill)
-                    .padding(horizontal = Spacing.sm, vertical = Spacing.xxs)
-            )
+            AnimatedContent(
+                targetState = status,
+                transitionSpec = { (fadeIn(tween(FADE_MS)) + scaleIn(initialScale = 0.9f)) togetherWith fadeOut(tween(FADE_MS)) },
+                label = "status"
+            ) {
+                Text(
+                    text = it,
+                    style = HalalaType.Caption.copy(fontWeight = FontWeight(600)),
+                    color = HalalaColors.OnAccent,
+                    modifier = Modifier
+                        .clip(Radius.pill)
+                        .background(HalalaColors.BalancePill)
+                        .padding(horizontal = Spacing.sm, vertical = Spacing.xxs)
+                )
+            }
         }
 
-        Text(
-            text = buildAnnotatedString {
-                append(spent)
-                withStyle(SpanStyle(fontSize = CURRENCY_SIZE, letterSpacing = 0.em)) { appendCurrency(currency) }
-            },
+        RollingAmount(
+            text = spent,
             style = HalalaNumbers.AmountHero,
             color = HalalaColors.OnAccent,
-            inlineContent = currencyInlineContent(HalalaColors.OnAccent)
+            currency = currency,
+            currencyStyle = HalalaNumbers.AmountHero.copy(fontSize = CURRENCY_SIZE)
         )
 
         Box(
@@ -96,7 +144,7 @@ fun BalanceCard(
         ) {
             Box(
                 Modifier
-                    .fillMaxWidth(progress.coerceIn(0f, 1f))
+                    .fillMaxWidth(shown.value)
                     .fillMaxHeight()
                     .clip(Radius.bar)
                     .background(HalalaColors.OnAccent)
@@ -109,6 +157,10 @@ fun BalanceCard(
         }
     }
 }
+
+private const val FADE_MS = 400
+/** The width of the coin's outer ring. */
+private val RING = Spacing.xs
 
 /** The currency after the hero figure, set small as on the board. */
 private val CURRENCY_SIZE = 16.sp

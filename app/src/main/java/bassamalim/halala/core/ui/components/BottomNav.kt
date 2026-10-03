@@ -1,7 +1,21 @@
 package bassamalim.halala.core.ui.components
 
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.unit.LayoutDirection
+import bassamalim.halala.core.ui.settle
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -40,8 +54,9 @@ import bassamalim.halala.core.ui.theme.Spacing
 data class BottomNavItem(val label: String, @param:DrawableRes val icon: Int)
 
 /**
- * The five fixed tabs: surface fill, a line on top, 22dp icons over 11sp labels. The current
- * tab is accent and the others muted, with no indicator pill. What waits for you is counted inside the Inbox tab,
+ * The five fixed tabs: surface fill, a line on top, 22dp icons over 11sp labels. The current tab
+ * is accent and the others muted; a short jade light slides along the top line to it and the
+ * icon lifts. There is no indicator pill. What waits for you is counted inside the Inbox tab,
  * never as a badge here.
  */
 @Composable
@@ -51,10 +66,13 @@ fun BottomNav(
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val haptics = LocalHapticFeedback.current
+    val at by animateFloatAsState(selectedIndex.toFloat(), settle(), label = "tab")
+
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(HalalaColors.Surface)
+            .background(NavFill)
             .drawBehind {
                 drawLine(
                     color = HalalaColors.Line,
@@ -62,24 +80,49 @@ fun BottomNav(
                     end = Offset(size.width, 0f),
                     strokeWidth = Sizes.border.toPx()
                 )
+                // The items share the width equally, so the current one's centre is known.
+                val slot = size.width / items.size
+                val centre = (at + 0.5f) * slot
+                val x = if (layoutDirection == LayoutDirection.Rtl) size.width - centre else centre
+                val half = INDICATOR.toPx() / 2
+                drawRect(
+                    Brush.radialGradient(listOf(HalalaColors.Glow, Color.Transparent), center = Offset(x, 0f), radius = slot * 0.6f),
+                    topLeft = Offset(x - slot / 2, 0f),
+                    size = Size(slot, slot * 0.6f)
+                )
+                drawLine(
+                    color = HalalaColors.Accent,
+                    start = Offset(x - half, 0f),
+                    end = Offset(x + half, 0f),
+                    strokeWidth = INDICATOR_HEIGHT.toPx(),
+                    cap = StrokeCap.Round
+                )
             }
             // The fill runs under the gesture bar; the items sit above it.
             .windowInsetsPadding(WindowInsets.navigationBars)
             .padding(top = Insets.navTop, bottom = Insets.navBottom)
             .selectableGroup(),
-        horizontalArrangement = Arrangement.SpaceAround,
         verticalAlignment = Alignment.CenterVertically
     ) {
         items.forEachIndexed { index, item ->
             val selected = index == selectedIndex
-            val color = if (selected) HalalaColors.Accent else HalalaColors.TextMuted
+            val color by animateColorAsState(if (selected) HalalaColors.Accent else HalalaColors.TextMuted, label = "tab colour")
+            val lift by animateFloatAsState(
+                if (selected) 1f else 0f,
+                spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+                label = "tab lift"
+            )
 
             Column(
                 modifier = Modifier
+                    .weight(1f)
                     .sizeIn(minWidth = Insets.navItemMinWidth, minHeight = Sizes.touchTarget)
                     .semantics { this.selected = selected }
                     .clip(Radius.sm)
-                    .clickable(role = Role.Tab, onClick = { onSelect(index) }),
+                    .clickable(role = Role.Tab) {
+                        if (!selected) haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                        onSelect(index)
+                    },
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(Spacing.xs)
             ) {
@@ -87,13 +130,25 @@ fun BottomNav(
                     painter = painterResource(item.icon),
                     contentDescription = null,
                     tint = color,
-                    modifier = Modifier.size(Sizes.icon)
+                    modifier = Modifier
+                        .size(Sizes.icon)
+                        .graphicsLayer {
+                            translationY = -lift * LIFT.toPx()
+                            scaleX = 1f + lift * 0.08f
+                            scaleY = scaleX
+                        }
                 )
                 Text(text = item.label, style = HalalaType.NavLabel, color = color)
             }
         }
     }
 }
+
+/** The nav's surface, a touch lighter at its top edge. */
+private val NavFill = Brush.verticalGradient(listOf(HalalaColors.SurfaceLit, HalalaColors.Surface))
+private val INDICATOR = Spacing.section
+private val INDICATOR_HEIGHT = Spacing.xxs
+private val LIFT = Spacing.xxs
 
 @Preview
 @Composable
