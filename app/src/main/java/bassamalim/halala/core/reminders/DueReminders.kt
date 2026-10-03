@@ -72,6 +72,9 @@ sealed interface DueNotice {
         override val key get() = DIGEST_KEY + kind.ordinal
     }
 
+    /** The budget called [name] reached [percent]% this cycle (50, 80 or 100). */
+    data class Budget(override val key: Int, val name: String, val percent: Int) : DueNotice
+
     /** [count] things looked unusual since yesterday (anomaly alerts). */
     data class Alerts(val count: Int) : DueNotice {
         override val key get() = ALERTS_KEY
@@ -172,7 +175,11 @@ class DueReminders @Inject constructor(
                     is DueNotice.Loan -> context.getString(
                         if (notice.lent) R.string.due_loan_lent_title else R.string.due_loan_borrowed_title, notice.person
                     ) to context.getString(R.string.due_loan_text)
-                    is DueNotice.Alerts -> context.resources.getQuantityString(R.plurals.alert_count, notice.count, notice.count) to
+                    is DueNotice.Budget -> (
+                        if (notice.percent >= 100) context.getString(R.string.budget_alert_full_title, notice.name)
+                        else context.getString(R.string.budget_alert_title, notice.name, notice.percent)
+                    ) to context.getString(R.string.budget_alert_text)
+                    is DueNotice.Alerts ->context.resources.getQuantityString(R.plurals.alert_count, notice.count, notice.count) to
                             context.getString(R.string.alerts_hint)
                     is DueNotice.Maturing -> context.getString(R.string.due_maturing_title, notice.name) to
                             context.getString(R.string.due_maturing_text, shortDateLabel(notice.due, today))
@@ -216,6 +223,7 @@ class DueReminderWorker @AssistedInject constructor(
     private val zakat: ZakatRepository,
     private val assets: AssetsRepository,
     private val savings: SavingsRepository,
+    private val budgetAlerts: BudgetAlerts,
     private val clock: Clock
 ) : CoroutineWorker(context, params) {
 
@@ -236,7 +244,7 @@ class DueReminderWorker @AssistedInject constructor(
         val zakatDue = state.dueOn?.takeIf { profile.remind && !state.paid && it.minusDays(ZAKAT_LEAD_DAYS) == today }
         DueReminders.notify(
             applicationContext,
-            notices + ready + maturing(today) + listOfNotNull(zakatDue?.let { DueNotice.Zakat(it) }, DueNotice.Alerts(fresh).takeIf { fresh > 0 }),
+            notices + ready + maturing(today) + budgetAlerts.notices() + listOfNotNull(zakatDue?.let { DueNotice.Zakat(it) }, DueNotice.Alerts(fresh).takeIf { fresh > 0 }),
             today
         )
         assets.snapshot(Globals.PRIMARY_CURRENCY)

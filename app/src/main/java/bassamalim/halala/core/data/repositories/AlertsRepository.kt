@@ -6,10 +6,10 @@ import bassamalim.halala.core.data.dataSources.room.daos.TransactionsDao
 import bassamalim.halala.core.data.dataSources.room.entities.DismissedAlert
 import bassamalim.halala.core.domain.Anomalies
 import bassamalim.halala.core.domain.Anomaly
-import bassamalim.halala.core.enums.RawStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import java.time.Clock
+import java.time.Duration
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,14 +25,14 @@ class AlertsRepository @Inject constructor(
     fun observeAlerts(): Flow<List<Anomaly>> = combine(
         transactionsDao.observeAllDetails(),
         alertsDao.observeCheckpoints(),
-        alertsDao.observeByStatus(RawStatus.DECLINED),
+        alertsDao.observeForAlerts(clock.instant().minus(Duration.ofDays(Anomalies.PARSER_WINDOW_DAYS))),
         accountsDao.observeAllWithBalance(),
         alertsDao.observeDismissed()
-    ) { details, checkpoints, declined, accounts, dismissed ->
+    ) { details, checkpoints, messages, accounts, dismissed ->
         Anomalies.find(
             details = details,
             checkpoints = checkpoints,
-            messages = declined,
+            messages = messages,
             currencies = accounts.associate { it.account.id to it.account.currency },
             dismissed = dismissed.toSet(),
             now = clock.instant()

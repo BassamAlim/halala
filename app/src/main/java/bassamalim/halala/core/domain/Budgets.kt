@@ -70,6 +70,28 @@ object Budgets {
         )
     }
 
+    /** How far through a budget you are told about, in percent: each once a cycle. */
+    val ALERT_PERCENTS = listOf(50, 80, 100)
+
+    /** The highest of [ALERT_PERCENTS] [status] has reached, in exact integers; null below the first. */
+    fun reached(status: BudgetStatus): Int? = ALERT_PERCENTS.lastOrNull {
+        Math.multiplyExact(status.spentMinor, 100L) >= Math.multiplyExact(status.limitMinor, it.toLong())
+    }
+
+    /** Remembers that [budgetId] was told about [percent] in the cycle starting [cycleStart]. */
+    fun toldKey(budgetId: Long, cycleStart: LocalDate, percent: Int) = "$budgetId:$cycleStart:$percent"
+
+    /**
+     * The budgets to tell about now, with the percent each reached: only past a threshold higher
+     * than any already [told] this [cycle] (so a jump from 40% to 110% tells once, at 100).
+     */
+    fun alerts(statuses: List<BudgetStatus>, cycle: PayCycle, told: Set<String>): List<Pair<BudgetStatus, Int>> =
+        statuses.mapNotNull { status ->
+            val percent = reached(status) ?: return@mapNotNull null
+            val already = ALERT_PERCENTS.filter { it >= percent }.any { toldKey(status.budget.id, cycle.start, it) in told }
+            if (already) null else status to percent
+        }
+
     /** Salary credits, for the pay cycle. */
     fun salaries(details: List<TransactionDetail>, zone: ZoneId): List<SalaryCredit> = details
         .filter { it.transaction.kind == TransactionKind.SALARY && it.transaction.direction == Direction.CREDIT }

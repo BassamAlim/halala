@@ -578,6 +578,9 @@
     <string name="budgets_empty">No budgets yet. Set one for everything you spend, or for a category, type or merchant.</string>
     <string name="budgets_hint">Budgets run from one salary to the next. Only your share of a split bill counts, and loans and moves between your accounts don\'t.</string>
     <string name="budget_everything">Everything</string>
+    <string name="budget_alert_title">%1$s: %2$d%% of its budget</string>
+    <string name="budget_alert_full_title">%1$s: budget used up</string>
+    <string name="budget_alert_text">This pay cycle, so far. Open Halala to see where it stands.</string>
     <string name="budget_for">What it limits</string>
     <string name="budget_choice_missing">Choose one</string>
     <string name="budget_amount">Each pay cycle</string>
@@ -649,6 +652,8 @@
     <string name="alert_declined_body">%1$s declined a payment on %2$s.</string>
     <string name="alert_mismatch">Balance doesn\'t add up</string>
     <string name="alert_mismatch_body">%1$s: the bank said %2$s, the ledger makes it %3$s, on %4$s. An SMS may have been missed or recorded twice.</string>
+    <string name="alert_parser">Messages Halala can\'t read</string>
+    <string name="alert_parser_body">%1$s: %2$s of %3$s messages this week weren\'t read. The bank may have changed how it writes them. They\'re kept, and will be read once Halala learns the new layout.</string>
     <string name="digests">Digests</string>
     <string name="digests_summary">Each week, month and year in review</string>
     <string name="digests_empty">No digests yet. They appear once a week or month with spending has ended.</string>

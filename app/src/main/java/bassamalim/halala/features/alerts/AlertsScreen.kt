@@ -32,7 +32,7 @@ import bassamalim.halala.core.ui.theme.Spacing
 
 /**
  * Anomaly alerts (the spec's list): possible duplicates, unusually large charges, foreign
- * charges, declined cards, and balances that don't add up. Each opens its transaction, and can be
+ * charges, declined cards, balances that don't add up, and a bank whose SMS stopped parsing. Each opens its transaction, and can be
  * dismissed (or, for a large one, called normal for its merchant). No board draws it.
  */
 @Composable
@@ -84,6 +84,7 @@ private fun titleOf(kind: AlertKind) = when (kind) {
     AlertKind.FOREIGN -> R.string.alert_foreign
     AlertKind.DECLINED -> R.string.alert_declined
     AlertKind.MISMATCH -> R.string.alert_mismatch
+    AlertKind.PARSER -> R.string.alert_parser
 }
 
 @Composable
@@ -93,4 +94,5 @@ private fun body(alert: AlertItem): String = when (alert.kind) {
     AlertKind.FOREIGN -> stringResource(R.string.alert_foreign_body, alert.name, alert.amount, alert.other, alert.day)
     AlertKind.DECLINED -> stringResource(R.string.alert_declined_body, alert.name, alert.day)
     AlertKind.MISMATCH -> stringResource(R.string.alert_mismatch_body, alert.name, alert.other, alert.amount, alert.day)
+    AlertKind.PARSER -> stringResource(R.string.alert_parser_body, alert.name, alert.amount, alert.other)
 }

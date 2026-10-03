@@ -132,6 +132,13 @@ class PreferencesRepository @Inject constructor(
         dataStore.edit { it[PEOPLE_DISMISSED] = it[PEOPLE_DISMISSED].orEmpty() + key }
     }
 
+    /** Budget alerts already sent, by `Budgets.toldKey` (a budget id, a day and a percent: no amount). */
+    suspend fun budgetAlertsTold(): Set<String> = dataStore.data.first()[BUDGET_TOLD].orEmpty()
+
+    suspend fun setBudgetAlertsTold(keys: Set<String>) {
+        dataStore.edit { it[BUDGET_TOLD] = keys }
+    }
+
     /** The people (uids) the AI has already been asked about. */
     suspend fun peopleAsked(): Set<String> = dataStore.data.first()[PEOPLE_ASKED].orEmpty()
 
@@ -157,6 +164,7 @@ class PreferencesRepository @Inject constructor(
         private val PEOPLE_SAME = stringSetPreferencesKey("people_same")
         private val PEOPLE_DISMISSED = stringSetPreferencesKey("people_merge_dismissed")
         private val PEOPLE_ASKED = stringSetPreferencesKey("people_asked")
+        private val BUDGET_TOLD = stringSetPreferencesKey("budget_alerts_told")
         private val BACKUP_FOLDER = stringPreferencesKey("backup_folder")
         private val BACKUP_EVERY = stringPreferencesKey("backup_every")
         private val BACKUP_KEEP = intPreferencesKey("backup_keep")

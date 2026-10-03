@@ -61,6 +61,22 @@ class AnomaliesTest {
     }
 
     @Test
+    fun `a sender whose messages fail to parse above 5% this week is raised`() {
+        fun sms(n: Int, status: RawStatus, day: String = "2026-10-12", sender: String = "AlRajhiBank") =
+            RawMessage(id = n.toLong(), sender = sender, body = "", receivedAt = Instant.parse("${day}T10:0${n % 10}:00Z"), hash = "h$n", status = status, parserVersion = 1)
+        val good = (1..19).map { sms(it, RawStatus.RECORDED) }
+        val notices = (40..60).map { sms(it, RawStatus.IGNORED) }
+        val lastMonth = (70..75).map { sms(it, RawStatus.UNRECOGNISED, day = "2026-09-20") }
+        // 1 of 20 is exactly 5%: not yet.
+        assertEquals(emptyList<Anomaly>(), find(emptyList(), messages = good + notices + lastMonth + sms(20, RawStatus.UNRECOGNISED)))
+        val found = find(emptyList(), messages = good + sms(20, RawStatus.UNRECOGNISED) + sms(21, RawStatus.UNRECOGNISED, day = "2026-10-13"))
+            .single() as Anomaly.ParserFailing
+        assertEquals(listOf(2, 21, "h21"), listOf(found.failed, found.total, found.newest.hash))
+        val otherBank = (80..99).map { sms(it, RawStatus.RECORDED, sender = "SNB") }
+        assertEquals(listOf("AlRajhiBank"), find(emptyList(), messages = good + otherBank + sms(20, RawStatus.UNRECOGNISED) + sms(21, RawStatus.UNRECOGNISED)).map { (it as Anomaly.ParserFailing).sender })
+    }
+
+    @Test
     fun `a reported balance that the ledger doesn't reach is a mismatch`() {
         val spend = tx("2026-10-10T10:00:00Z", 1_000, key = "", merchant = null)
         val points = listOf(

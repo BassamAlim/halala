@@ -304,7 +304,10 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   money out that counts in totals, your share of it; never stored, read from the ledger.
   `BudgetState` colours it, and spending further through the budget than through the cycle by
   10% or more reads as "spending fast" (the warn look) even under 80%. The Everything budget
-  drives Home's balance card.
+  drives Home's balance card. Every budget notifies once a cycle at 50, 80 and 100%
+  (`Budgets.alerts`, `core/reminders/BudgetAlerts`; the highest reached only, its name and the
+  percent, never an amount), looked at after each SMS run and by the daily reminder work; what
+  was told is in DataStore by `Budgets.toldKey` (budget id, cycle start, percent).
 - **Forecast** (`Forecasts`, inputs from `ForecastRepository`): spendable money is current,
   card, wallet and cash accounts (savings and investments are left alone). Variable spending is
   spending outside what active subscriptions and bills charge; its daily rate per recent cycle
@@ -337,7 +340,9 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   merchant, amount and account twice within a day; a charge over three times the merchant's
   median (four or more before it) and at least 100 above it; a foreign-currency charge; a
   declined card (a `DECLINED` message); a bank balance that isn't the one before plus what was
-  recorded between (a missed or doubled SMS). Only dismissals are stored (`dismissed_alerts`, by
+  recorded between (a missed or doubled SMS); parser health: a sender more than 5% of whose
+  last week of messages (notices and OTPs aside) are `UNRECOGNISED`, keyed by the newest
+  failure so another brings it back. Only dismissals are stored (`dismissed_alerts`, by
   key; "Normal for it" quiets a merchant's large ones); a restore clears them. Home shows a row
   while any stand; the daily reminder work notifies a count of new ones, never what or how much.
 - **Digests** (`Digests`, `DigestRepository`): weekly (Sunday to Saturday, the Saudi week),

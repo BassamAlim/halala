@@ -9,6 +9,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.DismissedAlert
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.enums.RawStatus
 import kotlinx.coroutines.flow.Flow
+import java.time.Instant
 
 @Dao
 interface AlertsDao {
@@ -24,4 +25,8 @@ interface AlertsDao {
 
     @Query("SELECT * FROM raw_messages WHERE status = :status ORDER BY receivedAt DESC LIMIT 50")
     fun observeByStatus(status: RawStatus): Flow<List<RawMessage>>
+
+    /** What the alerts look at: declined messages, and every message since [since] for parser health. */
+    @Query("SELECT * FROM raw_messages WHERE status = 'DECLINED' OR receivedAt > :since")
+    fun observeForAlerts(since: Instant): Flow<List<RawMessage>>
 }

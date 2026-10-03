@@ -130,14 +130,15 @@ fun itemMeta(item: TransactionItem, withDay: Boolean): String = when {
 }
 
 @Composable
-fun expenseTypeLabel(type: ExpenseType): String = stringResource(
-    when (type) {
-        ExpenseType.FIXED_ESSENTIAL -> R.string.expense_fixed_essential
-        ExpenseType.FIXED_DISCRETIONARY -> R.string.expense_fixed_discretionary
-        ExpenseType.VARIABLE_ESSENTIAL -> R.string.expense_variable_essential
-        ExpenseType.VARIABLE_DISCRETIONARY -> R.string.expense_variable_discretionary
-    }
-)
+fun expenseTypeLabel(type: ExpenseType): String = stringResource(expenseTypeRes(type))
+
+/** The expense type's words, for places outside Compose (notifications). */
+fun expenseTypeRes(type: ExpenseType): Int = when (type) {
+    ExpenseType.FIXED_ESSENTIAL -> R.string.expense_fixed_essential
+    ExpenseType.FIXED_DISCRETIONARY -> R.string.expense_fixed_discretionary
+    ExpenseType.VARIABLE_ESSENTIAL -> R.string.expense_variable_essential
+    ExpenseType.VARIABLE_DISCRETIONARY -> R.string.expense_variable_discretionary
+}
 
 /**
  * A rule in plain words: "Merchant is Jahez · Amount up to 150.00 → Delivery · Variable ·
