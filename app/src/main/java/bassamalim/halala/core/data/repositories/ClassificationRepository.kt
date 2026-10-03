@@ -290,6 +290,8 @@ class ClassificationRepository @Inject constructor(
 
     suspend fun getAliases(): List<MerchantAlias> = merchantsDao.getAliases()
 
+    fun observeAllAliases(): Flow<List<MerchantAlias>> = merchantsDao.observeAllAliases()
+
     /** What you call it. The bank's descriptors stay as they were written. */
     suspend fun renameMerchant(id: Long, name: String): Long? {
         val merchant = merchantsDao.getMerchant(id) ?: return null

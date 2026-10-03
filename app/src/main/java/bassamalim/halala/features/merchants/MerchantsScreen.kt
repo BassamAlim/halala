@@ -114,7 +114,8 @@ private fun LazyListScope.suggestions(state: MerchantsUiState, viewModel: Mercha
         ) {
             Text(text = stringResource(R.string.people_same_pair, row.goesName, row.keepName), style = HalalaType.Body)
             Text(
-                text = stringResource(R.string.merchants_same_website, row.website, row.keepName),
+                text = row.website?.let { stringResource(R.string.merchants_same_website, it, row.keepName) }
+                    ?: stringResource(R.string.merchants_same_cut, row.keepName),
                 style = HalalaType.Caption,
                 color = HalalaColors.TextMuted
             )

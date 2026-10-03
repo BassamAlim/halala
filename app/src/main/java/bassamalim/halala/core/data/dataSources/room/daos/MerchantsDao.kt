@@ -139,6 +139,9 @@ interface MerchantsDao {
     @Query("SELECT * FROM merchant_aliases ORDER BY id")
     suspend fun getAliases(): List<MerchantAlias>
 
+    @Query("SELECT * FROM merchant_aliases ORDER BY id")
+    fun observeAllAliases(): Flow<List<MerchantAlias>>
+
     @Query("SELECT * FROM merchant_aliases WHERE id = :id")
     suspend fun getAlias(id: Long): MerchantAlias?
 

@@ -393,6 +393,7 @@
     <string name="merchants_search">Search merchants</string>
     <string name="merchants_empty">No merchants yet. They appear as purchases arrive.</string>
     <string name="merchants_same_title">Same merchant?</string>
+    <string name="merchants_same_cut">One name reads like the other cut short by the bank. Merged, they are %1$s.</string>
     <string name="merchants_same_website">Both have the website %1$s. Merged, they are %2$s.</string>
     <string name="merchants_hint">A new spelling joins the merchant it reads like. If one joined the wrong merchant, open it and take that spelling out.</string>
     <plurals name="merchant_aliases">

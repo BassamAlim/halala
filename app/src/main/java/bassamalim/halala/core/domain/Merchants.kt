@@ -114,6 +114,27 @@ object Merchants {
             .distinct()
             .singleOrNull()
 
+    /**
+     * Merchants already apart that one spelling of says is cut short from the other's: what
+     * [cutShortOf] would have joined had it come first, by merchant id, the smaller first.
+     */
+    fun cutShortPairs(aliases: Map<String, Long>): Set<Pair<Long, Long>> {
+        // Sorted run-together, every key a spelling is cut from follows it directly.
+        val sorted = aliases.entries.sortedBy { it.key.replace(" ", "") }
+        val pairs = mutableSetOf<Pair<Long, Long>>()
+        for ((i, short) in sorted.withIndex()) {
+            val compact = short.key.replace(" ", "")
+            val from = sorted.asSequence().drop(i + 1)
+                .takeWhile { it.key.replace(" ", "").startsWith(compact) }
+                .filter { it.value != short.value && isCut(short.key, it.key) }
+                .map { it.value }
+                .distinct()
+            // Cut from two merchants: no telling which.
+            from.singleOrNull()?.let { pairs += minOf(it, short.value) to maxOf(it, short.value) }
+        }
+        return pairs
+    }
+
     /** Whether [short] is [long] cut inside one of its words. */
     private fun isCut(short: String, long: String): Boolean {
         val cut = short.replace(" ", "")

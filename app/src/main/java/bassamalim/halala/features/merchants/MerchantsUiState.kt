@@ -18,5 +18,6 @@ data class MerchantMergeRow(
     val goesId: Long,
     val keepName: String,
     val goesName: String,
-    val website: String
+    /** Why: the website both have, or null for a name the bank cut short. */
+    val website: String?
 )
