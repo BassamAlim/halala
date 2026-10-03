@@ -1022,6 +1022,9 @@
     <string name="map_needs_always">Purchases are placed when their SMS arrives, usually with Halala closed. Allow location all the time.</string>
     <string name="map_allow_always">Allow all the time</string>
     <string name="map_location_off">Location is off on this phone, so new purchases aren\'t placed.</string>
+    <string name="transaction_place">Where</string>
+    <string name="transaction_place_within">Within about %1$d m</string>
+    <string name="transaction_place_none">No place was kept for this one. Purchases are placed as their SMS arrives, so older ones and those added by hand have none.</string>
     <string name="map_turn_location_on">Turn location on</string>
     <string name="location_ask_title">See where you spend</string>
     <string name="location_ask_body">When a purchase\'s SMS arrives, Halala can note where your phone is and show your spending on a map. It needs location all the time, since the SMS comes while Halala is closed. Places stay on your phone, in the encrypted ledger, and are never sent anywhere.</string>

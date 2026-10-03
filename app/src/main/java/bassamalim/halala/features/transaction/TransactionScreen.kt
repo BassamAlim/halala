@@ -1,6 +1,16 @@
 package bassamalim.halala.features.transaction
 
 import bassamalim.halala.core.ui.components.Skeleton
+import bassamalim.halala.core.ui.components.HeatMap
+import bassamalim.halala.core.ui.components.HeatPoint
+import bassamalim.halala.core.ui.components.MapPlaceholder
+import bassamalim.halala.core.ui.components.openLocationSettings
+import bassamalim.halala.core.ui.components.rememberLocationRequest
+import bassamalim.halala.core.places.LocationAccess
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import bassamalim.halala.core.ui.components.currencyInlineContent
 import bassamalim.halala.core.ui.components.appendCurrency
 import androidx.compose.foundation.clickable
@@ -80,8 +90,8 @@ import bassamalim.halala.core.ui.identifiedLabel
 
 /**
  * One transaction, from the Transaction detail board: the figure, when and where, what it is,
- * its category and type, the rule that filed it, and how it got here. Tags, location, the raw
- * SMS and loan/split actions arrive with the phases that fill them.
+ * its category and type, its tags, where a purchase was made, its loan and split, the rule that
+ * filed it, and how it got here. The raw SMS isn't shown yet.
  */
 @Composable
 fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
@@ -192,6 +202,8 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
             val tagsLabel = stringResource(R.string.tags)
             TransactionTags(row = { value -> DetailRow(tagsLabel) { value() } })
         }
+
+        if (state.showsPlace) PlaceCard(state, viewModel)
 
         state.loan?.let { loan -> LoanCard(loan, viewModel) }
 
@@ -554,6 +566,71 @@ private fun LoanCard(loan: LoanLink, viewModel: TransactionViewModel) {
 }
 
 /** A label on the left and its value on the right, divided from the row above. */
+/**
+ * Where a purchase was made: a small map of the spot, or the drawn street grid saying why there
+ * is none (location not allowed all the time, location off, or nothing kept for this one, as for
+ * history from before). The map is a picture here: the page scrolls over it.
+ */
+@Composable
+private fun PlaceCard(state: TransactionUiState, viewModel: TransactionViewModel) {
+    val context = LocalContext.current
+    val askLocation = rememberLocationRequest(viewModel::onCheckLocation)
+    LifecycleResumeEffect(viewModel) {
+        viewModel.onCheckLocation()
+        onPauseOrDispose { }
+    }
+    val mapModifier = Modifier
+        .fillMaxWidth()
+        .height(Sizes.placeMap)
+        .clip(Radius.lg)
+
+    HalalaCard(label = stringResource(R.string.transaction_place)) {
+        val place = state.place
+        when {
+            place != null -> {
+                Box(mapModifier) {
+                    HeatMap(
+                        points = listOf(HeatPoint(place.latitude, place.longitude, 1f)),
+                        focus = null,
+                        modifier = Modifier.matchParentSize()
+                    )
+                    // Takes the touches so the map stays put and the page scrolls.
+                    Box(Modifier.matchParentSize().pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent() } })
+                }
+                Text(
+                    text = stringResource(R.string.transaction_place_within, place.accuracyMeters),
+                    style = HalalaType.Label,
+                    color = HalalaColors.TextMuted
+                )
+            }
+            state.locationAccess == LocationAccess.SERVICES_OFF -> MapPlaceholder(
+                message = stringResource(R.string.map_location_off),
+                action = stringResource(R.string.map_turn_location_on),
+                onAction = { openLocationSettings(context) },
+                modifier = mapModifier
+            )
+            state.locationAccess == LocationAccess.FOREGROUND_ONLY -> MapPlaceholder(
+                message = stringResource(R.string.map_needs_always),
+                action = stringResource(R.string.map_allow_always),
+                onAction = askLocation,
+                modifier = mapModifier
+            )
+            state.locationAccess == LocationAccess.DENIED -> MapPlaceholder(
+                message = stringResource(R.string.map_no_permission),
+                action = stringResource(R.string.map_allow),
+                onAction = askLocation,
+                modifier = mapModifier
+            )
+            else -> MapPlaceholder(
+                message = stringResource(R.string.transaction_place_none),
+                action = null,
+                onAction = {},
+                modifier = mapModifier
+            )
+        }
+    }
+}
+
 @Composable
 private fun DetailRow(label: String, divider: Boolean = true, value: @Composable () -> Unit) {
     Column {

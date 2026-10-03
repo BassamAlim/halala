@@ -6,6 +6,10 @@ import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.LoansRepository
 import bassamalim.halala.core.data.repositories.PeopleRepository
+import bassamalim.halala.core.data.repositories.PlacesRepository
+import bassamalim.halala.core.data.dataSources.room.entities.TransactionPlace
+import bassamalim.halala.core.places.LocationAccess
+import bassamalim.halala.core.places.PlaceCapture
 import bassamalim.halala.core.data.dataSources.room.relations.PersonWithStats
 import bassamalim.halala.core.data.repositories.TransactionsRepository
 import bassamalim.halala.core.domain.DescribedRule
@@ -25,8 +29,16 @@ class TransactionDomain @Inject constructor(
     private val accountsRepository: AccountsRepository,
     private val loansRepository: LoansRepository,
     private val peopleRepository: PeopleRepository,
+    private val placesRepository: PlacesRepository,
+    private val placeCapture: PlaceCapture,
     private val clock: Clock
 ) {
+
+    /** Where it was made, when that was kept. */
+    fun observePlace(id: Long): Flow<TransactionPlace?> = placesRepository.observe(id)
+
+    /** Whether Halala may keep where purchases happen, which is why one has no place. */
+    fun locationAccess(): LocationAccess = placeCapture.access()
 
     fun observePeople(): Flow<List<PersonWithStats>> = peopleRepository.observePeople()
 

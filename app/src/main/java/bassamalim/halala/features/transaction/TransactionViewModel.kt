@@ -51,13 +51,16 @@ class TransactionViewModel @Inject constructor(
     private val confirmingDelete = MutableStateFlow(false)
     private val sheet = MutableStateFlow<TransactionSheet?>(if (route.split) TransactionSheet.Split() else null)
 
+    /** Looked at again when the screen comes back, after you may have allowed it. */
+    private val locationAccess = MutableStateFlow(domain.locationAccess())
+
     val uiState: StateFlow<TransactionUiState> = combine(
         combine(domain.observe(id), domain.observeLoans(), domain.observePeople(), ::Triple),
-        domain.observeCategories(),
+        combine(domain.observeCategories(), domain.observePlace(id), locationAccess, ::Triple),
         domain.observeRules(),
         confirmingDelete,
         sheet
-    ) { (detail, loans, people), categories, rules, confirming, sheet ->
+    ) { (detail, loans, people), (categories, place, access), rules, confirming, sheet ->
         // Gone (deleted from here or elsewhere): the screen stays as it was while it leaves.
         if (detail == null) return@combine TransactionUiState(isLoading = true)
 
@@ -116,7 +119,10 @@ class TransactionViewModel @Inject constructor(
                     detail.sharedMinor == 0L,
             split = splitOf(detail, loans, people),
             people = people.map { PersonChoice(it.person.id, it.person.name) },
-            sheet = (sheet as? TransactionSheet.Split)?.let { previewed(it, tx.amountMinor, tx.currency) } ?: sheet
+            sheet = (sheet as? TransactionSheet.Split)?.let { previewed(it, tx.amountMinor, tx.currency) } ?: sheet,
+            showsPlace = Rules.canCategorise(detail),
+            place = place?.let { PlaceInfo(it.latitude, it.longitude, it.accuracyMeters) },
+            locationAccess = access
         )
     }.stateIn(
         scope = viewModelScope,
@@ -125,6 +131,8 @@ class TransactionViewModel @Inject constructor(
     )
 
     fun onBackClick() = navigator.popBackStack()
+
+    fun onCheckLocation() = locationAccess.update { domain.locationAccess() }
 
     fun onEditClick() = navigator.navigate(Screen.EditTransaction(id = id))
 

@@ -33,6 +33,8 @@ object Sizes {
     val onboardingBank = 108.dp
     /** The balance field beside an account's name on onboarding's last step. */
     val onboardingBalance = 132.dp
+    /** The map of where a purchase was made, on Transaction detail. */
+    val placeMap = 160.dp
     /** Nav icons; inline icons use [iconSmall]. */
     val icon = 22.dp
     val iconSmall = 18.dp

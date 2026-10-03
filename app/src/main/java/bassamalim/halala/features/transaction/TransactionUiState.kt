@@ -9,6 +9,7 @@ import bassamalim.halala.core.models.RuleWords
 import bassamalim.halala.core.enums.BusinessType
 import bassamalim.halala.core.enums.IdentifiedBy
 import bassamalim.halala.core.domain.SplitProblem
+import bassamalim.halala.core.places.LocationAccess
 import java.time.LocalDate
 
 data class TransactionUiState(
@@ -56,7 +57,11 @@ data class TransactionUiState(
     val split: SplitInfo? = null,
     /** Everyone to split with, the latest first. */
     val people: List<PersonChoice> = emptyList(),
-    val sheet: TransactionSheet? = null
+    val sheet: TransactionSheet? = null,
+    /** Purchases have a place card: the place, or why there is none. */
+    val showsPlace: Boolean = false,
+    val place: PlaceInfo? = null,
+    val locationAccess: LocationAccess = LocationAccess.GRANTED
 ) {
     val isMove get() = fromLabel != null
 }
@@ -72,6 +77,9 @@ data class FiledBy(
     val identifiedBy: IdentifiedBy? = null,
     val confidence: Int? = null
 )
+
+/** Where a purchase was made, and how close the phone could tell ([accuracyMeters]). */
+data class PlaceInfo(val latitude: Double, val longitude: Double, val accuracyMeters: Int)
 
 /** A bill you split: each person's share ("100.00") and what is left as yours. */
 data class SplitInfo(val shares: List<Pair<String, String>>, val yours: String, val currency: String)
