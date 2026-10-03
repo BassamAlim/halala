@@ -111,7 +111,7 @@ class ImporterTest {
             Rule(60, "rule-mine", RuleConditions(contains = "olaya", accountId = 22, minMinor = 100, maxMinor = 90_000), RuleActions(47), RuleSource.LEARNED, enabled = false, createdAt = at)
         ),
         merchants = listOf(
-            Merchant(84, "mer-jahez", "Jahez", BusinessType.FOOD_DELIVERY, IdentifiedBy.AI, 93, namedByYou = true, autoRuled = true, searchedOnline = true, webUrl = "https://jahez.net", webTitle = "Jahez — food delivery")
+            Merchant(84, "mer-jahez", "Jahez", BusinessType.FOOD_DELIVERY, IdentifiedBy.AI, 93, namedByYou = true, autoRuled = true, searchedOnline = true, webUrl = "https://jahez.net", webTitle = "Jahez — food delivery", website = "jahez.net", websiteAsked = true)
         ),
         aliases = listOf(MerchantAlias(95, 84, "jahez olaya", "Jahez Olaya", AliasMatch.FIRST)),
         rawMessages = listOf(

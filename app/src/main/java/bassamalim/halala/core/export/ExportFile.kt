@@ -62,7 +62,7 @@ data class ExportFile(
     val deposits: List<ExportDeposit> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 21
+        const val SCHEMA_VERSION = 22
     }
 }
 
@@ -161,7 +161,10 @@ data class ExportMerchant(
     /** Since schema 21: looked up online (never again), and the page it was found on. */
     val searchedOnline: Boolean = false,
     val webUrl: String? = null,
-    val webTitle: String? = null
+    val webTitle: String? = null,
+    /** Since schema 22: its own website, for its logo (the logo itself is fetched again). */
+    val website: String? = null,
+    val websiteAsked: Boolean = false
 )
 
 /** One spelling: its key (lower case, letters only), as first written, and how it joined. */

@@ -127,7 +127,7 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.sm)
         ) {
-            Avatar(initial = state.initial, tone = state.tone)
+            Avatar(initial = state.initial, tone = state.tone, merchantId = state.merchantId.takeIf { state.personName == null })
             Text(text = title, style = HalalaType.Title, textAlign = TextAlign.Center)
             Text(
                 text = buildAnnotatedString {

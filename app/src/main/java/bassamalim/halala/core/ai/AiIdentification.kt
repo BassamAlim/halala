@@ -15,6 +15,7 @@ import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.IdentifiedAs
 import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.domain.Identification
+import bassamalim.halala.core.logos.LogoLookup
 import bassamalim.halala.core.enums.BusinessType
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -90,8 +91,9 @@ class AiScheduler @Inject constructor(
 }
 
 /**
- * One run of [AiIdentification], then [WebLookup] for what it was unsure of, then [PeopleMatching],
- * online only. A problem worth trying again is retried later.
+ * One run of [AiIdentification], then [WebLookup] for what it was unsure of, then [LogoLookup]
+ * for merchants' logos, then [PeopleMatching], online only. A problem worth trying again is
+ * retried later.
  */
 @HiltWorker
 class IdentifyWorker @AssistedInject constructor(
@@ -99,12 +101,14 @@ class IdentifyWorker @AssistedInject constructor(
     @Assisted params: WorkerParameters,
     private val identification: AiIdentification,
     private val webLookup: WebLookup,
+    private val logoLookup: LogoLookup,
     private val peopleMatching: PeopleMatching
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result = try {
         identification.run()
         webLookup.run()
+        logoLookup.run()
         peopleMatching.run()
         Result.success()
     } catch (failure: IdentifyFailure) {

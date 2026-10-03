@@ -38,6 +38,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.Loan
 import bassamalim.halala.core.data.dataSources.room.entities.LoanEvent
 import bassamalim.halala.core.data.dataSources.room.entities.Merchant
 import bassamalim.halala.core.data.dataSources.room.entities.MerchantAlias
+import bassamalim.halala.core.data.dataSources.room.entities.MerchantLogo
 import bassamalim.halala.core.data.dataSources.room.entities.Person
 import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
@@ -84,9 +85,10 @@ import bassamalim.halala.core.data.dataSources.room.entities.ZakatProfile
         Tag::class,
         TransactionTag::class,
         TransactionPlace::class,
-        Deposit::class
+        Deposit::class,
+        MerchantLogo::class
     ],
-    version = 22,
+    version = 23,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

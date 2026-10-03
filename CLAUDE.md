@@ -249,6 +249,16 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   opens the page) on Review and the Merchant screen; either way `searchedOnline` stops it being
   searched again. At most 800 searches a month (a count in DataStore). The key is
   `BuildConfig.TAVILY_API_KEY`, as Groq's (`TAVILY_API_KEY`); a build without it never searches.
+  **Logos** (`core/logos/LogoLookup`, run in `IdentifyWorker` after web search): **the owner
+  chose to have them fetched online.** Each identified merchant (list, you or AI; not withheld
+  or unknown) is asked its own website once, in batches of 40 names as the bank wrote them
+  (`GroqProtocol.websitesRequest`, `Identification.sendable` as for identifying), kept as a bare
+  domain (`Merchant.website`). Each website's icon is then fetched once from Google's icon service
+  (`google.com/s2/favicons`, 128px), which so learns the domains of the places you shop; one that
+  is missing or under 48px is kept as none. Logos live in the encrypted ledger
+  (`merchant_logos`), never exported (a restore fetches them again); `MerchantLogos` decodes them
+  once and `LocalMerchantLogos` hands them to `Avatar` (pass `merchantId`), which falls back to
+  the initial. There is no way yet to correct a wrong logo.
 - **The owner's definitions** (no board, no screen): Halala is the owner's first. Places anyone
   pays at go in the bundled `KnownMerchants` list (a new build); the owner's own merchants and
   categories go in `definitions.json` at the repository root, pushed to the phone with no
@@ -427,7 +437,10 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   resume. The map (`HeatMap`, osmdroid, tiles inverted for the dark theme) shows a heat of
   your spending by period and category, and the top places (purchases within about 200 m,
   named by their usual merchant; `core/domain/Places`). Reached from Activity's "Where you
-  spend" chip.
+  spend" chip. Transaction detail's **Where** card (for spending) shows a purchase's place on a
+  small map the page scrolls over, with its accuracy, or the street-grid placeholder saying why
+  there is none (location not allowed all the time, off, or nothing kept, as for history and
+  what you add by hand), with the button that fixes it when one can.
 - **Undo**: everything you do to filing (an answer, "always", saving, switching or deleting a
   rule, editing or deleting a category, renaming, merging or splitting a merchant, saying what a
   merchant is) is one `AuditBatch`:
@@ -479,7 +492,7 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   split purchase, 10 budgets, 11 savings goals, 12 assets and their snapshots, 13 the zakat
   method, 14 retirement scenarios, 15 savings terms, 16 tags and the transactions carrying them,
   17 an asset's price source, 18 the places of purchases, 19 term deposits, 20 a budget's tag,
-  21 merchants looked up online),
+  21 merchants looked up online, 22 merchants' websites),
   keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
 - **Encrypted backups** (Backup and export › Encrypted backups, no board): a `.halala` file
   (`core/backup/BackupFile`) is the JSON export zipped and sealed with AES-256-GCM under a key
@@ -499,7 +512,8 @@ These are decided (mostly by the spec); don't re-litigate them in code.
 - **Privacy**: no analytics, no crash reporter. Network use: Groq (HTTPS, always on in a build
   with the key) for merchant identification (merchants' names and nothing else, with public web
   results for one it was unsure of), Tavily for those web searches (a merchant's name and the
-  country, nothing else), for finding
+  country, nothing else), Groq for merchants' websites (their names as for identifying) and
+  Google's icon service for their logos (each website's domain), for finding
   one person under two names (the names banks wrote for people you transfer with, nothing else) and the
   assistant (the question you type and today's date, nothing else); and market prices (public
   gold and fund prices, fetched with nothing of yours, only once you link an asset); and the

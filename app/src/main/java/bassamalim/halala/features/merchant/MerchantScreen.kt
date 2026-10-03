@@ -90,7 +90,7 @@ fun MerchantScreen(viewModel: MerchantViewModel = hiltViewModel()) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(Spacing.sm)
                 ) {
-                    Avatar(initial = state.initial)
+                    Avatar(initial = state.initial, merchantId = state.id)
                     Text(text = state.name, style = HalalaType.Title, textAlign = TextAlign.Center)
                 }
             }

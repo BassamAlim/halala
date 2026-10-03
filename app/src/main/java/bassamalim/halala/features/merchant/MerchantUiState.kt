@@ -7,6 +7,7 @@ import bassamalim.halala.core.models.TransactionItem
 
 data class MerchantUiState(
     val isLoading: Boolean = true,
+    val id: Long = 0,
     val name: String = "",
     val initial: String = "",
     /** Spent at it, as a summary shows money: "18,400". */

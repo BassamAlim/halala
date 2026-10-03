@@ -58,7 +58,8 @@ fun TransactionDetail.toItem(zone: ZoneId, today: LocalDate): TransactionItem {
         date = date,
         day = dayLabel(date, today),
         category = categoryName,
-        auto = transaction.ruleId != null
+        auto = transaction.ruleId != null,
+        merchantId = merchantId
     )
 }
 

@@ -270,7 +270,9 @@ class Exporter @Inject constructor(
                         autoRuled = merchant.autoRuled,
                         searchedOnline = merchant.searchedOnline,
                         webUrl = merchant.webUrl,
-                        webTitle = merchant.webTitle
+                        webTitle = merchant.webTitle,
+                        website = merchant.website,
+                        websiteAsked = merchant.websiteAsked
                     )
                 },
                 rawMessages = snapshot.rawMessages.map { message ->

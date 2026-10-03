@@ -527,6 +527,27 @@ class ClassificationRepositoryTest {
     }
 
     @Test
+    fun `identified merchants are asked their website once, and each website's logo is tried once`() = runTest {
+        val panda = spend("PANDA 1042")
+        val unknown = spend("ZZYZX 9")
+        classification.applyRules()
+        classification.recordIdentifications(mapOf(merchantOf(unknown)!! to IdentifiedAs("", BusinessType.UNKNOWN, 20)))
+        val logos = LogosRepository(db.merchantsDao())
+
+        // Panda, from the bundled list; never one nobody could identify.
+        assertEquals(listOf("PANDA 1042"), logos.websitesToAsk().map { it.descriptor })
+        logos.recordWebsites(mapOf(merchantOf(panda)!! to "panda.com.sa"))
+        assertTrue(logos.websitesToAsk().isEmpty())
+
+        assertEquals(listOf("panda.com.sa"), logos.toFetch().map { it.website })
+        logos.putLogo(merchantOf(panda)!!, null)
+        assertTrue(logos.toFetch().isEmpty())
+        assertTrue(logos.observeLogos().first().isEmpty())
+        logos.putLogo(merchantOf(panda)!!, byteArrayOf(1, 2, 3))
+        assertEquals(listOf(merchantOf(panda)!!), logos.observeLogos().first().keys.toList())
+    }
+
+    @Test
     fun `a name you gave stays when the AI identifies the merchant`() = runTest {
         val id = spend("ZZYZX 9")
         classification.applyRules()

@@ -173,7 +173,9 @@ class Importer @Inject constructor(
                     autoRuled = merchant.autoRuled,
                     searchedOnline = merchant.searchedOnline,
                     webUrl = merchant.webUrl,
-                    webTitle = merchant.webTitle
+                    webTitle = merchant.webTitle,
+                    website = merchant.website,
+                    websiteAsked = merchant.websiteAsked
                 )
             }
             val merchantIds = merchants.associate { it.uid to it.id }

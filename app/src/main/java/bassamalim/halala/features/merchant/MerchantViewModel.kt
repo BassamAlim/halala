@@ -53,6 +53,7 @@ class MerchantViewModel @Inject constructor(
 
         MerchantUiState(
             isLoading = false,
+            id = merchant.id,
             name = merchant.name,
             initial = initialOf(merchant.name),
             spent = Money.format(MerchantDomain.spent(mine, currency), currency, decimals = false),

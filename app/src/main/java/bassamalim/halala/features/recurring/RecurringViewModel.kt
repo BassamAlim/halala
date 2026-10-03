@@ -103,6 +103,7 @@ class RecurringViewModel @Inject constructor(
         val series = state.series
         return SeriesRow(
             id = series.id,
+            merchantId = series.merchantId,
             name = series.name,
             initial = initialOf(series.name),
             kind = series.kind,

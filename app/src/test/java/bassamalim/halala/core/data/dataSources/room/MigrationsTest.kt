@@ -336,6 +336,12 @@ class MigrationsTest {
         helper.runMigrationsAndValidate(DB, 22, true, *MIGRATIONS).close()
     }
 
+    @Test
+    fun `22 to 23 adds merchants' websites and logos, and matches the schema`() {
+        helper.createDatabase(DB, 22).use { }
+        helper.runMigrationsAndValidate(DB, 23, true, *MIGRATIONS).close()
+    }
+
     private companion object {
         const val DB = "migration-test"
     }
