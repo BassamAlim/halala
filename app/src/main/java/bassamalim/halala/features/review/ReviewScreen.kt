@@ -259,7 +259,7 @@ private fun SwipeCard(acceptLabel: String, onAccept: () -> Unit, onEdit: () -> U
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(Radius.lg)
-                    .background(HalalaColors.SurfaceLit)
+                    .background(HalalaColors.Surface)
                     .padding(horizontal = Spacing.card),
                 contentAlignment = if (direction == SwipeToDismissBoxValue.EndToStart) Alignment.CenterEnd else Alignment.CenterStart
             ) {
