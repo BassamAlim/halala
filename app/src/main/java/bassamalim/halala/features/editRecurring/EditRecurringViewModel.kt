@@ -30,16 +30,20 @@ class EditRecurringViewModel @Inject constructor(
 
     private val saving = OneAtATime()
 
-    private val id = savedStateHandle.toRoute<Screen.EditRecurring>().id
+    private val route = savedStateHandle.toRoute<Screen.EditRecurring>()
+    private val id = route.id
 
-    /** Null until an existing one has been read. */
-    private val form = MutableStateFlow(if (id == 0L) SeriesForm(nextDue = domain.today()) else null)
+    /** Null until an existing one, or the charge it starts from, has been read. */
+    private val form = MutableStateFlow(if (id == 0L && route.fromTransaction == 0L) SeriesForm(nextDue = domain.today()) else null)
     private val problems = MutableStateFlow(emptySet<SeriesProblem>())
     private val sheet = MutableStateFlow<EditRecurringSheet?>(null)
 
     init {
         if (id != 0L) viewModelScope.launch {
             form.value = domain.load(id) ?: SeriesForm(nextDue = domain.today())
+        } else if (route.fromTransaction != 0L) viewModelScope.launch {
+            val kind = if (route.subscription) RecurringKind.SUBSCRIPTION else RecurringKind.BILL
+            form.value = domain.fromCharge(route.fromTransaction, kind) ?: SeriesForm(kind = kind, nextDue = domain.today())
         }
     }
 

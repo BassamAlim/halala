@@ -22,8 +22,8 @@ sealed interface Screen {
 
     @Serializable data class EditAccount(val id: Long = 0) : Screen
 
-    /** Transaction detail. */
-    @Serializable data class Transaction(val id: Long) : Screen
+    /** Transaction detail; with [split], its split sheet open (Review's Split mark). */
+    @Serializable data class Transaction(val id: Long, val split: Boolean = false) : Screen
 
     /**
      * The quick-add form, or the edit form for [id]. [accountId] preselects an account for a new
@@ -66,8 +66,11 @@ sealed interface Screen {
     /** Subscriptions, bills and planned payments: what they cost and when each is due. */
     @Serializable data object Recurring : Screen
 
-    /** Adding one by hand, or changing [id]. */
-    @Serializable data class EditRecurring(val id: Long = 0) : Screen
+    /**
+     * Adding one by hand, or changing [id]. A new one can start from the charge [fromTransaction]
+     * as a [subscription] or a bill (Review's marks).
+     */
+    @Serializable data class EditRecurring(val id: Long = 0, val fromTransaction: Long = 0, val subscription: Boolean = false) : Screen
 
     /** Where this cycle should end, the months ahead, and "Can I afford it?". */
     @Serializable data object Forecast : Screen

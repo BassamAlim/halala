@@ -1147,4 +1147,8 @@
         <item quantity="other">Confirm all %1$d</item>
     </plurals>
     <string name="review_change">Change</string>
+    <string name="review_swipe_confirm">Confirm</string>
+    <string name="review_mark_split">Split</string>
+    <string name="review_mark_subscription">Subscription</string>
+    <string name="review_mark_bill">Bill</string>
 </resources>

@@ -116,6 +116,16 @@ class ReviewViewModel @Inject constructor(
         file(card, suggestion.category)
     }
 
+    /** Swiped toward the end: the suggestion confirmed or, with none, its category asked for. */
+    fun onSwipeAccept(card: ReviewCard) = if (card.suggestion != null) onConfirmClick(card) else onChooseClick(card)
+
+    /** The Split mark: one purchase, opened on its split sheet. */
+    fun onSplitClick(card: ReviewCard) = navigator.navigate(Screen.Transaction(card.transactionId, split = true))
+
+    /** The Subscription and Bill marks: the series form, started from the newest charge. */
+    fun onRecurringClick(card: ReviewCard, subscription: Boolean) =
+        navigator.navigate(Screen.EditRecurring(fromTransaction = card.transactionId, subscription = subscription))
+
     fun onPickDismiss() = picking.update { null }
 
     fun onCategoryPick(category: CategoryOption) {

@@ -45,10 +45,11 @@ class TransactionViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val id = savedStateHandle.toRoute<Screen.Transaction>().id
+    private val route = savedStateHandle.toRoute<Screen.Transaction>()
+    private val id = route.id
 
     private val confirmingDelete = MutableStateFlow(false)
-    private val sheet = MutableStateFlow<TransactionSheet?>(null)
+    private val sheet = MutableStateFlow<TransactionSheet?>(if (route.split) TransactionSheet.Split() else null)
 
     val uiState: StateFlow<TransactionUiState> = combine(
         combine(domain.observe(id), domain.observeLoans(), domain.observePeople(), ::Triple),
