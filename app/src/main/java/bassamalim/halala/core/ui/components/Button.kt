@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -61,7 +62,7 @@ fun HalalaButton(
             // Before the fill, so a press sinks the whole button.
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .background(if (primary) PrimaryFill else SecondaryFill)
-            .border(Sizes.border, if (primary) PrimaryEdge else CardEdge, Radius.md)
+            .border(Sizes.border, if (primary) PrimaryEdge else SolidColor(HalalaColors.Line), Radius.md)
             .padding(horizontal = Insets.button),
         contentAlignment = Alignment.Center
     ) {

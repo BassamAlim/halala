@@ -62,11 +62,8 @@ object HalalaColors {
     /** Scrim behind a sheet or dialog. */
     val Scrim = Color(0x99000000)
 
-    /** The top of a card: cards fall from this to [Surface], as if lit from above. */
-    val SurfaceLit = Color(0xFF1B1E22)
-
-    /** The top of a card's border, fading to [Line] down its sides. */
-    val LineLit = Color(0xFF3A4047)
+    /** Cards: borderless, a step above [Bg] and [Surface], told apart by tone alone. */
+    val Card = Color(0xFF181B1E)
 
     /** A press: the pressed thing is washed with this, as well as shrinking a little. */
     val Pressed = Color(0x0FECEEF0)

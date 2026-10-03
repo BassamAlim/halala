@@ -66,8 +66,7 @@ fun TransactionRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(Radius.sm)
-                .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+                .then(if (onClick != null) Modifier.pressArea().clickable(role = Role.Button, onClick = onClick).padding(horizontal = PRESS_BLEED) else Modifier)
                 .padding(vertical = Insets.row),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.md)
@@ -114,7 +113,7 @@ fun TransactionRow(
 }
 
 /**
- * A 36dp merchant or person initial on surface-2. Income puts the letter in the income colour;
+ * A 40dp merchant or person initial on surface-2. Income puts the letter in the income colour;
  * a move between your accounts is a dashed outline around the swap glyph.
  */
 @Composable

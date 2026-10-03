@@ -7,7 +7,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -70,7 +69,7 @@ fun BottomNav(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(NavFill)
+            .background(HalalaColors.Surface)
             .drawBehind {
                 drawLine(
                     color = HalalaColors.Line,
@@ -137,8 +136,6 @@ fun BottomNav(
     }
 }
 
-/** The nav's surface, a touch lighter at its top edge. */
-private val NavFill = Brush.verticalGradient(listOf(HalalaColors.SurfaceLit, HalalaColors.Surface))
 private val INDICATOR = Spacing.section
 private val INDICATOR_HEIGHT = Spacing.xxs
 private val LIFT = Spacing.xxs
