@@ -319,7 +319,9 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
             selected = state.category,
             label = { it.name },
             onPick = viewModel::onCategoryPick,
-            onDismiss = viewModel::onSheetDismiss
+            onDismiss = viewModel::onSheetDismiss,
+            addLabel = stringResource(R.string.category_new_chip),
+            onAdd = viewModel::onNewCategoryClick
         )
 
         TransactionSheet.Type -> ChoiceSheet(

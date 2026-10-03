@@ -134,6 +134,12 @@ class TransactionViewModel @Inject constructor(
 
     fun onSheetDismiss() = sheet.update { null }
 
+    /** The picker's + New category: the Categories form; back here, the new one is in the picker. */
+    fun onNewCategoryClick() {
+        sheet.update { null }
+        navigator.navigate(Screen.Categories(add = true))
+    }
+
     /** A named merchant can be remembered, so it asks; a nameless one is filed on its own. */
     fun onCategoryPick(category: CategoryOption) {
         val merchant = uiState.value.merchant

@@ -49,7 +49,8 @@ sealed interface Screen {
 
     @Serializable data object Rules : Screen
 
-    @Serializable data object Categories : Screen
+    /** Every category; [add] opens on a new one's form (from a category picker). */
+    @Serializable data class Categories(val add: Boolean = false) : Screen
 
     /** Every merchant, the busiest first. */
     @Serializable data object Merchants : Screen

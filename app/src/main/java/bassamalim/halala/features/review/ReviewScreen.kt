@@ -230,7 +230,9 @@ fun ReviewScreen(viewModel: ReviewViewModel = hiltViewModel()) {
             selected = card.suggestion?.category,
             label = { it.name },
             onPick = viewModel::onCategoryPick,
-            onDismiss = viewModel::onPickDismiss
+            onDismiss = viewModel::onPickDismiss,
+            addLabel = stringResource(R.string.category_new_chip),
+            onAdd = viewModel::onNewCategoryClick
         )
     }
 }

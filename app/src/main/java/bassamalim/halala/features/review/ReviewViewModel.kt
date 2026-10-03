@@ -130,6 +130,12 @@ class ReviewViewModel @Inject constructor(
 
     fun onPickDismiss() = picking.update { null }
 
+    /** The picker's + New category: the Categories form; back here, the new one is in the picker. */
+    fun onNewCategoryClick() {
+        picking.update { null }
+        navigator.navigate(Screen.Categories(add = true))
+    }
+
     fun onCategoryPick(category: CategoryOption) {
         val card = picking.value ?: return
         picking.update { null }

@@ -51,7 +51,9 @@ fun <T> ChoiceSheet(
     selected: T?,
     label: @Composable (T) -> String,
     onPick: (T) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    addLabel: String? = null,
+    onAdd: () -> Unit = {}
 ) {
     HalalaSheet(onDismiss) {
         Text(text = title, style = HalalaType.Title)
@@ -61,7 +63,8 @@ fun <T> ChoiceSheet(
             selected = selected,
             label = label,
             onSelect = onPick,
-            modifier = Modifier.verticalScroll(rememberScrollState())
+            modifier = Modifier.verticalScroll(rememberScrollState()),
+            trailing = addLabel?.let { { HalalaChip(label = it, onClick = onAdd) } }
         )
     }
 }

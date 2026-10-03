@@ -298,6 +298,7 @@
     <string name="settings_categories_summary">What your spending is filed under</string>
     <string name="categories_hint">Tap a category to rename it, change what it takes, or remove it.</string>
     <string name="category_new">New category</string>
+    <string name="category_new_chip">+ New category</string>
     <string name="category_name">Name</string>
     <string name="category_name_missing">Give it a name.</string>
     <string name="category_name_taken">You already have that one.</string>

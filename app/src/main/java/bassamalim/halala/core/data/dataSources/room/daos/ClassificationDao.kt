@@ -20,8 +20,8 @@ import java.time.Instant
 @Dao
 interface ClassificationDao {
 
-    // By id: the seeded order, then yours as you added them.
-    @Query("SELECT * FROM categories ORDER BY id")
+    // By name, for every list and picker you choose from.
+    @Query("SELECT * FROM categories ORDER BY name COLLATE NOCASE")
     fun observeCategories(): Flow<List<Category>>
 
     @Query("SELECT * FROM categories ORDER BY id")
@@ -29,7 +29,7 @@ interface ClassificationDao {
 
     @Query(
         "SELECT c.*, (SELECT COUNT(*) FROM transactions t WHERE t.categoryId = c.id) AS uses " +
-                "FROM categories c ORDER BY c.id"
+                "FROM categories c ORDER BY c.name COLLATE NOCASE"
     )
     fun observeCategoriesWithUse(): Flow<List<CategoryWithUse>>
 
