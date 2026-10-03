@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.NotificationManagerCompat
 import bassamalim.halala.core.models.ReminderMode
 import bassamalim.halala.core.ui.components.ChoiceChips
+import bassamalim.halala.core.ui.components.ChoiceSheet
 import bassamalim.halala.core.ui.components.HalalaButton
 import bassamalim.halala.core.ui.components.HalalaSheet
 import bassamalim.halala.core.ui.components.TimeDialog
@@ -51,8 +52,8 @@ import bassamalim.halala.core.ui.theme.Spacing
 
 /**
  * Settings, from the Settings board, holding only the rows that are true today: accounts, bank
- * messages, categories, rules, recent changes, the review reminder, and backup and export. What
- * is always on (the lock, merchant identification) has no row. Digests, web search and the usage
+ * messages, categories, rules, recent changes, the review reminder, backup and export, and how
+ * soon the lock asks again. What is always on (the lock itself, merchant identification) has no row. Digests, web search and the usage
  * cap join as they are built.
  */
 @Composable
@@ -148,6 +149,12 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     }
                 }
             )
+            ListRow(
+                title = stringResource(R.string.settings_lock_after),
+                subtitle = lockTimeoutLabel(state.lockTimeoutSeconds),
+                divider = true,
+                onClick = viewModel::onLockClick
+            )
         }
 
         Text(
@@ -167,8 +174,22 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         ReminderSheet(state, viewModel)
     } else if (state.isEditingDigests) {
         DigestsSheet(state, viewModel)
+    } else if (state.isEditingLock) {
+        ChoiceSheet(
+            title = stringResource(R.string.settings_lock_after),
+            options = SettingsUiState.LOCK_TIMEOUTS,
+            selected = state.lockTimeoutSeconds,
+            label = { lockTimeoutLabel(it) },
+            onPick = viewModel::onLockPicked,
+            onDismiss = viewModel::onLockDismiss
+        )
     }
 }
+
+@Composable
+private fun lockTimeoutLabel(seconds: Int): String =
+    if (seconds == 0) stringResource(R.string.settings_lock_at_once)
+    else pluralStringResource(R.plurals.settings_lock_minutes, seconds / 60, seconds / 60)
 
 private fun digestLabel(kind: DigestKind) = when (kind) {
     DigestKind.WEEK -> R.string.digest_weekly

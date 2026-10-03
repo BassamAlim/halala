@@ -30,13 +30,14 @@ class SettingsViewModel @Inject constructor(
     private val editingReminder = MutableStateFlow(false)
     private val pickingReminderTime = MutableStateFlow(false)
     private val editingDigests = MutableStateFlow(false)
+    private val editingLock = MutableStateFlow(false)
     val uiState: StateFlow<SettingsUiState> = combine(
         domain.observeAccounts(),
         domain.observeReviewSchedule(),
-        combine(editingReminder, pickingReminderTime, editingDigests, ::Triple),
+        combine(editingReminder, pickingReminderTime, editingDigests, editingLock) { a, b, c, d -> listOf(a, b, c, d) },
         domain.observeDigests(),
-        domain.observeHideAmounts()
-    ) { accounts, reminder, (editingReminder, pickingReminderTime, editingDigests), digests, hideAmounts ->
+        combine(domain.observeHideAmounts(), domain.observeLockTimeoutSeconds(), ::Pair)
+    ) { accounts, reminder, (editingReminder, pickingReminderTime, editingDigests, editingLock), digests, (hideAmounts, lockTimeout) ->
         val active = accounts.filter { !it.account.archived && it.account.type.listed }
 
         SettingsUiState(
@@ -49,7 +50,9 @@ class SettingsViewModel @Inject constructor(
             isPickingReminderTime = pickingReminderTime,
             digests = digests,
             isEditingDigests = editingDigests,
-            hideAmounts = hideAmounts
+            hideAmounts = hideAmounts,
+            lockTimeoutSeconds = lockTimeout,
+            isEditingLock = editingLock
         )
     }.stateIn(
         scope = viewModelScope,
@@ -104,6 +107,15 @@ class SettingsViewModel @Inject constructor(
                 popUpTo<Screen.Main> { inclusive = true }
             }
         }
+    }
+
+    fun onLockClick() = editingLock.update { true }
+
+    fun onLockDismiss() = editingLock.update { false }
+
+    fun onLockPicked(seconds: Int) {
+        editingLock.update { false }
+        viewModelScope.launch { domain.setLockTimeoutSeconds(seconds) }
     }
 
     fun onBackClick() = navigator.popBackStack()

@@ -195,6 +195,12 @@
     <string name="settings_hide_amounts">Hide amounts</string>
     <string name="settings_hide_amounts_on">On. Tap to show them again</string>
     <string name="settings_hide_amounts_off">Show the app without your figures</string>
+    <string name="settings_lock_after">Lock again after</string>
+    <string name="settings_lock_at_once">As soon as you leave</string>
+    <plurals name="settings_lock_minutes">
+        <item quantity="one">%d minute away</item>
+        <item quantity="other">%d minutes away</item>
+    </plurals>
     <string name="settings_show_amounts">Show amounts</string>
     <string name="settings_version">Halala %1$s</string>
 
