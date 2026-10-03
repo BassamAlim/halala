@@ -52,6 +52,16 @@ class BudgetsTest {
     }
 
     @Test
+    fun `a budget on a tag counts only what carries the tag`() {
+        val tagged = details.mapIndexed { i, d -> d.copy(transaction = d.transaction.copy(id = i + 1L)) }
+        val onTrip = Budget(uid = "t", scope = BudgetScope.TAG, tagId = 7, amountMinor = 100_000, currency = "SAR", createdAt = Instant.EPOCH)
+        // The first (100,000) and the split (your 30,000) carry it; the third carries another tag.
+        val tags = mapOf(1L to setOf(7L), 2L to setOf(7L, 8L), 3L to setOf(8L))
+        assertEquals(130_000, Budgets.statusOf(onTrip, tagged, cycle, previous, LocalDate.parse("2026-10-14"), zone, tags).spentMinor)
+        assertEquals(0, Budgets.statusOf(onTrip, tagged, cycle, previous, LocalDate.parse("2026-10-14"), zone).spentMinor)
+    }
+
+    @Test
     fun `rollover adds what was left last cycle`() {
         val status = Budgets.statusOf(budget(rollover = true), details, cycle, previous, LocalDate.parse("2026-10-14"), zone)
         assertEquals(250_000, status.limitMinor)

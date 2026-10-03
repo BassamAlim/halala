@@ -34,7 +34,7 @@ class BudgetsViewModel @Inject constructor(
         BudgetsUiState(
             isLoading = false,
             cycle = cycleLabel(overview.cycle.start, overview.cycle.end, today),
-            rows = BudgetRows.of(overview.statuses, categories, merchants)
+            rows = BudgetRows.of(overview.statuses, categories, merchants, overview.tagNames)
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), BudgetsUiState())
 

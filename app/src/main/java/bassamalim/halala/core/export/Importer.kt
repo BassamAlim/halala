@@ -328,6 +328,14 @@ class Importer @Inject constructor(
                 )
             }
 
+            val tags = file.tags.mapIndexed { index, it ->
+                Tag(
+                    index + 1L, it.uid, it.name, it.startsOn?.let(LocalDate::parse), it.endsOn?.let(LocalDate::parse),
+                    it.auto, Instant.parse(it.createdAt)
+                )
+            }
+            val tagIds = tags.associate { it.uid to it.id }
+
             val budgets = file.budgets.mapIndexed { index, budget ->
                 require(budget.amountMinor > 0) { "Budget ${budget.uid} has no positive amount." }
                 Budget(
@@ -340,7 +348,8 @@ class Importer @Inject constructor(
                     amountMinor = budget.amountMinor,
                     currency = budget.currency,
                     rollover = budget.rollover,
-                    createdAt = Instant.parse(budget.createdAt)
+                    createdAt = Instant.parse(budget.createdAt),
+                    tagId = budget.tagUid?.let { tagIds.named(it, "tag") }
                 )
             }
 
@@ -378,14 +387,6 @@ class Importer @Inject constructor(
                 )
             }
             val snapshots = file.assetSnapshots.map { NetWorthSnapshot(LocalDate.parse(it.date), it.assetsMinor, it.currency) }
-
-            val tags = file.tags.mapIndexed { index, it ->
-                Tag(
-                    index + 1L, it.uid, it.name, it.startsOn?.let(LocalDate::parse), it.endsOn?.let(LocalDate::parse),
-                    it.auto, Instant.parse(it.createdAt)
-                )
-            }
-            val tagIds = tags.associate { it.uid to it.id }
 
             return LedgerSnapshot(
                 institutions = institutions,

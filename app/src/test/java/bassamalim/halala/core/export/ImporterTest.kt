@@ -143,7 +143,8 @@ class ImporterTest {
             Budget(171, "bud-all", BudgetScope.TOTAL, amountMinor = 900_000, currency = "SAR", createdAt = at),
             Budget(172, "bud-delivery", BudgetScope.CATEGORY, categoryId = 47, amountMinor = 60_000, currency = "SAR", rollover = true, createdAt = at),
             Budget(173, "bud-jahez", BudgetScope.MERCHANT, merchantId = 84, amountMinor = 30_000, currency = "SAR", createdAt = at),
-            Budget(174, "bud-fun", BudgetScope.EXPENSE_TYPE, expenseType = ExpenseType.VARIABLE_DISCRETIONARY, amountMinor = 350_000, currency = "SAR", createdAt = at)
+            Budget(174, "bud-fun", BudgetScope.EXPENSE_TYPE, expenseType = ExpenseType.VARIABLE_DISCRETIONARY, amountMinor = 350_000, currency = "SAR", createdAt = at),
+            Budget(175, "bud-wedding", BudgetScope.TAG, amountMinor = 2_000_000, currency = "SAR", createdAt = at, tagId = 2)
         ),
         goals = listOf(
             SavingsGoal(181, "goal-fund", "Emergency fund", 6_000_000, "SAR", LocalDate.parse("2027-03-31"), listOf(22, 21), at),
@@ -191,7 +192,7 @@ class ImporterTest {
         PeopleRepository(db.peopleDao()),
         LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK),
         RecurringRepository(db.recurringDao(), db.transactionsDao(), TEST_CLOCK),
-        BudgetsRepository(db.budgetsDao(), db.transactionsDao(), TEST_CLOCK),
+        BudgetsRepository(db.budgetsDao(), db.transactionsDao(), db.tagsDao(), TEST_CLOCK),
         GoalsRepository(db.goalsDao(), db.accountsDao(), db.transactionsDao(), db.savingsDao(), TEST_CLOCK),
         AssetsRepository(db.assetsDao(), TEST_CLOCK),
         ZakatRepository(db.zakatDao(), db.accountsDao(), db.assetsDao(), LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK), TEST_CLOCK),

@@ -118,6 +118,7 @@ interface RestoreDao {
         insertLoans(loans)
         insertLoanEvents(loanEvents)
         insertRecurring(recurring)
+        insertTags(tags) // before budgets: a budget can be on a tag
         insertBudgets(budgets)
         insertGoals(goals)
         insertAssets(assets)
@@ -125,7 +126,6 @@ interface RestoreDao {
         zakat?.let { insertZakat(it) }
         insertScenarios(scenarios)
         insertSavingsTerms(savingsTerms)
-        insertTags(tags)
         insertTransactionTags(transactionTags)
         insertPlaces(places)
         insertDeposits(deposits)

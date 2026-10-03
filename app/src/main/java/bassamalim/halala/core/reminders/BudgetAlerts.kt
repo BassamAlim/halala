@@ -47,6 +47,7 @@ class BudgetAlerts @Inject constructor(
                     ?: context.getString(R.string.budget_everything)
                 BudgetScope.CATEGORY -> categories[budget.categoryId].orEmpty()
                 BudgetScope.MERCHANT -> merchants[budget.merchantId].orEmpty()
+                BudgetScope.TAG -> overview.tagNames[budget.tagId].orEmpty()
             }
             DueNotice.Budget(BUDGET_KEYS + budget.id.toInt(), name, percent)
         }

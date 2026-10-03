@@ -349,7 +349,8 @@ class Exporter @Inject constructor(
                         amountMinor = budget.amountMinor,
                         currency = budget.currency,
                         rollover = budget.rollover,
-                        createdAt = budget.createdAt.toString()
+                        createdAt = budget.createdAt.toString(),
+                        tagUid = budget.tagId?.let { id -> snapshot.tags.first { it.id == id }.uid }
                     )
                 },
                 goals = snapshot.goals.map { goal ->

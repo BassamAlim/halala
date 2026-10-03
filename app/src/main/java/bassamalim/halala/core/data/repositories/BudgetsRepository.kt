@@ -1,6 +1,7 @@
 package bassamalim.halala.core.data.repositories
 
 import bassamalim.halala.core.data.dataSources.room.daos.BudgetsDao
+import bassamalim.halala.core.data.dataSources.room.daos.TagsDao
 import bassamalim.halala.core.data.dataSources.room.daos.TransactionsDao
 import bassamalim.halala.core.data.dataSources.room.entities.Budget
 import bassamalim.halala.core.domain.BudgetStatus
@@ -8,6 +9,7 @@ import bassamalim.halala.core.domain.Budgets
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.PayCycle
 import bassamalim.halala.core.domain.PayCycles
+import bassamalim.halala.core.domain.Tags
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import java.time.Clock
@@ -23,34 +25,41 @@ data class CycleOverview(
     val previous: PayCycle?,
     val statuses: List<BudgetStatus>,
     val spentMinor: Long,
-    val currency: String
+    val currency: String,
+    /** Each tag's name, for budgets on a tag. */
+    val tagNames: Map<Long, String> = emptyMap()
 )
 
 @Singleton
 class BudgetsRepository @Inject constructor(
     private val budgetsDao: BudgetsDao,
     private val transactionsDao: TransactionsDao,
+    private val tagsDao: TagsDao,
     private val clock: Clock
 ) {
 
     /** This cycle as budgets see it, kept up to date as money moves. */
     fun observeOverview(currency: String): Flow<CycleOverview> =
-        combine(budgetsDao.observeAll(), transactionsDao.observeAllDetails()) { budgets, details ->
+        combine(
+            budgetsDao.observeAll(), transactionsDao.observeAllDetails(), tagsDao.observeRows(), tagsDao.observeAll()
+        ) { budgets, details, rows, tags ->
             val today = LocalDate.now(clock)
             val salaries = Budgets.salaries(details, clock.zone)
             val cycle = PayCycles.current(salaries, today)
             val previous = PayCycles.previous(salaries, cycle, 1).firstOrNull()
+            val tagged = Tags.byTransaction(rows)
             CycleOverview(
                 cycle = cycle,
                 previous = previous,
-                statuses = budgets.map { Budgets.statusOf(it, details, cycle, previous, today, clock.zone) },
+                statuses = budgets.map { Budgets.statusOf(it, details, cycle, previous, today, clock.zone, tagged) },
                 spentMinor = Money.sum(
                     details.filter {
                         Budgets.isSpending(it) && it.transaction.currency == currency &&
                                 cycle.contains(it.transaction.occurredAt.atZone(clock.zone).toLocalDate())
                     }.map { it.yourMinor }
                 ),
-                currency = currency
+                currency = currency,
+                tagNames = tags.associate { it.id to it.name }
             )
         }
 

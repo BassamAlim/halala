@@ -57,7 +57,12 @@ data class BudgetRow(
 
 object BudgetRows {
 
-    fun of(statuses: List<BudgetStatus>, categories: List<Category>, merchants: List<Merchant>): List<BudgetRow> {
+    fun of(
+        statuses: List<BudgetStatus>,
+        categories: List<Category>,
+        merchants: List<Merchant>,
+        tagNames: Map<Long, String>
+    ): List<BudgetRow> {
         val categoryNames = categories.associate { it.id to it.name }
         val merchantNames = merchants.associate { it.id to it.name }
         return statuses
@@ -71,6 +76,7 @@ object BudgetRows {
                         BudgetScope.EXPENSE_TYPE -> budget.expenseType?.let { BudgetLabel.Type(it) } ?: BudgetLabel.Everything
                         BudgetScope.CATEGORY -> BudgetLabel.Named(categoryNames[budget.categoryId].orEmpty())
                         BudgetScope.MERCHANT -> BudgetLabel.Named(merchantNames[budget.merchantId].orEmpty())
+                        BudgetScope.TAG -> BudgetLabel.Named(tagNames[budget.tagId].orEmpty())
                     },
                     spent = Money.format(status.spentMinor, budget.currency, decimals = false),
                     limit = Money.format(status.limitMinor, budget.currency, decimals = false),

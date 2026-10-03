@@ -10,16 +10,19 @@ import java.time.Instant
 
 /**
  * A limit on spending for each pay cycle: [amountMinor] for everything ([BudgetScope.TOTAL]), a
- * category, an expense type or a merchant. With [rollover], what was left unspent last cycle is
- * added to this one's.
+ * category, an expense type, a merchant or a tag. With [rollover], what was left unspent last
+ * cycle is added to this one's.
  */
 @Entity(
     tableName = "budgets",
     foreignKeys = [
         ForeignKey(entity = Category::class, parentColumns = ["id"], childColumns = ["categoryId"], onDelete = ForeignKey.CASCADE),
-        ForeignKey(entity = Merchant::class, parentColumns = ["id"], childColumns = ["merchantId"], onDelete = ForeignKey.CASCADE)
+        ForeignKey(entity = Merchant::class, parentColumns = ["id"], childColumns = ["merchantId"], onDelete = ForeignKey.CASCADE),
+        ForeignKey(entity = Tag::class, parentColumns = ["id"], childColumns = ["tagId"], onDelete = ForeignKey.CASCADE)
     ],
-    indices = [Index(value = ["uid"], unique = true), Index(value = ["categoryId"]), Index(value = ["merchantId"])]
+    indices = [
+        Index(value = ["uid"], unique = true), Index(value = ["categoryId"]), Index(value = ["merchantId"]), Index(value = ["tagId"])
+    ]
 )
 data class Budget(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -32,5 +35,6 @@ data class Budget(
     val amountMinor: Long,
     val currency: String,
     val rollover: Boolean = false,
-    val createdAt: Instant
+    val createdAt: Instant,
+    val tagId: Long? = null
 )

@@ -10,6 +10,7 @@ data class EditBudgetUiState(
     /** The busiest merchants matching [merchantQuery], to choose from. */
     val merchants: List<CategoryOption> = emptyList(),
     val merchantQuery: String = "",
+    val tags: List<CategoryOption> = emptyList(),
     val problems: Set<BudgetProblem> = emptySet(),
     val isConfirmingDelete: Boolean = false
 )

@@ -42,11 +42,11 @@ class EditBudgetViewModel @Inject constructor(
 
     val uiState: StateFlow<EditBudgetUiState> = combine(
         combine(form, problems, ::Pair),
-        domain.observeCategories(),
+        combine(domain.observeCategories(), domain.observeTags(), ::Pair),
         domain.observeMerchants(),
         query,
         confirmingDelete
-    ) { (form, problems), categories, merchants, query, confirming ->
+    ) { (form, problems), (categories, tags), merchants, query, confirming ->
         val chosen = merchants.firstOrNull { it.merchant.id == form?.merchantId }
         val matching = merchants.filter { it.merchant.name.contains(query.trim(), ignoreCase = true) }.take(MERCHANT_CHOICES)
         EditBudgetUiState(
@@ -58,6 +58,7 @@ class EditBudgetViewModel @Inject constructor(
             merchants = (listOfNotNull(chosen) + matching).distinctBy { it.merchant.id }
                 .map { CategoryOption(it.merchant.id, it.merchant.name) },
             merchantQuery = query,
+            tags = tags.map { CategoryOption(it.id, it.name) },
             problems = problems,
             isConfirmingDelete = confirming
         )
@@ -72,6 +73,8 @@ class EditBudgetViewModel @Inject constructor(
     fun onTypeClick(type: ExpenseType) = edit { it.copy(expenseType = type) }
 
     fun onMerchantClick(option: CategoryOption) = edit { it.copy(merchantId = option.id) }
+
+    fun onTagClick(option: CategoryOption) = edit { it.copy(tagId = option.id) }
 
     fun onMerchantQueryChange(text: String) = query.update { text }
 

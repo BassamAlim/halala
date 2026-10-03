@@ -69,6 +69,7 @@ fun EditBudgetScreen(viewModel: EditBudgetViewModel = hiltViewModel()) {
                             BudgetScope.CATEGORY -> R.string.category
                             BudgetScope.EXPENSE_TYPE -> R.string.expense_type
                             BudgetScope.MERCHANT -> R.string.merchant
+                            BudgetScope.TAG -> R.string.budget_tag
                         }
                     )
                 },
@@ -106,6 +107,18 @@ fun EditBudgetScreen(viewModel: EditBudgetViewModel = hiltViewModel()) {
                     selected = state.merchants.firstOrNull { it.id == form.merchantId },
                     label = { it.name },
                     onSelect = viewModel::onMerchantClick
+                )
+            }
+            BudgetScope.TAG -> FormField(
+                label = stringResource(R.string.budget_tag),
+                hint = stringResource(R.string.budget_tag_none).takeIf { state.tags.isEmpty() },
+                error = choiceMissing
+            ) {
+                ChoiceChips(
+                    options = state.tags,
+                    selected = state.tags.firstOrNull { it.id == form.tagId },
+                    label = { it.name },
+                    onSelect = viewModel::onTagClick
                 )
             }
         }

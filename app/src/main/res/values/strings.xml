@@ -589,6 +589,8 @@
     <string name="budget_alert_full_title">%1$s: budget used up</string>
     <string name="budget_alert_text">This pay cycle, so far. Open Halala to see where it stands.</string>
     <string name="budget_for">What it limits</string>
+    <string name="budget_tag">Tag</string>
+    <string name="budget_tag_none">No tags yet. Make one on Tags, from Activity.</string>
     <string name="budget_choice_missing">Choose one</string>
     <string name="budget_amount">Each pay cycle</string>
     <string name="budget_amount_hint">From one salary to the next, or a calendar month until a salary arrives.</string>

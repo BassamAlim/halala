@@ -324,6 +324,12 @@ class MigrationsTest {
         }
     }
 
+    @Test
+    fun `20 to 21 lets a budget be on a tag and matches the schema`() {
+        helper.createDatabase(DB, 20).use { }
+        helper.runMigrationsAndValidate(DB, 21, true, *MIGRATIONS).close()
+    }
+
     private companion object {
         const val DB = "migration-test"
     }

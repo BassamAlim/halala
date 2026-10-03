@@ -40,7 +40,7 @@ data class ExportFile(
     val loans: List<ExportLoan> = emptyList(),
     /** Since schema 8: subscriptions, bills and planned payments. */
     val recurring: List<ExportRecurring> = emptyList(),
-    /** Since schema 10. */
+    /** Since schema 10; on a tag since 20. */
     val budgets: List<ExportBudget> = emptyList(),
     /** Since schema 11. */
     val goals: List<ExportGoal> = emptyList(),
@@ -62,7 +62,7 @@ data class ExportFile(
     val deposits: List<ExportDeposit> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 19
+        const val SCHEMA_VERSION = 20
     }
 }
 
@@ -234,7 +234,7 @@ data class ExportRecurring(
     val createdAt: String
 )
 
-/** A limit on spending each pay cycle: `scope` TOTAL, CATEGORY, EXPENSE_TYPE or MERCHANT. */
+/** A limit on spending each pay cycle: `scope` TOTAL, CATEGORY, EXPENSE_TYPE, MERCHANT or TAG. */
 @Serializable
 data class ExportBudget(
     val uid: String,
@@ -245,7 +245,8 @@ data class ExportBudget(
     val amountMinor: Long,
     val currency: String,
     val rollover: Boolean,
-    val createdAt: String
+    val createdAt: String,
+    val tagUid: String? = null
 )
 
 /** A savings goal: a target, an optional date, and the accounts (by uid) it is saved in. */
