@@ -303,6 +303,7 @@ class Exporter @Inject constructor(
                         uid = person.uid,
                         name = person.name,
                         namedByYou = person.namedByYou,
+                        salarySince = person.salarySince?.toString(),
                         aliases = snapshot.personAliases
                             .filter { it.personId == person.id }
                             .map { ExportPersonAlias(it.aliasKey, it.descriptor) }

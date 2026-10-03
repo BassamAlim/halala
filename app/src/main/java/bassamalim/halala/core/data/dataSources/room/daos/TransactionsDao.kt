@@ -87,6 +87,10 @@ interface TransactionsDao {
     )
     suspend fun quotedConversions(original: String, currency: String): List<Transaction>
 
+    /** Bank fees not yet filed go under [categoryId]; ones you filed elsewhere stay. */
+    @Query("UPDATE transactions SET categoryId = :categoryId, expenseType = :expenseType WHERE kind = 'FEE' AND categoryId IS NULL")
+    suspend fun fileFees(categoryId: Long, expenseType: ExpenseType?)
+
     @Query("UPDATE transactions SET categoryId = :categoryId, expenseType = :expenseType, ruleId = :ruleId WHERE id IN (:ids)")
     suspend fun setCategory(ids: List<Long>, categoryId: Long?, expenseType: ExpenseType?, ruleId: Long?)
 

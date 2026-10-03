@@ -223,6 +223,12 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
                 )
             }
         }
+        if (state.canMarkSalary) HalalaButton(
+            text = stringResource(R.string.salary_mark),
+            onClick = viewModel::onSalaryClick,
+            modifier = Modifier.fillMaxWidth()
+        )
+
         if (state.canMarkGoal) HalalaButton(
             text = stringResource(R.string.goal_toward_mark),
             onClick = viewModel::onGoalClick,
@@ -372,6 +378,22 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
             addLabel = stringResource(R.string.category_new_chip),
             onAdd = viewModel::onNewCategoryClick
         )
+
+        TransactionSheet.Repay -> (state.loan as? LoanLink.Open)?.let { loan ->
+            ChoiceSheet(
+                title = stringResource(R.string.loan_repays_title),
+                options = loan.suggestions,
+                selected = null,
+                label = {
+                    stringResource(
+                        R.string.loan_repay_option, it.remaining, it.currency,
+                        stringResource(if (it.lent) R.string.loan_lent_on else R.string.loan_borrowed_on, it.lentOn)
+                    )
+                },
+                onPick = viewModel::onRepayPick,
+                onDismiss = viewModel::onSheetDismiss
+            )
+        }
 
         TransactionSheet.Type -> ChoiceSheet(
             title = stringResource(R.string.expense_type),
@@ -579,6 +601,16 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
             destructive = false
         )
 
+        TransactionSheet.Salary -> ConfirmSheet(
+            title = stringResource(R.string.salary_mark_title, state.personName.orEmpty()),
+            body = stringResource(R.string.salary_mark_body, state.personName.orEmpty()),
+            confirmLabel = stringResource(R.string.salary_mark),
+            dismissLabel = stringResource(R.string.cancel),
+            onConfirm = viewModel::onSalaryConfirm,
+            onDismiss = viewModel::onSheetDismiss,
+            destructive = false
+        )
+
         TransactionSheet.Unlink -> ConfirmSheet(
             title = stringResource(R.string.loan_unlink_title),
             body = stringResource(R.string.loan_unlink_body),
@@ -601,7 +633,15 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
 private fun LoanCard(loan: LoanLink, viewModel: TransactionViewModel) {
     when (loan) {
         is LoanLink.Open -> HalalaCard(label = stringResource(R.string.loan)) {
-            loan.suggestion?.let { suggestion ->
+            val several = loan.suggestions.size > 1
+            if (several) Text(
+                text = pluralStringResource(
+                    if (loan.suggestions.first().lent) R.plurals.loan_suggest_many_lent else R.plurals.loan_suggest_many_borrowed,
+                    loan.suggestions.size, loan.person, loan.suggestions.size
+                ),
+                style = HalalaType.Body
+            )
+            else loan.suggestions.firstOrNull()?.let { suggestion ->
                 MoneyText(
                     text = stringResource(
                         if (suggestion.lent) R.string.loan_suggest_lent else R.string.loan_suggest_borrowed,
@@ -612,8 +652,10 @@ private fun LoanCard(loan: LoanLink, viewModel: TransactionViewModel) {
                     style = HalalaType.Body,
                     color = HalalaColors.Text
                 )
+            }
+            if (loan.suggestions.isNotEmpty()) {
                 HalalaButton(
-                    text = stringResource(R.string.loan_repays),
+                    text = stringResource(if (several) R.string.loan_repays_which else R.string.loan_repays),
                     onClick = viewModel::onRepaysClick,
                     kind = ButtonKind.Primary,
                     modifier = Modifier

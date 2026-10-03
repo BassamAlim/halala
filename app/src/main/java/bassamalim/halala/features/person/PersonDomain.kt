@@ -40,6 +40,8 @@ class PersonDomain @Inject constructor(
     fun observeTransactions(): Flow<List<TransactionDetail>> = transactionsRepository.observeAll()
 
     /** Checks and writes; the problem when there is one. */
+    suspend fun stopSalary(id: Long) = peopleRepository.setSalarySince(id, null)
+
     suspend fun rename(id: Long, name: String): NameProblem? {
         validateName(name)?.let { return it }
         peopleRepository.rename(id, name)

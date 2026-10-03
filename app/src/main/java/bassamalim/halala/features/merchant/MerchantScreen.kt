@@ -3,6 +3,7 @@ package bassamalim.halala.features.merchant
 import bassamalim.halala.core.ui.components.Skeleton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,6 +24,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
 import bassamalim.halala.core.ai.LookupOutcome
+import bassamalim.halala.core.enums.IdentifiedBy
 import bassamalim.halala.core.ui.aliasMatchLabel
 import bassamalim.halala.core.ui.components.Avatar
 import bassamalim.halala.core.ui.components.ButtonKind
@@ -276,13 +278,47 @@ fun MerchantScreen(viewModel: MerchantViewModel = hiltViewModel()) {
             onDismiss = viewModel::onSheetDismiss
         )
 
+        is MerchantSheet.Found -> HalalaSheet(onDismiss = viewModel::onSheetDismiss) {
+            val answer = sheet.found.answer
+            Text(text = stringResource(R.string.merchant_lookup_found_title), style = HalalaType.Title)
+            ListCard(Modifier.fillMaxWidth()) {
+                ListRow(
+                    title = businessTypeLabel(answer.type),
+                    subtitle = stringResource(
+                        R.string.meta_pair,
+                        answer.name.ifBlank { state.name },
+                        identifiedLabel(IdentifiedBy.AI, answer.confidence)
+                    )
+                )
+            }
+            sheet.found.url?.let { url -> FoundOnline(sheet.found.title ?: url, url) }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = Spacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+            ) {
+                HalalaButton(
+                    text = stringResource(R.string.merchant_lookup_reject),
+                    onClick = viewModel::onSheetDismiss,
+                    modifier = Modifier.weight(1f)
+                )
+                HalalaButton(
+                    text = stringResource(R.string.merchant_lookup_accept),
+                    onClick = viewModel::onLookupAccept,
+                    kind = ButtonKind.Primary,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
         null -> Unit
     }
 }
 
 /** How looking it up went, in words. */
 private fun lookupLabel(outcome: LookupOutcome): Int = when (outcome) {
-    LookupOutcome.UPDATED -> R.string.merchant_lookup_updated
+    LookupOutcome.FOUND -> R.string.merchant_lookup_found_title
     LookupOutcome.NOTHING_NEW -> R.string.merchant_lookup_nothing_new
     LookupOutcome.WITHHELD -> R.string.merchant_lookup_withheld
     LookupOutcome.OFFLINE -> R.string.merchant_lookup_offline

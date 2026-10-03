@@ -64,8 +64,9 @@ class MerchantViewModel @Inject constructor(
             businessType = merchant.businessType,
             identifiedBy = merchant.identifiedBy,
             confidence = merchant.confidence,
-            webTitle = merchant.webTitle.takeIf { merchant.identifiedBy == IdentifiedBy.AI },
-            webUrl = merchant.webUrl.takeIf { merchant.identifiedBy == IdentifiedBy.AI },
+            // The page stands behind the AI's answer, or one you took from a lookup.
+            webTitle = merchant.webTitle.takeIf { merchant.identifiedBy == IdentifiedBy.AI || merchant.identifiedBy == IdentifiedBy.YOU },
+            webUrl = merchant.webUrl.takeIf { merchant.identifiedBy == IdentifiedBy.AI || merchant.identifiedBy == IdentifiedBy.YOU },
             canLookUp = domain.canAsk() && (merchant.identifiedBy == null || merchant.identifiedBy == IdentifiedBy.AI),
             lookup = lookup,
             filesUnder = Identification.categoryFor(merchant.businessType, categories)?.name,
@@ -114,14 +115,23 @@ class MerchantViewModel @Inject constructor(
 
     fun onMergeClick() = sheet.update { MerchantSheet.Merge() }
 
-    /** "Look it up": asked once at a time; what it found shows where it says what it is. */
+    /** "Look it up": asked once at a time; what it found is offered, to take or leave. */
     fun onLookUpClick() {
         if (lookup.value?.working == true) return
         lookup.update { Lookup(working = true) }
         viewModelScope.launch {
-            val outcome = domain.lookUp(id)
-            lookup.update { Lookup(working = false, outcome = outcome) }
+            val result = domain.lookUp(id)
+            // What it found is offered in a sheet; only the other outcomes need saying.
+            lookup.update { if (result.found == null) Lookup(working = false, outcome = result.outcome) else null }
+            result.found?.let { found -> sheet.update { MerchantSheet.Found(found) } }
         }
+    }
+
+    /** "Use this": what it found becomes what it is. */
+    fun onLookupAccept() {
+        val found = (sheet.value as? MerchantSheet.Found)?.found ?: return
+        sheet.update { null }
+        viewModelScope.launch { domain.acceptLookup(id, found) }
     }
 
     fun onBusinessTypeClick() = sheet.update { MerchantSheet.BusinessType }

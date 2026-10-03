@@ -137,6 +137,28 @@ fun PersonScreen(viewModel: PersonViewModel = hiltViewModel()) {
                 }
             }
 
+            state.salarySince?.let { since ->
+                item {
+                    Column(
+                        modifier = Modifier.padding(bottom = Spacing.card),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.sm)
+                    ) {
+                        GroupLabel(stringResource(R.string.salary))
+                        ListCard(Modifier.fillMaxWidth()) {
+                            ListRow(
+                                title = stringResource(R.string.salary_pays_you),
+                                subtitle = stringResource(R.string.salary_since, since)
+                            )
+                        }
+                        HalalaButton(
+                            text = stringResource(R.string.salary_stop),
+                            onClick = viewModel::onSalaryStopClick,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
+
             item {
                 Column(
                     modifier = Modifier.padding(bottom = Spacing.card),

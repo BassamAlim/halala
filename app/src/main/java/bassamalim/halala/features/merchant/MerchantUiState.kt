@@ -1,5 +1,6 @@
 package bassamalim.halala.features.merchant
 
+import bassamalim.halala.core.ai.LookupFound
 import bassamalim.halala.core.ai.LookupOutcome
 import bassamalim.halala.core.enums.AliasMatch
 import bassamalim.halala.core.enums.BusinessType
@@ -21,7 +22,7 @@ data class MerchantUiState(
     val businessType: BusinessType? = null,
     val identifiedBy: IdentifiedBy? = null,
     val confidence: Int? = null,
-    /** The page a web search found it on, while the AI's answer stands. */
+    /** The page a web search found it on, while the AI's answer (or one you took) stands. */
     val webTitle: String? = null,
     val webUrl: String? = null,
     /**
@@ -41,7 +42,7 @@ data class MerchantUiState(
     val sheet: MerchantSheet? = null
 )
 
-/** Looking it up: [working] while it goes, then its [outcome]. */
+/** Looking it up: [working] while it goes, then its [outcome] (what it found opens a sheet). */
 data class Lookup(val working: Boolean, val outcome: LookupOutcome? = null)
 
 /** One way the bank writes it. */
@@ -62,4 +63,7 @@ sealed interface MerchantSheet {
 
     /** Saying what the business is. */
     data object BusinessType : MerchantSheet
+
+    /** What looking it up found, to take or leave. */
+    data class Found(val found: LookupFound) : MerchantSheet
 }

@@ -56,6 +56,34 @@ class PeopleRepositoryTest {
     private suspend fun personOf(id: Long) = transactions.observe(id).first()!!
 
     @Test
+    fun `someone who pays your salary makes their transfers in salary from then on`() = runTest {
+        fun at(days: Long, direction: Direction = Direction.CREDIT) = TransactionDraft(
+            cash, direction, 900_000, TEST_CLOCK.instant().plusSeconds(days * 86_400),
+            if (direction == Direction.DEBIT) TransactionKind.TRANSFER_OUT else TransactionKind.TRANSFER_IN, "ACME TRADING CO"
+        )
+        val before = transactions.add(at(-30))
+        val marked = transactions.add(at(0))
+        val sent = transactions.add(at(1, Direction.DEBIT))
+        classification.applyRules()
+        val employer = personOf(marked).personId!!
+
+        people.setSalarySince(employer, transactions.get(marked)!!.occurredAt)
+        val next = transactions.add(at(30))
+        classification.applyRules()
+
+        assertEquals(TransactionKind.TRANSFER_IN, transactions.get(before)!!.kind)
+        assertEquals(TransactionKind.SALARY, transactions.get(marked)!!.kind)
+        assertEquals(TransactionKind.TRANSFER_OUT, transactions.get(sent)!!.kind)
+        assertEquals(TransactionKind.SALARY, transactions.get(next)!!.kind)
+
+        people.setSalarySince(employer, null)
+        val after = transactions.add(at(60))
+        classification.applyRules()
+        assertEquals(TransactionKind.TRANSFER_IN, transactions.get(after)!!.kind)
+        assertEquals(TransactionKind.SALARY, transactions.get(next)!!.kind)
+    }
+
+    @Test
     fun `each name a transfer is written with becomes one person, and only transfers do`() = runTest {
         val sent = transfer("KHALID ALI")
         val back = transfer("Khalid Ali 0412", Direction.CREDIT)

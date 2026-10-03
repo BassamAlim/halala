@@ -48,7 +48,7 @@ class LoansTest {
     }
 
     @Test
-    fun `money from someone you lent to suggests their oldest open loan`() {
+    fun `money from someone you lent to offers their open loans, oldest first`() {
         val states = Loans.statesOf(
             listOf(loan(1), loan(2), loan(3, LoanDirection.BORROWED)),
             listOf(
@@ -57,11 +57,13 @@ class LoansTest {
                 event(3, LoanEventType.DISBURSEMENT, 1_000, 1)
             )
         )
-        assertEquals(2L, Loans.repaidBy(1, Direction.CREDIT, "SAR", TransactionKind.TRANSFER_IN, states)?.loan?.id)
-        assertEquals(3L, Loans.repaidBy(1, Direction.DEBIT, "SAR", TransactionKind.TRANSFER_OUT, states)?.loan?.id)
-        assertNull(Loans.repaidBy(2, Direction.CREDIT, "SAR", TransactionKind.TRANSFER_IN, states))
-        assertNull(Loans.repaidBy(1, Direction.CREDIT, "USD", TransactionKind.TRANSFER_IN, states))
-        assertNull(Loans.repaidBy(1, Direction.CREDIT, "SAR", TransactionKind.LOAN_REPAYMENT, states))
+        fun ids(personId: Long, direction: Direction, currency: String, kind: TransactionKind) =
+            Loans.repaidBy(personId, direction, currency, kind, states).map { it.loan.id }
+        assertEquals(listOf(2L, 1L), ids(1, Direction.CREDIT, "SAR", TransactionKind.TRANSFER_IN))
+        assertEquals(listOf(3L), ids(1, Direction.DEBIT, "SAR", TransactionKind.TRANSFER_OUT))
+        assertEquals(emptyList<Long>(), ids(2, Direction.CREDIT, "SAR", TransactionKind.TRANSFER_IN))
+        assertEquals(emptyList<Long>(), ids(1, Direction.CREDIT, "USD", TransactionKind.TRANSFER_IN))
+        assertEquals(emptyList<Long>(), ids(1, Direction.CREDIT, "SAR", TransactionKind.LOAN_REPAYMENT))
     }
 
     @Test

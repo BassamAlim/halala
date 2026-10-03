@@ -48,6 +48,9 @@ These are decided (mostly by the spec); don't re-litigate them in code.
 - **Categories and rules**: only spending has a category (money out that counts in totals;
   `Rules.canCategorise`). A transaction with a category and no `ruleId` was filed by you, and no
   rule ever changes it; one with a `ruleId` was filed by that rule and shows the Auto badge.
+  A bank's fee (`FEE`, often untitled, split off a transfer) names nothing a rule can match, so
+  `applyRules` files any unfiled one under Fees & charges (found by its seeded name, `Seed.FEES`),
+  with no `ruleId`, so it stays wherever you move it.
   Choosing a category for a merchant asks "just this one, or always": always writes one learned
   rule per merchant (taught the merchant's id, so it files every spelling) and files its past too.
   `ClassificationRepository.applyRules()` is idempotent and runs after every SMS run, every
@@ -108,8 +111,12 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   opens the page) on Review and the Merchant screen; either way `searchedOnline` stops it being
   searched again. At most 800 searches a month (a count in DataStore). The Merchant screen's
   "Look it up" (with the Review board's jade "Found online" globe, `ic_globe`) (for one nothing surer than the AI has identified) does the same at once
-  (`WebLookup.lookUpNow`; the AI from the name alone when no search can be had), and its answer
-  stands unless the AI had said something surer. The key is
+  (`WebLookup.lookUpNow`; the AI from the name alone when no search can be had) but changes
+  nothing: what it found (name, business, how sure, the page) is offered in an "Is it this?"
+  sheet, sure or not. "Use this" takes it as yours (`ClassificationRepository.acceptLookup`: the name
+  unless you named it, the business as you said it, so it files however sure the AI was, and
+  the page kept to show; one change you can undo; picking a type yourself drops the page); "Not this" leaves
+  it as it was. A search spent this way still stops it being searched again on its own. The key is
   `BuildConfig.TAVILY_API_KEY`, as Groq's (`TAVILY_API_KEY`); a build without it never searches.
   **Logos** (`core/logos/LogoLookup`, run in `IdentifyWorker` after web search): **the owner
   chose to have them fetched online.** Each identified merchant (list, you or AI; not withheld
@@ -154,11 +161,17 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   wrote them (`Identification.sendable` ones, at most 300 people) and nothing else. Merging keeps
   the one you named, else the one with more transfers; "Not the same" is remembered. What the AI
   said and what you dismissed are in DataStore by `People.pairKey` (uids, never a name). Phone
-  contacts aren't linked yet.
+  contacts aren't linked yet. **Salary by transfer**: an incoming plain transfer from someone
+  can be marked "It's my salary" (Transaction detail, confirmed): that person's `salarySince`
+  becomes its time, and it and their transfers in after it become `SALARY` (`PeopleDao.markSalaries`,
+  run by `applyRules` and when it is set), so pay cycles and the forecast see them. Salary names
+  no one, so those leave the person's transfers. Their page shows "Pays your salary" and
+  "Not my salary anymore", which stops it for what comes next (what was salary stays; Edit
+  changes one back). Merging keeps the earlier date. Exported with the person.
 - **Loans** are only ever made by your say. Marking a plain transfer to or from someone
   (`Loans.MARKABLE`, never a paired move) as lent or borrowed opens a `Loan` with that person,
   or with anyone else you choose (someone asked you to pay a third person for them; a transfer
-  naming nobody can be marked this way too) (optional due date); marking a transfer back as repaying it pays it down; forgiving lets go of
+  naming nobody can be marked this way too) (optional due date); marking a transfer back as repaying it pays it down. A **refund** is marked the same way (`Loans.MARKABLE`): one that is someone else's money to give back is borrowed from whoever you choose (it names no one), and money lent can come back as a refund, so a loan's "Record a repayment" offers any refund too; taking a refund out of a loan leaves it a plain transfer in, its kind set back on its form; forgiving lets go of
   the rest. A loan is its `LoanEvent`s (lent, repaid, forgiven): one linked to a transaction takes
   that transaction's amount and time, so editing the transfer never leaves the loan behind; what
   is owed is lent less repaid and forgiven, never below zero. A linked transfer's kind becomes
@@ -171,8 +184,8 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   spending (`TransactionDetail.yourMinor`, used by `inOut` and a merchant's spent). Someone no
   transfer names can be added by name to split with. "Paid for someone else" (spending that
   isn't a transfer) is a split whose one share is the whole, with an optional due date. Undoing a split drops its loans and frees
-  their repayments. Transaction detail asks whether a transfer repays the person's oldest open loan
-  (`Loans.repaidBy`) and offers marking it as a loan. Merging people moves their loans.
+  their repayments. Transaction detail asks whether a transfer repays one of the person's open loans
+  (`Loans.repaidBy`; with several, you choose which, oldest first) and offers marking it as a loan. Merging people moves their loans.
 - **Subscriptions, bills and planned payments** are one `RecurringSeries` (the spec's
   RecurringSeries): kind (`SUBSCRIPTION`, `BILL`, `PLANNED` for family support and the like),
   amount every N days/weeks/months/years from an `anchor` (occurrences count from the anchor, so
@@ -432,7 +445,7 @@ count, CSV/JSON export, and the CI and release workflows.
 
 Screens and where they come from: **Home** (Home board: mark and wordmark, wallet and banks in the
 summary-card grid, Recent; the balance card waits for budgets; the board's review pill is gone, replaced by the Inbox tab),
-**Activity** (Activity board: search, a row of plain chips to browse by (Merchants, People, Where you spend, Tags, Digests; no board), account filter chips, month In/Out, rows by day; Money flow
+**Activity** (Activity board: search, a row of plain chips to browse by (Merchants, People, Where you spend, Tags, Digests; no board), an Uncategorised chip (spending with no category yet, as the inbox counts it; on top of the account) and account filter chips, month In/Out, rows by day; Money flow
 waits for Phase 6), **Transaction** (Transaction detail board, minus category, tags, location
 and SMS), **Settings** (Settings board, only the rows that are true today; reached from a gear
 on Home, since the boards don't show where Settings lives), and **Plan**, **Wealth**,

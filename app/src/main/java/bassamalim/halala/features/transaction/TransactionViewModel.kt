@@ -25,6 +25,7 @@ import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.enums.ExpenseType
 import bassamalim.halala.core.enums.LoanDirection
 import bassamalim.halala.core.enums.LoanEventType
+import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.models.CategoryOption
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
@@ -144,6 +145,7 @@ class TransactionViewModel @Inject constructor(
             goal = contribution?.let { c ->
                 savings.goals.firstOrNull { it.id == c.goalId }?.let { GoalLink(it.name, c.withdrawn) }
             },
+            canMarkSalary = tx.kind == TransactionKind.TRANSFER_IN && detail.personId != null && !detail.isInternalTransfer,
             canMarkGoal = contribution == null && savings.goals.isNotEmpty() && Goals.canContribute(detail, loanPart),
             goals = savings.goals.map { PersonChoice(it.id, it.name) },
             sheet = (sheet as? TransactionSheet.Split)?.let { previewed(it, tx.amountMinor, tx.currency) } ?: sheet,
@@ -247,8 +249,15 @@ class TransactionViewModel @Inject constructor(
         }
     }
 
+    /** One loan it could repay: that one. Several: you choose which. */
     fun onRepaysClick() {
-        val suggestion = (uiState.value.loan as? LoanLink.Open)?.suggestion ?: return
+        val suggestions = (uiState.value.loan as? LoanLink.Open)?.suggestions.orEmpty()
+        if (suggestions.size == 1) onRepayPick(suggestions.single())
+        else if (suggestions.size > 1) sheet.update { TransactionSheet.Repay }
+    }
+
+    fun onRepayPick(suggestion: Suggestion) {
+        sheet.update { null }
         viewModelScope.launch { domain.repay(suggestion.loanId, id) }
     }
 
@@ -367,6 +376,14 @@ class TransactionViewModel @Inject constructor(
         navigator.navigate(Screen.Person(part.personId))
     }
 
+    fun onSalaryClick() = sheet.update { TransactionSheet.Salary }
+
+    fun onSalaryConfirm() {
+        val personId = uiState.value.personId ?: return
+        sheet.update { null }
+        viewModelScope.launch { domain.markSalary(id, personId) }
+    }
+
     fun onPersonClick() {
         val personId = uiState.value.personId ?: return
         navigator.navigate(Screen.Person(personId))
@@ -424,7 +441,7 @@ class TransactionViewModel @Inject constructor(
             lent = tx.direction == Direction.DEBIT,
             person = person,
             personId = personId,
-            suggestion = repaid?.let {
+            suggestions = repaid.map {
                 Suggestion(
                     loanId = it.loan.id,
                     lent = it.loan.direction == LoanDirection.LENT,

@@ -1,7 +1,8 @@
 package bassamalim.halala.features.merchant
 
 import bassamalim.halala.core.ai.ApiKeys
-import bassamalim.halala.core.ai.LookupOutcome
+import bassamalim.halala.core.ai.LookupFound
+import bassamalim.halala.core.ai.LookupResult
 import bassamalim.halala.core.ai.WebLookup
 import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.entities.Merchant
@@ -34,7 +35,11 @@ class MerchantDomain @Inject constructor(
     fun canAsk(): Boolean = keys.hasGroq()
 
     /** Looks it up now: online when a search can be had, else the AI from its name alone. */
-    suspend fun lookUp(id: Long): LookupOutcome = webLookup.lookUpNow(id)
+    /** Looks it up and offers what it found; nothing changes until you [acceptLookup]. */
+    suspend fun lookUp(id: Long): LookupResult = webLookup.lookUpNow(id)
+
+    /** "Use this": one change you can undo. */
+    suspend fun acceptLookup(id: Long, found: LookupFound) = webLookup.accept(id, found)
 
     fun observeMerchant(id: Long): Flow<Merchant?> = classificationRepository.observeMerchant(id)
 

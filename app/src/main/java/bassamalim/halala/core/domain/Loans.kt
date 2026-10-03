@@ -41,8 +41,12 @@ object Loans {
     fun plainKind(direction: Direction): TransactionKind =
         if (direction == Direction.DEBIT) TransactionKind.TRANSFER_OUT else TransactionKind.TRANSFER_IN
 
-    /** The transfers that can be marked as lending or borrowing: plain ones, to or from someone. */
-    val MARKABLE = setOf(TransactionKind.TRANSFER_OUT, TransactionKind.TRANSFER_IN)
+    /**
+     * What can be marked as lending, borrowing or repaying: a plain transfer to or from someone,
+     * or a refund (one that is someone else's money to give back, or money lent coming back
+     * from a merchant rather than from the person). A refund names no one, so you choose who.
+     */
+    val MARKABLE = setOf(TransactionKind.TRANSFER_OUT, TransactionKind.TRANSFER_IN, TransactionKind.REFUND)
 
     fun stateOf(loan: Loan, events: List<LoanEventRow>): LoanState {
         fun total(type: LoanEventType) = Money.sum(events.filter { it.type == type }.map { it.amountMinor })
@@ -75,9 +79,9 @@ object Loans {
     }
 
     /**
-     * The loan a transfer would repay, to suggest: the oldest still open with the same person,
-     * in its currency, that money going this way pays back. Null for a transfer already part of
-     * a loan, or not a plain one.
+     * The loans a transfer could repay, to ask about, oldest first: those still open with the
+     * same person, in its currency, that money going this way pays back. You choose which when
+     * there are several. None for a transfer already part of a loan, or not a plain one.
      */
     fun repaidBy(
         personId: Long?,
@@ -85,9 +89,9 @@ object Loans {
         currency: String,
         kind: TransactionKind,
         states: List<LoanState>
-    ): LoanState? {
-        if (personId == null || kind !in MARKABLE) return null
-        return states.firstOrNull {
+    ): List<LoanState> {
+        if (personId == null || kind !in MARKABLE) return emptyList()
+        return states.filter {
             it.isOpen && it.loan.personId == personId && it.loan.currency == currency &&
                     it.loan.direction.repaying == direction
         }

@@ -92,6 +92,7 @@ fun ActivityScreen(viewModel: ActivityViewModel = hiltViewModel()) {
         state = state,
         onQueryChange = viewModel::onQueryChange,
         onAccountFilterClick = viewModel::onAccountFilterClick,
+        onUncategorisedClick = viewModel::onUncategorisedClick,
         onTransactionClick = viewModel::onTransactionClick,
         onMerchantsClick = viewModel::onMerchantsClick,
         onPeopleClick = viewModel::onPeopleClick,
@@ -107,6 +108,7 @@ private fun ActivityContent(
     state: ActivityUiState,
     onQueryChange: (String) -> Unit,
     onAccountFilterClick: (Long?) -> Unit,
+    onUncategorisedClick: () -> Unit,
     onTransactionClick: (Long) -> Unit,
     onMerchantsClick: () -> Unit,
     onPeopleClick: () -> Unit,
@@ -154,6 +156,14 @@ private fun ActivityContent(
                 modifier = Modifier.padding(top = Spacing.xs),
                 horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
             ) {
+                // Independent of the account: narrows whichever is chosen.
+                item {
+                    HalalaChip(
+                        label = stringResource(R.string.uncategorised),
+                        style = if (state.uncategorisedOnly) ChipStyle.Accent else ChipStyle.Outline,
+                        onClick = onUncategorisedClick
+                    )
+                }
                 item {
                     HalalaChip(
                         label = stringResource(R.string.all_accounts),

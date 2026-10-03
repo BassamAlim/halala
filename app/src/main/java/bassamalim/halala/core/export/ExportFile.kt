@@ -64,7 +64,7 @@ data class ExportFile(
     val goalContributions: List<ExportGoalContribution> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 24
+        const val SCHEMA_VERSION = 25
     }
 }
 
@@ -185,7 +185,9 @@ data class ExportPerson(
     val uid: String,
     val name: String,
     val namedByYou: Boolean,
-    val aliases: List<ExportPersonAlias>
+    val aliases: List<ExportPersonAlias>,
+    /** When they began paying your salary by transfer; null when they don't. */
+    val salarySince: String? = null
 )
 
 @Serializable

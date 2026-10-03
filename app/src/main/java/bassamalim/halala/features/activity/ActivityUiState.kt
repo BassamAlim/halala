@@ -8,6 +8,8 @@ data class ActivityUiState(
     val query: String = "",
     /** Null is "All accounts". */
     val selectedAccountId: Long? = null,
+    /** Only spending that has no category yet. */
+    val uncategorisedOnly: Boolean = false,
     val accountFilters: List<AccountFilter> = emptyList(),
     /** This month's money in and out, SAR, summary style: "+18,000", "−11,760". */
     val monthIn: String = "",

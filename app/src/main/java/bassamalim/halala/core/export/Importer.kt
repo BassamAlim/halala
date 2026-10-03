@@ -269,7 +269,10 @@ class Importer @Inject constructor(
 
             // A file from before people (schema 5) has none: the app finds them again on opening.
             val people = file.people.mapIndexed { index, person ->
-                Person(id = index + 1L, uid = person.uid, name = person.name, namedByYou = person.namedByYou)
+                Person(
+                    id = index + 1L, uid = person.uid, name = person.name, namedByYou = person.namedByYou,
+                    salarySince = person.salarySince?.let(Instant::parse)
+                )
             }
             val personIds = people.associate { it.uid to it.id }
             val personAliases = file.people

@@ -63,6 +63,8 @@ data class TransactionUiState(
     val goal: GoalLink? = null,
     /** It can be marked toward a goal: money to or from a broker, say, or a move. */
     val canMarkGoal: Boolean = false,
+    /** A plain transfer in from someone: it can be marked as your salary, and theirs from now on. */
+    val canMarkSalary: Boolean = false,
     val goals: List<PersonChoice> = emptyList(),
     /** Everyone to split with, the latest first. */
     val people: List<PersonChoice> = emptyList(),
@@ -112,9 +114,9 @@ sealed interface LoanLink {
     /**
      * A plain transfer: it can be marked as lending ([lent]) or borrowing, to or from [person]
      * ([personId], null when it names nobody) or someone else.
-     * [suggestion] is the open loan it would pay back, to ask about.
+     * [suggestions] are the open loans it could pay back, oldest first, to ask about.
      */
-    data class Open(val lent: Boolean, val person: String, val personId: Long?, val suggestion: Suggestion?) : LoanLink
+    data class Open(val lent: Boolean, val person: String, val personId: Long?, val suggestions: List<Suggestion>) : LoanLink
 
     /** Part of a loan: [repays] it or lent it; [remaining] is what is still owed ("1,000.00"). */
     data class Part(
@@ -178,6 +180,12 @@ sealed interface TransactionSheet {
 
     /** Undoing the split, or, [whole], that it was paid for someone. */
     data class Unsplit(val whole: Boolean) : TransactionSheet
+
+    /** "It's my salary", to confirm: it and their transfers in from now on. */
+    data object Salary : TransactionSheet
+
+    /** Which of the person's open loans it repays, when there are several. */
+    data object Repay : TransactionSheet
 
     data object Category : TransactionSheet
     data object Type : TransactionSheet

@@ -2,10 +2,12 @@ package bassamalim.halala.core.ai
 
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
+import bassamalim.halala.core.data.repositories.IdentifiedAs
 import bassamalim.halala.core.data.repositories.PreferencesRepository
 import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.di.IoDispatcher
 import bassamalim.halala.core.domain.Identification
+import bassamalim.halala.core.enums.BusinessType
 import java.time.Clock
 import java.time.YearMonth
 import kotlinx.coroutines.CoroutineDispatcher
@@ -105,18 +107,21 @@ class WebLookup @Inject constructor(
     /**
      * Looks [merchantId] up now, because you asked on its page: its name (only if it could be
      * sent) goes to Tavily while this month's searches last, and the name with what was found
-     * goes to Groq; with no search to be had, Groq is asked from the name alone. A new answer
-     * stands as [ClassificationRepository.recordLookup] says.
+     * goes to Groq; with no search to be had, Groq is asked from the name alone. Nothing changes:
+     * what it found is offered, and stands only once you [accept] it.
      */
-    suspend fun lookUpNow(merchantId: Long): LookupOutcome {
-        if (!keys.hasGroq()) return LookupOutcome.UNAVAILABLE
-        val descriptor = classification.descriptorOf(merchantId) ?: return LookupOutcome.NOTHING_NEW
-        if (!Identification.sendable(descriptor, ownLast4s(accounts, sms))) return LookupOutcome.WITHHELD
+    suspend fun lookUpNow(merchantId: Long): LookupResult {
+        if (!keys.hasGroq()) return LookupResult(LookupOutcome.UNAVAILABLE)
+        val descriptor = classification.descriptorOf(merchantId) ?: return LookupResult(LookupOutcome.NOTHING_NEW)
+        if (!Identification.sendable(descriptor, ownLast4s(accounts, sms))) return LookupResult(LookupOutcome.WITHHELD)
         val month = YearMonth.now(clock)
         return try {
             val canSearch = keys.hasTavily() && preferences.webSearches(month) < MONTHLY_CAP
             val results = if (!canSearch) emptyList()
-            else search.search(TavilyProtocol.query(descriptor)).also { preferences.countWebSearch(month) }
+            else search.search(TavilyProtocol.query(descriptor)).also {
+                preferences.countWebSearch(month)
+                classification.markSearched(merchantId)
+            }
             val (answer, page) = if (results.isEmpty()) {
                 val body = groq.post(GroqProtocol.request(listOf(descriptor)))
                 runCatching { GroqProtocol.parse(body, 1).single() }.getOrNull() to null
@@ -126,19 +131,22 @@ class WebLookup @Inject constructor(
                     ?.let { (answer, source) -> answer to source?.let(results::getOrNull) }
                     ?: (null to null)
             }
-            when {
-                answer == null -> LookupOutcome.NOTHING_NEW
-                classification.recordLookup(merchantId, answer, page?.url, page?.title, searched = canSearch) -> LookupOutcome.UPDATED
-                else -> LookupOutcome.NOTHING_NEW
-            }
+            if (answer == null || answer.type == BusinessType.UNKNOWN) LookupResult(LookupOutcome.NOTHING_NEW)
+            else LookupResult(LookupOutcome.FOUND, LookupFound(answer, page?.url, page?.title))
         } catch (failure: IdentifyFailure) {
-            when (failure.problem) {
-                IdentifyProblem.UNREACHABLE -> LookupOutcome.OFFLINE
-                IdentifyProblem.LIMITED -> LookupOutcome.LIMITED
-                else -> LookupOutcome.FAILED
-            }
+            LookupResult(
+                when (failure.problem) {
+                    IdentifyProblem.UNREACHABLE -> LookupOutcome.OFFLINE
+                    IdentifyProblem.LIMITED -> LookupOutcome.LIMITED
+                    else -> LookupOutcome.FAILED
+                }
+            )
         }
     }
+
+    /** "Use this": what [lookUpNow] found becomes what [merchantId] is, as one change you can undo. */
+    suspend fun accept(merchantId: Long, found: LookupFound) =
+        classification.acceptLookup(merchantId, found.answer, found.url, found.title)
 
     companion object {
         const val SURE = 80
@@ -149,7 +157,13 @@ class WebLookup @Inject constructor(
 }
 
 /** What looking a merchant up when you asked came to. */
-enum class LookupOutcome { UPDATED, NOTHING_NEW, WITHHELD, OFFLINE, LIMITED, FAILED, UNAVAILABLE }
+enum class LookupOutcome { FOUND, NOTHING_NEW, WITHHELD, OFFLINE, LIMITED, FAILED, UNAVAILABLE }
+
+/** What a lookup found, to offer: the AI's [answer], and the page it rests on when it searched. */
+data class LookupFound(val answer: IdentifiedAs, val url: String?, val title: String?)
+
+/** How a lookup went, and, when [LookupOutcome.FOUND], what it found. */
+data class LookupResult(val outcome: LookupOutcome, val found: LookupFound? = null)
 
 /** Tavily, over HTTPS: [search] sends one query and returns what it found. */
 class TavilySearch @Inject constructor(

@@ -66,6 +66,12 @@ class TransactionDomain @Inject constructor(
 
     suspend fun unsplit(id: Long) = loansRepository.unsplit(id)
 
+    /** [personId] pays your salary: transaction [id] and their transfers in after it are salary. */
+    suspend fun markSalary(id: Long, personId: Long) {
+        val tx = transactionsRepository.get(id) ?: return
+        peopleRepository.setSalarySince(personId, tx.occurredAt)
+    }
+
     /** Someone to split with whom no transfer has named: their id. */
     suspend fun addPerson(name: String) = peopleRepository.add(name)
 

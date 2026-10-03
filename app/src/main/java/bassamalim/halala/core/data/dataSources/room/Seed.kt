@@ -79,8 +79,11 @@ class Seed(private val clock: Clock) : RoomDatabase.Callback() {
             "Entertainment" to ExpenseType.VARIABLE_DISCRETIONARY,
             "Shopping" to ExpenseType.VARIABLE_DISCRETIONARY,
             "Government fees" to ExpenseType.VARIABLE_ESSENTIAL,
-            "Fees & charges" to ExpenseType.VARIABLE_ESSENTIAL
+            FEES to ExpenseType.VARIABLE_ESSENTIAL
         )
+
+        /** Where bank fees are filed, by this name (`ClassificationRepository.applyRules`). */
+        const val FEES = "Fees & charges"
 
         /**
          * The business types each seeded category starts with. Mixed ones (a department store,

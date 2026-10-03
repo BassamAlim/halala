@@ -17,6 +17,8 @@ data class PersonUiState(
     val net: String = "",
     val netTone: AmountTone = AmountTone.Spending,
     val count: Int = 0,
+    /** When they began paying your salary ("1 Oct"); null when they don't. */
+    val salarySince: String? = null,
     val spellings: List<SpellingRow> = emptyList(),
     /** Someone known by one spelling has none to take out. */
     val canSplit: Boolean = false,

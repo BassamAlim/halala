@@ -22,6 +22,7 @@
     <string name="settings">Settings</string>
     <string name="accounts">Accounts</string>
     <string name="all_accounts">All accounts</string>
+    <string name="uncategorised">Uncategorised</string>
     <!-- Two facts on one line: "Purchase · Al Rajhi – Salary". -->
     <string name="meta_pair">%1$s · %2$s</string>
     <string name="between_your_accounts">Between your accounts · not spending</string>
@@ -484,7 +485,7 @@
     <string name="loan_reminder_message">Hi %1$s, a gentle reminder about the %2$s from %3$s. Thank you.</string>
     <string name="loan_record_repayment">Record repayment</string>
     <string name="loan_repay_title">Which transfer repays it?</string>
-    <string name="loan_repay_none_lent">No transfer from %1$s to choose yet. When one arrives, it asks whether it repays this loan.</string>
+    <string name="loan_repay_none_lent">No transfer from %1$s or refund to choose yet. When one arrives, it asks whether it repays this loan.</string>
     <string name="loan_repay_none_borrowed">No transfer to %1$s to choose yet. When you send one, it asks whether it repays this loan.</string>
     <string name="loan_forgive">Forgive what is left</string>
     <string name="loan_forgive_title">Forgive what is left?</string>
@@ -501,6 +502,24 @@
     <string name="loan_suggest_lent">%1$s owes you %2$s from %3$s. Does this repay it?</string>
     <string name="loan_suggest_borrowed">You owe %1$s %2$s from %3$s. Does this repay it?</string>
     <string name="loan_repays">It repays the loan</string>
+    <string name="salary">Salary</string>
+    <string name="salary_mark">It\'s my salary</string>
+    <string name="salary_mark_title">Does %1$s pay your salary?</string>
+    <string name="salary_mark_body">This transfer and every transfer from %1$s after it count as your salary. You can stop it on their page.</string>
+    <string name="salary_pays_you">Pays your salary</string>
+    <string name="salary_since">Their transfers in count as salary since %1$s</string>
+    <string name="salary_stop">Not my salary anymore</string>
+    <string name="loan_repays_which">It repays one of them</string>
+    <string name="loan_repays_title">Which loan does it repay?</string>
+    <string name="loan_repay_option">%1$s %2$s, %3$s</string>
+    <plurals name="loan_suggest_many_lent">
+        <item quantity="one">%1$s owes you on %2$d loan. Does this repay one?</item>
+        <item quantity="other">%1$s owes you on %2$d loans. Does this repay one?</item>
+    </plurals>
+    <plurals name="loan_suggest_many_borrowed">
+        <item quantity="one">You owe %1$s on %2$d loan. Does this repay one?</item>
+        <item quantity="other">You owe %1$s on %2$d loans. Does this repay one?</item>
+    </plurals>
     <string name="loan_part_lent">Lent to %1$s</string>
     <string name="loan_part_borrowed">Borrowed from %1$s</string>
     <string name="loan_part_repaid_to_you">%1$s paying you back</string>
@@ -1210,6 +1229,7 @@
     <string name="audit_category_edited">Changed the category %1$s</string>
     <string name="audit_category_renamed">Renamed the category %1$s to %2$s</string>
     <string name="audit_merchant_typed">Said %1$s is: %2$s</string>
+    <string name="audit_merchant_looked_up">Looked up %1$s: %2$s</string>
     <string name="category_edit">Edit category</string>
     <string name="category_takes">Takes</string>
     <string name="category_takes_hint">Merchants identified as these are filed here. A business type belongs to one category.</string>
@@ -1223,8 +1243,10 @@
     <string name="merchant_is_unknown">Not identified yet</string>
     <string name="merchant_look_up">Look it up</string>
     <string name="merchant_looking_up">Looking it up…</string>
-    <string name="merchant_lookup_updated">Found it. What it is has been updated.</string>
-    <string name="merchant_lookup_nothing_new">Nothing surer than what it says now.</string>
+    <string name="merchant_lookup_found_title">Is it this?</string>
+    <string name="merchant_lookup_accept">Use this</string>
+    <string name="merchant_lookup_reject">Not this</string>
+    <string name="merchant_lookup_nothing_new">It couldn\'t tell what this is.</string>
     <string name="merchant_lookup_withheld">Its name holds digits that could be yours, so it is never sent. Say what it is yourself.</string>
     <string name="merchant_lookup_offline">Couldn\'t reach the lookup. Try again once you\'re online.</string>
     <string name="merchant_lookup_limited">The lookup is busy for now. Try again later.</string>

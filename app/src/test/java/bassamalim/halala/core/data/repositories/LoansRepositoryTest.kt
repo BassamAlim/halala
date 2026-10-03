@@ -99,6 +99,24 @@ class LoansRepositoryTest {
     }
 
     @Test
+    fun `a refund can be borrowed from someone chosen, or repay money lent`() = runTest {
+        fun refund() = TransactionDraft(cash, Direction.CREDIT, 150_000, TEST_CLOCK.instant(), TransactionKind.REFUND, "Some Shop")
+        val loanId = loans.open(transfer("KHALID ALI", 150_000), null)!!
+        val personId = state().loan.personId
+
+        val back = transactions.add(refund())
+        assertTrue(loans.repay(loanId, back))
+        assertEquals(0, state().remainingMinor)
+
+        // Naming no one, it's borrowed only from whoever you choose.
+        val owed = transactions.add(refund())
+        assertNull(loans.open(owed, null))
+        loans.open(owed, null, personId = personId)!!
+        assertEquals(TransactionKind.LOAN_RECEIVED, transactions.get(owed)!!.kind)
+        assertEquals(LoanDirection.BORROWED, loans.observeStates().first().last().loan.direction)
+    }
+
+    @Test
     fun `forgiving settles it, and paying more than owed settles it no further`() = runTest {
         val loanId = loans.open(transfer("KHALID ALI", 150_000), null)!!
         loans.repay(loanId, transfer("KHALID ALI", 200_000, Direction.CREDIT))

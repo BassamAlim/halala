@@ -562,6 +562,22 @@ class ClassificationRepositoryTest {
     }
 
     @Test
+    fun `a bank's fee files under fees and charges, unless you filed it elsewhere`() = runTest {
+        fun fee(title: String) = TransactionDraft(cash, Direction.DEBIT, 575, TEST_CLOCK.instant(), TransactionKind.FEE, title)
+        val untitled = transactions.add(fee(""))
+        val named = transactions.add(fee("TRANSFER FEE"))
+        val yours = transactions.add(fee("SADAD FEE"))
+        classification.file(yours, shopping, null)
+
+        classification.applyRules()
+
+        val fees = db.classificationDao().getCategories().single { it.name == "Fees & charges" }.id
+        assertEquals(fees, transactions.get(untitled)!!.categoryId)
+        assertEquals(fees, transactions.get(named)!!.categoryId)
+        assertEquals(shopping, transactions.get(yours)!!.categoryId)
+    }
+
+    @Test
     fun `saying what a merchant is files it, even after its automatic rule was deleted`() = runTest {
         val id = spend("PANDA 1042")
         classification.applyRules()
@@ -576,6 +592,31 @@ class ClassificationRepositoryTest {
         classification.undo(batch)
         assertNull(transactions.get(id)!!.categoryId)
         assertEquals(IdentifiedBy.LIST, classification.getMerchant(merchantOf(id)!!)!!.identifiedBy)
+    }
+
+    @Test
+    fun `taking what a lookup found files it, can be undone, and never overrides the list`() = runTest {
+        val id = spend("ZZYZX 9")
+        classification.applyRules()
+        val merchantId = merchantOf(id)!!
+        val before = classification.getMerchant(merchantId)!!
+
+        val batch = classification.acceptLookup(
+            merchantId, IdentifiedAs("Zzyzx Mart", BusinessType.CONVENIENCE_STORE, 40), "https://zzyzx.sa", "Zzyzx Mart"
+        )!!
+        val found = classification.getMerchant(merchantId)!!
+        assertEquals("Zzyzx Mart", found.name)
+        assertEquals(IdentifiedBy.YOU, found.identifiedBy)
+        assertEquals("https://zzyzx.sa", found.webUrl)
+        assertEquals(groceries, transactions.get(id)!!.categoryId)
+
+        classification.undo(batch)
+        assertEquals(before, classification.getMerchant(merchantId))
+        assertNull(transactions.get(id)!!.categoryId)
+
+        val panda = spend("PANDA 1042")
+        classification.applyRules()
+        assertNull(classification.acceptLookup(merchantOf(panda)!!, IdentifiedAs("Panda", BusinessType.ELECTRONICS, 99), null, null))
     }
 
     @Test

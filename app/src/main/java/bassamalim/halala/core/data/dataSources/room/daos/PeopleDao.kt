@@ -109,6 +109,19 @@ interface PeopleDao {
         deletePerson(fromId)
     }
 
+    /**
+     * Transfers in from someone who pays your salary, since they began to, become salary. Only
+     * plain ones: not a move between your own accounts, nor part of a loan.
+     */
+    @Query(
+        """UPDATE transactions SET kind = 'SALARY' WHERE kind = 'TRANSFER_IN' AND merchantKey != ''
+            AND NOT EXISTS (SELECT 1 FROM internal_transfers x WHERE x.outTransactionId = transactions.id OR x.inTransactionId = transactions.id)
+            AND EXISTS (SELECT 1 FROM person_aliases pa JOIN people p ON p.id = pa.personId
+                WHERE pa.aliasKey = transactions.merchantKey AND p.salarySince IS NOT NULL
+                    AND transactions.occurredAt >= p.salarySince)"""
+    )
+    suspend fun markSalaries()
+
     /** Each person transfer's title and key, oldest first: the first spelling names the person. */
     @Query("SELECT t.title, t.merchantKey FROM transactions t WHERE t.title != '' AND $PERSON_TRANSFER ORDER BY t.occurredAt, t.id")
     suspend fun getTransferNames(): List<TransferName>

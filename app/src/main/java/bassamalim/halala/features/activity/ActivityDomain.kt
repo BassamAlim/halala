@@ -4,6 +4,7 @@ import bassamalim.halala.core.data.dataSources.room.relations.AccountWithBalance
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
+import bassamalim.halala.core.domain.Rules
 import bassamalim.halala.core.domain.feedOf
 import kotlinx.coroutines.flow.Flow
 import java.time.Clock
@@ -31,16 +32,20 @@ class ActivityDomain @Inject constructor(
         /**
          * The feed for one account (or all of them), narrowed by a search over what you wrote,
          * the merchant it was at (by your name for it or the bank's), and which account it was
-         * on. Case-insensitive; blank matches everything.
+         * on. Case-insensitive; blank matches everything. [uncategorised] keeps only spending
+         * with no category yet, as the review inbox counts it.
          */
         fun filter(
             details: List<TransactionDetail>,
             accountId: Long?,
-            query: String
+            query: String,
+            uncategorised: Boolean = false
         ): List<TransactionDetail> {
             val needle = query.trim()
 
             return feedOf(details, accountId).filter { detail ->
+                !uncategorised || Rules.canCategorise(detail) && detail.transaction.categoryId == null
+            }.filter { detail ->
                 needle.isEmpty() || listOfNotNull(
                     detail.transaction.title,
                     detail.merchantName,

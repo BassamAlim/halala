@@ -10,6 +10,7 @@ import bassamalim.halala.core.sms.ParsedSms
 import bassamalim.halala.core.sms.SmsParser
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -70,9 +71,22 @@ class PeopleRepository @Inject constructor(
      */
     suspend fun merge(fromId: Long, intoId: Long) {
         if (fromId == intoId) return
-        peopleDao.getPerson(fromId) ?: return
-        peopleDao.getPerson(intoId) ?: return
+        val from = peopleDao.getPerson(fromId) ?: return
+        val into = peopleDao.getPerson(intoId) ?: return
+        // Paying your salary goes with them, from the earlier of the two.
+        val since = listOfNotNull(from.salarySince, into.salarySince).minOrNull()
+        if (since != into.salarySince) peopleDao.updatePerson(into.copy(salarySince = since))
         peopleDao.merge(fromId, intoId)
+    }
+
+    /**
+     * [id] pays your salary from [since] on (the transfer you marked): it and their transfers in
+     * after it are salary. Null stops it for what comes next; what was salary stays salary.
+     */
+    suspend fun setSalarySince(id: Long, since: Instant?) {
+        val person = peopleDao.getPerson(id) ?: return
+        if (person.salarySince != since) peopleDao.updatePerson(person.copy(salarySince = since))
+        peopleDao.markSalaries()
     }
 
     /** "Not this person": one spelling becomes someone of their own. Returns the new person's id. */

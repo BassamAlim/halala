@@ -72,7 +72,7 @@ class LoansRepository @Inject constructor(
 
     /**
      * [transactionId] pays [loanId] back. It must move money the repaying way, in the loan's
-     * currency, and be a plain transfer not yet part of a loan; false when it isn't.
+     * currency, and be a plain transfer or a refund not yet part of a loan; false when it isn't.
      */
     suspend fun repay(loanId: Long, transactionId: Long): Boolean {
         val loan = loansDao.getLoan(loanId) ?: return false
@@ -114,7 +114,8 @@ class LoansRepository @Inject constructor(
     }
 
     /**
-     * "Not part of a loan": [transactionId] is a plain transfer again. When it was the only
+     * "Not part of a loan": [transactionId] is a plain transfer again (a refund that was part of
+     * one comes back as money in from a transfer; its kind can be set back on its form). When it was the only
      * money lent, there is no loan left, so the loan goes, and its repayments are plain
      * transfers again too.
      */
@@ -172,7 +173,7 @@ class LoansRepository @Inject constructor(
         }
     }
 
-    /** A plain transfer to or from someone: not a move between your own accounts, nor part of a loan. */
+    /** A plain transfer to or from someone, or a refund: not a move between your own accounts, nor part of a loan. */
     private suspend fun isFree(transactionId: Long, kind: TransactionKind) =
         kind in Loans.MARKABLE && transactionsDao.getTransferFor(transactionId) == null &&
                 loansDao.getEventFor(transactionId) == null
