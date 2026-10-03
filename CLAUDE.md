@@ -280,8 +280,9 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   said and what you dismissed are in DataStore by `People.pairKey` (uids, never a name). Phone
   contacts aren't linked yet.
 - **Loans** are only ever made by your say. Marking a plain transfer to or from someone
-  (`Loans.MARKABLE`, never a paired move) as lent or borrowed opens a `Loan` with that person
-  (optional due date); marking a transfer back as repaying it pays it down; forgiving lets go of
+  (`Loans.MARKABLE`, never a paired move) as lent or borrowed opens a `Loan` with that person,
+  or with anyone else you choose (someone asked you to pay a third person for them; a transfer
+  naming nobody can be marked this way too) (optional due date); marking a transfer back as repaying it pays it down; forgiving lets go of
   the rest. A loan is its `LoanEvent`s (lent, repaid, forgiven): one linked to a transaction takes
   that transaction's amount and time, so editing the transfer never leaves the loan behind; what
   is owed is lent less repaid and forgiven, never below zero. A linked transfer's kind becomes
@@ -292,7 +293,8 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   yours, or by amount, no more than the whole): each share is a loan owed to you with
   `splitOf` the purchase and an event without a transfer, and only your share counts as
   spending (`TransactionDetail.yourMinor`, used by `inOut` and a merchant's spent). Someone no
-  transfer names can be added by name to split with. Undoing a split drops its loans and frees
+  transfer names can be added by name to split with. "Paid for someone else" (spending that
+  isn't a transfer) is a split whose one share is the whole, with an optional due date. Undoing a split drops its loans and frees
   their repayments. Transaction detail asks whether a transfer repays the person's oldest open loan
   (`Loans.repaidBy`) and offers marking it as a loan. Merging people moves their loans.
 - **Subscriptions, bills and planned payments** are one `RecurringSeries` (the spec's

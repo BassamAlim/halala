@@ -40,8 +40,12 @@ class TransactionDomain @Inject constructor(
 
     fun observeLoans(): Flow<List<LoanState>> = loansRepository.observeStates()
 
-    /** It lent (or borrowed) money: a new loan with the person it names. */
-    suspend fun openLoan(id: Long, dueOn: LocalDate?) = loansRepository.open(id, dueOn)
+    /** It lent (or borrowed) money: a new loan with [personId], or the person it names. */
+    suspend fun openLoan(id: Long, dueOn: LocalDate?, personId: Long?) = loansRepository.open(id, dueOn, personId)
+
+    /** You paid all of it for [personId]: one share of the whole, owed to you. */
+    suspend fun paidFor(id: Long, personId: Long, totalMinor: Long, dueOn: LocalDate?) =
+        loansRepository.split(id, mapOf(personId to totalMinor), dueOn)
 
     /** It pays [loanId] back. */
     suspend fun repay(loanId: Long, id: Long) = loansRepository.repay(loanId, id)

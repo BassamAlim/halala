@@ -485,6 +485,8 @@
     <string name="loan_mark_borrowed_title">Borrowed from %1$s</string>
     <string name="loan_mark_body">It becomes a loan: not spending or income, and Halala keeps count of what is paid back.</string>
     <string name="loan_mark_confirm">Mark as a loan</string>
+    <string name="loan_mark_title_none">Who is it a loan with?</string>
+    <string name="loan_no_one">Choose who it is a loan with</string>
     <string name="loan_suggest_lent">%1$s owes you %2$s from %3$s. Does this repay it?</string>
     <string name="loan_suggest_borrowed">You owe %1$s %2$s from %3$s. Does this repay it?</string>
     <string name="loan_repays">It repays the loan</string>
@@ -578,6 +580,15 @@
     <string name="split_undo">Undo the split</string>
     <string name="split_undo_title">Undo the split?</string>
     <string name="split_undo_body">The shares are no longer owed, and all of it is your spending again. Repayments of them become plain transfers.</string>
+    <string name="paid_for">Paid for someone</string>
+    <string name="paid_for_mark">Paid for someone else</string>
+    <string name="paid_for_title">Paid for %1$s</string>
+    <string name="paid_for_title_none">Who did you pay for?</string>
+    <string name="paid_for_body">All of it becomes a loan they owe you: not your spending, and Halala keeps count of what is paid back.</string>
+    <string name="paid_for_no_one">Choose who you paid for</string>
+    <string name="paid_for_undo">It was for me</string>
+    <string name="paid_for_undo_title">It was for you?</string>
+    <string name="paid_for_undo_body">Nothing is owed for it, and all of it is your spending again. Repayments of it become plain transfers.</string>
     <string name="budgets">Budgets</string>
     <string name="budget">Budget</string>
     <string name="budget_new">New budget</string>
