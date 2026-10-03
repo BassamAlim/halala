@@ -52,6 +52,8 @@ data class RetirementView(
     val extra: String,
     val curve: List<Long>,
     val contributed: List<Long>,
+    /** The pot at each age on the curve. */
+    val pots: List<String>,
     val fromAge: Int
 )
 
@@ -95,6 +97,7 @@ class RetirementViewModel @Inject constructor(
                         extra = Money.format(it.extraMonthlyMinor, currency, decimals = false),
                         curve = it.curve.map { point -> point.potMinor },
                         contributed = it.curve.map { point -> point.contributedMinor },
+                        pots = it.curve.map { point -> Money.format(point.potMinor, currency, decimals = false) },
                         fromAge = inputs.ageNow
                     )
                 }

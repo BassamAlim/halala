@@ -50,6 +50,8 @@ data class WealthUiState(
     val range: WealthRange = WealthRange.YEAR,
     val chart: List<Long> = emptyList(),
     val chartLabels: List<String> = emptyList(),
+    /** Each point's day and net worth, as words. */
+    val chartTips: List<Pair<String, String>> = emptyList(),
     val parts: List<WealthPart> = emptyList(),
     val accountCount: Int = 0,
     val assetCount: Int = 0,
@@ -97,6 +99,7 @@ class WealthViewModel @Inject constructor(
         val monthStart = Digests.periodOf(DigestKind.MONTH, today).start
         val monthBase = valueOn(monthStart.minusDays(1).coerceAtLeast(timeline.first().first))
         val yearBase = valueOn(today.withDayOfYear(1).minusDays(1).coerceAtLeast(timeline.first().first))
+        val points = sample(shown)
         val largest = now.parts.values.maxOfOrNull { abs(it) }?.takeIf { it > 0 } ?: 1
 
         WealthUiState(
@@ -107,7 +110,8 @@ class WealthViewModel @Inject constructor(
             yearChange = yearBase?.let { Money.format(now.totalMinor - it, currency, decimals = false, showPlus = true) },
             rising = monthBase == null || now.totalMinor >= monthBase,
             range = range,
-            chart = sample(shown.map { it.second }),
+            chart = points.map { it.second },
+            chartTips = points.map { (day, value) -> shortDateLabel(day, today) to Money.format(value, currency, decimals = false) },
             chartLabels = listOfNotNull(shown.firstOrNull()?.first, shown.lastOrNull()?.first).map { it.format(LABEL) },
             parts = WealthClass.entries.mapNotNull { kind ->
                 val amount = now.parts[kind] ?: return@mapNotNull null
@@ -156,7 +160,7 @@ class WealthViewModel @Inject constructor(
         const val MATURING_DAYS = 30L
         val LABEL: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM yyyy", Locale.US)
 
-        fun sample(values: List<Long>): List<Long> {
+        fun <T> sample(values: List<T>): List<T> {
             if (values.size <= MAX_POINTS) return values
             val step = values.size.toDouble() / MAX_POINTS
             return (0 until MAX_POINTS).map { values[(it * step).toInt()] } + values.last()

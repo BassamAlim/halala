@@ -28,7 +28,9 @@ data class ForecastChart(
     val endLow: Long,
     val endHigh: Long,
     val startLabel: String,
-    val endLabel: String
+    val endLabel: String,
+    /** Each day from the start to the end: its date and balance, as words. */
+    val tips: List<Pair<String, String>> = emptyList()
 )
 
 /** One month ahead: "Nov", "+3,900", and how tall against the largest (0 to 1). */

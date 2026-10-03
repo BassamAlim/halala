@@ -19,6 +19,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +37,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
 import bassamalim.halala.core.Globals
+import bassamalim.halala.core.ui.components.ChartTip
 import bassamalim.halala.core.ui.components.DateDialog
 import bassamalim.halala.core.ui.components.FormField
 import bassamalim.halala.core.ui.components.HalalaCard
@@ -43,6 +46,8 @@ import bassamalim.halala.core.ui.components.HalalaTextField
 import bassamalim.halala.core.ui.components.TopBar
 import bassamalim.halala.core.ui.components.appendCurrency
 import bassamalim.halala.core.ui.components.currencyInlineContent
+import bassamalim.halala.core.ui.components.drawPick
+import bassamalim.halala.core.ui.components.scrub
 import bassamalim.halala.core.ui.theme.HalalaColors
 import bassamalim.halala.core.ui.theme.HalalaNumbers
 import bassamalim.halala.core.ui.theme.HalalaType
@@ -194,6 +199,9 @@ private fun BalanceChart(chart: ForecastChart, todayLabel: String) {
     val total = (chart.past.size + chart.future.size - 2).coerceAtLeast(1)
     val line = HalalaColors.Accent
     val grid = HalalaColors.Line
+    val todayIndex = chart.past.size - 1
+    fun valueAt(i: Int) = if (i <= todayIndex) chart.past[i] else chart.future[i - todayIndex]
+    val picked = remember(total) { mutableStateOf<Int?>(null) }
 
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
         Canvas(
@@ -201,10 +209,10 @@ private fun BalanceChart(chart: ForecastChart, todayLabel: String) {
                 .fillMaxWidth()
                 .height(CHART_HEIGHT)
                 .semantics { contentDescription = todayLabel }
+                .then(if (chart.tips.size == total + 1) Modifier.scrub(total + 1, picked) else Modifier)
         ) {
             fun x(i: Int) = size.width * i / total
             fun y(v: Long) = size.height - size.height * ((v - min).toFloat() / (max - min).toFloat())
-            val todayIndex = chart.past.size - 1
 
             val hair = Sizes.border.toPx()
             val stroke = hair * 2
@@ -233,8 +241,11 @@ private fun BalanceChart(chart: ForecastChart, todayLabel: String) {
             }
             drawPath(future, line, style = Stroke(width = stroke, pathEffect = PathEffect.dashPathEffect(floatArrayOf(dash, dash))))
             drawCircle(line, radius = Spacing.xs.toPx(), center = Offset(x(todayIndex), y(chart.past.last())))
+            picked.value?.let { drawPick(Offset(x(it), y(valueAt(it)))) }
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        val at = picked.value
+        if (at != null) ChartTip(chart.tips[at], at.toFloat() / total)
+        else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(text = chart.startLabel, style = HalalaType.Caption, color = HalalaColors.TextMuted)
             Text(text = todayLabel, style = HalalaType.Caption, color = HalalaColors.TextMuted)
             Text(text = chart.endLabel, style = HalalaType.Caption, color = HalalaColors.TextMuted)

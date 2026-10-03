@@ -107,6 +107,7 @@ fun WealthScreen(viewModel: WealthViewModel = hiltViewModel()) {
         LineChart(
             values = state.chart,
             labels = state.chartLabels,
+            tips = state.chartTips,
             description = stringResource(R.string.net_worth_chart),
             height = Sizes.fab * 2 + Sizes.chip
         )
