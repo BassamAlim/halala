@@ -122,6 +122,10 @@ interface MerchantsDao {
     @Query("SELECT * FROM merchants WHERE id = :id")
     suspend fun getMerchant(id: Long): Merchant?
 
+    /** How the bank first wrote it: what is sent when it is looked up. */
+    @Query("SELECT descriptor FROM merchant_aliases WHERE merchantId = :id ORDER BY id LIMIT 1")
+    suspend fun getDescriptor(id: Long): String?
+
     @Insert
     suspend fun insertMerchant(merchant: Merchant): Long
 

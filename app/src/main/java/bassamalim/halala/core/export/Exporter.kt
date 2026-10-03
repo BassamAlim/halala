@@ -21,6 +21,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.Deposit
+import bassamalim.halala.core.data.dataSources.room.entities.GoalContribution
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsTerms
 import bassamalim.halala.core.data.dataSources.room.entities.Tag
 import bassamalim.halala.core.data.dataSources.room.entities.TransactionTag
@@ -86,7 +87,8 @@ data class LedgerSnapshot(
     val tags: List<Tag> = emptyList(),
     val transactionTags: List<TransactionTag> = emptyList(),
     val places: List<TransactionPlace> = emptyList(),
-    val deposits: List<Deposit> = emptyList()
+    val deposits: List<Deposit> = emptyList(),
+    val goalContributions: List<GoalContribution> = emptyList()
 ) {
     /** The merchant each transaction's title names, by transaction id. */
     fun merchantOf(): Map<Long, Merchant> {
@@ -150,7 +152,8 @@ class Exporter @Inject constructor(
         tags = tagsRepository.getAll(),
         transactionTags = tagsRepository.getRows(),
         places = placesRepository.getAll(),
-        deposits = savingsRepository.getDeposits()
+        deposits = savingsRepository.getDeposits(),
+        goalContributions = goalsRepository.getContributions()
     )
 
     fun fileStem(): String = "halala-${clock.instant().atZone(clock.zone).toLocalDate()}"
@@ -411,6 +414,13 @@ class Exporter @Inject constructor(
                         ExportDeposit(
                             it.uid, transactionUids.getValue(it.transactionId), it.goalId?.let(goalUids::get), it.ratePercent,
                             it.tenorMonths, it.maturityChoice?.name, it.closedOn?.toString()
+                        )
+                    }
+                },
+                goalContributions = snapshot.goals.associate { it.id to it.uid }.let { goalUids ->
+                    snapshot.goalContributions.map {
+                        ExportGoalContribution(
+                            it.uid, goalUids.getValue(it.goalId), transactionUids.getValue(it.transactionId), it.withdrawn, it.kindBefore?.name
                         )
                     }
                 },

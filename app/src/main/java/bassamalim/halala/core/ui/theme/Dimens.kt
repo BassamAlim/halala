@@ -48,9 +48,14 @@ object Sizes {
     /** Settings-style rows inside a card. */
     val listRow = 56.dp
     val fab = 56.dp
-    /** A Sankey node's bar, and the least height a node is drawn at so its label fits. */
+    /** The Sankey's bars (its ends, and the account between them), and the least width a part is drawn at. */
     val sankeyBar = 8.dp
     val sankeyNode = 22.dp
+    val sankeyMin = 3.dp
+    /** The gap between parts at an end, and how far the bands run from an end to the account. */
+    val sankeyGap = 6.dp
+    val sankeyFlowIn = 56.dp
+    val sankeyFlowOut = 88.dp
     val sankeyMax = 300.dp
     /** Insights' charts: the month bars' height, the donut and its ring, a legend's dot. */
     val barChart = 120.dp

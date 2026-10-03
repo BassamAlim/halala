@@ -24,6 +24,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.Deposit
+import bassamalim.halala.core.data.dataSources.room.entities.GoalContribution
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsTerms
 import bassamalim.halala.core.data.dataSources.room.entities.Tag
 import bassamalim.halala.core.data.dataSources.room.entities.TransactionTag
@@ -67,7 +68,8 @@ interface RestoreDao {
         tags: List<Tag>,
         transactionTags: List<TransactionTag>,
         places: List<TransactionPlace>,
-        deposits: List<Deposit>
+        deposits: List<Deposit>,
+        goalContributions: List<GoalContribution>
     ) {
         // What points at a row goes before the row. The history of changes names rows by the
         // ids they had, so it can't outlive them.
@@ -75,6 +77,7 @@ interface RestoreDao {
         clearAuditBatches()
         clearSavingsTerms()
         clearDeposits()
+        clearGoalContributions()
         clearTransactionTags()
         clearPlaces()
         clearTags()
@@ -129,6 +132,7 @@ interface RestoreDao {
         insertTransactionTags(transactionTags)
         insertPlaces(places)
         insertDeposits(deposits)
+        insertGoalContributions(goalContributions)
     }
 
     @Query("DELETE FROM audit_changes") suspend fun clearAuditChanges()
@@ -154,6 +158,7 @@ interface RestoreDao {
     @Query("DELETE FROM retirement_scenarios") suspend fun clearScenarios()
     @Query("DELETE FROM savings_terms") suspend fun clearSavingsTerms()
     @Query("DELETE FROM deposits") suspend fun clearDeposits()
+    @Query("DELETE FROM goal_contributions") suspend fun clearGoalContributions()
     @Query("DELETE FROM transaction_tags") suspend fun clearTransactionTags()
     @Query("DELETE FROM tags") suspend fun clearTags()
     @Query("DELETE FROM transaction_places") suspend fun clearPlaces()
@@ -187,6 +192,7 @@ interface RestoreDao {
     @Insert suspend fun insertScenarios(rows: List<RetirementScenario>)
     @Insert suspend fun insertSavingsTerms(rows: List<SavingsTerms>)
     @Insert suspend fun insertDeposits(rows: List<Deposit>)
+    @Insert suspend fun insertGoalContributions(rows: List<GoalContribution>)
     @Insert suspend fun insertTags(rows: List<Tag>)
     @Insert suspend fun insertTransactionTags(rows: List<TransactionTag>)
     @Insert suspend fun insertPlaces(rows: List<TransactionPlace>)

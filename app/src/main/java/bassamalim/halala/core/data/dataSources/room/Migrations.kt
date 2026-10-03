@@ -7,7 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * The phone is the only place the full ledger lives: every schema change is a migration, never
  * a destructive rebuild. Add each one here, in order, against the schemas in `app/schemas`.
  */
-val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6, Migration6To7, Migration7To8, Migration8To9, Migration9To10, Migration10To11, Migration11To12, Migration12To13, Migration13To14, Migration14To15, Migration15To16, Migration16To17, Migration17To18, Migration18To19, Migration19To20, Migration20To21, Migration21To22, Migration22To23)
+val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6, Migration6To7, Migration7To8, Migration8To9, Migration9To10, Migration10To11, Migration11To12, Migration12To13, Migration13To14, Migration14To15, Migration15To16, Migration16To17, Migration17To18, Migration18To19, Migration19To20, Migration20To21, Migration21To22, Migration22To23, Migration23To24)
 
 /** Phase 1: raw bank SMS, the digits learned per bank, reported balances, and SMS links. */
 private object Migration1To2 : Migration(1, 2) {
@@ -423,11 +423,33 @@ private object Migration21To22 : Migration(21, 22) {
     }
 }
 
-/** Merchants' websites, and the logos fetched from them. */
+/** Money put toward a savings goal somewhere the ledger has no account for (a broker). */
 private object Migration22To23 : Migration(22, 23) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL("ALTER TABLE `merchants` ADD COLUMN `website` TEXT")
-        db.execSQL("ALTER TABLE `merchants` ADD COLUMN `websiteAsked` INTEGER NOT NULL DEFAULT 0")
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `goal_contributions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `uid` TEXT NOT NULL, " +
+                    "`goalId` INTEGER NOT NULL, `transactionId` INTEGER NOT NULL, `withdrawn` INTEGER NOT NULL, `kindBefore` TEXT, " +
+                    "FOREIGN KEY(`transactionId`) REFERENCES `transactions`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , " +
+                    "FOREIGN KEY(`goalId`) REFERENCES `savings_goals`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )"
+        )
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_goal_contributions_uid` ON `goal_contributions` (`uid`)")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_goal_contributions_transactionId` ON `goal_contributions` (`transactionId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_goal_contributions_goalId` ON `goal_contributions` (`goalId`)")
+    }
+}
+
+/**
+ * Merchants' websites, and the logos fetched from them. A local build briefly shipped this as
+ * 22 → 23, so a 23 may already have it and lack goal contributions: each step is skipped when done.
+ */
+private object Migration23To24 : Migration(23, 24) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        Migration22To23.migrate(db)
+        val columns = db.query("PRAGMA table_info(`merchants`)").use { c ->
+            buildSet { while (c.moveToNext()) add(c.getString(c.getColumnIndexOrThrow("name"))) }
+        }
+        if ("website" !in columns) db.execSQL("ALTER TABLE `merchants` ADD COLUMN `website` TEXT")
+        if ("websiteAsked" !in columns) db.execSQL("ALTER TABLE `merchants` ADD COLUMN `websiteAsked` INTEGER NOT NULL DEFAULT 0")
         db.execSQL(
             "CREATE TABLE IF NOT EXISTS `merchant_logos` (`merchantId` INTEGER NOT NULL, `image` BLOB, PRIMARY KEY(`merchantId`), " +
                     "FOREIGN KEY(`merchantId`) REFERENCES `merchants`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )"

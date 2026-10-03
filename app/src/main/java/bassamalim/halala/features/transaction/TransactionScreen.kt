@@ -207,8 +207,29 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
 
         state.loan?.let { loan -> LoanCard(loan, viewModel) }
 
+        state.goal?.let { goal ->
+            HalalaCard(label = stringResource(R.string.goal_toward_label)) {
+                Text(
+                    text = stringResource(if (goal.withdrawn) R.string.goal_taken_out_of else R.string.goal_toward, goal.name),
+                    style = HalalaType.Body
+                )
+                HalalaButton(
+                    text = stringResource(R.string.goal_toward_undo),
+                    onClick = viewModel::onUngoalClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = Spacing.xs)
+                )
+            }
+        }
+        if (state.canMarkGoal) HalalaButton(
+            text = stringResource(R.string.goal_toward_mark),
+            onClick = viewModel::onGoalClick,
+            modifier = Modifier.fillMaxWidth()
+        )
+
         state.split?.let { split ->
-            HalalaCard(label = stringResource(R.string.split)) {
+            HalalaCard(label = stringResource(if (split.whole) R.string.paid_for else R.string.split)) {
                 split.shares.forEach { (name, share) ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(text = stringResource(R.string.split_owes, name), style = HalalaType.Body)
@@ -220,7 +241,7 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
                     Text(text = split.yours, style = HalalaNumbers.Amount, color = HalalaColors.TextMuted)
                 }
                 HalalaButton(
-                    text = stringResource(R.string.split_undo),
+                    text = stringResource(if (split.whole) R.string.paid_for_undo else R.string.split_undo),
                     onClick = viewModel::onUnsplitClick,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -231,6 +252,11 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
         if (state.canSplit) HalalaButton(
             text = stringResource(R.string.split_with),
             onClick = viewModel::onSplitClick,
+            modifier = Modifier.fillMaxWidth()
+        )
+        if (state.canPayFor) HalalaButton(
+            text = stringResource(R.string.paid_for_mark),
+            onClick = viewModel::onPayForClick,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -360,18 +386,48 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
         is TransactionSheet.MarkLoan -> {
             val open = state.loan as? LoanLink.Open
             val askToNotify = rememberNotificationAsk()
+            val chosen = state.people.firstOrNull { it.id == sheet.personId }?.name
             HalalaSheet(onDismiss = viewModel::onSheetDismiss) {
                 Text(
-                    text = stringResource(
-                        if (open?.lent != false) R.string.loan_mark_lent_title else R.string.loan_mark_borrowed_title,
-                        open?.person.orEmpty()
-                    ),
+                    text = when {
+                        chosen == null -> stringResource(if (sheet.forPurchase) R.string.paid_for_title_none else R.string.loan_mark_title_none)
+                        sheet.forPurchase -> stringResource(R.string.paid_for_title, chosen)
+                        else -> stringResource(
+                            if (open?.lent != false) R.string.loan_mark_lent_title else R.string.loan_mark_borrowed_title,
+                            chosen
+                        )
+                    },
                     style = HalalaType.Title
                 )
                 Text(
-                    text = stringResource(R.string.loan_mark_body),
+                    text = stringResource(if (sheet.forPurchase) R.string.paid_for_body else R.string.loan_mark_body),
                     style = HalalaType.Label,
                     color = HalalaColors.TextMuted
+                )
+                if (state.people.isNotEmpty()) ChoiceChipsMulti(
+                    options = state.people,
+                    selected = listOfNotNull(sheet.personId),
+                    onToggle = viewModel::onLoanPersonClick
+                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                    HalalaTextField(
+                        value = sheet.newName,
+                        onValueChange = viewModel::onLoanNameChange,
+                        placeholder = stringResource(R.string.split_someone_else),
+                        capitalization = KeyboardCapitalization.Words,
+                        imeAction = ImeAction.Done,
+                        modifier = Modifier.weight(1f)
+                    )
+                    HalalaButton(
+                        text = stringResource(R.string.recurring_add),
+                        onClick = viewModel::onLoanAddPerson,
+                        enabled = sheet.newName.isNotBlank()
+                    )
+                }
+                if (sheet.noOne) Text(
+                    text = stringResource(if (sheet.forPurchase) R.string.paid_for_no_one else R.string.loan_no_one),
+                    style = HalalaType.Label,
+                    color = HalalaColors.StateOver
                 )
                 ListCard(Modifier.fillMaxWidth()) {
                     ListRow(
@@ -474,12 +530,40 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
             )
         }
 
-        TransactionSheet.Unsplit -> ConfirmSheet(
-            title = stringResource(R.string.split_undo_title),
-            body = stringResource(R.string.split_undo_body),
-            confirmLabel = stringResource(R.string.split_undo),
+        is TransactionSheet.Unsplit -> ConfirmSheet(
+            title = stringResource(if (sheet.whole) R.string.paid_for_undo_title else R.string.split_undo_title),
+            body = stringResource(if (sheet.whole) R.string.paid_for_undo_body else R.string.split_undo_body),
+            confirmLabel = stringResource(if (sheet.whole) R.string.paid_for_undo else R.string.split_undo),
             dismissLabel = stringResource(R.string.cancel),
             onConfirm = viewModel::onUnsplitConfirm,
+            onDismiss = viewModel::onSheetDismiss,
+            destructive = false
+        )
+
+        is TransactionSheet.Goal -> HalalaSheet(onDismiss = viewModel::onSheetDismiss) {
+            Text(text = stringResource(R.string.goal_toward_mark), style = HalalaType.Title)
+            SegmentedControl(
+                options = listOf(stringResource(R.string.goal_put_in), stringResource(R.string.goal_took_out)),
+                selectedIndex = if (sheet.withdrawn) 1 else 0,
+                onSelect = { viewModel.onGoalWayClick(it == 1) }
+            )
+            ChoiceChipsMulti(options = state.goals, selected = listOfNotNull(sheet.goalId), onToggle = viewModel::onGoalPick)
+            if (sheet.noGoal) Text(text = stringResource(R.string.goal_toward_none), style = HalalaType.Label, color = HalalaColors.StateOver)
+            Text(text = stringResource(R.string.goal_toward_body), style = HalalaType.Label, color = HalalaColors.TextMuted)
+            HalalaButton(
+                text = stringResource(R.string.goal_toward_confirm),
+                onClick = viewModel::onGoalConfirm,
+                kind = ButtonKind.Primary,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        TransactionSheet.Ungoal -> ConfirmSheet(
+            title = stringResource(R.string.goal_toward_undo_title),
+            body = stringResource(R.string.goal_toward_undo_body),
+            confirmLabel = stringResource(R.string.goal_toward_undo),
+            dismissLabel = stringResource(R.string.cancel),
+            onConfirm = viewModel::onUngoalConfirm,
             onDismiss = viewModel::onSheetDismiss,
             destructive = false
         )
@@ -527,7 +611,8 @@ private fun LoanCard(loan: LoanLink, viewModel: TransactionViewModel) {
                 )
             }
             HalalaButton(
-                text = stringResource(if (loan.lent) R.string.loan_mark_lent else R.string.loan_mark_borrowed, loan.person),
+                text = if (loan.person.isBlank()) stringResource(R.string.loan_mark_confirm)
+                else stringResource(if (loan.lent) R.string.loan_mark_lent else R.string.loan_mark_borrowed, loan.person),
                 onClick = viewModel::onMarkLoanClick,
                 modifier = Modifier
                     .fillMaxWidth()

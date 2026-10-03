@@ -337,9 +337,27 @@ class MigrationsTest {
     }
 
     @Test
-    fun `22 to 23 adds merchants' websites and logos, and matches the schema`() {
+    fun `22 to 23 adds goal contributions and matches the schema`() {
         helper.createDatabase(DB, 22).use { }
         helper.runMigrationsAndValidate(DB, 23, true, *MIGRATIONS).close()
+    }
+
+    @Test
+    fun `23 to 24 adds merchants' websites and logos, and matches the schema`() {
+        helper.createDatabase(DB, 23).use { }
+        helper.runMigrationsAndValidate(DB, 24, true, *MIGRATIONS).close()
+    }
+
+    @Test
+    fun `23 to 24 also mends a 23 that had logos instead of goal contributions`() {
+        helper.createDatabase(DB, 23).use { db ->
+            db.execSQL("DROP TABLE `goal_contributions`")
+            db.execSQL("ALTER TABLE `merchants` ADD COLUMN `website` TEXT")
+            db.execSQL("ALTER TABLE `merchants` ADD COLUMN `websiteAsked` INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("CREATE TABLE `merchant_logos` (`merchantId` INTEGER NOT NULL, `image` BLOB, PRIMARY KEY(`merchantId`), " +
+                    "FOREIGN KEY(`merchantId`) REFERENCES `merchants`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )")
+        }
+        helper.runMigrationsAndValidate(DB, 24, true, *MIGRATIONS).close()
     }
 
     private companion object {

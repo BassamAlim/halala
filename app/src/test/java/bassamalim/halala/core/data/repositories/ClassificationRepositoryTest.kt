@@ -227,7 +227,7 @@ class ClassificationRepositoryTest {
     }
 
     @Test
-    fun `the inbox groups uncategorised spending by merchant, biggest first, and skips moves`() = runTest {
+    fun `the inbox groups uncategorised spending by merchant, biggest first, and skips moves and people`() = runTest {
         val bank = db.accountsDao().insert(
             db.accountsDao().getCashWallet()!!.copy(id = 0, uid = "b", nickname = "Bank")
         )
@@ -235,6 +235,8 @@ class ClassificationRepositoryTest {
         spend("Nakhl 2", 2000)
         spend("Kutub", 5000)
         spend("", 9000)
+        // A transfer to a person is no merchant to file.
+        transactions.add(TransactionDraft(cash, Direction.DEBIT, 8000, TEST_CLOCK.instant(), TransactionKind.TRANSFER_OUT, "AHMED ALI"))
         transactions.addTransfer(
             TransferDraft(bank, cash, 7000, TEST_CLOCK.instant(), TransactionKind.ATM_WITHDRAWAL, "ATM")
         )

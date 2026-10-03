@@ -94,10 +94,15 @@ object Rules {
     /**
      * The review inbox: uncategorised spending grouped by merchant (every spelling of it
      * together), the most money first, so a few answers file the most. Spending with no name
-     * can't be grouped or learned from, and is left for its own detail screen.
+     * can't be grouped or learned from, and is left for its own detail screen. Only merchants:
+     * a transfer's title names a person (People), never a business to file, so transfers to
+     * people are filed, if at all, on their own detail screen.
      */
     fun clusters(details: List<TransactionDetail>): List<MerchantCluster> = details
-        .filter { canCategorise(it) && it.transaction.categoryId == null && it.transaction.title.isNotBlank() }
+        .filter {
+            canCategorise(it) && it.transaction.categoryId == null && it.transaction.title.isNotBlank() &&
+                    it.transaction.kind !in People.KINDS && it.personId == null
+        }
         .groupBy { (it.merchantId?.let { id -> "m$id" } ?: Merchants.key(it.transaction.title)) to it.transaction.currency }
         .map { (key, group) ->
             val latest = group.maxBy { it.transaction.occurredAt }

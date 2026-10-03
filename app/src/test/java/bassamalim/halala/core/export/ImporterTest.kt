@@ -25,6 +25,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.Deposit
+import bassamalim.halala.core.data.dataSources.room.entities.GoalContribution
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsTerms
 import bassamalim.halala.core.data.dataSources.room.entities.Tag
 import bassamalim.halala.core.data.dataSources.room.entities.TransactionTag
@@ -168,6 +169,9 @@ class ImporterTest {
         deposits = listOf(
             Deposit(1, "dep-car", 31, goalId = 182, ratePercent = "4.40", tenorMonths = 6, maturityChoice = MaturityChoice.PAY_OUT),
             Deposit(2, "dep-done", 34, closedOn = LocalDate.parse("2026-08-01"))
+        ),
+        goalContributions = listOf(
+            GoalContribution(1, "gc-broker", 182, 32, withdrawn = false, kindBefore = TransactionKind.TRANSFER_OUT)
         )
     )
 
@@ -193,7 +197,7 @@ class ImporterTest {
         LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK),
         RecurringRepository(db.recurringDao(), db.transactionsDao(), TEST_CLOCK),
         BudgetsRepository(db.budgetsDao(), db.transactionsDao(), db.tagsDao(), TEST_CLOCK),
-        GoalsRepository(db.goalsDao(), db.accountsDao(), db.transactionsDao(), db.savingsDao(), TEST_CLOCK),
+        GoalsRepository(db.goalsDao(), db.accountsDao(), db.transactionsDao(), db.savingsDao(), db.loansDao(), TEST_CLOCK),
         AssetsRepository(db.assetsDao(), TEST_CLOCK),
         ZakatRepository(db.zakatDao(), db.accountsDao(), db.assetsDao(), LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK), TEST_CLOCK),
         PlannerRepository(db.scenariosDao(), db.accountsDao(), db.assetsDao(), db.transactionsDao(), LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK), TEST_CLOCK),

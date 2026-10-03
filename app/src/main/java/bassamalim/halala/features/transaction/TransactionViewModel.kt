@@ -8,6 +8,11 @@ import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.domain.LoanState
 import bassamalim.halala.core.domain.Loans
 import bassamalim.halala.core.domain.Splits
+import bassamalim.halala.core.domain.Goals
+import bassamalim.halala.core.data.dataSources.room.entities.GoalContribution
+import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
+import bassamalim.halala.core.enums.AccountType
+import kotlinx.coroutines.flow.first
 import bassamalim.halala.core.data.dataSources.room.relations.PersonWithStats
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.Rules
@@ -51,16 +56,18 @@ class TransactionViewModel @Inject constructor(
     private val confirmingDelete = MutableStateFlow(false)
     private val sheet = MutableStateFlow<TransactionSheet?>(if (route.split) TransactionSheet.Split() else null)
 
-    /** Looked at again when the screen comes back, after you may have allowed it. */
+    private data class Savings(val goals: List<SavingsGoal>, val contributions: List<GoalContribution>, val types: Map<Long, AccountType>)
+
+        /** Looked at again when the screen comes back, after you may have allowed it. */
     private val locationAccess = MutableStateFlow(domain.locationAccess())
 
     val uiState: StateFlow<TransactionUiState> = combine(
         combine(domain.observe(id), domain.observeLoans(), domain.observePeople(), ::Triple),
-        combine(domain.observeCategories(), domain.observePlace(id), locationAccess, ::Triple),
-        domain.observeRules(),
-        confirmingDelete,
-        sheet
-    ) { (detail, loans, people), (categories, place, access), rules, confirming, sheet ->
+        combine(domain.observeCategories(), domain.observeRules(), ::Pair),
+        combine(domain.observePlace(id), locationAccess, ::Pair),
+        combine(domain.observeGoals(), domain.observeContributions(), domain.observeAccountTypes(), ::Savings),
+        combine(confirmingDelete, sheet, ::Pair)
+    ) { (detail, loans, people), (categories, rules), (place, access), savings, (confirming, sheet) ->
         // Gone (deleted from here or elsewhere): the screen stays as it was while it leaves.
         if (detail == null) return@combine TransactionUiState(isLoading = true)
 
@@ -72,6 +79,10 @@ class TransactionViewModel @Inject constructor(
         val here = accountLabel(detail.institutionName, detail.accountNickname)
         val there = detail.counterpartNickname?.let { accountLabel(detail.counterpartInstitutionName, it) }
         val title = titleOf(detail)
+        val contribution = savings.contributions.firstOrNull { it.transactionId == tx.id || it.transactionId == detail.counterpartId }
+        val loanPart = loans.any { state -> state.events.any { it.transactionId == tx.id } }
+        val canSplit = tx.direction == Direction.DEBIT && tx.kind.countsInTotals && !detail.isInternalTransfer &&
+                detail.sharedMinor == 0L
 
         TransactionUiState(
             isLoading = false,
@@ -114,11 +125,16 @@ class TransactionViewModel @Inject constructor(
             merchantName = detail.merchantName,
             personId = detail.personId,
             personName = detail.personName,
-            loan = loanLinkOf(detail, loans, today),
-            canSplit = tx.direction == Direction.DEBIT && tx.kind.countsInTotals && !detail.isInternalTransfer &&
-                    detail.sharedMinor == 0L,
+            loan = loanLinkOf(detail, loans, people, today),
+            canSplit = canSplit,
+            canPayFor = canSplit && tx.kind !in Loans.MARKABLE,
             split = splitOf(detail, loans, people),
             people = people.map { PersonChoice(it.person.id, it.person.name) },
+            goal = contribution?.let { c ->
+                savings.goals.firstOrNull { it.id == c.goalId }?.let { GoalLink(it.name, c.withdrawn) }
+            },
+            canMarkGoal = contribution == null && savings.goals.isNotEmpty() && Goals.canContribute(detail, loanPart),
+            goals = savings.goals.map { PersonChoice(it.id, it.name) },
             sheet = (sheet as? TransactionSheet.Split)?.let { previewed(it, tx.amountMinor, tx.currency) } ?: sheet,
             showsPlace = Rules.canCategorise(detail),
             place = place?.let { PlaceInfo(it.latitude, it.longitude, it.accuracyMeters) },
@@ -178,7 +194,28 @@ class TransactionViewModel @Inject constructor(
 
     fun onEditRuleClick() = navigator.navigate(Screen.Rules)
 
-    fun onMarkLoanClick() = sheet.update { TransactionSheet.MarkLoan(pickFrom = domain.today().plusMonths(1)) }
+    fun onMarkLoanClick() = sheet.update {
+        TransactionSheet.MarkLoan(pickFrom = domain.today().plusMonths(1), personId = (uiState.value.loan as? LoanLink.Open)?.personId)
+    }
+
+    /** Spending you paid for someone else: whom, and when they should pay it back. */
+    fun onPayForClick() = sheet.update { TransactionSheet.MarkLoan(pickFrom = domain.today().plusMonths(1), forPurchase = true) }
+
+    private fun editMark(change: (TransactionSheet.MarkLoan) -> TransactionSheet.MarkLoan) =
+        sheet.update { (it as? TransactionSheet.MarkLoan)?.let(change) ?: it }
+
+    fun onLoanPersonClick(personId: Long) = editMark { it.copy(personId = personId, noOne = false) }
+
+    fun onLoanNameChange(text: String) = editMark { it.copy(newName = text) }
+
+    /** Adds someone by name and chooses them. */
+    fun onLoanAddPerson() {
+        val mark = sheet.value as? TransactionSheet.MarkLoan ?: return
+        viewModelScope.launch {
+            val personId = domain.addPerson(mark.newName) ?: return@launch
+            editMark { it.copy(newName = "", personId = personId, noOne = false) }
+        }
+    }
 
     fun onDueClick() = sheet.update { (it as? TransactionSheet.MarkLoan)?.copy(picking = true) ?: it }
 
@@ -190,8 +227,13 @@ class TransactionViewModel @Inject constructor(
 
     fun onMarkLoanConfirm() {
         val mark = sheet.value as? TransactionSheet.MarkLoan ?: return
+        val personId = mark.personId ?: return sheet.update { mark.copy(noOne = true) }
+        val total = uiState.value.amountMinor
         sheet.update { null }
-        viewModelScope.launch { domain.openLoan(id, mark.dueOn) }
+        viewModelScope.launch {
+            if (mark.forPurchase) domain.paidFor(id, personId, total, mark.dueOn)
+            else domain.openLoan(id, mark.dueOn, personId)
+        }
     }
 
     fun onRepaysClick() {
@@ -200,6 +242,34 @@ class TransactionViewModel @Inject constructor(
     }
 
     fun onUnlinkClick() = sheet.update { TransactionSheet.Unlink }
+
+    /** "Toward a savings goal": the only goal chosen already, and in or out guessed from where the money went. */
+    fun onGoalClick() {
+        viewModelScope.launch {
+            val detail = domain.observe(id).first() ?: return@launch
+            val types = domain.observeAccountTypes().first()
+            val goals = uiState.value.goals
+            sheet.update { TransactionSheet.Goal(goals.singleOrNull()?.id, Goals.withdrawnByDefault(detail, types)) }
+        }
+    }
+
+    fun onGoalPick(goalId: Long) = sheet.update { (it as? TransactionSheet.Goal)?.copy(goalId = goalId, noGoal = false) ?: it }
+
+    fun onGoalWayClick(withdrawn: Boolean) = sheet.update { (it as? TransactionSheet.Goal)?.copy(withdrawn = withdrawn) ?: it }
+
+    fun onGoalConfirm() {
+        val goal = sheet.value as? TransactionSheet.Goal ?: return
+        val goalId = goal.goalId ?: return sheet.update { goal.copy(noGoal = true) }
+        sheet.update { null }
+        viewModelScope.launch { domain.contribute(id, goalId, goal.withdrawn) }
+    }
+
+    fun onUngoalClick() = sheet.update { TransactionSheet.Ungoal }
+
+    fun onUngoalConfirm() {
+        sheet.update { null }
+        viewModelScope.launch { domain.uncontribute(id) }
+    }
 
     fun onSplitClick() = sheet.update { TransactionSheet.Split() }
 
@@ -239,7 +309,7 @@ class TransactionViewModel @Inject constructor(
         viewModelScope.launch { domain.split(id, shares.mapValues { it.value!! }) }
     }
 
-    fun onUnsplitClick() = sheet.update { TransactionSheet.Unsplit }
+    fun onUnsplitClick() = sheet.update { TransactionSheet.Unsplit(whole = uiState.value.split?.whole == true) }
 
     fun onUnsplitConfirm() {
         sheet.update { null }
@@ -273,7 +343,7 @@ class TransactionViewModel @Inject constructor(
         val shares = loans.filter { it.loan.splitOf == detail.transaction.id }.map {
             names[it.loan.personId].orEmpty() to Money.format(it.lentMinor, currency)
         }
-        return SplitInfo(shares, Money.format(detail.yourMinor, currency), currency)
+        return SplitInfo(shares, Money.format(detail.yourMinor, currency), currency, whole = shares.size == 1 && detail.yourMinor == 0L)
     }
 
     fun onUnlinkConfirm() {
@@ -308,9 +378,19 @@ class TransactionViewModel @Inject constructor(
         }
     }
 
-    private fun loanLinkOf(detail: TransactionDetail, loans: List<LoanState>, today: LocalDate): LoanLink? {
+    /**
+     * The loan card. The loan's person is the one it is with, who may not be the one the
+     * transfer names (you paid someone for a friend); a transfer naming nobody can still be
+     * marked, with someone chosen.
+     */
+    private fun loanLinkOf(
+        detail: TransactionDetail,
+        loans: List<LoanState>,
+        people: List<PersonWithStats>,
+        today: LocalDate
+    ): LoanLink? {
         val tx = detail.transaction
-        val personId = detail.personId ?: return null
+        val personId = detail.personId
         val person = detail.personName.orEmpty()
 
         val part = loans.firstOrNull { state -> state.events.any { it.transactionId == tx.id } }
@@ -319,19 +399,20 @@ class TransactionViewModel @Inject constructor(
             return LoanLink.Part(
                 lent = part.loan.direction == LoanDirection.LENT,
                 repays = event.type != LoanEventType.DISBURSEMENT,
-                person = person,
+                person = people.firstOrNull { it.person.id == part.loan.personId }?.person?.name ?: person,
                 personId = part.loan.personId,
                 remaining = Money.format(part.remainingMinor, part.loan.currency),
                 currency = part.loan.currency,
                 settled = !part.isOpen
             )
         }
-        if (tx.kind !in Loans.MARKABLE) return null
+        if (tx.kind !in Loans.MARKABLE || detail.isInternalTransfer) return null
 
         val repaid = Loans.repaidBy(personId, tx.direction, tx.currency, tx.kind, loans)
         return LoanLink.Open(
             lent = tx.direction == Direction.DEBIT,
             person = person,
+            personId = personId,
             suggestion = repaid?.let {
                 Suggestion(
                     loanId = it.loan.id,

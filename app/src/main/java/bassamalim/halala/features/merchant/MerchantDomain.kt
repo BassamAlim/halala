@@ -1,5 +1,8 @@
 package bassamalim.halala.features.merchant
 
+import bassamalim.halala.core.ai.ApiKeys
+import bassamalim.halala.core.ai.LookupOutcome
+import bassamalim.halala.core.ai.WebLookup
 import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.entities.Merchant
 import bassamalim.halala.core.data.dataSources.room.relations.AliasWithCount
@@ -22,8 +25,16 @@ enum class NameProblem { Missing }
 class MerchantDomain @Inject constructor(
     private val classificationRepository: ClassificationRepository,
     private val transactionsRepository: TransactionsRepository,
+    private val webLookup: WebLookup,
+    private val keys: ApiKeys,
     private val clock: Clock
 ) {
+
+    /** Whether this build can ask the AI at all. */
+    fun canAsk(): Boolean = keys.hasGroq()
+
+    /** Looks it up now: online when a search can be had, else the AI from its name alone. */
+    suspend fun lookUp(id: Long): LookupOutcome = webLookup.lookUpNow(id)
 
     fun observeMerchant(id: Long): Flow<Merchant?> = classificationRepository.observeMerchant(id)
 

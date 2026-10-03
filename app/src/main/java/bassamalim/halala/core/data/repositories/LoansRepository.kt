@@ -44,14 +44,15 @@ class LoansRepository @Inject constructor(
     suspend fun getEventFor(transactionId: Long): LoanEvent? = loansDao.getEventFor(transactionId)
 
     /**
-     * [transactionId], a plain transfer to or from someone, lent (or borrowed) money: a new loan
-     * with that person, due [dueOn] if you said. Returns the loan's id, or null when the transfer
-     * can't be one (not a plain transfer, nobody named, or already part of a loan).
+     * [transactionId], a plain transfer, lent (or borrowed) money: a new loan with [personId],
+     * or with the person it names when you didn't choose (someone can ask you to pay a third
+     * person for them), due [dueOn] if you said. Returns the loan's id, or null when the transfer
+     * can't be one (not a plain transfer, nobody named or chosen, or already part of a loan).
      */
-    suspend fun open(transactionId: Long, dueOn: LocalDate?): Long? {
+    suspend fun open(transactionId: Long, dueOn: LocalDate?, personId: Long? = null): Long? {
         val tx = transactionsDao.get(transactionId) ?: return null
         if (!isFree(transactionId, tx.kind)) return null
-        val personId = loansDao.getPersonFor(tx.merchantKey) ?: return null
+        val personId = personId ?: loansDao.getPersonFor(tx.merchantKey) ?: return null
         val direction = LoanDirection.of(tx.direction)
 
         return loansDao.open(
@@ -130,10 +131,11 @@ class LoansRepository @Inject constructor(
 
     /**
      * Splits [transactionId], a purchase or bill you paid, with others: each person's share
-     * ([shares], person → minor units) becomes a loan owed to you, dated the purchase's day. False
+     * ([shares], person → minor units) becomes a loan owed to you, dated the purchase's day and due
+     * [dueOn] if you said. One share of the whole is a purchase you paid for someone else. False
      * when it can't be split (not your spending, already split, or shares that don't fit).
      */
-    suspend fun split(transactionId: Long, shares: Map<Long, Long>): Boolean {
+    suspend fun split(transactionId: Long, shares: Map<Long, Long>, dueOn: LocalDate? = null): Boolean {
         val tx = transactionsDao.get(transactionId) ?: return false
         if (tx.direction != Direction.DEBIT || !tx.kind.countsInTotals) return false
         if (transactionsDao.getTransferFor(transactionId) != null || loansDao.getSplitOf(transactionId).isNotEmpty()) return false
@@ -146,6 +148,7 @@ class LoansRepository @Inject constructor(
                     personId = personId,
                     direction = LoanDirection.LENT,
                     currency = tx.currency,
+                    dueOn = dueOn,
                     createdAt = clock.instant(),
                     splitOf = transactionId
                 ) to LoanEvent(

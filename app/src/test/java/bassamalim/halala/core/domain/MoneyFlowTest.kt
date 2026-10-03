@@ -62,6 +62,44 @@ class MoneyFlowTest {
     }
 
     @Test
+    fun `where it came from and where it went come to the same, by part`() {
+        val flow = MoneyFlow.of(board, 1, september, zone)
+        assertEquals(listOf(PartKind.SALARY), flow.sources.map { it.kind })
+        assertEquals(
+            listOf(PartKind.TO_ACCOUNT, PartKind.TO_ACCOUNT, PartKind.TO_ACCOUNT, PartKind.TO_ACCOUNT, PartKind.UNFILED),
+            flow.uses.map { it.kind }
+        )
+        assertEquals(flow.totalMinor, flow.uses.sumOf { it.minor })
+        assertEquals(2, flow.uses.last().transactionIds.size)
+    }
+
+    @Test
+    fun `spending by category, the smaller ones together, and what came out of the balance`() {
+        val spends = (1..7).map { i ->
+            leg("2026-09-0$i", i * 10_000L, Direction.DEBIT, TransactionKind.PURCHASE).let {
+                it.copy(transaction = it.transaction.copy(categoryId = i.toLong()), categoryName = "C$i")
+            }
+        }
+        val pay = leg("2026-09-01", 200_000, Direction.CREDIT, TransactionKind.SALARY)
+        val flow = MoneyFlow.of(spends + pay, 1, september, zone)
+        assertEquals(listOf("C7", "C6", "C5", "C4", "C3", null), flow.uses.map { it.name })
+        assertEquals(PartKind.OTHER_SPENDING, flow.uses.last().kind)
+        assertEquals(30_000, flow.uses.last().minor)
+        assertEquals(listOf(PartKind.SALARY, PartKind.FROM_BALANCE), flow.sources.map { it.kind })
+        assertEquals(80_000, flow.sources.last().minor)
+    }
+
+    @Test
+    fun `percents round half up, and a change needs a month before`() {
+        assertEquals(33, MoneyFlow.percentOf(1, 3))
+        assertEquals(67, MoneyFlow.percentOf(2, 3))
+        assertEquals(0, MoneyFlow.percentOf(5, 0))
+        assertEquals(25, MoneyFlow.change(125, 100))
+        assertEquals(-50, MoneyFlow.change(50, 100))
+        assertEquals(null, MoneyFlow.change(50, null))
+    }
+
+    @Test
     fun `starts on the account salary landed in`() {
         assertEquals(1L, MoneyFlow.startingAccount(board, september, zone))
         assertNull(MoneyFlow.startingAccount(board, YearMonth.of(2026, 1), zone))

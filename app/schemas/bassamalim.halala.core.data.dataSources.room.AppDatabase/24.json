@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 23,
-    "identityHash": "61aa40cb1670c538eb71ef0024148a43",
+    "version": 24,
+    "identityHash": "3af7bf88d01b5bb0bb777607b329c244",
     "entities": [
       {
         "tableName": "institutions",
@@ -970,7 +970,7 @@
       },
       {
         "tableName": "merchants",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `uid` TEXT NOT NULL, `name` TEXT NOT NULL, `businessType` TEXT, `identifiedBy` TEXT, `confidence` INTEGER, `namedByYou` INTEGER NOT NULL DEFAULT 0, `autoRuled` INTEGER NOT NULL DEFAULT 0, `searchedOnline` INTEGER NOT NULL DEFAULT 0, `webUrl` TEXT, `webTitle` TEXT)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `uid` TEXT NOT NULL, `name` TEXT NOT NULL, `businessType` TEXT, `identifiedBy` TEXT, `confidence` INTEGER, `namedByYou` INTEGER NOT NULL DEFAULT 0, `autoRuled` INTEGER NOT NULL DEFAULT 0, `searchedOnline` INTEGER NOT NULL DEFAULT 0, `webUrl` TEXT, `webTitle` TEXT, `website` TEXT, `websiteAsked` INTEGER NOT NULL DEFAULT 0)",
         "fields": [
           {
             "fieldPath": "id",
@@ -1035,6 +1035,18 @@
             "fieldPath": "webTitle",
             "columnName": "webTitle",
             "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "website",
+            "columnName": "website",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "websiteAsked",
+            "columnName": "websiteAsked",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
           }
         ],
         "primaryKey": {
@@ -2619,11 +2631,47 @@
             ]
           }
         ]
+      },
+      {
+        "tableName": "merchant_logos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`merchantId` INTEGER NOT NULL, `image` BLOB, PRIMARY KEY(`merchantId`), FOREIGN KEY(`merchantId`) REFERENCES `merchants`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "merchantId",
+            "columnName": "merchantId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "image",
+            "columnName": "image",
+            "affinity": "BLOB"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "merchantId"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "merchants",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "merchantId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '61aa40cb1670c538eb71ef0024148a43')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3af7bf88d01b5bb0bb777607b329c244')"
     ]
   }
 }

@@ -172,6 +172,42 @@ class LoansRepositoryTest {
     }
 
     @Test
+    fun `a transfer can be lent to someone other than the person it pays`() = runTest {
+        val shop = transfer("MOHAMMED SALEH", 50_000)
+        val faisal = people.add("Faisal")!!
+        assertNotNull(loans.open(shop, LocalDate.of(2026, 11, 1), faisal))
+
+        val loan = state()
+        assertEquals(faisal, loan.loan.personId)
+        assertEquals(50_000, loan.remainingMinor)
+        assertEquals(TransactionKind.LOAN_GIVEN, transactions.get(shop)!!.kind)
+
+        val back = transfer("FAISAL", 50_000, Direction.CREDIT)
+        assertTrue(loans.repay(loan.loan.id, back))
+        assertFalse(state().isOpen)
+    }
+
+    @Test
+    fun `a purchase paid for someone is all owed to you and none of it your spending`() = runTest {
+        val gift = transactions.add(TransactionDraft(cash, Direction.DEBIT, 25_000, TEST_CLOCK.instant(), TransactionKind.PURCHASE, "Jarir"))
+        val faisal = people.add("Faisal")!!
+        val due = LocalDate.of(2026, 11, 1)
+
+        assertTrue(loans.split(gift, mapOf(faisal to 25_000), due))
+        assertEquals(0, inOut(transactions.observeAll().first(), "SAR").outMinor)
+        assertEquals(25_000, state().remainingMinor)
+        assertEquals(due, state().loan.dueOn)
+
+        loans.unsplit(gift)
+        assertEquals(25_000, inOut(transactions.observeAll().first(), "SAR").outMinor)
+    }
+
+    @Test
+    fun `a transfer naming nobody can be lent to someone chosen`() = runTest {
+        assertNotNull(loans.open(transfer("", 1_000), null, people.add("Faisal")!!))
+    }
+
+    @Test
     fun `nobody named, nothing to lend to`() = runTest {
         assertNull(loans.open(transfer("", 1_000), null))
     }
