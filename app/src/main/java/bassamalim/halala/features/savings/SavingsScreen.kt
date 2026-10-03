@@ -30,6 +30,7 @@ import bassamalim.halala.core.ui.components.DateDialog
 import bassamalim.halala.core.ui.components.FormField
 import bassamalim.halala.core.ui.components.GroupLabel
 import bassamalim.halala.core.ui.components.HalalaButton
+import bassamalim.halala.core.ui.components.HalalaChip
 import bassamalim.halala.core.ui.components.HalalaCard
 import bassamalim.halala.core.ui.components.HalalaTextField
 import bassamalim.halala.core.ui.components.ListCard
@@ -246,10 +247,10 @@ fun DepositScreen(viewModel: DepositViewModel = hiltViewModel()) {
                 options = state.goals,
                 selected = state.goals.firstOrNull { it.first == form.goalId },
                 label = { it.second.ifEmpty { stringResource(R.string.deposit_no_goal) } },
-                onSelect = { viewModel.onGoalClick(it.first) }
+                onSelect = { viewModel.onGoalClick(it.first) },
+                trailing = { HalalaChip(label = stringResource(R.string.goal_new_chip), onClick = viewModel::onNewGoalClick) }
             )
         }
-        HalalaButton(stringResource(R.string.goal_add), viewModel::onNewGoalClick, Modifier.fillMaxWidth())
         FormField(
             label = stringResource(R.string.savings_rate_label),
             error = stringResource(R.string.asset_percent_invalid).takeIf { state.rateInvalid }

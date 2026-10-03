@@ -57,7 +57,8 @@ fun <T> ChoiceChips(
     label: @Composable (T) -> String,
     onSelect: (T) -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    trailing: @Composable (() -> Unit)? = null
 ) {
     FlowRow(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
         options.forEach { option ->
@@ -68,6 +69,7 @@ fun <T> ChoiceChips(
                 onClick = { onSelect(option) }
             )
         }
+        trailing?.invoke()
     }
 }
 

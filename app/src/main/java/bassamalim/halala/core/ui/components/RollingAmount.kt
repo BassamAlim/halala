@@ -2,6 +2,8 @@ package bassamalim.halala.core.ui.components
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -25,13 +27,11 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.TextStyle
 import bassamalim.halala.core.ui.theme.Spacing
 import bassamalim.halala.core.ui.Emphasized
-import bassamalim.halala.core.ui.settle
-import kotlinx.coroutines.delay
 
 /**
- * A figure, already formatted, followed by its currency, that comes alive: when it first shows
- * its characters rise into place one after another, and when it changes each character that
- * changed rolls to its new value like an odometer, up when it grows, down when it shrinks. It is
+ * A figure, already formatted, followed by its currency. When it first shows it settles into
+ * place as one, a short rise on the progress bars' spring, a touch quicker; when it changes
+ * each character that changed rolls to its new value like an odometer, up when it grows, down when it shrinks. It is
  * only ever moved, never worked out: the string is the ViewModel's.
  */
 @Composable
@@ -44,15 +44,22 @@ fun RollingAmount(
     currencyStyle: TextStyle = style
 ) {
     val spoken = if (currency != null) "$text $currency" else text
+    val shown = remember { Animatable(0f) }
+    LaunchedEffect(Unit) { shown.animateTo(1f, spring(dampingRatio = 0.8f, stiffness = Spring.StiffnessMedium)) }
     Row(
-        modifier = modifier.clearAndSetSemantics { contentDescription = spoken },
+        modifier = modifier
+            .clearAndSetSemantics { contentDescription = spoken }
+            .graphicsLayer {
+                alpha = shown.value
+                translationY = (1f - shown.value) * size.height * RISE
+            },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.xs)
     ) {
         Row(Modifier.clipToBounds()) {
             // Keyed from the end, so the units stay put when the figure gains a digit.
             text.forEachIndexed { index, char ->
-                key(text.length - index) { RollingChar(char, index, style, color) }
+                key(text.length - index) { RollingChar(char, style, color) }
             }
         }
         if (currency != null && text.isNotEmpty()) CurrencyText(currency, currencyStyle, color)
@@ -60,13 +67,7 @@ fun RollingAmount(
 }
 
 @Composable
-private fun RollingChar(char: Char, index: Int, style: TextStyle, color: Color) {
-    val shown = remember { Animatable(0f) }
-    LaunchedEffect(Unit) {
-        delay(index * STAGGER_MS)
-        shown.animateTo(1f, settle())
-    }
-
+private fun RollingChar(char: Char, style: TextStyle, color: Color) {
     AnimatedContent(
         targetState = char,
         transitionSpec = {
@@ -74,16 +75,10 @@ private fun RollingChar(char: Char, index: Int, style: TextStyle, color: Color) 
             (slideInVertically(tween(ROLL_MS, easing = Emphasized)) { if (up) it else -it } + fadeIn(tween(ROLL_MS)))
                 .togetherWith(slideOutVertically(tween(ROLL_MS, easing = Emphasized)) { if (up) -it else it } + fadeOut(tween(ROLL_MS)))
         },
-        modifier = Modifier.graphicsLayer {
-            alpha = shown.value
-            translationY = (1f - shown.value) * size.height * RISE
-        },
         label = "digit"
     ) { Text(text = it.toString(), style = style, color = color) }
 }
 
-private const val STAGGER_MS = 28L
 private const val ROLL_MS = 380
-/** How far below its place a character starts, against its height. */
-private const val RISE = 0.7f
-
+/** How far below its place the figure starts, against its height. */
+private const val RISE = 0.25f
