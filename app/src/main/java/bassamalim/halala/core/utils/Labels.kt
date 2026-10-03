@@ -40,6 +40,9 @@ fun monthYearLabel(date: LocalDate): String = date.format(MONTH_YEAR_FORMAT)
 fun monthLabel(month: YearMonth, today: LocalDate): String =
     month.format(if (month.year == today.year) MONTH_FORMAT else MONTH_WITH_YEAR_FORMAT)
 
+/** A chart's month: "Oct". */
+fun monthShortLabel(month: YearMonth): String = month.format(MONTH_SHORT_FORMAT)
+
 /** 24-hour, as the design writes it: "21:14". */
 fun timeLabel(time: LocalTime): String = time.format(TIME_FORMAT)
 
@@ -66,6 +69,7 @@ private val DAY_WITH_YEAR_FORMAT = DateTimeFormatter.ofPattern("EEE d MMM yyyy",
 private val SHORT_FORMAT = DateTimeFormatter.ofPattern("d MMM", Locale.US)
 private val SHORT_WITH_YEAR_FORMAT = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.US)
 private val MONTH_YEAR_FORMAT = DateTimeFormatter.ofPattern("MMM yyyy", Locale.US)
+private val MONTH_SHORT_FORMAT = DateTimeFormatter.ofPattern("MMM", Locale.US)
 private val MONTH_FORMAT = DateTimeFormatter.ofPattern("MMMM", Locale.US)
 private val MONTH_WITH_YEAR_FORMAT = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.US)
 private val TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm", Locale.US)

@@ -9,12 +9,14 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import bassamalim.halala.core.ui.components.SegmentedControl
+import bassamalim.halala.features.insights.InsightsContent
 import bassamalim.halala.features.moneyFlow.MoneyFlowContent
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -46,23 +48,31 @@ import bassamalim.halala.core.ui.theme.Spacing
 
 /**
  * The transactions feed, from the Activity board: search, account filters, this month's in and
- * out, and the rows by day; its second segment is Money flow.
+ * out, and the rows by day; its second segment is Money flow, its third Insights (charts).
  */
 @Composable
 fun ActivityScreen(viewModel: ActivityViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var segment by rememberSaveable { mutableIntStateOf(0) }
+    // Three segments don't fit beside the title, so they get a row of their own.
     val title = @Composable {
-        ScreenTitle(stringResource(R.string.tab_activity)) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+            ScreenTitle(stringResource(R.string.tab_activity))
             SegmentedControl(
-                options = listOf(stringResource(R.string.activity_transactions), stringResource(R.string.activity_money_flow)),
+                options = listOf(
+                    stringResource(R.string.activity_transactions),
+                    stringResource(R.string.activity_money_flow),
+                    stringResource(R.string.activity_insights)
+                ),
                 selectedIndex = segment,
-                onSelect = { segment = it }
+                onSelect = { segment = it },
+                fill = true,
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }
 
-    if (segment == 1) {
+    if (segment != 0) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -72,7 +82,7 @@ fun ActivityScreen(viewModel: ActivityViewModel = hiltViewModel()) {
             verticalArrangement = Arrangement.spacedBy(Spacing.card)
         ) {
             title()
-            MoneyFlowContent()
+            if (segment == 1) MoneyFlowContent() else InsightsContent()
         }
         return
     }

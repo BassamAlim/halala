@@ -113,7 +113,9 @@ fun SegmentedControl(
                     text = option,
                     style = if (selected) HalalaType.Label.copy(fontWeight = FontWeight(500)) else HalalaType.Label,
                     color = ink,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
         }

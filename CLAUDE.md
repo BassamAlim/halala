@@ -627,7 +627,7 @@ month on this month's lowest balance, nothing under 5,000; a term maturing withi
 on Wealth and is reminded three days before; the terms form has no board), and fetched fund
 and gold prices (see Assets).
 
-**Phase 6 (delight)** is built: **Money flow** (Money flow board, Activity's second segment:
+**Phase 6 (delight)** is built: **Insights** (Activity's third segment, no board: the month's spending against the month before, six months' bars that pick the month, a category ring in one ink stepped (spending is never coloured; the top five and Other), spending through the month against the month before (`LineChart`'s dashed second line), and where the most went; `InsightsDomain`), **Money flow** (Money flow board, Activity's second segment:
 for a month and an account, salary or what came in, a Sankey (`Sankey` component,
 `core/domain/MoneyFlow`) of moves to each of your accounts, what was spent from it and what
 stayed; a leg the bank called a move with no other side is "no match": "It went to someone"

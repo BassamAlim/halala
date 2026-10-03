@@ -52,6 +52,11 @@ object Sizes {
     val sankeyBar = 8.dp
     val sankeyNode = 22.dp
     val sankeyMax = 300.dp
+    /** Insights' charts: the month bars' height, the donut and its ring, a legend's dot. */
+    val barChart = 120.dp
+    val donut = 168.dp
+    val donutRing = 22.dp
+    val legendDot = 10.dp
     /** The mark on the lock screen. */
     val lockMark = 64.dp
     /** The mark beside the wordmark on Home (the board's size). */
