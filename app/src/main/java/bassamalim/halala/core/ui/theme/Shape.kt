@@ -8,11 +8,11 @@ import androidx.compose.ui.unit.dp
 object Radius {
     /** radius-xs: the auto badge. */
     val xs = RoundedCornerShape(6.dp)
-    /** radius-sm: avatars, inset evidence boxes, segmented control, inputs inside rows. */
+    /** radius-sm: avatars, inset evidence boxes, segmented control. */
     val sm = RoundedCornerShape(12.dp)
     /** [sm] and [lg] as plain sizes, for what takes a radius rather than a shape (the widget). */
     val smSize = 12.dp
-    /** radius-md: buttons, search field. */
+    /** radius-md: buttons and inputs. */
     val md = RoundedCornerShape(14.dp)
     /** radius-lg: cards and the balance card. */
     val lgSize = 20.dp

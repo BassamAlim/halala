@@ -145,7 +145,7 @@ fun Avatar(initial: String, modifier: Modifier = Modifier, tone: AmountTone = Am
                 .drawBehind {
                     drawRoundRect(
                         color = HalalaColors.Line,
-                        cornerRadius = CornerRadius(AVATAR_RADIUS.toPx()),
+                        cornerRadius = CornerRadius(Radius.smSize.toPx()),
                         style = Stroke(
                             width = Sizes.border.toPx(),
                             pathEffect = PathEffect.dashPathEffect(floatArrayOf(DASH.toPx(), DASH.toPx()))
@@ -179,7 +179,6 @@ fun Avatar(initial: String, modifier: Modifier = Modifier, tone: AmountTone = Am
     }
 }
 
-private val AVATAR_RADIUS = Spacing.md
 private val DASH = Spacing.xs
 
 /** A muted caption over a group of rows: "Today", "Yesterday", "Sat 27 Sep". */

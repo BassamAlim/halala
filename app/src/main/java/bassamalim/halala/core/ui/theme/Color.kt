@@ -11,14 +11,14 @@ object HalalaColors {
     /** Screen ground. Everything sits on this. */
     val Bg = Color(0xFF0E0F11)
 
-    /** Cards, bottom nav, inputs, secondary buttons. Always with a 1dp [Line] border. */
-    val Surface = Color(0xFF16181B)
+    /** What rises over the screen: sheets, dialogs, the bottom nav, the segmented track. A step above [Card]. */
+    val Surface = Color(0xFF1F2226)
 
-    /** Raised or inset fills inside a surface: avatars, plain chips, progress tracks. */
-    val Surface2 = Color(0xFF1D2024)
+    /** Fills inside a card: avatars, plain chips, inputs, secondary buttons, progress tracks. */
+    val Surface2 = Color(0xFF25292E)
 
     /** Borders, dividers between list rows, outline chips. Never text. */
-    val Line = Color(0xFF2A2E33)
+    val Line = Color(0xFF31363C)
 
     /** Primary text and all spending amounts. */
     val Text = Color(0xFFECEEF0)
@@ -27,7 +27,7 @@ object HalalaColors {
     val TextMuted = Color(0xFF9AA1A9)
 
     /**
-     * Jade, the brand: logo, primary buttons, active nav, links, selected chips, income. Use it
+     * Jade, the brand: logo, primary buttons, active nav, links, the active filter, income. Use it
      * on one or two things per screen.
      */
     val Accent = Color(0xFF7DD4A0)
@@ -62,7 +62,7 @@ object HalalaColors {
     /** Scrim behind a sheet or dialog. */
     val Scrim = Color(0x99000000)
 
-    /** Cards: borderless, a step above [Bg] and [Surface], told apart by tone alone. */
+    /** Cards: borderless, a step above [Bg] and below [Surface], told apart by tone alone. */
     val Card = Color(0xFF181B1E)
 
     /** A press: the pressed thing is washed with this, as well as shrinking a little. */

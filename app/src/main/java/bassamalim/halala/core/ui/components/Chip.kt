@@ -48,7 +48,7 @@ enum class ChipStyle {
     /** Accent outline: the active filter in a filter row. */
     Accent,
 
-    /** Accent fill: the selected option in a segmented choice. */
+    /** Light fill: a chosen option among several (forms, ranges). Neutral, so jade stays for actions. */
     On
 }
 
@@ -69,7 +69,7 @@ fun HalalaChip(
     val fill by animateColorAsState(
         when (style) {
             ChipStyle.Plain -> HalalaColors.Surface2
-            ChipStyle.On -> HalalaColors.Accent
+            ChipStyle.On -> HalalaColors.Text
             else -> HalalaColors.Accent.copy(alpha = 0f)
         },
         tween(CHIP_MS),
@@ -86,7 +86,7 @@ fun HalalaChip(
     )
     val ink by animateColorAsState(
         when (style) {
-            ChipStyle.On -> HalalaColors.OnAccent
+            ChipStyle.On -> HalalaColors.Bg
             ChipStyle.Accent -> HalalaColors.Accent
             else -> HalalaColors.Text
         },

@@ -76,8 +76,8 @@ fun BalanceCard(
             .fillMaxWidth()
             .clip(Radius.lg)
             .drawBehind {
-                // The fill deepens toward the bottom end, a sheen lights the top, and the coin's
-                // rings (the mark's) sit large and faint in the top end corner.
+                // The fill deepens toward the bottom end, and the coin's rings (the mark's) sit
+                // large and faint in the top end corner. No glow, no sheen.
                 drawRect(
                     Brush.linearGradient(
                         listOf(lerp(fill, Color.White, 0.10f), fill, lerp(fill, HalalaColors.Bg, 0.22f)),
@@ -88,17 +88,6 @@ fun BalanceCard(
                 val corner = Offset(if (layoutDirection == LayoutDirection.Rtl) 0f else size.width, 0f)
                 drawCircle(HalalaColors.BalancePill, radius = size.height * 0.95f, center = corner, style = Stroke(RING.toPx()))
                 drawCircle(HalalaColors.BalancePill, radius = size.height * 0.72f, center = corner, style = Stroke(RING.toPx() / 2))
-                drawCircle(
-                    Brush.radialGradient(listOf(HalalaColors.Sheen, Color.Transparent), center = corner, radius = size.height * 0.6f),
-                    radius = size.height * 0.6f,
-                    center = corner
-                )
-                drawLine(
-                    Brush.horizontalGradient(listOf(Color.Transparent, HalalaColors.Sheen, Color.Transparent)),
-                    start = Offset.Zero,
-                    end = Offset(size.width, 0f),
-                    strokeWidth = Sizes.border.toPx() * 2
-                )
             }
             .padding(Insets.balanceCard),
         verticalArrangement = Arrangement.spacedBy(Insets.balanceCardGap)
