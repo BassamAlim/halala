@@ -267,7 +267,10 @@ class Exporter @Inject constructor(
                         identifiedBy = merchant.identifiedBy?.name,
                         confidence = merchant.confidence,
                         namedByYou = merchant.namedByYou,
-                        autoRuled = merchant.autoRuled
+                        autoRuled = merchant.autoRuled,
+                        searchedOnline = merchant.searchedOnline,
+                        webUrl = merchant.webUrl,
+                        webTitle = merchant.webTitle
                     )
                 },
                 rawMessages = snapshot.rawMessages.map { message ->

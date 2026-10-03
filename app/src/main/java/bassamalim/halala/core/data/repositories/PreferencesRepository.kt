@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.map
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalTime
+import java.time.YearMonth
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -139,6 +140,18 @@ class PreferencesRepository @Inject constructor(
         dataStore.edit { it[BUDGET_TOLD] = keys }
     }
 
+    /** How many web searches were made in [month], for the monthly cap: a count, never what was searched. */
+    suspend fun webSearches(month: YearMonth): Int =
+        dataStore.data.first().let { if (it[WEB_SEARCH_MONTH] == month.toString()) it[WEB_SEARCH_COUNT] ?: 0 else 0 }
+
+    suspend fun countWebSearch(month: YearMonth) {
+        dataStore.edit {
+            val same = it[WEB_SEARCH_MONTH] == month.toString()
+            it[WEB_SEARCH_MONTH] = month.toString()
+            it[WEB_SEARCH_COUNT] = (if (same) it[WEB_SEARCH_COUNT] ?: 0 else 0) + 1
+        }
+    }
+
     /** The people (uids) the AI has already been asked about. */
     suspend fun peopleAsked(): Set<String> = dataStore.data.first()[PEOPLE_ASKED].orEmpty()
 
@@ -165,6 +178,8 @@ class PreferencesRepository @Inject constructor(
         private val PEOPLE_DISMISSED = stringSetPreferencesKey("people_merge_dismissed")
         private val PEOPLE_ASKED = stringSetPreferencesKey("people_asked")
         private val BUDGET_TOLD = stringSetPreferencesKey("budget_alerts_told")
+        private val WEB_SEARCH_MONTH = stringPreferencesKey("web_search_month")
+        private val WEB_SEARCH_COUNT = intPreferencesKey("web_search_count")
         private val BACKUP_FOLDER = stringPreferencesKey("backup_folder")
         private val BACKUP_EVERY = stringPreferencesKey("backup_every")
         private val BACKUP_KEEP = intPreferencesKey("backup_keep")

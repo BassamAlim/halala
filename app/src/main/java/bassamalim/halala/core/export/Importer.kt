@@ -170,7 +170,10 @@ class Importer @Inject constructor(
                     identifiedBy = converters.toIdentifiedBy(merchant.identifiedBy),
                     confidence = merchant.confidence,
                     namedByYou = merchant.namedByYou,
-                    autoRuled = merchant.autoRuled
+                    autoRuled = merchant.autoRuled,
+                    searchedOnline = merchant.searchedOnline,
+                    webUrl = merchant.webUrl,
+                    webTitle = merchant.webTitle
                 )
             }
             val merchantIds = merchants.associate { it.uid to it.id }

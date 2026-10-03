@@ -19,6 +19,9 @@ data class MerchantUiState(
     val businessType: BusinessType? = null,
     val identifiedBy: IdentifiedBy? = null,
     val confidence: Int? = null,
+    /** The page a web search found it on, while the AI's answer stands. */
+    val webTitle: String? = null,
+    val webUrl: String? = null,
     /** The category its spending files under, by what it is: none when no category takes it. */
     val filesUnder: String? = null,
     val spellings: List<SpellingRow> = emptyList(),

@@ -86,7 +86,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.ZakatProfile
         TransactionPlace::class,
         Deposit::class
     ],
-    version = 21,
+    version = 22,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

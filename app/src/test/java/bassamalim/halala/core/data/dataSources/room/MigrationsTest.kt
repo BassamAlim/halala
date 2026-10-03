@@ -330,6 +330,12 @@ class MigrationsTest {
         helper.runMigrationsAndValidate(DB, 21, true, *MIGRATIONS).close()
     }
 
+    @Test
+    fun `21 to 22 remembers merchants looked up online and matches the schema`() {
+        helper.createDatabase(DB, 21).use { }
+        helper.runMigrationsAndValidate(DB, 22, true, *MIGRATIONS).close()
+    }
+
     private companion object {
         const val DB = "migration-test"
     }

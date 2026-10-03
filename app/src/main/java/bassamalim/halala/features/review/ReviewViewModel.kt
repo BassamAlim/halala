@@ -69,6 +69,8 @@ class ReviewViewModel @Inject constructor(
                 businessType = ReviewDomain.evidenceOf(merchant),
                 identifiedBy = merchant?.identifiedBy,
                 confidence = merchant?.confidence?.takeIf { merchant.identifiedBy == IdentifiedBy.AI },
+                webTitle = merchant?.webTitle?.takeIf { merchant.identifiedBy == IdentifiedBy.AI },
+                webUrl = merchant?.webUrl?.takeIf { merchant.identifiedBy == IdentifiedBy.AI },
                 suggestion = suggestion?.let { Suggestion(CategoryOption(it.id, it.name), it.expenseType) }
             )
         }

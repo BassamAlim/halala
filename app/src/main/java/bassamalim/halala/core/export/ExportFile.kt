@@ -62,7 +62,7 @@ data class ExportFile(
     val deposits: List<ExportDeposit> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 20
+        const val SCHEMA_VERSION = 21
     }
 }
 
@@ -157,7 +157,11 @@ data class ExportMerchant(
     val confidence: Int? = null,
     /** Since schema 5: you named it; its automatic rule was already made. */
     val namedByYou: Boolean = false,
-    val autoRuled: Boolean = false
+    val autoRuled: Boolean = false,
+    /** Since schema 21: looked up online (never again), and the page it was found on. */
+    val searchedOnline: Boolean = false,
+    val webUrl: String? = null,
+    val webTitle: String? = null
 )
 
 /** One spelling: its key (lower case, letters only), as first written, and how it joined. */

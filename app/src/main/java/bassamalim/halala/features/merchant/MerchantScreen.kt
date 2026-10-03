@@ -27,6 +27,7 @@ import bassamalim.halala.core.ui.components.Avatar
 import bassamalim.halala.core.ui.components.ButtonKind
 import bassamalim.halala.core.ui.components.ConfirmSheet
 import bassamalim.halala.core.ui.components.FormField
+import bassamalim.halala.core.ui.components.FoundOnline
 import bassamalim.halala.core.ui.components.GroupLabel
 import bassamalim.halala.core.ui.components.HalalaButton
 import bassamalim.halala.core.ui.components.HalalaSheet
@@ -127,6 +128,7 @@ fun MerchantScreen(viewModel: MerchantViewModel = hiltViewModel()) {
                             onClick = viewModel::onBusinessTypeClick
                         )
                     }
+                    state.webUrl?.let { url -> FoundOnline(state.webTitle ?: url, url) }
                 }
             }
 

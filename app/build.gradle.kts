@@ -24,6 +24,11 @@ val groqApiKey = envProperties.getProperty("GROQ_API_KEY")
     ?: providers.environmentVariable("GROQ_API_KEY").orNull
     ?: ""
 
+/** Tavily's, for looking up merchants the AI isn't sure of: the same way, `TAVILY_API_KEY`. */
+val tavilyApiKey = envProperties.getProperty("TAVILY_API_KEY")
+    ?: providers.environmentVariable("TAVILY_API_KEY").orNull
+    ?: ""
+
 android {
     namespace = "bassamalim.halala"
     compileSdk {
@@ -39,6 +44,7 @@ android {
         versionName = "0.2.0"
 
         buildConfigField("String", "GROQ_API_KEY", "\"$groqApiKey\"")
+        buildConfigField("String", "TAVILY_API_KEY", "\"$tavilyApiKey\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

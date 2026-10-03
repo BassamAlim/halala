@@ -10,6 +10,7 @@ import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.feedOf
 import bassamalim.halala.core.domain.toItem
 import bassamalim.halala.core.enums.BusinessType
+import bassamalim.halala.core.enums.IdentifiedBy
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
 import bassamalim.halala.core.utils.initialOf
@@ -61,6 +62,8 @@ class MerchantViewModel @Inject constructor(
             businessType = merchant.businessType,
             identifiedBy = merchant.identifiedBy,
             confidence = merchant.confidence,
+            webTitle = merchant.webTitle.takeIf { merchant.identifiedBy == IdentifiedBy.AI },
+            webUrl = merchant.webUrl.takeIf { merchant.identifiedBy == IdentifiedBy.AI },
             filesUnder = Identification.categoryFor(merchant.businessType, categories)?.name,
             spellings = aliases.map { SpellingRow(it.alias.id, it.alias.descriptor, it.alias.matchedBy, it.transactions) },
             canSplit = aliases.size > 1,

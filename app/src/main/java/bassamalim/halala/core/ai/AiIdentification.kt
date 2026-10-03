@@ -89,17 +89,22 @@ class AiScheduler @Inject constructor(
     }
 }
 
-/** One run of [AiIdentification], then of [PeopleMatching], online only. A problem worth trying again is retried later. */
+/**
+ * One run of [AiIdentification], then [WebLookup] for what it was unsure of, then [PeopleMatching],
+ * online only. A problem worth trying again is retried later.
+ */
 @HiltWorker
 class IdentifyWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
     private val identification: AiIdentification,
+    private val webLookup: WebLookup,
     private val peopleMatching: PeopleMatching
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result = try {
         identification.run()
+        webLookup.run()
         peopleMatching.run()
         Result.success()
     } catch (failure: IdentifyFailure) {

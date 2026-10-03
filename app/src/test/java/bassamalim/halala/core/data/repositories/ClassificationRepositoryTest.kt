@@ -478,6 +478,41 @@ class ClassificationRepositoryTest {
     }
 
     @Test
+    fun `an unsure answer with money behind it is looked up online once, and a surer one replaces it`() = runTest {
+        val big = spend("ALMTRF TRDG EST 0412", minor = 25_000)
+        val small = spend("QAHWAT HUDA 77", minor = 900)
+        val sure = spend("ZZYZX 9", minor = 50_000)
+        classification.applyRules()
+        classification.recordIdentifications(
+            mapOf(
+                merchantOf(big)!! to IdentifiedAs("", BusinessType.UNKNOWN, 30),
+                merchantOf(small)!! to IdentifiedAs("", BusinessType.UNKNOWN, 30),
+                merchantOf(sure)!! to IdentifiedAs("Zzyzx", BusinessType.CAFE, 85)
+            )
+        )
+
+        // The small one-off and the sure one are never searched.
+        assertEquals(listOf("ALMTRF TRDG EST 0412"), classification.toSearch(80, 10_000).map { it.descriptor })
+
+        classification.recordSearch(
+            merchantOf(big)!!, IdentifiedAs("Al-Mutref Trading", BusinessType.HARDWARE, 92), "https://mutref.sa", "Al-Mutref Trading"
+        )
+        val found = classification.getMerchant(merchantOf(big)!!)!!
+        assertEquals(BusinessType.HARDWARE, found.businessType)
+        assertEquals("https://mutref.sa", found.webUrl)
+        assertEquals(category("Housing").id, transactions.get(big)!!.categoryId)
+        assertTrue(classification.toSearch(80, 10_000).isEmpty())
+
+        // A search that came up with nothing surer leaves the first answer, and isn't made again.
+        val vague = spend("MAKTAB 12", minor = 30_000)
+        classification.applyRules()
+        classification.recordIdentifications(mapOf(merchantOf(vague)!! to IdentifiedAs("", BusinessType.UNKNOWN, 40)))
+        classification.recordSearch(merchantOf(vague)!!, IdentifiedAs("Maktab", BusinessType.BOOKSTORE, 35), null, null)
+        assertEquals(BusinessType.UNKNOWN, classification.getMerchant(merchantOf(vague)!!)!!.businessType)
+        assertTrue(classification.toSearch(80, 10_000).isEmpty())
+    }
+
+    @Test
     fun `a name you gave stays when the AI identifies the merchant`() = runTest {
         val id = spend("ZZYZX 9")
         classification.applyRules()

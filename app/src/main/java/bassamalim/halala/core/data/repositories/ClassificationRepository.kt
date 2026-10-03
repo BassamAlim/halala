@@ -405,6 +405,33 @@ class ClassificationRepository @Inject constructor(
         fileByRules()
     }
 
+    /** The AI's unsure answers worth looking up online, the most money first. */
+    suspend fun toSearch(below: Int, floorMinor: Long): List<ToIdentify> = merchantsDao.getToSearch(below, floorMinor)
+
+    /**
+     * What a web search made of a merchant: it is never searched again. A surer [answer] than
+     * the AI's first replaces it, with the page it came from ([url], [title]); only while the AI's
+     * answer still stands (the list's or yours is never touched).
+     */
+    suspend fun recordSearch(id: Long, answer: IdentifiedAs?, url: String?, title: String?) = writing.withLock {
+        val merchant = merchantsDao.getMerchant(id) ?: return@withLock
+        val surer = answer != null && merchant.identifiedBy == IdentifiedBy.AI && answer.confidence > (merchant.confidence ?: 0)
+        merchantsDao.updateMerchant(
+            if (surer) merchant.copy(
+                name = answer!!.name.trim().takeIf { it.isNotEmpty() && it.length <= MAX_NAME && !merchant.namedByYou } ?: merchant.name,
+                businessType = answer.type,
+                confidence = answer.confidence.coerceIn(0, 100),
+                searchedOnline = true,
+                webUrl = url,
+                webTitle = title
+            ) else merchant.copy(searchedOnline = true)
+        )
+        if (surer) {
+            syncAutoRules()
+            fileByRules()
+        }
+    }
+
     /** Merchants whose name is never sent (it may hold more than a shop's name): left for you. */
     suspend fun withhold(ids: Collection<Long>) = writing.withLock {
         for (id in ids) {

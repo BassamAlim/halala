@@ -32,6 +32,7 @@ import bassamalim.halala.R
 import bassamalim.halala.core.enums.AmountTone
 import bassamalim.halala.core.enums.AuditAction
 import bassamalim.halala.core.ui.components.ChoiceSheet
+import bassamalim.halala.core.ui.components.FoundOnline
 import bassamalim.halala.core.ui.components.HalalaButton
 import bassamalim.halala.core.ui.components.HalalaCard
 import bassamalim.halala.core.ui.components.TopBar
@@ -142,6 +143,7 @@ fun ReviewScreen(viewModel: ReviewViewModel = hiltViewModel()) {
                                 color = HalalaColors.TextMuted
                             )
                         }
+                        card.webUrl?.let { url -> FoundOnline(card.webTitle ?: url, url) }
     
                         val suggestion = card.suggestion
                         if (suggestion == null) {

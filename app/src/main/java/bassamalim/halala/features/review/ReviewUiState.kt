@@ -53,6 +53,9 @@ data class ReviewCard(
     val identifiedBy: IdentifiedBy? = null,
     /** The AI's confidence (0–100), shown as "92% sure"; only for what the AI said. */
     val confidence: Int? = null,
+    /** The page a web search found it on ("Found online: …"), to judge the match. */
+    val webTitle: String? = null,
+    val webUrl: String? = null,
     /** The category chosen for you, one tap from confirmed; none when it needs you. */
     val suggestion: Suggestion? = null
 )

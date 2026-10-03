@@ -1137,6 +1137,7 @@
     <string name="identified_you">Said by you</string>
     <string name="identified_withheld">Not sent to AI: its name may hold an account number</string>
     <string name="identified_as">Identified as: %1$s</string>
+    <string name="found_online">Found online: %1$s</string>
     <string name="review_all">All %1$d</string>
     <string name="review_suggested">Suggested %1$d</string>
     <string name="review_needs_you">Needs you %1$d</string>
