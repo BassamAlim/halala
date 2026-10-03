@@ -527,6 +527,8 @@
     </plurals>
     <string name="recurring_price_up">%1$s went up from %2$s to %3$s %4$s.</string>
     <string name="recurring_missed">%1$s was due %2$s and hasn\'t been charged yet.</string>
+    <string name="recurring_renews_soon">%1$s renews on %2$s for %3$s. Still worth it?</string>
+    <string name="recurring_first_charge">%1$s charges for the first time on %2$s, %3$s. If it\'s a free trial, now is the time to cancel.</string>
     <string name="recurring_found_subscription">Looks like a subscription: %1$s, %2$s %3$s.</string>
     <string name="recurring_found_bill">Looks like a bill: %1$s, about %2$s %3$s.</string>
     <string name="recurring_found_planned">Looks like a planned payment: %1$s, %2$s %3$s.</string>

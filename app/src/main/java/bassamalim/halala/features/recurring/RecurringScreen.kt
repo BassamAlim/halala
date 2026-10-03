@@ -173,6 +173,16 @@ private fun AlertCard(alert: RecurringAlert, viewModel: RecurringViewModel) {
                     style = HalalaType.Body,
                     color = HalalaColors.Text
                 )
+                is RecurringAlert.Upcoming -> MoneyText(
+                    text = stringResource(
+                        if (alert.firstCharge) R.string.recurring_first_charge else R.string.recurring_renews_soon,
+                        alert.name, alert.due, MONEY_MARK
+                    ),
+                    amount = alert.amount,
+                    currency = alert.currency,
+                    style = HalalaType.Body,
+                    color = HalalaColors.Text
+                )
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
@@ -186,6 +196,10 @@ private fun AlertCard(alert: RecurringAlert, viewModel: RecurringViewModel) {
                 is RecurringAlert.Proposed -> {
                     HalalaButton(stringResource(R.string.recurring_confirm), { viewModel.onConfirm(alert.seriesId) }, Modifier.weight(1f))
                     HalalaButton(stringResource(R.string.recurring_dismiss), { viewModel.onDismiss(alert.seriesId) }, Modifier.weight(1f))
+                }
+                is RecurringAlert.Upcoming -> {
+                    HalalaButton(stringResource(R.string.recurring_keep), { viewModel.onKeep(alert) }, Modifier.weight(1f))
+                    HalalaButton(stringResource(R.string.recurring_remind_cancel), { viewModel.onRemindToCancel(alert) }, Modifier.weight(1f))
                 }
             }
         }

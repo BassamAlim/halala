@@ -8,6 +8,7 @@ import bassamalim.halala.core.domain.Anomalies
 import bassamalim.halala.core.domain.Anomaly
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import java.time.Clock
 import java.time.Duration
 import javax.inject.Inject
@@ -40,4 +41,7 @@ class AlertsRepository @Inject constructor(
     }
 
     suspend fun dismiss(key: String) = alertsDao.dismiss(DismissedAlert(key, clock.instant()))
+
+    /** Every key dismissed: anomalies, and the heads-ups of subscriptions and bills. */
+    fun observeDismissed(): Flow<Set<String>> = alertsDao.observeDismissed().map { it.toSet() }
 }

@@ -5,6 +5,7 @@ import bassamalim.halala.core.data.repositories.PreferencesRepository
 import bassamalim.halala.core.data.repositories.RecurringRepository
 import bassamalim.halala.core.data.repositories.TagsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
+import bassamalim.halala.core.domain.Recurring
 import bassamalim.halala.core.domain.Rules
 import bassamalim.halala.core.domain.SeriesState
 import bassamalim.halala.core.domain.Tags
@@ -36,25 +37,31 @@ class InboxDomain @Inject constructor(
     fun observeCounts(): Flow<Map<InboxKind, Int>> = combine(
         transactionsRepository.observeAll(),
         alertsRepository.observeAlerts(),
-        recurringRepository.observeStates(),
+        combine(recurringRepository.observeStates(), alertsRepository.observeDismissed(), ::Pair),
         people.observeSuggestions(),
         combine(tagsRepository.observeAll(), tagsRepository.observeRows(), preferencesRepository.observeDismissedTagSuggestions(), ::Triple)
-    ) { details, alerts, series, merges, (tags, rows, dismissed) ->
+    ) { details, alerts, (series, kept), merges, (tags, rows, dismissed) ->
+        val today = LocalDate.now(clock)
         mapOf(
             InboxKind.MERCHANTS to Rules.clusters(details).size,
             InboxKind.ALERTS to alerts.size,
-            InboxKind.RECURRING to recurring(series),
+            InboxKind.RECURRING to recurring(series, kept, today),
             InboxKind.PEOPLE to merges.size,
-            InboxKind.TRIPS to Tags.suggest(details, tags, Tags.byTransaction(rows), dismissed, LocalDate.now(clock), clock.zone).size
+            InboxKind.TRIPS to Tags.suggest(details, tags, Tags.byTransaction(rows), dismissed, today, clock.zone).size
         ).filterValues { it > 0 }
     }
 
     companion object {
-        /** The cards Subscriptions and bills opens with: a price rise, a missed charge, one that was found. */
-        fun recurring(states: List<SeriesState>): Int = states.sumOf { state ->
+        /**
+         * The cards Subscriptions and bills opens with: a price rise, a missed charge, a renewal or
+         * a trial's end you haven't [kept], one that was found.
+         */
+        fun recurring(states: List<SeriesState>, kept: Set<String>, today: LocalDate): Int = states.sumOf { state ->
             when (state.series.status) {
                 SeriesStatus.PROPOSED -> 1
-                SeriesStatus.ACTIVE -> (if (state.raisedTo != null && !state.series.cancelReminder) 1 else 0) + (if (state.missed) 1 else 0)
+                SeriesStatus.ACTIVE -> (if (state.raisedTo != null && !state.series.cancelReminder) 1 else 0) +
+                        (if (state.missed) 1 else 0) +
+                        (if (Recurring.headsUp(state, today) != null && Recurring.headsUpKey(state) !in kept) 1 else 0)
                 else -> 0
             }
         }
