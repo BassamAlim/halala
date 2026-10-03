@@ -136,6 +136,7 @@ fun MerchantScreen(viewModel: MerchantViewModel = hiltViewModel()) {
                             text = stringResource(if (working) R.string.merchant_looking_up else R.string.merchant_look_up),
                             onClick = viewModel::onLookUpClick,
                             enabled = !working,
+                            icon = R.drawable.ic_globe,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }

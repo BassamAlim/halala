@@ -1,12 +1,19 @@
 package bassamalim.halala.core.domain
 
 import bassamalim.halala.core.data.dataSources.room.entities.Asset
+import bassamalim.halala.core.data.dataSources.room.entities.GoalContribution
+import bassamalim.halala.core.data.dataSources.room.entities.Transaction
+import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.enums.AssetType
+import bassamalim.halala.core.enums.Direction
+import bassamalim.halala.core.enums.TransactionKind
+import bassamalim.halala.core.enums.TransactionSource
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneOffset
 
 class NetWorthTest {
 
@@ -41,5 +48,31 @@ class NetWorthTest {
         assertEquals(0, Assets.valueOf(asset(AssetType.FUND, "abc", price = "1"), today))
         assertEquals(null, Assets.decimal("-5"))
         assertEquals(BigDecimal("62.5"), Assets.decimal("٦٢٫٥"))
+    }
+
+    private fun marked(day: String, minor: Long, direction: Direction, withdrawn: Boolean, moveTo: Long? = null) =
+        GoalContribution(uid = day, goalId = 1, transactionId = 0, withdrawn = withdrawn) to TransactionDetail(
+            transaction = Transaction(
+                uid = day, accountId = 1, direction = direction, amountMinor = minor, currency = "SAR",
+                occurredAt = Instant.parse("${day}T10:00:00Z"), kind = TransactionKind.SAVINGS_DEPOSIT,
+                source = TransactionSource.SMS, createdAt = Instant.EPOCH
+            ),
+            accountNickname = "", institutionName = null, counterpartId = moveTo, counterpartAccountId = moveTo,
+            counterpartNickname = null, counterpartInstitutionName = null, isTransferInLeg = false
+        )
+
+    @Test
+    fun `money put toward a goal outside your accounts is savings until it comes back`() {
+        val held = NetWorth.heldElsewhere(
+            listOf(
+                marked("2026-09-01", 500_000, Direction.DEBIT, withdrawn = false),
+                marked("2026-09-02", 300_000, Direction.DEBIT, withdrawn = false, moveTo = 2), // a move: already in balances
+                marked("2026-09-03", 100_000, Direction.CREDIT, withdrawn = false), // arrived in your account: already there
+                marked("2026-10-01", 700_000, Direction.CREDIT, withdrawn = true) // 200,000 of it profit
+            ),
+            "SAR", ZoneOffset.UTC
+        )
+        assertEquals(mapOf(LocalDate.parse("2026-09-01") to 500_000L, LocalDate.parse("2026-10-01") to -500_000L), held)
+        assertEquals(500_000L, NetWorth.now(emptyList(), emptyList(), emptyList(), "SAR", today, 500_000).parts[WealthClass.SAVINGS])
     }
 }

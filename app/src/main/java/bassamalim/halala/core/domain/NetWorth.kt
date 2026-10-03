@@ -1,6 +1,7 @@
 package bassamalim.halala.core.domain
 
 import bassamalim.halala.core.data.dataSources.room.entities.Asset
+import bassamalim.halala.core.data.dataSources.room.entities.GoalContribution
 import bassamalim.halala.core.data.dataSources.room.entities.NetWorthSnapshot
 import bassamalim.halala.core.data.dataSources.room.relations.AccountWithBalance
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
@@ -41,13 +42,15 @@ object NetWorth {
         assets: List<Asset>,
         loans: List<LoanState>,
         currency: String,
-        today: LocalDate
+        today: LocalDate,
+        heldElsewhereMinor: Long = 0
     ): NetWorthNow {
         val parts = mutableMapOf<WealthClass, Long>()
         fun add(kind: WealthClass, minor: Long) { parts[kind] = Math.addExact(parts[kind] ?: 0, minor) }
         accounts.filter { !it.account.archived && it.account.currency == currency }.forEach { add(classOf(it.account.type), it.balanceMinor) }
         assets.filter { it.currency == currency }.forEach { add(classOf(it.type), Assets.valueOf(it, today)) }
         val (owed, owing) = Loans.owed(loans, currency)
+        if (heldElsewhereMinor != 0L) add(WealthClass.SAVINGS, heldElsewhereMinor)
         if (owed != 0L) add(WealthClass.OWED_TO_YOU, owed)
         if (owing != 0L) add(WealthClass.YOU_OWE, -owing)
         return NetWorthNow(parts, Money.sum(parts.values))
@@ -68,7 +71,8 @@ object NetWorth {
         loans: List<LoanState>,
         currency: String,
         snapshots: List<NetWorthSnapshot>,
-        zone: ZoneId
+        zone: ZoneId,
+        elsewhereByDay: Map<LocalDate, Long> = emptyMap()
     ): List<Pair<LocalDate, Long>> {
         val netByDay = details
             .filter { it.transaction.accountId in accountIds }
@@ -94,9 +98,38 @@ object NetWorth {
         var day = today
         while (!day.isBefore(from)) {
             points += day to withoutAssets + (if (day == today) assetsNow else assetsOn(day))
-            withoutAssets -= (netByDay[day] ?: 0) + (loanByDay[day] ?: 0)
+            withoutAssets -= (netByDay[day] ?: 0) + (loanByDay[day] ?: 0) + (elsewhereByDay[day] ?: 0)
             day = day.minusDays(1)
         }
         return points.reversed()
+    }
+
+    /**
+     * Savings kept where Halala has no account (Al Rajhi Capital, say), by the day they changed:
+     * what left your accounts marked as put toward a goal, less what came back marked as taken
+     * out, never below none (what comes back beyond it is profit). A move between your own
+     * accounts is already in their balances, and so is a mark that didn't leave them.
+     */
+    fun heldElsewhere(
+        contributions: List<Pair<GoalContribution, TransactionDetail>>,
+        currency: String,
+        zone: ZoneId
+    ): Map<LocalDate, Long> {
+        var held = 0L
+        return contributions
+            .filter { (_, d) -> !d.isInternalTransfer && d.transaction.currency == currency }
+            .sortedBy { (_, d) -> d.transaction.occurredAt }
+            .mapNotNull { (c, d) ->
+                val tx = d.transaction
+                val change = when {
+                    tx.direction == Direction.DEBIT && !c.withdrawn -> tx.amountMinor
+                    tx.direction == Direction.CREDIT && c.withdrawn -> -minOf(tx.amountMinor, held)
+                    else -> return@mapNotNull null
+                }
+                held = Math.addExact(held, change)
+                tx.occurredAt.atZone(zone).toLocalDate() to change
+            }
+            .groupBy({ it.first }, { it.second })
+            .mapValues { Money.sum(it.value) }
     }
 }

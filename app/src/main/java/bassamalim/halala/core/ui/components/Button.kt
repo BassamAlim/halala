@@ -1,5 +1,6 @@
 package bassamalim.halala.core.ui.components
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -8,6 +9,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -18,6 +21,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -41,7 +45,8 @@ enum class ButtonKind {
 
 /**
  * A button: at least a touch target tall, radius-md, a sentence-case verb or direct answer.
- * [destructive] is the confirm of a destructive sheet: secondary, with state-over text.
+ * [destructive] is the confirm of a destructive sheet: secondary, with state-over text. An
+ * [icon] (a drawable glyph) leads the text, in jade on a secondary button.
  */
 @Composable
 fun HalalaButton(
@@ -50,7 +55,8 @@ fun HalalaButton(
     modifier: Modifier = Modifier,
     kind: ButtonKind = ButtonKind.Secondary,
     destructive: Boolean = false,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    @DrawableRes icon: Int? = null
 ) {
     val primary = kind == ButtonKind.Primary
 
@@ -66,18 +72,28 @@ fun HalalaButton(
             .padding(horizontal = Insets.button),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = text,
-            style = HalalaType.BodyStrong.copy(
-                fontWeight = if (primary) FontWeight(600) else FontWeight(500)
-            ),
-            textAlign = TextAlign.Center,
-            color = when {
-                primary -> HalalaColors.OnAccent
-                destructive -> HalalaColors.StateOver
-                else -> HalalaColors.Text
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            icon?.let {
+                Icon(
+                    painter = painterResource(it),
+                    contentDescription = null,
+                    tint = if (primary) HalalaColors.OnAccent else HalalaColors.Accent,
+                    modifier = Modifier.size(Sizes.iconSmall)
+                )
             }
-        )
+            Text(
+                text = text,
+                style = HalalaType.BodyStrong.copy(
+                    fontWeight = if (primary) FontWeight(600) else FontWeight(500)
+                ),
+                textAlign = TextAlign.Center,
+                color = when {
+                    primary -> HalalaColors.OnAccent
+                    destructive -> HalalaColors.StateOver
+                    else -> HalalaColors.Text
+                }
+            )
+        }
     }
 }
 

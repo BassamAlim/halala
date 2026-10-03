@@ -490,8 +490,8 @@
     <string name="loan_forgive_title">Forgive what is left?</string>
     <string name="loan_forgive_body">The loan is settled and nothing more is owed. Its transfers stay as they are.</string>
     <string name="loan_forgive_confirm">Forgive</string>
-    <string name="loan_mark_lent">Mark as lent to %1$s</string>
-    <string name="loan_mark_borrowed">Mark as borrowed from %1$s</string>
+    <string name="loan_mark_lent">Mark as lent</string>
+    <string name="loan_mark_borrowed">Mark as borrowed</string>
     <string name="loan_mark_lent_title">Lent to %1$s</string>
     <string name="loan_mark_borrowed_title">Borrowed from %1$s</string>
     <string name="loan_mark_body">It becomes a loan: not spending or income, and Halala keeps count of what is paid back.</string>

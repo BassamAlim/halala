@@ -64,8 +64,8 @@ class AiIdentification @Inject constructor(
     }
 
     private companion object {
-        /** Names per request: the spec's batches of about 40. */
-        const val BATCH = 40
+        /** Names per request: about 600 tokens of answer, inside [GroqProtocol.MAX_TOKENS]. */
+        const val BATCH = 20
 
         /** Requests per run, well inside Groq's free limits; a long back-import goes on next time. */
         const val MAX_BATCHES = 20

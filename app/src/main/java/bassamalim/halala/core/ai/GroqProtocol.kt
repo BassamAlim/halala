@@ -189,8 +189,11 @@ object GroqProtocol {
 
     private val DOMAIN = Regex("^[a-z0-9-]+(\\.[a-z0-9-]+)*\\.[a-z]{2,}$")
 
-    /** Enough for a batch of 40 short answers, with room to spare. */
-    private const val MAX_TOKENS = 4096
+    /**
+     * Groq refuses any request asking for more than its free tier's 1,000 output tokens a minute,
+     * so this is the ceiling: an answer runs about 30 tokens a merchant, 15 a website.
+     */
+    const val MAX_TOKENS = 1000
 
     /** Each result's text, cut short: enough to tell what a business is. */
     private const val MAX_RESULT_CHARS = 600

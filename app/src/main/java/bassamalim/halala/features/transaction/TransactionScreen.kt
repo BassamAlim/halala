@@ -24,6 +24,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -621,8 +622,7 @@ private fun LoanCard(loan: LoanLink, viewModel: TransactionViewModel) {
                 )
             }
             HalalaButton(
-                text = if (loan.person.isBlank()) stringResource(R.string.loan_mark_confirm)
-                else stringResource(if (loan.lent) R.string.loan_mark_lent else R.string.loan_mark_borrowed, loan.person),
+                text = stringResource(if (loan.lent) R.string.loan_mark_lent else R.string.loan_mark_borrowed),
                 onClick = viewModel::onMarkLoanClick,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -750,8 +750,15 @@ private fun Value(text: String) {
 
 /** Choosing several people: each chip on while picked. */
 @Composable
-private fun ChoiceChipsMulti(options: List<PersonChoice>, selected: List<Long>, onToggle: (Long) -> Unit) {
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+private fun ColumnScope.ChoiceChipsMulti(options: List<PersonChoice>, selected: List<Long>, onToggle: (Long) -> Unit) {
+    // Everyone you transfer with can be many: they scroll, so what comes after stays on screen.
+    FlowRow(
+        modifier = Modifier
+            .weight(1f, fill = false)
+            .verticalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm)
+    ) {
         options.forEach { option ->
             HalalaChip(
                 label = option.name,
