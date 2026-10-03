@@ -1,5 +1,6 @@
 package bassamalim.halala.features.editRecurring
 
+import bassamalim.halala.core.ui.components.HalalaChip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -138,6 +139,7 @@ fun EditRecurringScreen(viewModel: EditRecurringViewModel = hiltViewModel()) {
                 title = stringResource(R.string.recurring_ends_on),
                 subtitle = state.endsLabel ?: stringResource(R.string.recurring_runs_on),
                 divider = true,
+                trailing = if (form.endsOn == null) null else ({ HalalaChip(label = stringResource(R.string.remove_date), onClick = viewModel::onEndsClear) }),
                 onClick = viewModel::onEndsClick
             )
         }
@@ -148,11 +150,6 @@ fun EditRecurringScreen(viewModel: EditRecurringViewModel = hiltViewModel()) {
                 color = HalalaColors.StateOver
             )
         }
-        if (form.endsOn != null) HalalaButton(
-            text = stringResource(R.string.recurring_no_end),
-            onClick = viewModel::onEndsClear,
-            modifier = Modifier.fillMaxWidth()
-        )
 
         if (form.kind == RecurringKind.SUBSCRIPTION) FormField(label = stringResource(R.string.recurring_auto_renew)) {
             ChoiceChips(

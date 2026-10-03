@@ -78,14 +78,10 @@ fun EditGoalScreen(viewModel: EditGoalViewModel = hiltViewModel()) {
             ListRow(
                 title = stringResource(R.string.goal_by),
                 subtitle = state.dateLabel ?: stringResource(R.string.goal_no_date),
+                trailing = if (form.targetDate == null) null else ({ HalalaChip(label = stringResource(R.string.remove_date), onClick = viewModel::onDateClear) }),
                 onClick = viewModel::onDateClick
             )
         }
-        if (form.targetDate != null) HalalaButton(
-            text = stringResource(R.string.goal_clear_date),
-            onClick = viewModel::onDateClear,
-            modifier = Modifier.fillMaxWidth()
-        )
         FormField(
             label = stringResource(R.string.goal_accounts),
             hint = stringResource(R.string.goal_accounts_hint)

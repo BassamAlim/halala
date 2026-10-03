@@ -536,7 +536,6 @@
     <string name="recurring_next_due">Next due</string>
     <string name="recurring_ends_on">Ends</string>
     <string name="recurring_runs_on">Runs on</string>
-    <string name="recurring_no_end">No end date</string>
     <string name="recurring_ends_before_due">It ends before it is next due</string>
     <string name="recurring_auto_renew">Renews on its own</string>
     <string name="recurring_reminder">Remind me</string>
@@ -621,7 +620,7 @@
     <string name="goal_target">Target</string>
     <string name="goal_by">By</string>
     <string name="goal_no_date">No date</string>
-    <string name="goal_clear_date">No date</string>
+    <string name="remove_date">Remove</string>
     <string name="goal_accounts">Saved in</string>
     <string name="goal_accounts_hint">Their balances are what is saved. An Awaeed deposit is filed under a goal on Savings.</string>
     <string name="goal_delete_title">Delete %1$s?</string>
@@ -970,8 +969,6 @@
     <string name="tag_ends">Ends</string>
     <string name="tag_no_days">No days: tag by hand</string>
     <string name="tag_running">Still running</string>
-    <string name="tag_clear_days">No days</string>
-    <string name="tag_no_end">No end</string>
     <string name="tag_ends_before">It ends before it starts.</string>
     <string name="tag_auto">Tag everything in these days</string>
     <string name="tag_auto_hint">Including what arrives while it runs. Take it off any one on its detail.</string>
