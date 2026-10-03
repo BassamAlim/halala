@@ -24,7 +24,6 @@ import bassamalim.halala.core.models.ReviewSchedule
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.first
 import java.time.Clock
 import java.time.Duration
 import java.time.ZonedDateTime
@@ -151,7 +150,7 @@ class ReviewReminderWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
-        ReviewReminders.notify(applicationContext, Rules.clusters(transactions.observeAll().first()).size)
+        ReviewReminders.notify(applicationContext, Rules.clusters(transactions.getAllDetails()).size)
         return Result.success()
     }
 }

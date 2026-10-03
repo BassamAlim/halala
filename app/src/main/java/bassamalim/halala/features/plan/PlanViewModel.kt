@@ -21,9 +21,11 @@ import bassamalim.halala.features.budgets.BudgetRows
 import bassamalim.halala.features.budgets.BudgetsViewModel
 import bassamalim.halala.features.recurring.RecurringDomain
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import java.time.Clock
 import java.time.LocalDate
@@ -110,7 +112,7 @@ class PlanViewModel @Inject constructor(
                 )
             }
         )
-    }.stateIn(
+    }.flowOn(Dispatchers.Default).stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = PlanUiState()

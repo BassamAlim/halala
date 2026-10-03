@@ -9,9 +9,11 @@ import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
 import bassamalim.halala.core.utils.shortDateLabel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import java.time.Clock
 import java.time.LocalDate
@@ -36,7 +38,7 @@ class BudgetsViewModel @Inject constructor(
             cycle = cycleLabel(overview.cycle.start, overview.cycle.end, today),
             rows = BudgetRows.of(overview.statuses, categories, merchants, overview.tagNames)
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), BudgetsUiState())
+    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), BudgetsUiState())
 
     fun onBackClick() = navigator.popBackStack()
 

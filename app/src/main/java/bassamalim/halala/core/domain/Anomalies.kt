@@ -8,6 +8,7 @@ import bassamalim.halala.core.enums.IdentifiedBy
 import bassamalim.halala.core.enums.RawStatus
 import java.time.Duration
 import java.time.Instant
+import kotlin.math.abs
 
 /** Something that looks wrong, with a stable [key] so dismissing it sticks. */
 sealed interface Anomaly {
@@ -83,6 +84,9 @@ object Anomalies {
     const val PARSER_WINDOW_DAYS = 7L
     private const val PARSER_FAILURE_PERCENT = 5
 
+    /** How far off an estimated foreign charge may be before a balance reads as a missed SMS. */
+    private const val ESTIMATE_LEEWAY_PERCENT = 5L
+
     /** Not counted for parser health: notices and OTPs, and messages not parsed yet. */
     private val UNCOUNTED = setOf(RawStatus.IGNORED, RawStatus.PENDING)
 
@@ -139,7 +143,9 @@ object Anomalies {
                 val between = flows.filter { it.transaction.occurredAt.isAfter(a.at) && !it.transaction.occurredAt.isAfter(b.at) }
                 val net = between.sumOf { if (it.transaction.direction == Direction.CREDIT) it.transaction.amountMinor else -it.transaction.amountMinor }
                 val expected = a.balanceMinor + net
-                if (expected != b.balanceMinor)
+                // An estimated foreign charge between them may be off by a little: that's no missed SMS.
+                val leeway = between.filter { it.transaction.estimated }.sumOf { it.transaction.amountMinor } * ESTIMATE_LEEWAY_PERCENT / 100
+                if (abs(expected - b.balanceMinor) > leeway)
                     Anomaly.Mismatch(accountId, currencies[accountId].orEmpty(), expected, b.balanceMinor, b.at)
                 else null
             }

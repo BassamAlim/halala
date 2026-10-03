@@ -19,15 +19,19 @@ fun toneOf(detail: TransactionDetail): AmountTone = when {
 }
 
 /**
- * The amount as a row shows it: "−214.50", "+18,000.00", "5,000.00" for a move. The currency
- * is set beside it by the UI.
+ * The amount as a row shows it: "−214.50", "+18,000.00", "5,000.00" for a move, "≈ −30.71" for
+ * an estimate. The currency is set beside it by the UI.
  */
 fun signedAmount(detail: TransactionDetail, decimals: Boolean = true): String {
     val tx = detail.transaction
     val tone = toneOf(detail)
     val signed = if (tone == AmountTone.Spending) -tx.amountMinor else tx.amountMinor
-    return Money.format(signed, tx.currency, decimals = decimals, showPlus = tone == AmountTone.Income)
+    val amount = Money.format(signed, tx.currency, decimals = decimals, showPlus = tone == AmountTone.Income)
+    return if (tx.estimated) "$ESTIMATE $amount" else amount
 }
+
+/** Marks an amount Halala estimated: "≈ −30.71". */
+const val ESTIMATE = "≈"
 
 /**
  * A move is titled by its two accounts, sending side first ("Salary → Awaeed"), whichever leg

@@ -42,7 +42,11 @@ sealed interface Screen {
      */
     @Serializable data class Onboarding(val fromSettings: Boolean = false) : Screen
 
-    @Serializable data object Export : Screen
+    /**
+     * Backup and export. From onboarding ([fromOnboarding]) it only restores, and a restore
+     * finishes onboarding: the ledger it brings is already set up.
+     */
+    @Serializable data class Export(val fromOnboarding: Boolean = false) : Screen
 
     /** The review inbox: uncategorised spending, a merchant at a time. */
     @Serializable data object Review : Screen

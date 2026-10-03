@@ -57,6 +57,9 @@ interface SmsDao {
     @Query("SELECT * FROM raw_messages ORDER BY id")
     suspend fun getAllRaw(): List<RawMessage>
 
+    @Query("SELECT MAX(receivedAt) FROM raw_messages")
+    suspend fun newestReceivedAt(): Instant?
+
     @Query("SELECT * FROM balance_checkpoints ORDER BY id")
     suspend fun getCheckpoints(): List<BalanceCheckpoint>
 

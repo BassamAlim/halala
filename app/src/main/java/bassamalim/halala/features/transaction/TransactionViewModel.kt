@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
+import bassamalim.halala.core.domain.ESTIMATE
+import bassamalim.halala.core.domain.ForeignRates
 import bassamalim.halala.core.domain.LoanState
 import bassamalim.halala.core.domain.Loans
 import bassamalim.halala.core.domain.Splits
@@ -94,7 +96,7 @@ class TransactionViewModel @Inject constructor(
                 if (tone == AmountTone.Spending) -tx.amountMinor else tx.amountMinor,
                 tx.currency,
                 showPlus = tone == AmountTone.Income
-            ),
+            ).let { if (tx.estimated) "$ESTIMATE $it" else it },
             currency = tx.currency,
             amountMinor = tx.amountMinor,
             whenLabel = "${dateLabel(local.toLocalDate(), today)} · ${timeLabel(local.toLocalTime())}",
@@ -103,6 +105,15 @@ class TransactionViewModel @Inject constructor(
             toLabel = there?.let { if (detail.isTransferInLeg) here else it },
             note = tx.note,
             source = tx.source,
+            foreign = tx.originalAmountMinor?.takeIf { it > 0 }?.let { original ->
+                val currency = tx.originalCurrency ?: return@let null
+                ForeignCharge(
+                    amount = Money.format(original, currency),
+                    currency = currency,
+                    rate = ForeignRates.label(ForeignRates.rateOf(original, currency, tx.amountMinor, tx.currency)),
+                    estimated = tx.estimated
+                )
+            },
             createdLabel = dateLabel(tx.createdAt.atZone(zone).toLocalDate(), today),
             isConfirmingDelete = confirming,
             canCategorise = Rules.canCategorise(detail),

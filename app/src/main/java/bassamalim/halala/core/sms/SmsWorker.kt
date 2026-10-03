@@ -10,6 +10,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import bassamalim.halala.core.ai.AiScheduler
+import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.data.repositories.TagsRepository
 import bassamalim.halala.core.places.PlaceCapture
 import bassamalim.halala.core.reminders.BudgetAlerts
@@ -21,6 +22,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.time.Duration
 import java.time.Instant
 
 /**
@@ -37,6 +39,7 @@ class SmsWorker @AssistedInject constructor(
     private val tags: TagsRepository,
     private val placeCapture: PlaceCapture,
     private val budgetAlerts: BudgetAlerts,
+    private val sms: SmsRepository,
     private val clock: Clock
 ) : CoroutineWorker(context, params) {
 
@@ -45,7 +48,8 @@ class SmsWorker @AssistedInject constructor(
         val body = inputData.getString(KEY_BODY)
         if (sender != null && body != null)
             ingest.store(sender, body, Instant.ofEpochMilli(inputData.getLong(KEY_RECEIVED_AT, 0)))
-        if (inputData.getBoolean(KEY_IMPORT_INBOX, false)) importInbox()
+        if (inputData.getBoolean(KEY_IMPORT_INBOX, false)) importInbox(since = null)
+        if (inputData.getBoolean(KEY_CATCH_UP, false)) importInbox(since = sms.newestReceivedAt()?.minus(CATCH_UP_MARGIN))
 
         val started = clock.instant()
         ingest.processPending(retry = inputData.getBoolean(KEY_RETRY, false))
@@ -58,14 +62,18 @@ class SmsWorker @AssistedInject constructor(
         return Result.success()
     }
 
-    /** Every bank SMS in the inbox. Stored ones are skipped by their hash, so this can run again. */
-    private suspend fun importInbox() {
+    /**
+     * Every bank SMS in the inbox, or those from [since] on. Stored ones are skipped by their
+     * hash, so this can run again.
+     */
+    private suspend fun importInbox(since: Instant?) {
         val senders = BankFormats.ALL.flatMap { it.senders }
+        val after = since?.let { " AND ${Telephony.Sms.DATE} >= ?" }.orEmpty()
         applicationContext.contentResolver.query(
             Telephony.Sms.Inbox.CONTENT_URI,
             arrayOf(Telephony.Sms.ADDRESS, Telephony.Sms.BODY, Telephony.Sms.DATE),
-            "${Telephony.Sms.ADDRESS} IN (${senders.joinToString { "?" }})",
-            senders.toTypedArray(),
+            "${Telephony.Sms.ADDRESS} IN (${senders.joinToString { "?" }})$after",
+            (senders + listOfNotNull(since?.toEpochMilli()?.toString())).toTypedArray(),
             "${Telephony.Sms.DATE} ASC"
         )?.use { cursor ->
             while (cursor.moveToNext()) {
@@ -82,6 +90,13 @@ class SmsWorker @AssistedInject constructor(
         private const val KEY_RECEIVED_AT = "receivedAt"
         private const val KEY_IMPORT_INBOX = "importInbox"
         private const val KEY_RETRY = "retry"
+        private const val KEY_CATCH_UP = "catchUp"
+
+        /**
+         * How far before the newest kept message a catch-up reads again: room for one Android
+         * never handed over while later ones arrived. Anything older is read only by [enqueueImport].
+         */
+        private val CATCH_UP_MARGIN = Duration.ofDays(30)
 
         /** One SMS that just arrived. */
         fun enqueue(context: Context, sender: String, body: String, receivedAt: Long) = enqueue(
@@ -91,6 +106,9 @@ class SmsWorker @AssistedInject constructor(
 
         /** The back-import: every bank SMS in the inbox, then the pipeline. */
         fun enqueueImport(context: Context) = enqueue(context, workDataOf(KEY_IMPORT_INBOX to true))
+
+        /** The catch-up as the app opens: the inbox since a little before the newest kept message. */
+        fun enqueueCatchUp(context: Context) = enqueue(context, workDataOf(KEY_CATCH_UP to true))
 
         /** Tries again what no account matched, after accounts were named. */
         fun enqueueRetry(context: Context) = enqueue(context, workDataOf(KEY_RETRY to true))

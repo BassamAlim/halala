@@ -32,6 +32,8 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
 import kotlin.math.abs
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flowOn
 
 /** How far back the timeline looks. */
 enum class WealthRange { THREE_MONTHS, YEAR, ALL }
@@ -141,7 +143,7 @@ class WealthViewModel @Inject constructor(
                     )
                 }
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WealthUiState())
+    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WealthUiState())
 
     fun onRangeClick(value: WealthRange) = range.update { value }
 

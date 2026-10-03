@@ -224,6 +224,7 @@ class Exporter @Inject constructor(
                         merchantUid = merchantOf[tx.id]?.uid,
                         originalAmountMinor = tx.originalAmountMinor,
                         originalCurrency = tx.originalCurrency,
+                        estimated = tx.estimated,
                         rawMessageHash = tx.rawMessageId?.let(rawHashes::get)
                     )
                 },

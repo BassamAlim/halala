@@ -50,7 +50,6 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.flow.first
 
 /** What the widget shows, already formatted: this cycle's spending against the total budget, and the inbox. */
 data class WidgetModel(val spent: String, val limit: String?, val progress: Float, val state: BudgetState, val toReview: Int)
@@ -76,7 +75,7 @@ class HalalaWidget : GlanceAppWidget() {
 
     private suspend fun modelOf(data: Data): WidgetModel {
         val c = Globals.PRIMARY_CURRENCY
-        val overview = data.budgets().observeOverview(c).first()
+        val overview = data.budgets().overview(c)
         val total = overview.statuses.firstOrNull { it.budget.scope == BudgetScope.TOTAL && it.budget.currency == c }
         val spent = total?.spentMinor ?: overview.spentMinor
         return WidgetModel(
@@ -84,7 +83,7 @@ class HalalaWidget : GlanceAppWidget() {
             limit = total?.let { Money.format(it.limitMinor, c, decimals = false) },
             progress = total?.let { if (it.limitMinor > 0) (it.spentMinor.toFloat() / it.limitMinor).coerceIn(0f, 1f) else 1f } ?: 0f,
             state = total?.state ?: BudgetState.OK,
-            toReview = Rules.clusters(data.transactions().observeAll().first()).size
+            toReview = Rules.clusters(data.transactions().getAllDetails()).size
         )
     }
 

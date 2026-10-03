@@ -27,6 +27,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import bassamalim.halala.core.ui.components.ButtonKind
 import bassamalim.halala.core.ui.components.ConfirmSheet
 import bassamalim.halala.core.ui.components.FormField
@@ -106,9 +107,12 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
                 .padding(top = Insets.screenTop, bottom = Spacing.section),
             verticalArrangement = Arrangement.spacedBy(Spacing.card)
         ) {
-            TopBar(title = stringResource(R.string.export_title), onBack = viewModel::onBackClick)
+            TopBar(
+                title = stringResource(if (state.restoreOnly) R.string.onboarding_restore else R.string.export_title),
+                onBack = viewModel::onBackClick
+            )
 
-            ListCard(Modifier.fillMaxWidth()) {
+            if (!state.restoreOnly) ListCard(Modifier.fillMaxWidth()) {
                 ListRow(
                     title = stringResource(R.string.backup_title),
                     subtitle = stringResource(R.string.backup_summary),
@@ -117,7 +121,7 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
                 )
             }
 
-            ListCard(Modifier.fillMaxWidth()) {
+            if (!state.restoreOnly) ListCard(Modifier.fillMaxWidth()) {
                 ListRow(
                     title = stringResource(R.string.export_csv),
                     subtitle = stringResource(R.string.export_csv_summary),
@@ -131,17 +135,19 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
                     leading = { ExportIcon() },
                     onClick = { if (!state.isWorking) jsonLauncher.launch(viewModel.jsonFileName()) }
                 )
+            }
+
+            ListCard(Modifier.fillMaxWidth()) {
                 ListRow(
                     title = stringResource(R.string.export_restore),
                     subtitle = stringResource(R.string.export_restore_summary),
-                    divider = true,
                     leading = { ExportIcon() },
                     // Some file pickers know a .json only as plain text or bytes.
                     onClick = { if (!state.isWorking) restoreLauncher.launch(JSON_TYPES) }
                 )
             }
 
-            Text(
+            if (!state.restoreOnly) Text(
                 text = stringResource(R.string.export_warning),
                 style = HalalaType.Caption,
                 color = HalalaColors.TextMuted
@@ -153,18 +159,28 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
         HalalaSheet(viewModel::onPassphraseDismiss) {
             Text(text = stringResource(R.string.backup_open_title), style = HalalaType.Title)
             FormField(
-                label = stringResource(R.string.backup_passphrase),
-                error = stringResource(R.string.backup_wrong).takeIf { ask.wrong }
+                label = stringResource(if (ask.recovery) R.string.backup_recovery else R.string.backup_passphrase),
+                error = stringResource(if (ask.recovery) R.string.backup_recovery_wrong else R.string.backup_wrong).takeIf { ask.wrong }
             ) {
                 HalalaTextField(
                     value = ask.text,
                     onValueChange = viewModel::onPassphraseChange,
-                    secret = true,
+                    secret = !ask.recovery,
                     isError = ask.wrong,
+                    capitalization = if (ask.recovery) KeyboardCapitalization.Characters else KeyboardCapitalization.None,
                     imeAction = ImeAction.Done,
                     onImeAction = viewModel::onPassphraseSubmit
                 )
             }
+            if (!ask.recovery) ask.hint?.let {
+                Text(text = stringResource(R.string.backup_hint_shown, it), style = HalalaType.Caption, color = HalalaColors.TextMuted)
+            }
+            HalalaButton(
+                text = stringResource(if (ask.recovery) R.string.backup_use_passphrase else R.string.backup_use_recovery),
+                onClick = viewModel::onRecoveryToggle,
+                enabled = !state.isWorking,
+                modifier = Modifier.fillMaxWidth()
+            )
             HalalaButton(
                 text = stringResource(if (state.isWorking) R.string.backup_opening else R.string.backup_open),
                 onClick = viewModel::onPassphraseSubmit,

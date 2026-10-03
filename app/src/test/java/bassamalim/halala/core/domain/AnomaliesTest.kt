@@ -10,6 +10,7 @@ import bassamalim.halala.core.enums.RawStatus
 import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.enums.TransactionSource
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
 
@@ -87,5 +88,20 @@ class AnomaliesTest {
         val found = find(listOf(spend), checkpoints = points).single() as Anomaly.Mismatch
         assertEquals(99_000, found.expectedMinor)
         assertEquals(90_000, found.reportedMinor)
+    }
+
+    @Test
+    fun `an estimated foreign charge may leave the balance a little off, but not a lot`() {
+        val estimate = tx("2026-10-10T10:00:00Z", 3_071, key = "", merchant = null, original = "USD").let {
+            it.copy(transaction = it.transaction.copy(estimated = true, originalAmountMinor = 799))
+        }
+        fun pointsTo(reported: Long) = listOf(
+            BalanceCheckpoint(1, 1, 100_000, Instant.parse("2026-10-09T10:00:00Z"), null),
+            BalanceCheckpoint(2, 1, reported, Instant.parse("2026-10-11T10:00:00Z"), null)
+        )
+        // The bank took 31.12, not the 30.71 estimated: within 5%.
+        assertTrue(find(listOf(estimate), checkpoints = pointsTo(96_888)).none { it is Anomaly.Mismatch })
+        // 50 off is a missed message, not a rate.
+        assertTrue(find(listOf(estimate), checkpoints = pointsTo(91_929)).any { it is Anomaly.Mismatch })
     }
 }

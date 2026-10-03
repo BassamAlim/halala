@@ -64,7 +64,7 @@ data class ExportFile(
     val goalContributions: List<ExportGoalContribution> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 23
+        const val SCHEMA_VERSION = 24
     }
 }
 
@@ -113,6 +113,8 @@ data class ExportTransaction(
     /** Since schema 5: a foreign charge before conversion, and the SMS it was read from. */
     val originalAmountMinor: Long? = null,
     val originalCurrency: String? = null,
+    /** The amount is Halala's estimate of a foreign charge (schema 24). */
+    val estimated: Boolean = false,
     val rawMessageHash: String? = null
 )
 

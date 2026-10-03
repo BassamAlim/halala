@@ -329,6 +329,16 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
                 style = HalalaType.Label,
                 color = HalalaColors.TextMuted
             )
+            state.foreign?.let { foreign ->
+                Text(
+                    text = stringResource(
+                        if (foreign.estimated) R.string.transaction_foreign_estimated else R.string.transaction_foreign,
+                        foreign.amount, foreign.currency, foreign.rate, state.currency
+                    ),
+                    style = HalalaType.Label,
+                    color = HalalaColors.TextMuted
+                )
+            }
         }
 
         HalalaButton(

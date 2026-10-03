@@ -1,7 +1,9 @@
 package bassamalim.halala.features.export
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.toRoute
 import bassamalim.halala.BuildConfig
 import bassamalim.halala.core.di.IoDispatcher
 import bassamalim.halala.core.export.LedgerSnapshot
@@ -25,10 +27,13 @@ import javax.inject.Inject
 class ExportViewModel @Inject constructor(
     private val domain: ExportDomain,
     private val navigator: Navigator,
-    @param:IoDispatcher private val io: CoroutineDispatcher
+    @param:IoDispatcher private val io: CoroutineDispatcher,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val state = MutableStateFlow(ExportUiState())
+    private val fromOnboarding = savedStateHandle.toRoute<Screen.Export>().fromOnboarding
+
+    private val state = MutableStateFlow(ExportUiState(restoreOnly = fromOnboarding))
     val uiState: StateFlow<ExportUiState> = state.asStateFlow()
 
     /** The ledger read from the picked file, held until you confirm or back out. */
@@ -60,7 +65,7 @@ class ExportViewModel @Inject constructor(
             val bytes = withContext(io) { runCatching { read() }.getOrNull() }
             if (bytes != null && domain.isBackup(bytes)) {
                 sealed = bytes
-                state.update { it.copy(isWorking = false, passphrase = PassphraseAsk()) }
+                state.update { it.copy(isWorking = false, passphrase = PassphraseAsk(hint = domain.hintOf(bytes))) }
                 return@launch
             }
             offer(withContext(io) { runCatching { domain.read(checkNotNull(bytes)) }.getOrNull() })
@@ -68,6 +73,10 @@ class ExportViewModel @Inject constructor(
     }
 
     fun onPassphraseChange(text: String) = state.update { it.copy(passphrase = it.passphrase?.copy(text = text, wrong = false)) }
+
+    fun onRecoveryToggle() = state.update {
+        it.copy(passphrase = it.passphrase?.let { ask -> ask.copy(text = "", wrong = false, recovery = !ask.recovery) })
+    }
 
     fun onPassphraseDismiss() {
         sealed = null
@@ -77,10 +86,11 @@ class ExportViewModel @Inject constructor(
     /** Opens the backup (slow: the passphrase is stretched), then offers it like an export. */
     fun onPassphraseSubmit() {
         val bytes = sealed ?: return
-        val passphrase = state.value.passphrase?.text?.takeIf { it.isNotEmpty() } ?: return
+        val ask = state.value.passphrase ?: return
+        val secret = ask.text.takeIf { it.isNotEmpty() } ?: return
         state.update { it.copy(isWorking = true) }
         viewModelScope.launch {
-            val result = withContext(io) { runCatching { domain.readBackup(bytes, passphrase.toCharArray()) } }
+            val result = withContext(io) { runCatching { domain.readBackup(bytes, secret.toCharArray(), ask.recovery) } }
             if (result.exceptionOrNull() is WrongPassphrase) {
                 state.update { it.copy(isWorking = false, passphrase = it.passphrase?.copy(wrong = true)) }
                 return@launch
@@ -119,6 +129,11 @@ class ExportViewModel @Inject constructor(
         viewModelScope.launch {
             val succeeded = withContext(io) { runCatching { domain.restore(snapshot) }.isSuccess }
             state.update { it.copy(isWorking = false) }
+            if (succeeded && fromOnboarding) {
+                domain.finishOnboarding()
+                navigator.navigate(Screen.Main) { popUpTo<Screen.Onboarding> { inclusive = true } }
+                return@launch
+            }
             _events.send(ExportEvent.Restored(succeeded))
         }
     }

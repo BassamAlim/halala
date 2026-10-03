@@ -67,6 +67,9 @@ fun OnboardingScreen(viewModel: OnboardingViewModel = hiltViewModel()) {
     val askPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { granted -> viewModel.onPermission(granted.values.all { it }) }
+    val askThenRestore = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { viewModel.onRestoreClick() }
     // Already allowed (a second visit from Settings): straight to reading.
     LaunchedEffect(Unit) {
         val held = SMS_PERMISSIONS.all {
@@ -93,7 +96,11 @@ fun OnboardingScreen(viewModel: OnboardingViewModel = hiltViewModel()) {
         }
 
         when (state.step) {
-            OnboardingStep.Permission -> PermissionStep(state) { askPermission.launch(SMS_PERMISSIONS) }
+            OnboardingStep.Permission -> PermissionStep(
+                state,
+                onAllow = { askPermission.launch(SMS_PERMISSIONS) },
+                onRestore = { askThenRestore.launch(SMS_PERMISSIONS) }
+            )
             OnboardingStep.Accounts -> AccountsStep(state, viewModel::onNameChange, viewModel::onContinueClick)
             OnboardingStep.History -> HistoryStep(state, viewModel::onBalanceChange, viewModel::onDoneClick)
         }
@@ -101,7 +108,7 @@ fun OnboardingScreen(viewModel: OnboardingViewModel = hiltViewModel()) {
 }
 
 @Composable
-private fun ColumnScope.PermissionStep(state: OnboardingUiState, onAllow: () -> Unit) {
+private fun ColumnScope.PermissionStep(state: OnboardingUiState, onAllow: () -> Unit, onRestore: () -> Unit) {
     Heading(stringResource(R.string.onboarding_permission_title), stringResource(R.string.onboarding_permission_body))
     if (state.permissionDenied)
         Text(stringResource(R.string.onboarding_permission_denied), style = HalalaType.Caption, color = HalalaColors.StateWarn)
@@ -111,6 +118,11 @@ private fun ColumnScope.PermissionStep(state: OnboardingUiState, onAllow: () -> 
         text = stringResource(R.string.onboarding_permission_allow),
         onClick = onAllow,
         kind = ButtonKind.Primary,
+        modifier = Modifier.fillMaxWidth()
+    )
+    if (state.offerRestore) HalalaButton(
+        text = stringResource(R.string.onboarding_restore),
+        onClick = onRestore,
         modifier = Modifier.fillMaxWidth()
     )
 }

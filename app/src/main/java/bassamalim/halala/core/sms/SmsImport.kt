@@ -23,10 +23,11 @@ class SmsImport @Inject constructor(
     /**
      * Reads the inbox again when Halala may (READ_SMS), so whatever it missed comes in: SMS that
      * arrived while it had no permission, or that Android never handed it. Kept ones are skipped.
+     * Only from a month before the newest kept message on, so opening doesn't reread years.
      */
-    // ponytail: scans every bank SMS each opening; read only since the newest kept one if it ever shows.
     fun catchUp() {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED) start()
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED)
+            SmsWorker.enqueueCatchUp(context)
     }
 
     /** Tries again the messages no account matched. */

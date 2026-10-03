@@ -81,9 +81,30 @@ object Rules {
         val ordered = rules
             .filter { it.enabled && it.conditions.size > 0 }
             .sortedWith(compareBy<Rule>({ it.source.ordinal }, { -it.conditions.size }, { -it.id }))
+
+        // Most rules name a merchant, and hold only for a transaction of that merchant: each
+        // transaction tries those of its own merchant and the rules naming none, in order,
+        // instead of every rule (one learned rule per merchant makes hundreds).
+        val anyMerchant = mutableListOf<Int>()
+        val byKey = mutableMapOf<String, MutableList<Int>>()
+        val byMerchant = mutableMapOf<Long, MutableList<Int>>()
+        ordered.forEachIndexed { i, rule ->
+            val c = rule.conditions
+            when {
+                c.merchantId != null -> byMerchant.getOrPut(c.merchantId) { mutableListOf() } += i
+                c.merchant != null -> {
+                    val ruleKey = Merchants.key(c.merchant)
+                    byKey.getOrPut(ruleKey) { mutableListOf() } += i
+                    merchants.of(ruleKey)?.let { byMerchant.getOrPut(it) { mutableListOf() } += i }
+                }
+                else -> anyMerchant += i
+            }
+        }
         return { transaction ->
             val key = Merchants.key(transaction.title)
-            ordered.firstOrNull { matches(it.conditions, transaction, merchants, key) }
+            val candidates = (anyMerchant + byKey[key].orEmpty() +
+                    merchants.of(key)?.let { byMerchant[it] }.orEmpty()).toSortedSet()
+            candidates.firstNotNullOfOrNull { i -> ordered[i].takeIf { matches(it.conditions, transaction, merchants, key) } }
         }
     }
 

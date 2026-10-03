@@ -65,6 +65,7 @@ class OnboardingViewModel @Inject constructor(
                 OnboardingStep.History else local.step,
             isReading = importing,
             permissionDenied = local.permissionDenied,
+            offerRestore = !route.fromSettings,
             rows = toName.map { account ->
                 FoundRow(
                     key = account.key,
@@ -103,6 +104,12 @@ class OnboardingViewModel @Inject constructor(
         domain.startImport()
         local.update { it.copy(step = OnboardingStep.Accounts, permissionDenied = false) }
     }
+
+    /**
+     * A new phone: restore a backup rather than read the inbox. SMS access was asked for first
+     * either way, so new messages still arrive; what came since the backup is read as the app opens.
+     */
+    fun onRestoreClick() = navigator.navigate(Screen.Export(fromOnboarding = true))
 
     fun onNameChange(key: String, name: String) = local.update { it.copy(names = it.names + (key to name)) }
 

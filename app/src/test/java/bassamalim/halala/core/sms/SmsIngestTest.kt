@@ -4,6 +4,7 @@ import bassamalim.halala.core.data.dataSources.definitions.DefinitionsFile
 import androidx.test.core.app.ApplicationProvider
 import bassamalim.halala.core.data.TEST_CLOCK
 import bassamalim.halala.core.data.dataSources.room.AppDatabase
+import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.InstitutionsRepository
@@ -12,9 +13,12 @@ import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
 import bassamalim.halala.core.data.testDatabase
 import bassamalim.halala.core.enums.AccountType
+import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.enums.RawStatus
 import bassamalim.halala.core.enums.TransactionKind
+import bassamalim.halala.core.enums.TransactionSource
 import bassamalim.halala.core.models.AccountDraft
+import bassamalim.halala.core.models.TransactionDraft
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -403,16 +407,58 @@ class SmsIngestTest {
         assertEquals("USD", charge.originalCurrency)
     }
 
+    private val dollarsOnly = """
+        شراء انترنت
+        بطاقة:1111;مدى
+        مبلغ:USD 7.99
+        لدى:PLAYSTATIONNETWORK
+        في:23-11-17 12:32
+    """
+
     @Test
-    fun `a charge in another currency with no converted amount waits`() = runTest {
-        receive("AlRajhiBank", """
-            شراء انترنت
-            بطاقة:1111;مدى
-            مبلغ:USD 7.99
-            لدى:PLAYSTATIONNETWORK
-            في:23-11-17 12:32
-        """)
+    fun `a charge given only in dollars is estimated at the peg and a card fee`() = runTest {
+        receive("AlRajhiBank", dollarsOnly)
+
+        assertEquals(listOf(RawStatus.RECORDED), statuses())
+        // 7.99 × 3.75 × 1.025 = 30.7116…
+        assertEquals(-3_071L, balance(rajhiMain))
+        val charge = transactions.getAll().single()
+        assertEquals(true, charge.estimated)
+        assertEquals(799L, charge.originalAmountMinor)
+        assertEquals("USD", charge.originalCurrency)
+    }
+
+    @Test
+    fun `an estimate takes the rate a bank last quoted for that currency`() = runTest {
+        // A charge whose SMS gave both: 23 USD cost 88.10 SAR (3.8304… a dollar).
+        transactions.addParsed(
+            Transaction(
+                uid = "quoted", accountId = rajhiMain, direction = Direction.DEBIT, amountMinor = 8_810, currency = "SAR",
+                occurredAt = t0, kind = TransactionKind.PURCHASE, title = "ANTHRO", source = TransactionSource.SMS,
+                createdAt = t0, originalAmountMinor = 2_300, originalCurrency = "USD"
+            )
+        )
+        receive("AlRajhiBank", dollarsOnly, minutes = 1)
+
+        // 7.99 × 88.10 / 23 = 30.6052…
+        assertEquals(3_061L, transactions.getAll().single { it.estimated }.amountMinor)
+    }
+
+    @Test
+    fun `a charge in a currency with no rate waits, and saying what was charged ends the estimate`() = runTest {
+        receive("AlRajhiBank", dollarsOnly.replace("USD", "EUR"))
         assertEquals(listOf(RawStatus.FOREIGN), statuses())
         assertEquals(0L, balance(rajhiMain))
+
+        receive("AlRajhiBank", dollarsOnly, minutes = 1)
+        val estimate = transactions.getAll().single()
+        transactions.update(
+            estimate.id,
+            TransactionDraft(
+                accountId = estimate.accountId, direction = estimate.direction, amountMinor = 3_112,
+                occurredAt = estimate.occurredAt, kind = estimate.kind, title = estimate.title
+            )
+        )
+        assertEquals(false, transactions.getAll().single().estimated)
     }
 }

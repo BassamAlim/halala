@@ -15,9 +15,11 @@ import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
 import bassamalim.halala.core.utils.shortDateLabel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import java.time.Clock
@@ -79,7 +81,7 @@ class DigestViewModel @Inject constructor(
                 }
             }
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DigestUiState())
+    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DigestUiState())
 
     fun onBackClick() = navigator.popBackStack()
 }
@@ -101,7 +103,7 @@ class DigestsViewModel @Inject constructor(
             DigestRow(period.kind, period.start.toEpochDay(), DigestTitles.of(period, today), Money.format(spent, Globals.PRIMARY_CURRENCY, decimals = false))
         }
         DigestsUiState(isLoading = false, months = rows(months), weeks = rows(weeks), years = rows(years))
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DigestsUiState())
+    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DigestsUiState())
 
     fun onBackClick() = navigator.popBackStack()
 

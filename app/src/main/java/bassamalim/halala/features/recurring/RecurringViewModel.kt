@@ -14,9 +14,11 @@ import bassamalim.halala.core.utils.initialOf
 import bassamalim.halala.core.utils.monthYearLabel
 import bassamalim.halala.core.utils.shortDateLabel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -49,7 +51,7 @@ class RecurringViewModel @Inject constructor(
             soon = upcoming.filter { !it.nextDue!!.isAfter(horizon) }.map { rowOf(it, today) },
             later = upcoming.filter { it.nextDue!!.isAfter(horizon) }.map { rowOf(it, today) }
         )
-    }.stateIn(
+    }.flowOn(Dispatchers.Default).stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = RecurringUiState()

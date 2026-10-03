@@ -237,6 +237,7 @@ class Importer @Inject constructor(
                     rawMessageId = tx.rawMessageHash?.let(rawIds::get),
                     originalAmountMinor = tx.originalAmountMinor,
                     originalCurrency = tx.originalCurrency,
+                    estimated = tx.estimated,
                     categoryId = tx.categoryUid?.let { categoryIds.named(it, "category") },
                     expenseType = converters.toExpenseType(tx.expenseType),
                     // Filed by a rule left behind: it reads as filed by you, and stays filed.

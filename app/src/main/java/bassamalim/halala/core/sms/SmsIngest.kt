@@ -11,6 +11,7 @@ import bassamalim.halala.core.data.repositories.InstitutionsRepository
 import bassamalim.halala.core.data.repositories.SavingsRepository
 import bassamalim.halala.core.data.repositories.SmsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
+import bassamalim.halala.core.domain.ForeignRates
 import bassamalim.halala.core.enums.AccountType
 import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.enums.RawStatus
@@ -65,7 +66,9 @@ class SmsIngest @Inject constructor(
      * beside its account, which may be newer than the SMS that quote the card alone.
      */
     suspend fun processPending(retry: Boolean = false) {
-        val statuses = if (retry) listOf(RawStatus.PENDING, RawStatus.UNROUTED) else listOf(RawStatus.PENDING)
+        // A foreign charge that couldn't be estimated is tried again: a rate may be known now.
+        val statuses = if (retry) listOf(RawStatus.PENDING, RawStatus.UNROUTED, RawStatus.FOREIGN)
+        else listOf(RawStatus.PENDING, RawStatus.FOREIGN)
         // Another pass, too, while one files something: an SMS that names no account goes to its
         // bank's busiest, which the first pass through an empty ledger can't tell yet.
         do {
@@ -189,10 +192,16 @@ class SmsIngest @Inject constructor(
         all: List<Account>,
         learned: List<AccountRef>
     ): RawStatus {
-        if (parsed.currency != account.currency) return RawStatus.FOREIGN
-
         val at = raw.receivedAt
-        val similar = sms.findSimilar(account.id, parsed.direction, parsed.amountMinor, at - DUPLICATE_WINDOW, at + DUPLICATE_WINDOW)
+        // Only the foreign amount: estimated in the account's currency, marked so you can correct
+        // it. A move between your accounts across currencies is still refused (as by hand).
+        val converted = if (parsed.currency == account.currency) null
+        else if (parsed.kind == TransactionKind.INTERNAL_TRANSFER || parsed.product != null) return RawStatus.FOREIGN
+        else ForeignRates.estimate(parsed.amountMinor, parsed.currency, account.currency, at,
+            transactions.quotedConversions(parsed.currency, account.currency)) ?: return RawStatus.FOREIGN
+        val amountMinor = converted?.amountMinor ?: parsed.amountMinor
+
+        val similar = sms.findSimilar(account.id, parsed.direction, amountMinor, at - DUPLICATE_WINDOW, at + DUPLICATE_WINDOW)
         if (similar.any { it.rawMessageId == raw.id }) return RawStatus.RECORDED // already done, before a crash
         if (similar.any { isDuplicate(raw.body, it.rawMessageId?.let { id -> sms.getRaw(id) }?.body) })
             return RawStatus.DUPLICATE
@@ -201,7 +210,7 @@ class SmsIngest @Inject constructor(
             uid = UUID.randomUUID().toString(),
             accountId = account.id,
             direction = parsed.direction,
-            amountMinor = parsed.amountMinor,
+            amountMinor = amountMinor,
             currency = account.currency,
             occurredAt = at,
             kind = parsed.kind,
@@ -209,8 +218,9 @@ class SmsIngest @Inject constructor(
             source = TransactionSource.SMS,
             createdAt = clock.instant(),
             rawMessageId = raw.id,
-            originalAmountMinor = parsed.originalMinor,
-            originalCurrency = parsed.originalCurrency
+            originalAmountMinor = if (converted != null) parsed.amountMinor else parsed.originalMinor,
+            originalCurrency = if (converted != null) parsed.currency else parsed.originalCurrency,
+            estimated = converted != null
         )
 
         // "Between your accounts": one SMS names both sides, so both legs are recorded at once.
@@ -254,14 +264,16 @@ class SmsIngest @Inject constructor(
             }
         }
 
-        if (parsed.feeMinor > 0) transactions.addParsed(
+        // A fee is in the charge's currency: only one in the account's own can be recorded.
+        if (parsed.feeMinor > 0 && converted == null) transactions.addParsed(
             leg.copy(
                 uid = UUID.randomUUID().toString(),
                 direction = Direction.DEBIT,
                 amountMinor = parsed.feeMinor,
                 kind = TransactionKind.FEE,
                 originalAmountMinor = null,
-                originalCurrency = null
+                originalCurrency = null,
+                estimated = false
             )
         )
         if (parsed.balanceMinor != null)

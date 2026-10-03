@@ -10,8 +10,13 @@ import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.PayCycle
 import bassamalim.halala.core.domain.PayCycles
 import bassamalim.halala.core.domain.Tags
+import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import java.time.Clock
 import java.time.LocalDate
 import java.util.UUID
@@ -39,9 +44,15 @@ class BudgetsRepository @Inject constructor(
 ) {
 
     /** This cycle as budgets see it, kept up to date as money moves. */
-    fun observeOverview(currency: String): Flow<CycleOverview> =
+    fun observeOverview(currency: String): Flow<CycleOverview> = overviewOf(currency, transactionsDao.observeAllDetails())
+
+    /** The same, read fresh, for what runs right after a write (the observed ledger is shared and may lag it). */
+    suspend fun overview(currency: String): CycleOverview =
+        overviewOf(currency, flow { emit(transactionsDao.getAllDetails()) }).first()
+
+    private fun overviewOf(currency: String, ledger: Flow<List<TransactionDetail>>): Flow<CycleOverview> =
         combine(
-            budgetsDao.observeAll(), transactionsDao.observeAllDetails(), tagsDao.observeRows(), tagsDao.observeAll()
+            budgetsDao.observeAll(), ledger, tagsDao.observeRows(), tagsDao.observeAll()
         ) { budgets, details, rows, tags ->
             val today = LocalDate.now(clock)
             val salaries = Budgets.salaries(details, clock.zone)
@@ -61,7 +72,7 @@ class BudgetsRepository @Inject constructor(
                 currency = currency,
                 tagNames = tags.associate { it.id to it.name }
             )
-        }
+        }.flowOn(Dispatchers.Default)
 
     fun observeAll(): Flow<List<Budget>> = budgetsDao.observeAll()
 

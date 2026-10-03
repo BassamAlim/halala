@@ -245,8 +245,8 @@ class ClassificationRepository @Inject constructor(
     }
 
     /** Runs the rules alone, for what you do here (inside [audited], which holds the lock). */
-    // ponytail: re-reads every candidate and tries every rule on each; index rules by merchant
-    // key and narrow to new rows if history gets slow.
+    // ponytail: re-reads every candidate (each tries only its merchant's rules, Rules.matcher);
+    // narrow to new rows if history gets slow.
     private suspend fun fileByRules() {
         val rules = classificationDao.getRules()
         if (rules.none { it.enabled }) return

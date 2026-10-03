@@ -11,10 +11,12 @@ import bassamalim.halala.core.utils.monthLabel
 import bassamalim.halala.core.utils.monthShortLabel
 import bassamalim.halala.core.utils.shortDateLabel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import java.time.YearMonth
 import javax.inject.Inject
@@ -88,7 +90,7 @@ class InsightsViewModel @Inject constructor(
             paceLabels = listOf(shortDateLabel(month.atDay(1), today), shortDateLabel(month.atDay(pace.size), today)),
             merchants = merchants.map { MerchantBar(it.id!!, it.name.orEmpty(), f(it.minor), it.minor.toFloat() / biggest) }
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), InsightsUiState())
+    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), InsightsUiState())
 
     fun onMonthClick(month: YearMonth) {
         picked.value = month

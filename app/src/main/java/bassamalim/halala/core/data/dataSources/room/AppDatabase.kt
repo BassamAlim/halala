@@ -90,7 +90,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.ZakatProfile
         GoalContribution::class,
         MerchantLogo::class
     ],
-    version = 24,
+    version = 25,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

@@ -32,6 +32,8 @@ data class TransactionUiState(
     val toLabel: String? = null,
     val note: String = "",
     val source: TransactionSource = TransactionSource.MANUAL,
+    /** A foreign charge: what the merchant asked for, and the rate it became this amount at. */
+    val foreign: ForeignCharge? = null,
     /** "30 Sep": the day it was written down. */
     val createdLabel: String = "",
     val isConfirmingDelete: Boolean = false,
@@ -72,6 +74,12 @@ data class TransactionUiState(
 ) {
     val isMove get() = fromLabel != null
 }
+
+/**
+ * "7.99" [currency] at [rate] ("3.8438") per unit; [estimated] when the bank's SMS gave only
+ * the foreign amount and Halala worked out the rest.
+ */
+data class ForeignCharge(val amount: String, val currency: String, val rate: String, val estimated: Boolean)
 
 /** The rule behind an automatic filing, as the "Filed automatically" card words it. */
 data class FiledBy(

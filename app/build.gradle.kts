@@ -86,6 +86,8 @@ android {
         // MigrationTestHelper reads the exported schemas as assets, and Robolectric only sees
         // the tested variant's (a test source set's are never merged). Debug builds only.
         getByName("debug").assets.directories.add("$projectDir/schemas")
+        // On a device, MigrationTestHelper reads them from the test APK's own assets.
+        getByName("androidTest").assets.directories.add("$projectDir/schemas")
     }
     testOptions {
         unitTests {
@@ -154,6 +156,7 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.room.testing)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

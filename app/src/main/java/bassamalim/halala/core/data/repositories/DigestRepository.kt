@@ -13,9 +13,10 @@ import bassamalim.halala.core.domain.Observation
 
 import bassamalim.halala.core.domain.RecurringDomainTotals
 import bassamalim.halala.core.enums.LoanDirection
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import java.time.Clock
 import java.time.LocalDate
 import javax.inject.Inject
@@ -55,7 +56,7 @@ class DigestRepository @Inject constructor(
             loansDue = loans.filter { it.isOpen && it.loan.dueOn?.let { due -> !due.isBefore(today) && due.isBefore(today.plusDays(LOAN_SOON_DAYS)) } == true }
                 .map { Observation.LoanDue(names[it.loan.personId].orEmpty(), it.loan.dueOn!!, it.loan.direction == LoanDirection.LENT) }
         )
-    }
+    }.flowOn(Dispatchers.Default)
 
     /** The finished periods of [kind] that had spending, newest first, each with what was spent. */
     fun observeArchive(kind: DigestKind, count: Int, currency: String): Flow<List<Pair<DigestPeriod, Long>>> =
@@ -63,11 +64,11 @@ class DigestRepository @Inject constructor(
             Digests.finished(kind, LocalDate.now(clock), count)
                 .map { it to Money.sum(Digests.spendingByCategory(details, it, currency, clock.zone).values) }
                 .filter { it.second > 0 }
-        }
+        }.flowOn(Dispatchers.Default)
 
     /** Whether [period] had any spending, for whether its digest is worth a notification. */
     suspend fun hadSpending(period: DigestPeriod, currency: String): Boolean =
-        Digests.spendingByCategory(transactionsDao.observeAllDetails().first(), period, currency, clock.zone).isNotEmpty()
+        Digests.spendingByCategory(transactionsDao.getAllDetails(), period, currency, clock.zone).isNotEmpty()
 
     private companion object {
         const val LOAN_SOON_DAYS = 14L

@@ -10,10 +10,12 @@ import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
 import bassamalim.halala.core.utils.accountLabel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
@@ -27,6 +29,10 @@ class ActivityViewModel @Inject constructor(
     /** What this screen owns rather than the database: the search and the account filter. */
     private val filters = MutableStateFlow(Filters())
 
+    /**
+     * The search echoes from [filters] on the main thread, so typing never waits; what it finds
+     * is worked out over the whole ledger in the background and follows.
+     */
     val uiState: StateFlow<ActivityUiState> = combine(
         domain.observeAccounts(),
         domain.observeTransactions(),
@@ -52,6 +58,8 @@ class ActivityViewModel @Inject constructor(
                 .map { (_, items) -> DayGroup(items.first().day, items) },
             hasAny = transactions.isNotEmpty()
         )
+    }.flowOn(Dispatchers.Default).combine(filters) { state, filters ->
+        state.copy(query = filters.query, selectedAccountId = filters.accountId)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),

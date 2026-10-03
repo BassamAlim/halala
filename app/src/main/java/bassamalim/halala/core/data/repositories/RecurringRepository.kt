@@ -8,9 +8,10 @@ import bassamalim.halala.core.domain.Recurring
 import bassamalim.halala.core.domain.SeriesState
 import bassamalim.halala.core.enums.RecurringKind
 import bassamalim.halala.core.enums.SeriesStatus
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import java.time.Clock
 import java.time.LocalDate
 import java.util.UUID
@@ -35,7 +36,7 @@ class RecurringRepository @Inject constructor(
             val today = LocalDate.now(clock)
             all.filter { it.status != SeriesStatus.DISMISSED }
                 .map { Recurring.stateOf(it, Charges.of(it, details, clock.zone), today) }
-        }
+        }.flowOn(Dispatchers.Default)
 
     fun observe(id: Long): Flow<RecurringSeries?> = recurringDao.observe(id)
 
@@ -48,7 +49,7 @@ class RecurringRepository @Inject constructor(
      * so what you said isn't one stays that way). Returns how many it proposed.
      */
     suspend fun detect(): Int {
-        val details = transactionsDao.observeAllDetails().first()
+        val details = transactionsDao.getAllDetails()
         val existing = recurringDao.getAll()
         val taken = existing.mapNotNull { it.merchantId }.toSet()
         val takenPeople = existing.mapNotNull { it.personId }.toSet()

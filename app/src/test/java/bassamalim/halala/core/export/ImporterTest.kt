@@ -98,7 +98,7 @@ class ImporterTest {
         ),
         balances = emptyMap(),
         transactions = listOf(
-            Transaction(31, "tx-jahez", 22, Direction.DEBIT, 21_450, "SAR", at, TransactionKind.PURCHASE, "Jahez Olaya", "lunch", TransactionSource.SMS, at, rawMessageId = 61, originalAmountMinor = 5_720, originalCurrency = "USD", categoryId = 47, expenseType = ExpenseType.VARIABLE_DISCRETIONARY, ruleId = 59, merchantKey = "jahez olaya"),
+            Transaction(31, "tx-jahez", 22, Direction.DEBIT, 21_450, "SAR", at, TransactionKind.PURCHASE, "Jahez Olaya", "lunch", TransactionSource.SMS, at, rawMessageId = 61, originalAmountMinor = 5_720, originalCurrency = "USD", estimated = true, categoryId = 47, expenseType = ExpenseType.VARIABLE_DISCRETIONARY, ruleId = 59, merchantKey = "jahez olaya"),
             Transaction(32, "tx-out", 22, Direction.DEBIT, 50_000, "SAR", at, TransactionKind.ATM_WITHDRAWAL, "", "", TransactionSource.MANUAL, at),
             Transaction(33, "tx-in", 21, Direction.CREDIT, 50_000, "SAR", at, TransactionKind.ATM_WITHDRAWAL, "", "", TransactionSource.MANUAL, at),
             Transaction(34, "tx-khalid", 22, Direction.DEBIT, 150_000, "SAR", at, TransactionKind.LOAN_GIVEN, "KHALID ALI", "", TransactionSource.SMS, at, merchantKey = "khalid ali")

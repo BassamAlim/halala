@@ -122,7 +122,7 @@ class SettingsViewModel @Inject constructor(
 
     fun onAccountsClick() = navigator.navigate(Screen.Accounts)
 
-    fun onExportClick() = navigator.navigate(Screen.Export)
+    fun onExportClick() = navigator.navigate(Screen.Export())
 
     fun onCategoriesClick() = navigator.navigate(Screen.Categories())
 
