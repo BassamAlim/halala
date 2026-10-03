@@ -1,5 +1,11 @@
 package bassamalim.halala.core.nav
 
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.currentStateAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -88,7 +94,7 @@ fun NavGraph(navController: NavHostController, startDestination: Screen) {
     ) {
         screen<Screen.Lock> { LockScreen() }
 
-        composable<Screen.Main> { MainScreen() }
+        composable<Screen.Main> { Settled { MainScreen() } }
 
         screen<Screen.Accounts> { AccountsScreen() }
 
@@ -174,5 +180,25 @@ fun NavGraph(navController: NavHostController, startDestination: Screen) {
  */
 private inline fun <reified T : Any> NavGraphBuilder.screen(noinline content: @Composable () -> Unit) =
     composable<T> {
-        Box(Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))) { content() }
+        Settled {
+            Box(Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))) { content() }
+        }
     }
+
+/**
+ * Touches reach a screen only while it is resumed, not while it slides in or out. Otherwise the
+ * second tap of a double tap lands on the screen that is leaving: Back pops twice (from just
+ * above Main, to a blank graph), a row opens its screen twice, Save saves again.
+ */
+@Composable
+private fun Settled(content: @Composable () -> Unit) {
+    val state by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    val resumed = state.isAtLeast(Lifecycle.State.RESUMED)
+    Box(
+        Modifier.pointerInput(resumed) {
+            if (!resumed) awaitPointerEventScope {
+                while (true) awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() }
+            }
+        }
+    ) { content() }
+}

@@ -90,7 +90,7 @@ class WealthViewModel @Inject constructor(
         }.coerceAtLeast(earliest.minusDays(1)).coerceAtMost(today.minusDays(1))
         val timeline = NetWorth.timeline(
             now.totalMinor, assetsNow, minOf(from, today.minusYears(1)), today, details,
-            included.map { it.account.id }.toSet(), loans, snapshots, clock.zone
+            included.map { it.account.id }.toSet(), loans, currency, snapshots, clock.zone
         )
         val shown = timeline.filter { !it.first.isBefore(from) }
         fun valueOn(day: LocalDate) = timeline.firstOrNull { !it.first.isBefore(day) }?.second

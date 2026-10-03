@@ -1,5 +1,6 @@
 package bassamalim.halala.features.export
 
+import kotlinx.coroutines.flow.collectLatest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -81,13 +82,12 @@ fun ExportScreen(viewModel: ExportViewModel = hiltViewModel()) {
     }
 
     LaunchedEffect(viewModel) {
-        viewModel.events.collect { event ->
+        viewModel.events.collectLatest { event ->
             when (event) {
                 is ExportEvent.Written -> if (event.succeeded) saved else failed
                 ExportEvent.Unreadable -> unreadable
                 is ExportEvent.Restored -> if (event.succeeded) restored else restoreFailed
             }.let { message ->
-                snackbarHostState.currentSnackbarData?.dismiss()
                 snackbarHostState.showSnackbar(message)
             }
         }

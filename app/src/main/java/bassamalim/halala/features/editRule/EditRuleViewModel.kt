@@ -1,5 +1,6 @@
 package bassamalim.halala.features.editRule
 
+import bassamalim.halala.core.utils.OneAtATime
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -26,6 +27,8 @@ class EditRuleViewModel @Inject constructor(
     private val navigator: Navigator,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    private val saving = OneAtATime()
 
     private val id = savedStateHandle.toRoute<Screen.EditRule>().id
 
@@ -86,10 +89,11 @@ class EditRuleViewModel @Inject constructor(
 
     fun onSaveClick() {
         val current = form.value ?: return
-        viewModelScope.launch {
+        saving.launch(viewModelScope) {
             val found = domain.save(id, current, currencies[current.accountId] ?: Globals.PRIMARY_CURRENCY)
             problems.update { found }
             if (found.isEmpty()) navigator.popBackStack()
+            found.isEmpty()
         }
     }
 

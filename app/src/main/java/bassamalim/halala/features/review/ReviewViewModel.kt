@@ -31,6 +31,12 @@ class ReviewViewModel @Inject constructor(
     private val justFiled = MutableStateFlow<JustFiled?>(null)
     private val filter = MutableStateFlow(ReviewFilter.All)
 
+    /**
+     * Cards filed (or being filed): a second tap before the card leaves would file it twice, and
+     * Undo would undo only the second.
+     */
+    private val filing = mutableSetOf<String>()
+
     val uiState: StateFlow<ReviewUiState> = combine(
         // The cards read their merchants for what each was identified as.
         combine(domain.observeTransactions(), domain.observeMerchants(), ::Pair),
@@ -67,6 +73,8 @@ class ReviewViewModel @Inject constructor(
             )
         }
         val suggested = cards.filter { it.suggestion != null }
+        // A filed card that has left can be filed again if it comes back (new spending, or Undo).
+        filing.retainAll(cards.map { it.key }.toSet())
 
         ReviewUiState(
             isLoading = false,
@@ -117,8 +125,10 @@ class ReviewViewModel @Inject constructor(
     }
 
     private fun file(card: ReviewCard, category: CategoryOption) {
+        if (!filing.add(card.key)) return
         viewModelScope.launch {
             val batchId = domain.learn(card.descriptor, category.id)
+            if (batchId == null) filing.remove(card.key)
             justFiled.update { batchId?.let { JustFiled(it, card.title, category.name) } }
         }
     }

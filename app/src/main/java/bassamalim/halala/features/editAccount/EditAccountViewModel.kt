@@ -1,5 +1,6 @@
 package bassamalim.halala.features.editAccount
 
+import bassamalim.halala.core.utils.OneAtATime
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -24,6 +25,8 @@ class EditAccountViewModel @Inject constructor(
     private val navigator: Navigator,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    private val saving = OneAtATime()
 
     private val id = savedStateHandle.toRoute<Screen.EditAccount>().id
 
@@ -102,19 +105,21 @@ class EditAccountViewModel @Inject constructor(
     fun onBalanceNowChange(value: String) = edit { it.copy(balanceNow = value) }
 
     fun onSaveClick() {
-        viewModelScope.launch {
+        saving.launch(viewModelScope) {
             when (val result = domain.save(id, local.value.form)) {
                 AccountSave.Saved -> navigator.popBackStack()
                 is AccountSave.Invalid -> local.update { it.copy(problems = result.problems) }
             }
+            local.value.problems.isEmpty()
         }
     }
 
     /** Archiving is undone by the same button, so it asks nothing. */
     fun onArchiveClick() {
-        viewModelScope.launch {
+        saving.launch(viewModelScope) {
             domain.setArchived(id, !local.value.isArchived)
             navigator.popBackStack()
+            true
         }
     }
 

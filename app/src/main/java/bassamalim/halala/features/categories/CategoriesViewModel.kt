@@ -1,5 +1,6 @@
 package bassamalim.halala.features.categories
 
+import bassamalim.halala.core.utils.OneAtATime
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import bassamalim.halala.core.enums.BusinessType
@@ -20,6 +21,8 @@ class CategoriesViewModel @Inject constructor(
     private val domain: CategoriesDomain,
     private val navigator: Navigator
 ) : ViewModel() {
+
+    private val saving = OneAtATime()
 
     private val form = MutableStateFlow<CategoryForm?>(null)
     private val deletingId = MutableStateFlow<Long?>(null)
@@ -68,9 +71,11 @@ class CategoriesViewModel @Inject constructor(
     fun onSaveClick() {
         val written = form.value ?: return
         val others = uiState.value.categories.filter { it.id != written.id }.map { it.name }
-        viewModelScope.launch {
+        saving.launch(viewModelScope) {
             val problem = domain.save(written, others)
             form.update { if (problem == null) null else it?.copy(problem = problem) }
+            // The sheet closes, and the next one opened saves afresh.
+            false
         }
     }
 

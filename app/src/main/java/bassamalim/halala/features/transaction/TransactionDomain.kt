@@ -54,10 +54,12 @@ class TransactionDomain @Inject constructor(
 
     /**
      * A move goes as a whole: both legs. A transfer leaves its loan first, so a loan never
-     * outlives the money it lent (its repayments become plain transfers again).
+     * outlives the money it lent (its repayments become plain transfers again); a split
+     * purchase is unsplit first, for the same reason.
      */
     suspend fun delete(id: Long) {
         loansRepository.unlink(id)
+        loansRepository.unsplit(id)
         transactionsRepository.delete(id)
     }
 

@@ -1,5 +1,6 @@
 package bassamalim.halala.features.savings
 
+import bassamalim.halala.core.utils.OneAtATime
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -151,6 +152,8 @@ class SavingsTermsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
+    private val saving = OneAtATime()
+
     private val accountId = savedStateHandle.toRoute<Screen.SavingsTerms>().accountId
     private val form = MutableStateFlow<TermsForm?>(null)
     private val invalid = MutableStateFlow(false)
@@ -204,7 +207,7 @@ class SavingsTermsViewModel @Inject constructor(
         val rate = Assets.decimal(current.rate)?.takeIf { it <= BigDecimal(100) }
         if (rate == null) return invalid.update { true }
         val awaeed = current.kind == SavingsKind.AWAEED
-        viewModelScope.launch {
+        saving.launch(viewModelScope) {
             savingsRepository.put(
                 SavingsTerms(
                     accountId = accountId,
@@ -216,13 +219,15 @@ class SavingsTermsViewModel @Inject constructor(
                 )
             )
             navigator.popBackStack()
+            true
         }
     }
 
     fun onClearClick() {
-        viewModelScope.launch {
+        saving.launch(viewModelScope) {
             savingsRepository.delete(accountId)
             navigator.popBackStack()
+            true
         }
     }
 
@@ -259,6 +264,8 @@ class DepositViewModel @Inject constructor(
     private val clock: Clock,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    private val saving = OneAtATime()
 
     private val id = savedStateHandle.toRoute<Screen.Deposit>().id
     private val form = MutableStateFlow<DepositForm?>(null)
@@ -305,7 +312,7 @@ class DepositViewModel @Inject constructor(
         val rate = current.rate.trim().takeIf { it.isNotEmpty() }?.let { text ->
             Assets.decimal(text)?.takeIf { it <= BigDecimal(100) } ?: return invalid.update { true }
         }
-        viewModelScope.launch {
+        saving.launch(viewModelScope) {
             savingsRepository.getDeposit(id)?.let {
                 savingsRepository.saveDeposit(
                     it.copy(
@@ -317,13 +324,16 @@ class DepositViewModel @Inject constructor(
                 )
             }
             navigator.popBackStack()
+            true
         }
     }
 
     fun onPayOutConfirm() {
-        viewModelScope.launch {
+        confirming.update { false }
+        saving.launch(viewModelScope) {
             savingsRepository.payOut(id)
             navigator.popBackStack()
+            true
         }
     }
 }

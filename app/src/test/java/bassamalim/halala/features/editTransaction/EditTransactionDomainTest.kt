@@ -55,6 +55,15 @@ class EditTransactionDomainTest {
     }
 
     @Test
+    fun `editing keeps a kind the form doesn't offer`() {
+        val count = (check(form(mode = EntryMode.IN, kind = TransactionKind.ADJUSTMENT)) as CheckedEntry.Single).draft
+        val atm = (check(form(kind = TransactionKind.ATM_WITHDRAWAL)) as CheckedEntry.Single).draft
+
+        assertEquals(TransactionKind.ADJUSTMENT, count.kind)
+        assertEquals(TransactionKind.ATM_WITHDRAWAL, atm.kind)
+    }
+
+    @Test
     fun `the amount is read in the account's own currency`() {
         assertEquals(setOf(TransactionProblem.AmountInvalid), (check(form(amount = "1.234")) as CheckedEntry.Invalid).problems)
         assertEquals(12_300L, ((check(form(amount = "123", accountId = dollars.id))) as CheckedEntry.Single).draft.amountMinor)

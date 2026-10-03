@@ -1,5 +1,6 @@
 package bassamalim.halala.features.backup
 
+import kotlinx.coroutines.flow.collectLatest
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -69,8 +70,7 @@ fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
     }
 
     LaunchedEffect(viewModel) {
-        viewModel.eventFlow.collect { event ->
-            snackbar.currentSnackbarData?.dismiss()
+        viewModel.eventFlow.collectLatest { event ->
             snackbar.showSnackbar(
                 when (event) {
                     is BackupEvent.Finished -> messages.getValue(event.outcome)

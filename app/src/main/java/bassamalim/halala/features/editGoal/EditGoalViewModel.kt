@@ -1,5 +1,6 @@
 package bassamalim.halala.features.editGoal
 
+import bassamalim.halala.core.utils.OneAtATime
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -25,6 +26,8 @@ class EditGoalViewModel @Inject constructor(
     private val navigator: Navigator,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    private val saving = OneAtATime()
 
     private val id = savedStateHandle.toRoute<Screen.EditGoal>().id
 
@@ -91,10 +94,11 @@ class EditGoalViewModel @Inject constructor(
 
     fun onSaveClick() {
         val current = form.value ?: return
-        viewModelScope.launch {
+        saving.launch(viewModelScope) {
             val found = domain.save(id, current)
             problems.update { found }
             if (found.isEmpty()) navigator.popBackStack()
+            found.isEmpty()
         }
     }
 

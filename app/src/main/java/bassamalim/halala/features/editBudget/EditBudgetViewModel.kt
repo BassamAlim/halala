@@ -1,5 +1,6 @@
 package bassamalim.halala.features.editBudget
 
+import bassamalim.halala.core.utils.OneAtATime
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -25,6 +26,8 @@ class EditBudgetViewModel @Inject constructor(
     private val navigator: Navigator,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    private val saving = OneAtATime()
 
     private val id = savedStateHandle.toRoute<Screen.EditBudget>().id
 
@@ -90,10 +93,11 @@ class EditBudgetViewModel @Inject constructor(
 
     fun onSaveClick() {
         val current = form.value ?: return
-        viewModelScope.launch {
+        saving.launch(viewModelScope) {
             val found = domain.save(id, current)
             problems.update { found }
             if (found.isEmpty()) navigator.popBackStack()
+            found.isEmpty()
         }
     }
 
