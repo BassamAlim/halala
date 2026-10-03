@@ -7,9 +7,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -55,7 +53,7 @@ data class BottomNavItem(val label: String, @param:DrawableRes val icon: Int)
 
 /**
  * The five fixed tabs: surface fill, a line on top, 22dp icons over 11sp labels. The current tab
- * is accent and the others muted; a short jade light slides along the top line to it and the
+ * is accent and the others muted; a short jade line slides along the top line to it and the
  * icon lifts. There is no indicator pill. What waits for you is counted inside the Inbox tab,
  * never as a badge here.
  */
@@ -85,11 +83,6 @@ fun BottomNav(
                 val centre = (at + 0.5f) * slot
                 val x = if (layoutDirection == LayoutDirection.Rtl) size.width - centre else centre
                 val half = INDICATOR.toPx() / 2
-                drawRect(
-                    Brush.radialGradient(listOf(HalalaColors.Glow, Color.Transparent), center = Offset(x, 0f), radius = slot * 0.6f),
-                    topLeft = Offset(x - slot / 2, 0f),
-                    size = Size(slot, slot * 0.6f)
-                )
                 drawLine(
                     color = HalalaColors.Accent,
                     start = Offset(x - half, 0f),

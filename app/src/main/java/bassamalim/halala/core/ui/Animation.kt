@@ -11,24 +11,15 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.IndicationNodeFactory
+import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.node.DelegatableNode
 import androidx.compose.ui.node.DrawModifierNode
 import androidx.compose.ui.node.invalidateDraw
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavBackStackEntry
 import bassamalim.halala.core.ui.theme.HalalaColors
@@ -65,29 +56,8 @@ val outToRight = { _: AnimatedContentTransitionScope<NavBackStackEntry> ->
     slideOutHorizontally(tween(DURATION, easing = Emphasized)) { it / 5 } + fadeOut(tween(EXIT))
 }
 
-/**
- * The ground every screen stands on: [HalalaColors.Bg] with a faint jade light from the top end
- * corner. [top] is how far below the window's top this is drawn, so a screen under the status
- * bar lines its light up with the one the window draws behind the bar.
- */
-fun DrawScope.drawGround(top: Float = 0f) {
-    drawRect(HalalaColors.Bg)
-    val x = size.width * if (layoutDirection == LayoutDirection.Rtl) 0.15f else 0.85f
-    drawRect(
-        Brush.radialGradient(
-            colors = listOf(HalalaColors.Glow, Color.Transparent),
-            center = Offset(x, -top),
-            radius = size.width * 1.1f
-        )
-    )
-}
-
-/** A screen's opaque ground ([drawGround]): opaque, so a push never shows one screen through another. */
-@Composable
-fun Modifier.ground(): Modifier {
-    val top = WindowInsets.safeDrawing.getTop(LocalDensity.current).toFloat()
-    return drawBehind { drawGround(top) }
-}
+/** A screen's opaque ground, so a push never shows one screen through another. */
+fun Modifier.ground(): Modifier = background(HalalaColors.Bg)
 
 /**
  * How everything tappable answers a touch: it sinks a little (a few dp at most, however wide it

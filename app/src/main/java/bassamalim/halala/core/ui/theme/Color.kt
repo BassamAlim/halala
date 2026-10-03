@@ -68,9 +68,6 @@ object HalalaColors {
     /** The top of a card's border, fading to [Line] down its sides. */
     val LineLit = Color(0xFF3A4047)
 
-    /** The faint jade light in the top corner of every screen, and under the active tab. */
-    val Glow = Color(0x147DD4A0)
-
     /** A press: the pressed thing is washed with this, as well as shrinking a little. */
     val Pressed = Color(0x0FECEEF0)
 

@@ -150,7 +150,7 @@ Don't hardcode hex values or `.dp` literals that aren't a named token in `Dimens
 - **Motion and depth** (`core/ui/Animation.kt`): every `clickable` sinks a few dp and springs
   back (`PressIndication`, the theme's indication; put `clickable` before a fill so the whole
   thing sinks). Cards are lit from above (`SurfaceLit`→`Surface`, `LineLit`→`Line`); screens
-  stand on `ground()` (Bg with a faint jade `Glow` in the top end corner). Figures arrive and
+  stand on `ground()` (opaque Bg; no glows or coloured shadows anywhere). Figures arrive and
   change through `RollingAmount` (only moved, never computed); bars fill with `settle()`; pushes
   glide a fifth of the width (`Emphasized`), tabs fade through. Tabs and segments tick (haptics).
 - **Touch targets are at least 44dp** (`Sizes.touchTarget`); a 32dp chip pads its hit area.

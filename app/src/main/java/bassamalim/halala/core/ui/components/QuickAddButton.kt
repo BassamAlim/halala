@@ -10,7 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
@@ -22,18 +21,16 @@ import bassamalim.halala.R
 import bassamalim.halala.core.ui.theme.HalalaColors
 import bassamalim.halala.core.ui.theme.Radius
 import bassamalim.halala.core.ui.theme.Sizes
-import bassamalim.halala.core.ui.theme.Spacing
 
 /**
  * The spec's global quick-add. The boards don't draw one: a jade square with the add glyph, lit
- * from above, that glows jade on the ground rather than casting a grey shadow.
+ * from above. Flat: no shadow, no glow.
  */
 @Composable
 fun QuickAddButton(contentDescription: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .size(Sizes.fab)
-            .shadow(Spacing.md, Radius.lg, ambientColor = HalalaColors.Accent, spotColor = HalalaColors.Accent)
             .clip(Radius.lg)
             .semantics { this.contentDescription = contentDescription }
             .clickable(role = Role.Button, onClick = onClick)
