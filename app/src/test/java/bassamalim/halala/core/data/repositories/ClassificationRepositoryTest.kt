@@ -193,6 +193,20 @@ class ClassificationRepositoryTest {
     }
 
     @Test
+    fun `narrowing a rule sends what it no longer matches back to review`() = runTest {
+        val small = spend("Wasel 12", 5_000)
+        val big = spend("WASEL Riyadh", 40_000)
+        classification.saveRule(0, RuleConditions(contains = "wasel"), RuleActions(shopping))
+        val rule = classification.getRules().single()
+
+        classification.saveRule(rule.id, RuleConditions(contains = "wasel", minMinor = 20_000), RuleActions(shopping))
+
+        assertNull(transactions.get(small)!!.categoryId)
+        assertNull(transactions.get(small)!!.ruleId)
+        assertEquals(shopping, transactions.get(big)!!.categoryId)
+    }
+
+    @Test
     fun `a rule needs a condition, a category and amounts that make a range`() {
         assertEquals(
             CheckedRule.Invalid(setOf(RuleProblem.ConditionMissing, RuleProblem.CategoryMissing)),

@@ -251,12 +251,20 @@ class ClassificationRepository @Inject constructor(
         val rules = classificationDao.getRules()
         if (rules.none { it.enabled }) return
         val ruleFor = Rules.matcher(rules, lookup())
+        val enabled = rules.filter { it.enabled }.map { it.id }.toSet()
 
         transactionsDao.getRuleCandidates()
             .filter { it.kind.countsInTotals }
             .groupBy(ruleFor)
             .forEach { (rule, transactions) ->
-                if (rule == null) return@forEach
+                if (rule == null) {
+                    // Filed by a rule that no longer matches it (edited narrower): back to review.
+                    // What a rule that is off filed stays filed.
+                    transactions.filter { it.ruleId in enabled }.map { it.id }.chunked(500).forEach { ids ->
+                        transactionsDao.setCategory(ids, null, null, null)
+                    }
+                    return@forEach
+                }
                 val stale = transactions.filter {
                     it.ruleId != rule.id || it.categoryId != rule.actions.categoryId ||
                             it.expenseType != rule.actions.expenseType
