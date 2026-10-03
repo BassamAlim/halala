@@ -1,5 +1,8 @@
 package bassamalim.halala.core.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -12,8 +15,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,28 +65,42 @@ fun HalalaChip(
     onClick: (() -> Unit)? = null
 ) {
     val interactionSource = remember { MutableInteractionSource() }
+    // A chip changing style (a filter turned on) eases between its looks rather than snapping.
+    val fill by animateColorAsState(
+        when (style) {
+            ChipStyle.Plain -> HalalaColors.Surface2
+            ChipStyle.On -> HalalaColors.Accent
+            else -> HalalaColors.Accent.copy(alpha = 0f)
+        },
+        tween(CHIP_MS),
+        label = "chip fill"
+    )
+    val edge by animateColorAsState(
+        when (style) {
+            ChipStyle.Outline -> HalalaColors.Line
+            ChipStyle.Accent -> HalalaColors.Accent
+            else -> HalalaColors.Line.copy(alpha = 0f)
+        },
+        tween(CHIP_MS),
+        label = "chip edge"
+    )
+    val ink by animateColorAsState(
+        when (style) {
+            ChipStyle.On -> HalalaColors.OnAccent
+            ChipStyle.Accent -> HalalaColors.Accent
+            else -> HalalaColors.Text
+        },
+        tween(CHIP_MS),
+        label = "chip ink"
+    )
     val pill = @Composable {
         Box(
             modifier = Modifier
                 .height(Sizes.chip)
                 .clip(Radius.pill)
-                .then(if (onClick != null) Modifier.indication(interactionSource, ripple()) else Modifier)
-                .background(
-                    when (style) {
-                        ChipStyle.Plain -> HalalaColors.Surface2
-                        ChipStyle.On -> HalalaColors.Accent
-                        else -> Color.Transparent
-                    }
-                )
-                .border(
-                    width = Sizes.border,
-                    color = when (style) {
-                        ChipStyle.Outline -> HalalaColors.Line
-                        ChipStyle.Accent -> HalalaColors.Accent
-                        else -> Color.Transparent
-                    },
-                    shape = Radius.pill
-                )
+                .then(if (onClick != null) Modifier.indication(interactionSource, LocalIndication.current) else Modifier)
+                .background(fill)
+                .border(width = Sizes.border, color = edge, shape = Radius.pill)
                 .padding(horizontal = Insets.chip),
             contentAlignment = Alignment.Center
         ) {
@@ -91,11 +108,7 @@ fun HalalaChip(
                 text = label,
                 style = if (style == ChipStyle.On) HalalaType.Label.copy(fontWeight = FontWeight(600))
                 else HalalaType.Label,
-                color = when (style) {
-                    ChipStyle.On -> HalalaColors.OnAccent
-                    ChipStyle.Accent -> HalalaColors.Accent
-                    else -> HalalaColors.Text
-                },
+                color = ink,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -121,6 +134,8 @@ fun HalalaChip(
         ) { pill() }
     }
 }
+
+private const val CHIP_MS = 180
 
 /** The small uppercase accent tag after a row title when the app filed it itself. */
 @Composable

@@ -147,6 +147,12 @@ Don't hardcode hex values or `.dp` literals that aren't a named token in `Dimens
   the same 108dp adaptive grid (`ic_launcher_foreground` over bg, plus a monochrome layer for
   themed icons). The small `halala-glyph` (no ring, for under 32dp) is for the notification
   icon when notifications arrive.
+- **Motion and depth** (`core/ui/Animation.kt`): every `clickable` sinks a few dp and springs
+  back (`PressIndication`, the theme's indication; put `clickable` before a fill so the whole
+  thing sinks). Cards are lit from above (`SurfaceLit`→`Surface`, `LineLit`→`Line`); screens
+  stand on `ground()` (Bg with a faint jade `Glow` in the top end corner). Figures arrive and
+  change through `RollingAmount` (only moved, never computed); bars fill with `settle()`; pushes
+  glide a fifth of the width (`Emphasized`), tabs fade through. Tabs and segments tick (haptics).
 - **Touch targets are at least 44dp** (`Sizes.touchTarget`); a 32dp chip pads its hit area.
 - Components (`core/ui/components`): `HalalaCard`/`SummaryCard`/`ListCard`+`ListRow`,
   `BalanceCard`, `HalalaButton` (Primary: one per section; Secondary; destructive = secondary with

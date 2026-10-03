@@ -1,5 +1,6 @@
 package bassamalim.halala.features.backup
 
+import androidx.compose.ui.graphics.Color
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -80,7 +81,7 @@ fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
         }
     }
 
-    Scaffold(containerColor = HalalaColors.Bg, snackbarHost = { SnackbarHost(snackbar) }) { padding ->
+    Scaffold(containerColor = Color.Transparent, snackbarHost = { SnackbarHost(snackbar) }) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
