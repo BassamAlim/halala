@@ -240,6 +240,15 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   identifies from the bundled list only). `IdentifyWorker` (online only, one at a time)
   runs after every SMS run and as the app opens, in batches of 40 names, the busiest first;
   what it says is recorded without a batch (the rule names why), and each merchant is asked once.
+  **Web search** (`core/ai/WebSearch.kt`, `WebLookup`, the spec's Tavily step): after
+  identifying, a merchant the AI said at under 80 with 100 or more of spending (small one-offs
+  never) is looked up once, the most money first: its name and "Saudi Arabia" (in Arabic for an
+  Arabic name) go to Tavily (basic search, five results), then the name and those public results
+  go to Groq, which answers again and names the result it rests on. A surer answer replaces the
+  first, keeping the page (`Merchant.webUrl`, `webTitle`), shown as "Found online: <title>" (it
+  opens the page) on Review and the Merchant screen; either way `searchedOnline` stops it being
+  searched again. At most 800 searches a month (a count in DataStore). The key is
+  `BuildConfig.TAVILY_API_KEY`, as Groq's (`TAVILY_API_KEY`); a build without it never searches.
 - **The owner's definitions** (no board, no screen): Halala is the owner's first. Places anyone
   pays at go in the bundled `KnownMerchants` list (a new build); the owner's own merchants and
   categories go in `definitions.json` at the repository root, pushed to the phone with no
@@ -295,7 +304,11 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   early) moves the next due date on, and a series with neither merchant nor person is taken as
   paid when its day passes. A linked one whose charge is more than `Recurring.GRACE_DAYS` late is
   "missed"; a last charge above the known price is a price rise ("Keep it" takes the new price,
-  "Remind me to cancel" also asks for a reminder before it renews). `Recurring.detect` proposes
+  "Remind me to cancel" also asks for a reminder before it renews). Heads-ups
+  (`Recurring.headsUp`): a yearly (or 12-month) one renewing within 30 days, and a subscription
+  not charged yet whose first day (its anchor: a free trial's end) is within a week; each is a card
+  with "Keep it" (remembered in `dismissed_alerts` by series and day) and "Remind me to cancel",
+  and counts in the Inbox. Nothing once a cancel reminder is set. `Recurring.detect` proposes
   (status `PROPOSED`) a payee charged three times or more at a steady week, month or year, the
   last recently: a subscription when the amount barely moves (5%), a bill when it moves some
   (50%), planned for a person; you add or dismiss it (dismissed stays dismissed). It runs on
@@ -306,7 +319,8 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   a cycle); the cycle ends a month after the last, and runs on while a salary is late. With no
   salary in 45 days it is the calendar month.
 - **Budgets** (`Budget`, `core/domain/Budgets`): a limit each pay cycle on everything, a category,
-  an expense type or a merchant, optionally rolling over what was left last cycle. Spending is
+  an expense type, a merchant or a tag (what carries it, `Tags.byTransaction`), optionally
+  rolling over what was left last cycle. Spending is
   money out that counts in totals, your share of it; never stored, read from the ledger.
   `BudgetState` colours it, and spending further through the budget than through the cycle by
   10% or more reads as "spending fast" (the warn look) even under 80%. The Everything budget
@@ -398,8 +412,8 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   stays off. Suggestions are worked out on the phone (`core/domain/Tags.suggest`, no AI call):
   three or more purchases in another currency, no more than a week apart, in the last four
   months, are "Trip to <the country of that currency>?" ("Tag the trip" makes an automatic tag
-  over those days; "Not a trip" is remembered in DataStore by its key). Budgets by tag and a
-  feed filtered by tag aren't built yet.
+  over those days; "Not a trip" is remembered in DataStore by its key). A budget can be on a
+  tag; a tag's own screen is its feed (everything carrying it, and what was spent).
 - **Where you spend** (the spec's heatmap; no board). There is no setting: whenever location is
   allowed all the time (it must be, since SMS arrive while the app is closed), `SmsWorker` asks
   Android's own location (`PlaceCapture`, no Play services) for the purchases its run recorded
@@ -432,7 +446,8 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   identified as, by whom and how sure).
 - **Lock**: `BiometricPrompt` on every cold start (the graph starts on `Screen.Lock`) and after
   a minute in the background (`LockManager`, monotonic clock; the minute is a preference,
-  `PreferencesRepository.lockTimeoutSeconds`, with no UI yet). Always on, so Settings has no row for it; strong (class 3)
+  `PreferencesRepository.lockTimeoutSeconds`, chosen in Settings › Privacy: at once, 1, 5 or 15
+  minutes). The lock itself is always on; strong (class 3)
   biometrics with the device credential as fallback (Android 10 can't combine those, so there it
   accepts any biometric plus credential). A phone with no screen lock opens straight through —
   you can never lock yourself out. `FLAG_SECURE` is always set (no screenshots, blank in
@@ -463,7 +478,8 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   6 people with their aliases, 7 loans with their events, 8 subscriptions and bills, 9 a loan's
   split purchase, 10 budgets, 11 savings goals, 12 assets and their snapshots, 13 the zakat
   method, 14 retirement scenarios, 15 savings terms, 16 tags and the transactions carrying them,
-  17 an asset's price source, 18 the places of purchases, 19 term deposits),
+  17 an asset's price source, 18 the places of purchases, 19 term deposits, 20 a budget's tag,
+  21 merchants looked up online),
   keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
 - **Encrypted backups** (Backup and export › Encrypted backups, no board): a `.halala` file
   (`core/backup/BackupFile`) is the JSON export zipped and sealed with AES-256-GCM under a key
@@ -481,7 +497,9 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   A new table or column that matters must be added to `ExportFile`, `Exporter` and `Importer`
   together; `ImporterTest` checks that a restored export exports again as the same file.
 - **Privacy**: no analytics, no crash reporter. Network use: Groq (HTTPS, always on in a build
-  with the key) for merchant identification (merchants' names and nothing else), for finding
+  with the key) for merchant identification (merchants' names and nothing else, with public web
+  results for one it was unsure of), Tavily for those web searches (a merchant's name and the
+  country, nothing else), for finding
   one person under two names (the names banks wrote for people you transfer with, nothing else) and the
   assistant (the question you type and today's date, nothing else); and market prices (public
   gold and fund prices, fetched with nothing of yours, only once you link an asset); and the
@@ -546,9 +564,13 @@ category and type), **Recent changes** (each with Undo), the reminder sheet in S
 **Merchants** (from Activity: every merchant, busiest first, with search) and **Merchant** (from
 Transaction detail's Merchant row, a Review card for many, or the list: rename, what was spent,
 what it is (tap to say), how the bank writes it with how each spelling joined, "Not this one",
-"Same as another merchant", its transactions). Still to come in Phase 2: web search for
-cryptic names (Tavily), the Review board's swiping and its loan/split marks (with Phase 3),
-the usage cap in Settings, and merchant logos and locations.
+"Same as another merchant", its transactions). Review also swipes (toward the end accepts: the
+suggestion, or the category sheet when there is none; toward the start changes) and marks a
+card as a split (one purchase: Transaction detail opens on its split sheet), a subscription or a
+bill (the series form, started from the newest charge: monthly, next due on or after today,
+linked to the merchant); loans are marked on transfers, which never reach Review. Web search
+for cryptic names is built (see Identifying merchants). Still to come in Phase 2: the usage cap
+in Settings, and merchant logos and locations.
 
 **Phase 3 (people and recurring)** has begun: people (`Person`, `PersonAlias`, `PeopleRepository`,
 found by `applyRules`) and loans (`Loan`, `LoanEvent`, `LoansRepository`, `core/domain/Loans`).
@@ -566,8 +588,7 @@ reached from the Plan tab's card and Home's Coming up), **Subscription or bill**
 form, from the list or its + Add), Home's **People owe you** and **Coming up** cards (Home
 board; always shown, so they are a way in even when empty), and the Plan tab's Subscriptions and bills card (Plan board; the rest of Plan comes with
 Phase 4), and Transaction detail's **Split** card and sheet (no board). Still to come in
-Phase 3: the Review board's one-tap loan/split/subscription marks, linking people to IBANs and
-contacts.
+Phase 3: linking people to IBANs and contacts.
 
 **Phase 4 (planning)** is built: pay cycles, budgets, savings goals, the forecast, anomaly
 alerts and digests. Screens: the **Plan** tab (Plan board:
