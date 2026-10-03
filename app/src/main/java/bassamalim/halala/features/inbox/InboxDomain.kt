@@ -10,6 +10,7 @@ import bassamalim.halala.core.domain.Rules
 import bassamalim.halala.core.domain.SeriesState
 import bassamalim.halala.core.domain.Tags
 import bassamalim.halala.core.enums.SeriesStatus
+import bassamalim.halala.features.merchants.MerchantsDomain
 import bassamalim.halala.features.people.PeopleDomain
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -18,7 +19,7 @@ import java.time.LocalDate
 import javax.inject.Inject
 
 /** What waits for your say, each kind where it is answered. */
-enum class InboxKind { MERCHANTS, ALERTS, RECURRING, PEOPLE, TRIPS }
+enum class InboxKind { MERCHANTS, SAME_MERCHANT, ALERTS, RECURRING, PEOPLE, TRIPS }
 
 /**
  * The inbox: how much of each kind is waiting. Nothing is stored or decided here; each count is
@@ -31,6 +32,7 @@ class InboxDomain @Inject constructor(
     private val tagsRepository: TagsRepository,
     private val preferencesRepository: PreferencesRepository,
     private val people: PeopleDomain,
+    private val merchants: MerchantsDomain,
     private val clock: Clock
 ) {
 
@@ -38,12 +40,13 @@ class InboxDomain @Inject constructor(
         transactionsRepository.observeAll(),
         alertsRepository.observeAlerts(),
         combine(recurringRepository.observeStates(), alertsRepository.observeDismissed(), ::Pair),
-        people.observeSuggestions(),
+        combine(people.observeSuggestions(), merchants.observeSuggestions(), ::Pair),
         combine(tagsRepository.observeAll(), tagsRepository.observeRows(), preferencesRepository.observeDismissedTagSuggestions(), ::Triple)
-    ) { details, alerts, (series, kept), merges, (tags, rows, dismissed) ->
+    ) { details, alerts, (series, kept), (merges, sameMerchants), (tags, rows, dismissed) ->
         val today = LocalDate.now(clock)
         mapOf(
             InboxKind.MERCHANTS to Rules.clusters(details).size,
+            InboxKind.SAME_MERCHANT to sameMerchants.size,
             InboxKind.ALERTS to alerts.size,
             InboxKind.RECURRING to recurring(series, kept, today),
             InboxKind.PEOPLE to merges.size,

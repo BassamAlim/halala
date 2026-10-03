@@ -71,6 +71,10 @@
         <item quantity="one">%d pair may be the same person</item>
         <item quantity="other">%d pairs may be the same person</item>
     </plurals>
+    <plurals name="inbox_same_merchant">
+        <item quantity="one">%d pair may be the same merchant</item>
+        <item quantity="other">%d pairs may be the same merchant</item>
+    </plurals>
     <string name="inbox_people_hint">Merge them, or say they aren\'t.</string>
     <plurals name="inbox_trips">
         <item quantity="one">%d trip to tag</item>
@@ -388,6 +392,8 @@
     <string name="merchant">Merchant</string>
     <string name="merchants_search">Search merchants</string>
     <string name="merchants_empty">No merchants yet. They appear as purchases arrive.</string>
+    <string name="merchants_same_title">Same merchant?</string>
+    <string name="merchants_same_website">Both have the website %1$s. Merged, they are %2$s.</string>
     <string name="merchants_hint">A new spelling joins the merchant it reads like. If one joined the wrong merchant, open it and take that spelling out.</string>
     <plurals name="merchant_aliases">
         <item quantity="one">%d spelling</item>
@@ -400,6 +406,7 @@
     <string name="merchant_spellings">How the bank writes it</string>
     <string name="merchant_spelling_first">First seen</string>
     <string name="merchant_spelling_similar">Spelled like the others</string>
+    <string name="merchant_spelling_cut">The same name, cut short by the bank</string>
     <string name="merchant_spelling_you">Moved here by you</string>
     <string name="merchant_split">Not this one</string>
     <string name="merchant_split_title">Take %1$s out of %2$s?</string>

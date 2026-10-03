@@ -54,4 +54,21 @@ class MerchantsTest {
         assertNull(Merchants.similarTo("noonn", aliases))
         assertNull(Merchants.similarTo("jarir", aliases))
     }
+
+    @Test
+    fun `a key cut inside a word joins the merchant it was cut from, either way round`() {
+        val aliases = mapOf("jarir bookstore" to 1L, "al rajhi" to 2L, "clean laundry" to 3L)
+
+        // Dice misses these: 0.76 for jarirbook.
+        assertTrue(Merchants.similarity("jarir book", "jarir bookstore") < Merchants.SIMILAR)
+        assertEquals(1L, Merchants.cutShortOf("jarir book", aliases))
+        assertEquals(1L, Merchants.cutShortOf("jarirbooks", aliases))
+        assertEquals(3L, Merchants.cutShortOf("clean laundry machine", mapOf("clean laund" to 3L)))
+        // A whole word more is another business, not a cut.
+        assertNull(Merchants.cutShortOf("al rajhi takaful", aliases))
+        assertNull(Merchants.cutShortOf("clean laundry machine", aliases))
+        // Too short to judge, and cut from two merchants at once.
+        assertNull(Merchants.cutShortOf("jarirbo", aliases))
+        assertNull(Merchants.cutShortOf("jarir book", mapOf("jarir bookstore" to 1L, "jarir bookshop" to 2L)))
+    }
 }

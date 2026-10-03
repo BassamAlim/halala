@@ -28,6 +28,7 @@ class InboxViewModel @Inject constructor(
     fun onRowClick(kind: InboxKind) = navigator.navigate(
         when (kind) {
             InboxKind.MERCHANTS -> Screen.Review
+            InboxKind.SAME_MERCHANT -> Screen.Merchants
             InboxKind.ALERTS -> Screen.Alerts
             InboxKind.RECURRING -> Screen.Recurring
             InboxKind.PEOPLE -> Screen.People

@@ -584,7 +584,7 @@ class ClassificationRepository @Inject constructor(
 
     /**
      * Keeps every transaction's merchant key in step with its title, then gives each descriptor
-     * not seen before its merchant: the one it is spelled like, else a new one named after it.
+     * not seen before its merchant: the one it is spelled like or cut short from, else a new one named after it.
      * Oldest first, so the first spelling of a merchant is the one others are compared with.
      */
     private suspend fun resolveMerchants() {
@@ -599,7 +599,8 @@ class ClassificationRepository @Inject constructor(
             if (row.kind !in Merchants.KINDS || row.title.isBlank() || key in aliases) continue
 
             val similar = Merchants.similarTo(key, aliases)
-            val merchantId = similar ?: merchantsDao.insertMerchant(
+            val cut = if (similar == null) Merchants.cutShortOf(key, aliases) else null
+            val merchantId = similar ?: cut ?: merchantsDao.insertMerchant(
                 Merchant(uid = UUID.randomUUID().toString(), name = Merchants.nameOf(row.title))
             )
             merchantsDao.insertAlias(
@@ -607,7 +608,11 @@ class ClassificationRepository @Inject constructor(
                     merchantId = merchantId,
                     aliasKey = key,
                     descriptor = row.title.trim(),
-                    matchedBy = if (similar != null) AliasMatch.SIMILAR else AliasMatch.FIRST
+                    matchedBy = when {
+                        similar != null -> AliasMatch.SIMILAR
+                        cut != null -> AliasMatch.CUT_SHORT
+                        else -> AliasMatch.FIRST
+                    }
                 )
             )
             aliases[key] = merchantId

@@ -7,8 +7,10 @@ import kotlinx.serialization.json.Json
 
 /**
  * Well-known merchants, shipped with the app: they are identified on the phone, with no call, so
- * the AI is only ever asked about the long tail. Each is matched by any of its spellings, as
- * `Merchants.key` reads them, at the start of a key ("PANDA RETAIL CO 1042" is Panda).
+ * the AI is only ever asked about the long tail. The list kept here beats [CHAINS], the chains
+ * in OpenStreetMap's name-suggestion-index (`scripts/nsi_merchants.py` writes them). Each is
+ * matched by any of its spellings, as `Merchants.key` reads them, at the start of a key ("PANDA
+ * RETAIL CO 1042" is Panda).
  *
  * The owner adds to it without a new build: a definitions file on the phone ([parse]) names more
  * merchants, which beat these, and may send one straight to a category of its own.
@@ -29,7 +31,9 @@ object KnownMerchants {
      * is [defined] in the file beats the bundled list.
      */
     fun identify(keys: Collection<String>, defined: Defined = Defined()): Known? =
-        keys.firstNotNullOfOrNull { match(it, defined.spellings) } ?: keys.firstNotNullOfOrNull { match(it, SPELLINGS) }
+        keys.firstNotNullOfOrNull { match(it, defined.spellings) }
+            ?: keys.firstNotNullOfOrNull { match(it, SPELLINGS) }
+            ?: keys.firstNotNullOfOrNull { match(it, CHAINS) }
 
     /**
      * Reads a definitions file; throws when it isn't one, so a typo never half-applies:
@@ -206,6 +210,13 @@ object KnownMerchants {
         known("Enjaz", BusinessType.MONEY_TRANSFER),
         known("Western Union", BusinessType.MONEY_TRANSFER)
     ).flatten()
+
+    /** OpenStreetMap's chains in Saudi Arabia and worldwide, in the definitions file's shape; none when missing. */
+    private val CHAINS: List<Pair<String, Known>> by lazy {
+        KnownMerchants::class.java.getResourceAsStream("/known_merchants_nsi.json")
+            ?.use { parse(it.reader().readText()).spellings }
+            .orEmpty()
+    }
 
     /** Every spelling, longest first, so "stc pay" is tried before "stc". */
     private val SPELLINGS: List<Pair<String, Known>> = longestFirst(ALL)

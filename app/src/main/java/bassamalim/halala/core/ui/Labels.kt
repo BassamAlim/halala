@@ -199,6 +199,7 @@ fun aliasMatchLabel(match: AliasMatch): String = stringResource(
     when (match) {
         AliasMatch.FIRST -> R.string.merchant_spelling_first
         AliasMatch.SIMILAR -> R.string.merchant_spelling_similar
+        AliasMatch.CUT_SHORT -> R.string.merchant_spelling_cut
         AliasMatch.YOU -> R.string.merchant_spelling_you
     }
 )

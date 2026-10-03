@@ -8,6 +8,9 @@ enum class AliasMatch {
     /** Spelled like one of the merchant's descriptors (`Merchants.SIMILAR`). */
     SIMILAR,
 
+    /** One of the merchant's descriptors cut short by the bank, or the whole of one (`Merchants.cutShortOf`). */
+    CUT_SHORT,
+
     /** You put it there: split off as its own merchant, or merged in. */
     YOU
 }

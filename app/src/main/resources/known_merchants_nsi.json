@@ -1,0 +1,4314 @@
+{
+ "source": "OpenStreetMap name-suggestion-index (BSD-3-Clause), via scripts/nsi_merchants.py",
+ "merchants": [
+  {
+   "name": "% Arabica",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "& Other Stories",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "585 Gold",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "5àsec",
+   "type": "LAUNDRY",
+   "spellings": []
+  },
+  {
+   "name": "7-Eleven",
+   "type": "CONVENIENCE_STORE",
+   "spellings": [
+    "7-eleven australia",
+    "7-eleven canada",
+    "7-eleven philippines",
+    "seven eleven"
+   ]
+  },
+  {
+   "name": "9Round",
+   "type": "GYM",
+   "spellings": [
+    "9round kickboxing fitness"
+   ]
+  },
+  {
+   "name": "@HOME",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "A. Lange & Söhne",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "A.P.C.",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Abarth",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Abdullah AlOthaim Markets",
+   "type": "SUPERMARKET",
+   "spellings": [
+    "أسواق عبد الله العثيم"
+   ]
+  },
+  {
+   "name": "Abercrombie & Fitch",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "AC Hotel",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Ace Hardware",
+   "type": "HARDWARE",
+   "spellings": []
+  },
+  {
+   "name": "Acura",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Adidas",
+   "type": "SPORTS_GOODS",
+   "spellings": []
+  },
+  {
+   "name": "Adidas Originals",
+   "type": "CLOTHING",
+   "spellings": [
+    "adidas",
+    "adidas original"
+   ]
+  },
+  {
+   "name": "ADNOC",
+   "type": "FUEL_STATION",
+   "spellings": [
+    "adnoc service station",
+    "أدنوك",
+    "ادنوك"
+   ]
+  },
+  {
+   "name": "ADNOC Oasis",
+   "type": "CONVENIENCE_STORE",
+   "spellings": [
+    "واحة أدنوك"
+   ]
+  },
+  {
+   "name": "Aeropostale",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Afriquia",
+   "type": "FUEL_STATION",
+   "spellings": []
+  },
+  {
+   "name": "Agent Provocateur",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Agip",
+   "type": "FUEL_STATION",
+   "spellings": []
+  },
+  {
+   "name": "Ahmed Al Maghribi",
+   "type": "BEAUTY",
+   "spellings": []
+  },
+  {
+   "name": "Air Liquide",
+   "type": "FUEL_STATION",
+   "spellings": []
+  },
+  {
+   "name": "Aixam",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Al Tazaj",
+   "type": "FAST_FOOD",
+   "spellings": [
+    "الطازج"
+   ]
+  },
+  {
+   "name": "Albaik",
+   "type": "FAST_FOOD",
+   "spellings": [
+    "البيك"
+   ]
+  },
+  {
+   "name": "Aldrees",
+   "type": "FUEL_STATION",
+   "spellings": [
+    "aldrees petroleum and transport services company",
+    "الدريس",
+    "شركة الدريس للخدمات البترولية والنقليات"
+   ]
+  },
+  {
+   "name": "Alexander McQueen",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Alfa Romeo",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Alila",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Allbirds",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Alliance Tire Company",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Allianz",
+   "type": "INSURANCE",
+   "spellings": [
+    "allianz versicherung"
+   ]
+  },
+  {
+   "name": "Altınbaş",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Alua",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Amazon Fresh",
+   "type": "SUPERMARKET",
+   "spellings": []
+  },
+  {
+   "name": "American Vintage",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "ampm",
+   "type": "CONVENIENCE_STORE",
+   "spellings": []
+  },
+  {
+   "name": "ANdAZ",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Anytime Fitness",
+   "type": "GYM",
+   "spellings": [
+    "anytime fitness australia"
+   ]
+  },
+  {
+   "name": "APM Monaco",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Apollo Tyres",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Apple Store",
+   "type": "ELECTRONICS",
+   "spellings": []
+  },
+  {
+   "name": "Applebee's",
+   "type": "RESTAURANT",
+   "spellings": [
+    "applebees bar and grill",
+    "applebees grill and bar",
+    "applebees neighborhood bar and grill"
+   ]
+  },
+  {
+   "name": "aramco",
+   "type": "FUEL_STATION",
+   "spellings": [
+    "أرامكو"
+   ]
+  },
+  {
+   "name": "Aristocrazy",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Armani Exchange",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Ascend Hotel Collection",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "ASICS",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Aston Martin",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Audemars Piguet",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Auntie Anne's",
+   "type": "FAST_FOOD",
+   "spellings": [
+    "auntie annes pretzels"
+   ]
+  },
+  {
+   "name": "Autograph Collection",
+   "type": "HOTEL",
+   "spellings": [
+    "marriott autograph collection"
+   ]
+  },
+  {
+   "name": "AW LAB",
+   "type": "CLOTHING",
+   "spellings": [
+    "athletes world"
+   ]
+  },
+  {
+   "name": "Ba&sh",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Baleno",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Banana Republic",
+   "type": "CLOTHING",
+   "spellings": [
+    "banana republic factory"
+   ]
+  },
+  {
+   "name": "Banyan Tree",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Barn's",
+   "type": "CAFE",
+   "spellings": [
+    "بارنز"
+   ]
+  },
+  {
+   "name": "Baskin-Robbins",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Bata",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Bath & Body Works",
+   "type": "BEAUTY",
+   "spellings": []
+  },
+  {
+   "name": "Baume & Mercier",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "bb.q Chicken",
+   "type": "RESTAURANT",
+   "spellings": []
+  },
+  {
+   "name": "Beko",
+   "type": "ELECTRONICS",
+   "spellings": []
+  },
+  {
+   "name": "Ben & Jerry's",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Ben's Cookies",
+   "type": "BAKERY",
+   "spellings": []
+  },
+  {
+   "name": "Bench.",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Benihana",
+   "type": "RESTAURANT",
+   "spellings": [
+    "benihana of tokyo"
+   ]
+  },
+  {
+   "name": "Bershka",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Best Western",
+   "type": "HOTEL",
+   "spellings": [
+    "best western hotels & resorts"
+   ]
+  },
+  {
+   "name": "Best Western Plus",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Best Western Premier",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Betty Barclay",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Beyfin",
+   "type": "FUEL_STATION",
+   "spellings": []
+  },
+  {
+   "name": "Bijou Brigitte",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Bimba y Lola",
+   "type": "CLOTHING",
+   "spellings": [
+    "bimba & lola"
+   ]
+  },
+  {
+   "name": "Birkenstock",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Black Red White",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "Blaze Pizza",
+   "type": "RESTAURANT",
+   "spellings": []
+  },
+  {
+   "name": "Bobbi Brown",
+   "type": "BEAUTY",
+   "spellings": []
+  },
+  {
+   "name": "BoConcept",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "Body Glove",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Body Masters",
+   "type": "GYM",
+   "spellings": [
+    "بودي ماسترز"
+   ]
+  },
+  {
+   "name": "Bodystreet",
+   "type": "GYM",
+   "spellings": []
+  },
+  {
+   "name": "BOGGI Milano",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Bogner",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Boost Juice",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Bosch Car Service",
+   "type": "CAR_SERVICE",
+   "spellings": [
+    "bosch service"
+   ]
+  },
+  {
+   "name": "Bosco",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Bottega Veneta",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Brandy Melville",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Bras N Things",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "BRAX",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Breitling",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Bridgestone",
+   "type": "CAR_SERVICE",
+   "spellings": [
+    "bridgestone india"
+   ]
+  },
+  {
+   "name": "Brioche Dorée",
+   "type": "BAKERY",
+   "spellings": []
+  },
+  {
+   "name": "Brooks Brothers",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Brunello Cucinelli",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Buccellati",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Bugatti",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "bugatti",
+   "type": "CLOTHING",
+   "spellings": [
+    "bugatti fashion"
+   ]
+  },
+  {
+   "name": "bulthaup",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "Burger King",
+   "type": "FAST_FOOD",
+   "spellings": [
+    "burger king brasil",
+    "burger king españa",
+    "burguer king"
+   ]
+  },
+  {
+   "name": "BurgerFuel",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Bvlgari",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "BW Premier Collection",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "BW Signature Collection",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "BYD",
+   "type": "CAR_SERVICE",
+   "spellings": [
+    "build your dreams",
+    "byd auto"
+   ]
+  },
+  {
+   "name": "Cafe Coffee Day",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Cafe Frei",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Caffè Pascucci",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Café Amazon",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Café Coton",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Call It Spring",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Caltex",
+   "type": "FUEL_STATION",
+   "spellings": []
+  },
+  {
+   "name": "Calvin Klein",
+   "type": "CLOTHING",
+   "spellings": [
+    "calvin klein jeans"
+   ]
+  },
+  {
+   "name": "Calzedonia",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Canada Goose",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Carglass",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Carhartt Work in Progress",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Caribou Coffee",
+   "type": "CAFE",
+   "spellings": [
+    "كاريبو كوفي"
+   ]
+  },
+  {
+   "name": "Carl's Jr.",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Carrefour Express",
+   "type": "CONVENIENCE_STORE",
+   "spellings": []
+  },
+  {
+   "name": "Carrefour Market",
+   "type": "CONVENIENCE_STORE",
+   "spellings": []
+  },
+  {
+   "name": "Carter's",
+   "type": "CLOTHING",
+   "spellings": [
+    "carters babies and kids"
+   ]
+  },
+  {
+   "name": "Casey's General Store",
+   "type": "FUEL_STATION",
+   "spellings": [
+    "caseys"
+   ]
+  },
+  {
+   "name": "Catimini",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Chatime",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Chaumet",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Cheeburger Cheeburger",
+   "type": "RESTAURANT",
+   "spellings": []
+  },
+  {
+   "name": "Chicco",
+   "type": "TOYS",
+   "spellings": []
+  },
+  {
+   "name": "Chili's",
+   "type": "RESTAURANT",
+   "spellings": []
+  },
+  {
+   "name": "China Wok",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Chipotle",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Chloé",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Chuck E. Cheese",
+   "type": "RESTAURANT",
+   "spellings": [
+    "chuck e. cheese's"
+   ]
+  },
+  {
+   "name": "Cinemark",
+   "type": "ENTERTAINMENT",
+   "spellings": []
+  },
+  {
+   "name": "Cinnabon",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Cinépolis",
+   "type": "ENTERTAINMENT",
+   "spellings": []
+  },
+  {
+   "name": "Circle K",
+   "type": "CONVENIENCE_STORE",
+   "spellings": [
+    "circle k canada",
+    "mac's",
+    "mac's convenience stores",
+    "ok-mart"
+   ]
+  },
+  {
+   "name": "Citgo",
+   "type": "FUEL_STATION",
+   "spellings": []
+  },
+  {
+   "name": "Citroën",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "claire's",
+   "type": "CLOTHING",
+   "spellings": [
+    "claire's stores",
+    "claires accessories"
+   ]
+  },
+  {
+   "name": "Claudie Pierlot",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Club Med",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Club Wyndham",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "CoCo Fresh Tea & Juice",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Coffee Lab",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Coffee Republic",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Coffee Time",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Coffeeshop Company",
+   "type": "CAFE",
+   "spellings": [
+    "венская кофейня"
+   ]
+  },
+  {
+   "name": "Cold Stone Creamery",
+   "type": "CAFE",
+   "spellings": [
+    "cold stone"
+   ]
+  },
+  {
+   "name": "Cole Haan",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Colin's",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Comfort Suites",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Continental AG",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Costa Drive Thru",
+   "type": "CAFE",
+   "spellings": [
+    "costa drive through"
+   ]
+  },
+  {
+   "name": "Costcutter",
+   "type": "SUPERMARKET",
+   "spellings": [
+    "costcutters"
+   ]
+  },
+  {
+   "name": "Cotton On",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Cotton On Kids",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Cotélac",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "CrossFit",
+   "type": "GYM",
+   "spellings": []
+  },
+  {
+   "name": "Crowne Plaza",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Cupra",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Curio Collection by Hilton",
+   "type": "HOTEL",
+   "spellings": [
+    "curio collection by hilton"
+   ]
+  },
+  {
+   "name": "Daihatsu",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Dairy Queen",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Deichmann",
+   "type": "CLOTHING",
+   "spellings": [
+    "deichmann schuhe"
+   ]
+  },
+  {
+   "name": "Denny's",
+   "type": "RESTAURANT",
+   "spellings": []
+  },
+  {
+   "name": "Dentix",
+   "type": "CLINIC",
+   "spellings": []
+  },
+  {
+   "name": "Design Hotels",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Desigual",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Destination by Hyatt",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Dia Market",
+   "type": "SUPERMARKET",
+   "spellings": []
+  },
+  {
+   "name": "Diamond Resorts",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Digicel",
+   "type": "ELECTRONICS",
+   "spellings": []
+  },
+  {
+   "name": "Ding Tea",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Dinh Van",
+   "type": "JEWELRY",
+   "spellings": [
+    "dinh van paris"
+   ]
+  },
+  {
+   "name": "Diptyque'",
+   "type": "BEAUTY",
+   "spellings": []
+  },
+  {
+   "name": "Dixy Chicken",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "DKNY",
+   "type": "CLOTHING",
+   "spellings": [
+    "donna karan",
+    "donna karan new york"
+   ]
+  },
+  {
+   "name": "Dolce & Gabbana",
+   "type": "CLOTHING",
+   "spellings": [
+    "d and g",
+    "dolce and gabana",
+    "dolce and gabanna",
+    "dolce and gabbanna",
+    "dolce y gabana",
+    "dolce y gabanna",
+    "dolce y gabbana",
+    "dolce y gabbanna"
+   ]
+  },
+  {
+   "name": "Dolcezza",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Domino's",
+   "type": "FAST_FOOD",
+   "spellings": [
+    "domino's australia",
+    "domino's pizza",
+    "domino's pizza (nsr)",
+    "domino's pizza india"
+   ]
+  },
+  {
+   "name": "dr-cafe",
+   "type": "CAFE",
+   "spellings": [
+    "د.كيف"
+   ]
+  },
+  {
+   "name": "Dr. Martens",
+   "type": "CLOTHING",
+   "spellings": [
+    "doc marten",
+    "doc martens",
+    "doctor marten",
+    "doctor martens"
+   ]
+  },
+  {
+   "name": "Dress Barn",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "DS Automobiles",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Du Pareil au Même",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Duck Donuts",
+   "type": "FAST_FOOD",
+   "spellings": [
+    "duck doughnuts"
+   ]
+  },
+  {
+   "name": "Dufry",
+   "type": "DEPARTMENT_STORE",
+   "spellings": []
+  },
+  {
+   "name": "dunhill",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Dunkin' Donuts",
+   "type": "FAST_FOOD",
+   "spellings": [
+    "dunkin's",
+    "دانكن دونتس"
+   ]
+  },
+  {
+   "name": "Délifrance",
+   "type": "BAKERY",
+   "spellings": []
+  },
+  {
+   "name": "easyHotel",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Eataly",
+   "type": "SUPERMARKET",
+   "spellings": []
+  },
+  {
+   "name": "Ecco",
+   "type": "CLOTHING",
+   "spellings": [
+    "ecco shoes"
+   ]
+  },
+  {
+   "name": "EL&N",
+   "type": "CAFE",
+   "spellings": [
+    "el&n london"
+   ]
+  },
+  {
+   "name": "Elena Mirò",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Elisabetta Franchi",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Emporio Armani",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "ENOC",
+   "type": "FUEL_STATION",
+   "spellings": [
+    "اينوك"
+   ]
+  },
+  {
+   "name": "Enza Home",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "Es Teler 77",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Escada",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Esso",
+   "type": "CONVENIENCE_STORE",
+   "spellings": []
+  },
+  {
+   "name": "Esso Express",
+   "type": "FUEL_STATION",
+   "spellings": []
+  },
+  {
+   "name": "Etihad Atheeb Telecom",
+   "type": "TELECOM",
+   "spellings": [
+    "atheeb",
+    "شركة اتحاد عذيب للاتصالات",
+    "عذيب",
+    "عذيب للاتصالات"
+   ]
+  },
+  {
+   "name": "ETRO",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Euronics",
+   "type": "ELECTRONICS",
+   "spellings": [
+    "euronics centre"
+   ]
+  },
+  {
+   "name": "Europcar",
+   "type": "CAR_RENTAL",
+   "spellings": []
+  },
+  {
+   "name": "Evergreen International Hotels",
+   "type": "HOTEL",
+   "spellings": [
+    "長榮國際連鎖酒店",
+    "長榮桂冠酒店"
+   ]
+  },
+  {
+   "name": "Executive Residency",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Extreme Pizza",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Faberlic",
+   "type": "BEAUTY",
+   "spellings": []
+  },
+  {
+   "name": "Falconeri",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Fastrack",
+   "type": "JEWELRY",
+   "spellings": [
+    "indian accessories brand",
+    "indian watch co",
+    "indian watch company"
+   ]
+  },
+  {
+   "name": "Fendi",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Fiat Professional",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Figaro's Pizza",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Fireaway Pizza",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "First Stop",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Fisker",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Fitness Time",
+   "type": "GYM",
+   "spellings": [
+    "وقت اللياقة"
+   ]
+  },
+  {
+   "name": "Five Guys",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Flight Centre",
+   "type": "TRAVEL_AGENCY",
+   "spellings": []
+  },
+  {
+   "name": "Fogo de Chão",
+   "type": "RESTAURANT",
+   "spellings": []
+  },
+  {
+   "name": "Food Basics",
+   "type": "SUPERMARKET",
+   "spellings": []
+  },
+  {
+   "name": "Foot Locker",
+   "type": "CLOTHING",
+   "spellings": [
+    "foot locker europe"
+   ]
+  },
+  {
+   "name": "Foot Solutions",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Forever 21",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Four Points by Sheraton",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Four Seasons",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "French Connection",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Fusalp",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "G-Star Raw",
+   "type": "CLOTHING",
+   "spellings": [
+    "g-star"
+   ]
+  },
+  {
+   "name": "Gaggenau",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "Gap Body",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Gap Kids",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Geely",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Gelatissimo",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Geox",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Gerry Weber",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Giorgio Armani",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Givenchy",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Glo",
+   "type": "HOTEL",
+   "spellings": [
+    "GLō"
+   ]
+  },
+  {
+   "name": "Gloria Jean's",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Golden Goose",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Golden Tulip",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Grand Hyatt",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Green Motion",
+   "type": "CAR_RENTAL",
+   "spellings": [
+    "green motion car rental"
+   ]
+  },
+  {
+   "name": "Gucci",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Gudrun Sjödén",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Guess Accessories",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Guinot",
+   "type": "BEAUTY",
+   "spellings": []
+  },
+  {
+   "name": "GWM",
+   "type": "CAR_SERVICE",
+   "spellings": [
+    "great wall",
+    "great wall motors"
+   ]
+  },
+  {
+   "name": "H&M HOME",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "Hackett London",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Haidilao Hot Pot",
+   "type": "RESTAURANT",
+   "spellings": []
+  },
+  {
+   "name": "Half Million",
+   "type": "CAFE",
+   "spellings": [
+    "هاف مليون"
+   ]
+  },
+  {
+   "name": "HalfPrice",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Hanesbrands",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Happy Lemon",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Happy Socks",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Hard Rock Cafe",
+   "type": "RESTAURANT",
+   "spellings": []
+  },
+  {
+   "name": "Hard Rock Hotel",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Hardee's",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Havaianas",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Haval",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Hawthorn Suites",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Helly Hansen",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Herfy",
+   "type": "FAST_FOOD",
+   "spellings": [
+    "هرفي"
+   ]
+  },
+  {
+   "name": "Herman Miller",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "Hermès",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Hesburger",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Hilton Garden Inn",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Hilton Grand Vacations",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Hino Motors",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Holiday Inn",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Holiday Inn Express",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Holiday Inn Express & Suites",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Hotel Indigo",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "House of Hoops",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Howard Johnson",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Huawei",
+   "type": "ELECTRONICS",
+   "spellings": []
+  },
+  {
+   "name": "Hugo Boss",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Humana",
+   "type": "CLOTHING",
+   "spellings": [
+    "humana people to people"
+   ]
+  },
+  {
+   "name": "Hush Puppies",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Husqvarna",
+   "type": "HARDWARE",
+   "spellings": []
+  },
+  {
+   "name": "Hyatt Centric",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Hyatt House",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Hyatt Place",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Hyatt Regency",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Hyundai",
+   "type": "CAR_SERVICE",
+   "spellings": [
+    "hyeondaegia",
+    "hyundai india"
+   ]
+  },
+  {
+   "name": "Häagen-Dazs",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Ibis Budget",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Ibis Styles",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "IHOP",
+   "type": "RESTAURANT",
+   "spellings": [
+    "international house of pancakes"
+   ]
+  },
+  {
+   "name": "IKEA",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "IKEA Bistro",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "IKEA Café",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "IKEA Restaurant",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "IKEA Swedish Food Market",
+   "type": "CONVENIENCE_STORE",
+   "spellings": []
+  },
+  {
+   "name": "IMO Car Wash",
+   "type": "CAR_SERVICE",
+   "spellings": [
+    "imo car wash (arc)"
+   ]
+  },
+  {
+   "name": "Infiniti",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Inglot",
+   "type": "BEAUTY",
+   "spellings": []
+  },
+  {
+   "name": "INNSiDE by Meliá",
+   "type": "HOTEL",
+   "spellings": [
+    "innside hotel"
+   ]
+  },
+  {
+   "name": "IntercityHotel",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Intermarché",
+   "type": "SUPERMARKET",
+   "spellings": []
+  },
+  {
+   "name": "Intersport",
+   "type": "SPORTS_GOODS",
+   "spellings": []
+  },
+  {
+   "name": "Intimissimi",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Intimissimi Uomo",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Isuzu",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "itStyle",
+   "type": "BEAUTY",
+   "spellings": []
+  },
+  {
+   "name": "Ixina",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "IZOD",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "J.Co",
+   "type": "FAST_FOOD",
+   "spellings": [
+    "J.Co Donuts"
+   ]
+  },
+  {
+   "name": "J.M. Weston",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Jacadi",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Jack & Jones",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Jaeger-LeCoultre",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Jarir Bookstore",
+   "type": "BOOKSTORE",
+   "spellings": [
+    "جرير",
+    "مكتبة جرير"
+   ]
+  },
+  {
+   "name": "Java Time",
+   "type": "CAFE",
+   "spellings": [
+    "جافا تايم"
+   ]
+  },
+  {
+   "name": "JdV by Hyatt",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Jeff de Bruges",
+   "type": "BAKERY",
+   "spellings": []
+  },
+  {
+   "name": "Jil Sander",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Jimmy Choo",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Jo Malone",
+   "type": "BEAUTY",
+   "spellings": []
+  },
+  {
+   "name": "JO&JOE",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Joe & The Juice",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "JOHN REED Fitness",
+   "type": "GYM",
+   "spellings": []
+  },
+  {
+   "name": "Johnny Rockets",
+   "type": "RESTAURANT",
+   "spellings": [
+    "johnny rocket"
+   ]
+  },
+  {
+   "name": "Jollibee",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Joyalukkas",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Juan Valdez Café",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Jurlique",
+   "type": "BEAUTY",
+   "spellings": []
+  },
+  {
+   "name": "Just Over the Top",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "JW Marriott",
+   "type": "HOTEL",
+   "spellings": [
+    "jw marriott hotels"
+   ]
+  },
+  {
+   "name": "JYSK",
+   "type": "HOME_FURNISHING",
+   "spellings": [
+    "dänisches bettenlager",
+    "jysk romania"
+   ]
+  },
+  {
+   "name": "Kahve Dünyası",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Kalyan Jewellers",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Karl Lagerfeld",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Kartell",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "KBTR",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Kempinski",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Kenzo",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "KFC",
+   "type": "FAST_FOOD",
+   "spellings": [
+    "دجاج كنتاكي"
+   ]
+  },
+  {
+   "name": "Kiabi",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Kids Foot Locker",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Kiehl's",
+   "type": "BEAUTY",
+   "spellings": [
+    "kiehl's since 1851"
+   ]
+  },
+  {
+   "name": "KIKO Milano",
+   "type": "BEAUTY",
+   "spellings": [
+    "kiko"
+   ]
+  },
+  {
+   "name": "Kimpton",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Kiğılı",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Kookaï",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Koton",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Krispy Krem",
+   "type": "FAST_FOOD",
+   "spellings": [
+    "كرسبي كريم"
+   ]
+  },
+  {
+   "name": "Kumon",
+   "type": "EDUCATION",
+   "spellings": [
+    "Kumon (International)",
+    "kumon learning center",
+    "kumon math and reading center"
+   ]
+  },
+  {
+   "name": "Kung Fu Tea",
+   "type": "CAFE",
+   "spellings": [
+    "kf tea"
+   ]
+  },
+  {
+   "name": "Kuoni",
+   "type": "TRAVEL_AGENCY",
+   "spellings": []
+  },
+  {
+   "name": "Kärcher",
+   "type": "CAR_SERVICE",
+   "spellings": [
+    "kärcher clean park"
+   ]
+  },
+  {
+   "name": "L'Occitane",
+   "type": "BEAUTY",
+   "spellings": [
+    "l'occitane en provence"
+   ]
+  },
+  {
+   "name": "La Curacao",
+   "type": "ELECTRONICS",
+   "spellings": []
+  },
+  {
+   "name": "La Martina",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "La Vie en Rose",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Lada",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Lamborghini",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Lancia",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Land Rover",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Langham Hotels & Resorts",
+   "type": "HOTEL",
+   "spellings": [
+    "The Langham"
+   ]
+  },
+  {
+   "name": "Lavazza",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "LC Waikiki",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Le Château",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Le Coq Sportif",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Le Creuset",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "Le Méridien",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Le Pain Quotidien",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Lee Cooper",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Leroy Merlin",
+   "type": "HARDWARE",
+   "spellings": []
+  },
+  {
+   "name": "Levi's",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Lexus",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Lidl",
+   "type": "SUPERMARKET",
+   "spellings": [
+    "lidl deutschland",
+    "lidl españa",
+    "lidl france",
+    "lidl italia",
+    "lidl polska"
+   ]
+  },
+  {
+   "name": "Ligne Roset",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "Lindt",
+   "type": "BAKERY",
+   "spellings": []
+  },
+  {
+   "name": "Little Caesars",
+   "type": "FAST_FOOD",
+   "spellings": [
+    "little caesars pizza",
+    "little ceasars",
+    "little ceasars pizza"
+   ]
+  },
+  {
+   "name": "Liu Jo",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Llaollao",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Localiza",
+   "type": "CAR_RENTAL",
+   "spellings": []
+  },
+  {
+   "name": "Loding",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Long John Silver's",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Longchamp",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Longines",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Loro Piana",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Lotteria",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Louis Vuitton",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Loving Hut",
+   "type": "RESTAURANT",
+   "spellings": []
+  },
+  {
+   "name": "Lovisa",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Luckin Coffee",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Luisa Spagnoli",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Lukoil",
+   "type": "CONVENIENCE_STORE",
+   "spellings": [
+    "lukoil minimarket",
+    "lukoil shop",
+    "lukoil trgovina"
+   ]
+  },
+  {
+   "name": "Lululemon",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Lynk & Co",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Läderach",
+   "type": "BAKERY",
+   "spellings": []
+  },
+  {
+   "name": "M&S Foodhall",
+   "type": "SUPERMARKET",
+   "spellings": [
+    "marks & spencer foodhall"
+   ]
+  },
+  {
+   "name": "M&S Outlet",
+   "type": "DEPARTMENT_STORE",
+   "spellings": [
+    "marks & spencer outlet"
+   ]
+  },
+  {
+   "name": "M&S Simply Food",
+   "type": "CONVENIENCE_STORE",
+   "spellings": [
+    "marks & spencer simply food"
+   ]
+  },
+  {
+   "name": "MAC Cosmetics",
+   "type": "BEAUTY",
+   "spellings": []
+  },
+  {
+   "name": "Machi machi",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Mad Science",
+   "type": "EDUCATION",
+   "spellings": []
+  },
+  {
+   "name": "Madame Coco",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "Maison Margiela",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Makro",
+   "type": "SUPERMARKET",
+   "spellings": []
+  },
+  {
+   "name": "Malabar Gold and Diamonds",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Malin+Goetz",
+   "type": "BEAUTY",
+   "spellings": []
+  },
+  {
+   "name": "Mandarin Oriental Hotel",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Mapfre",
+   "type": "INSURANCE",
+   "spellings": []
+  },
+  {
+   "name": "Marble Slab Creamery",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Marc Cain",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Marc Jacobs",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Marc O'Polo",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Marina Rinaldi",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Market Basket",
+   "type": "SUPERMARKET",
+   "spellings": []
+  },
+  {
+   "name": "Marriott Executive Apartments",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Marriott Vacation Club",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Marrybrown",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Martinizing Dry Cleaning",
+   "type": "LAUNDRY",
+   "spellings": []
+  },
+  {
+   "name": "Maserati",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Massimo Dutti",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Mathnasium",
+   "type": "EDUCATION",
+   "spellings": [
+    "mathnasium learning center"
+   ]
+  },
+  {
+   "name": "Mavi",
+   "type": "CLOTHING",
+   "spellings": [
+    "mavi jeans"
+   ]
+  },
+  {
+   "name": "Max Mara",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "MAX&Co.",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "McCafé",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "McDonald's",
+   "type": "FAST_FOOD",
+   "spellings": [
+    "ماكدونالدز"
+   ]
+  },
+  {
+   "name": "McLaren",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "MCM",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "ME by Meliá",
+   "type": "HOTEL",
+   "spellings": [
+    "me hotel",
+    "me melia"
+   ]
+  },
+  {
+   "name": "Meininger",
+   "type": "HOTEL",
+   "spellings": [
+    "hoteles meininger"
+   ]
+  },
+  {
+   "name": "Meliá",
+   "type": "HOTEL",
+   "spellings": [
+    "meliá hotels & resorts"
+   ]
+  },
+  {
+   "name": "Menchie's",
+   "type": "CAFE",
+   "spellings": [
+    "menchie's frozen yoghurt",
+    "menchie's frozen yogurt"
+   ]
+  },
+  {
+   "name": "Mercedes-Benz",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Mercure",
+   "type": "HOTEL",
+   "spellings": [
+    "mercure hotels"
+   ]
+  },
+  {
+   "name": "Messika",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Mexx",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "MGallery",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Michael Kors",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Miele",
+   "type": "ELECTRONICS",
+   "spellings": []
+  },
+  {
+   "name": "Miniso",
+   "type": "DEPARTMENT_STORE",
+   "spellings": []
+  },
+  {
+   "name": "Mission BBQ",
+   "type": "RESTAURANT",
+   "spellings": []
+  },
+  {
+   "name": "Mister Donut",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Mitsubishi",
+   "type": "CAR_SERVICE",
+   "spellings": [
+    "mitsubishi motors"
+   ]
+  },
+  {
+   "name": "Mo'men",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Mobil Mart",
+   "type": "CONVENIENCE_STORE",
+   "spellings": []
+  },
+  {
+   "name": "Mobily",
+   "type": "TELECOM",
+   "spellings": [
+    "etihad etisalat company",
+    "mobily telecom",
+    "إتحاد إتصالات",
+    "شركة اتحاد اتصالات",
+    "موبايلي"
+   ]
+  },
+  {
+   "name": "Momoni",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Moncler",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "MoneyGram",
+   "type": "MONEY_TRANSFER",
+   "spellings": []
+  },
+  {
+   "name": "Monki",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Montblanc",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Morphe",
+   "type": "BEAUTY",
+   "spellings": []
+  },
+  {
+   "name": "Mothercare",
+   "type": "TOYS",
+   "spellings": []
+  },
+  {
+   "name": "motivi",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Motrio",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Movado",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Moxy",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Mr. Sub",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Musterring",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "Mövenpick",
+   "type": "HOTEL",
+   "spellings": [
+    "moevenpick"
+   ]
+  },
+  {
+   "name": "NAFT",
+   "type": "FUEL_STATION",
+   "spellings": []
+  },
+  {
+   "name": "Nahdi",
+   "type": "PHARMACY",
+   "spellings": [
+    "صيدلية النهدي"
+   ]
+  },
+  {
+   "name": "Nando's",
+   "type": "RESTAURANT",
+   "spellings": []
+  },
+  {
+   "name": "Napapijri",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Nature Republic",
+   "type": "BEAUTY",
+   "spellings": []
+  },
+  {
+   "name": "Natuzzi",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "Nespresso",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Neste",
+   "type": "FUEL_STATION",
+   "spellings": [
+    "neste oil"
+   ]
+  },
+  {
+   "name": "New Balance",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "New Yorker",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Nike Clearance Store",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Nike Factory Store",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Nike Well Collective",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "NIO House",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "NIO Space",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Nobu",
+   "type": "RESTAURANT",
+   "spellings": []
+  },
+  {
+   "name": "North Sails",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Novotel",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "NOVUS Glass",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "NUTTEA",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "O Boticário",
+   "type": "BEAUTY",
+   "spellings": []
+  },
+  {
+   "name": "Oakberry Açaí bowls",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "ObeikanStores",
+   "type": "BOOKSTORE",
+   "spellings": [
+    "العبيكان",
+    "مكتبة العبيكان"
+   ]
+  },
+  {
+   "name": "Ocean Basket",
+   "type": "RESTAURANT",
+   "spellings": []
+  },
+  {
+   "name": "Office Depot",
+   "type": "BOOKSTORE",
+   "spellings": []
+  },
+  {
+   "name": "Old Chang Kee",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Old Navy",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "OldTown White Coffee",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Olive Garden",
+   "type": "RESTAURANT",
+   "spellings": [
+    "olive garden italian kitchen"
+   ]
+  },
+  {
+   "name": "Oliver Peoples",
+   "type": "OPTICIAN",
+   "spellings": []
+  },
+  {
+   "name": "On the Run",
+   "type": "CONVENIENCE_STORE",
+   "spellings": []
+  },
+  {
+   "name": "OneZo Tapioca",
+   "type": "CAFE",
+   "spellings": [
+    "onezo",
+    "onezo tea",
+    "丸作食茶"
+   ]
+  },
+  {
+   "name": "Oppo",
+   "type": "ELECTRONICS",
+   "spellings": []
+  },
+  {
+   "name": "Opticalia",
+   "type": "OPTICIAN",
+   "spellings": []
+  },
+  {
+   "name": "Oriflame",
+   "type": "BEAUTY",
+   "spellings": []
+  },
+  {
+   "name": "OshKosh B'gosh",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Outback Steakhouse",
+   "type": "RESTAURANT",
+   "spellings": [
+    "outback steakhouse - national"
+   ]
+  },
+  {
+   "name": "Oxxo",
+   "type": "FUEL_STATION",
+   "spellings": [
+    "oxxo gas"
+   ]
+  },
+  {
+   "name": "Oysho",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Pan Pacific",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Panda Express",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Panerai",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Papa John's",
+   "type": "FAST_FOOD",
+   "spellings": [
+    "papa john",
+    "papa john pizza",
+    "papa johns pizza"
+   ]
+  },
+  {
+   "name": "PappaRich",
+   "type": "RESTAURANT",
+   "spellings": []
+  },
+  {
+   "name": "Parfois",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Park Hyatt",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Park Inn",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Park Plaza Hotels",
+   "type": "HOTEL",
+   "spellings": [
+    "Park Plaza"
+   ]
+  },
+  {
+   "name": "PARKROYAL",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Patek Philippe",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Paul Smith",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Payless",
+   "type": "CAR_RENTAL",
+   "spellings": []
+  },
+  {
+   "name": "Payless ShoeSource",
+   "type": "CLOTHING",
+   "spellings": [
+    "payless"
+   ]
+  },
+  {
+   "name": "Pelicana Chicken",
+   "type": "RESTAURANT",
+   "spellings": [
+    "Pelicana"
+   ]
+  },
+  {
+   "name": "Penti",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Pepe Jeans",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Pepper Lunch",
+   "type": "FAST_FOOD",
+   "spellings": [
+    "ペッパーランチ"
+   ]
+  },
+  {
+   "name": "Petrol Ofisi",
+   "type": "FUEL_STATION",
+   "spellings": []
+  },
+  {
+   "name": "Petrolimex",
+   "type": "FUEL_STATION",
+   "spellings": []
+  },
+  {
+   "name": "Petromin",
+   "type": "FUEL_STATION",
+   "spellings": [
+    "petrom بتروم",
+    "petromin corp",
+    "بتروم",
+    "بترومين"
+   ]
+  },
+  {
+   "name": "Petromin Express",
+   "type": "CAR_SERVICE",
+   "spellings": [
+    "بترومين إكسبرس"
+   ]
+  },
+  {
+   "name": "Petronas",
+   "type": "FUEL_STATION",
+   "spellings": []
+  },
+  {
+   "name": "Pierre Cardin",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Pita Pit",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Pizza Hut",
+   "type": "RESTAURANT",
+   "spellings": []
+  },
+  {
+   "name": "Pizza Hut Delivery",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Pizza Hut Express",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Pizza Inn",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Pizza Nova",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Poggenpohl",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "Point S",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Pollo Campero",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Pollo Tropical",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Polo Ralph Lauren",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Poltrona Frau",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "Pom d'Api",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Porsche",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Porsche Design",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Potato Corner",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Pottery Barn",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "Pottery Barn Kids",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "Prada",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Primark",
+   "type": "CLOTHING",
+   "spellings": [
+    "primark / penneys"
+   ]
+  },
+  {
+   "name": "Princesse tam.tam",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Printemps",
+   "type": "DEPARTMENT_STORE",
+   "spellings": []
+  },
+  {
+   "name": "Promod",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Propan",
+   "type": "FUEL_STATION",
+   "spellings": []
+  },
+  {
+   "name": "Pull & Bear",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Puma Outlet",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Punt Roma",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "PUPA Milano",
+   "type": "BEAUTY",
+   "spellings": []
+  },
+  {
+   "name": "QB HOUSE",
+   "type": "SALON",
+   "spellings": []
+  },
+  {
+   "name": "Quiksilver",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "QuikTrip",
+   "type": "CONVENIENCE_STORE",
+   "spellings": []
+  },
+  {
+   "name": "Quiznos",
+   "type": "FAST_FOOD",
+   "spellings": [
+    "quiznos sub",
+    "quiznos subs"
+   ]
+  },
+  {
+   "name": "R.M.Williams",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "RaceTrac",
+   "type": "FUEL_STATION",
+   "spellings": []
+  },
+  {
+   "name": "RadioShack",
+   "type": "ELECTRONICS",
+   "spellings": []
+  },
+  {
+   "name": "Radisson Blu",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Radisson Collection",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Radisson RED",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Red Lobster",
+   "type": "RESTAURANT",
+   "spellings": []
+  },
+  {
+   "name": "Red Mango",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Regatta Great Outdoors",
+   "type": "SPORTS_GOODS",
+   "spellings": []
+  },
+  {
+   "name": "Relais & Châteaux",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Repsol",
+   "type": "FUEL_STATION",
+   "spellings": [
+    "campsa"
+   ]
+  },
+  {
+   "name": "Residence Inn",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Rieker",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Rimowa",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "RIU",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Riu Paris",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Rixos",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Roberto Cavalli",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Roche Bobois",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "RocoMamas",
+   "type": "RESTAURANT",
+   "spellings": []
+  },
+  {
+   "name": "Roger Dubuis",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Rolex",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Rolls-Royce",
+   "type": "CAR_SERVICE",
+   "spellings": [
+    "rolls royce motor cars"
+   ]
+  },
+  {
+   "name": "Romantik Hotel",
+   "type": "HOTEL",
+   "spellings": [
+    "Romantik",
+    "romantik hotels"
+   ]
+  },
+  {
+   "name": "Romantik Restaurant",
+   "type": "RESTAURANT",
+   "spellings": [
+    "Romantik"
+   ]
+  },
+  {
+   "name": "Royaltea",
+   "type": "CAFE",
+   "spellings": [
+    "Royaltea 皇茶"
+   ]
+  },
+  {
+   "name": "Rubis",
+   "type": "FUEL_STATION",
+   "spellings": []
+  },
+  {
+   "name": "Ruby Tuesday",
+   "type": "RESTAURANT",
+   "spellings": []
+  },
+  {
+   "name": "Sabon",
+   "type": "BEAUTY",
+   "spellings": []
+  },
+  {
+   "name": "Safeway Fuel Station",
+   "type": "FUEL_STATION",
+   "spellings": []
+  },
+  {
+   "name": "Saint Algue",
+   "type": "SALON",
+   "spellings": []
+  },
+  {
+   "name": "Saint Laurent",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Saizeriya",
+   "type": "RESTAURANT",
+   "spellings": []
+  },
+  {
+   "name": "Salvatore Ferragamo",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Samsung",
+   "type": "ELECTRONICS",
+   "spellings": []
+  },
+  {
+   "name": "Saravanaa Bhavan",
+   "type": "FAST_FOOD",
+   "spellings": [
+    "saravana bhavan"
+   ]
+  },
+  {
+   "name": "SASCO",
+   "type": "FUEL_STATION",
+   "spellings": [
+    "saudi automotive services company",
+    "الشركة السعودية لخدمات السيارات والمعدات",
+    "ساسكو"
+   ]
+  },
+  {
+   "name": "Saudi Telecom Company",
+   "type": "TELECOM",
+   "spellings": [
+    "إس تي سي",
+    "الاتصالات السعودية",
+    "شركة الاتصالات السعودية"
+   ]
+  },
+  {
+   "name": "Sbarro",
+   "type": "FAST_FOOD",
+   "spellings": [
+    "sbarro pizzeria"
+   ]
+  },
+  {
+   "name": "Scotch & Soda",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Seattle's Best Coffee",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Second Cup",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Segafredo",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Seiko",
+   "type": "JEWELRY",
+   "spellings": [
+    "セイコー"
+   ]
+  },
+  {
+   "name": "Sfera",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Shake Shack",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Shakey's",
+   "type": "RESTAURANT",
+   "spellings": []
+  },
+  {
+   "name": "Shawarmer",
+   "type": "FAST_FOOD",
+   "spellings": [
+    "شاورمر"
+   ]
+  },
+  {
+   "name": "Shell Express",
+   "type": "FUEL_STATION",
+   "spellings": []
+  },
+  {
+   "name": "Shell Select",
+   "type": "CONVENIENCE_STORE",
+   "spellings": []
+  },
+  {
+   "name": "Shell Shop",
+   "type": "CONVENIENCE_STORE",
+   "spellings": []
+  },
+  {
+   "name": "Shiseido",
+   "type": "BEAUTY",
+   "spellings": []
+  },
+  {
+   "name": "SieMatic",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "Sinsay",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Six Senses",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "SIXT",
+   "type": "CAR_RENTAL",
+   "spellings": [
+    "sixt rent a car"
+   ]
+  },
+  {
+   "name": "Skechers",
+   "type": "CLOTHING",
+   "spellings": [
+    "skechers usa"
+   ]
+  },
+  {
+   "name": "Sky Zone",
+   "type": "ENTERTAINMENT",
+   "spellings": []
+  },
+  {
+   "name": "Sligro",
+   "type": "SUPERMARKET",
+   "spellings": []
+  },
+  {
+   "name": "smöoy",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Sofitel",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Sony Centre",
+   "type": "ELECTRONICS",
+   "spellings": [
+    "sony center"
+   ]
+  },
+  {
+   "name": "Spar Express",
+   "type": "CONVENIENCE_STORE",
+   "spellings": []
+  },
+  {
+   "name": "Specsavers",
+   "type": "OPTICIAN",
+   "spellings": [
+    "specsavers opticians"
+   ]
+  },
+  {
+   "name": "Speed Queen",
+   "type": "LAUNDRY",
+   "spellings": []
+  },
+  {
+   "name": "Sports Authority",
+   "type": "SPORTS_GOODS",
+   "spellings": []
+  },
+  {
+   "name": "Sports Direct",
+   "type": "SPORTS_GOODS",
+   "spellings": [
+    "sportsdirect dot com",
+    "sportsdirect.com"
+   ]
+  },
+  {
+   "name": "SsangYong",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "St. Regis",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "STA Travel",
+   "type": "TRAVEL_AGENCY",
+   "spellings": []
+  },
+  {
+   "name": "Star Mart",
+   "type": "CONVENIENCE_STORE",
+   "spellings": []
+  },
+  {
+   "name": "Starbucks",
+   "type": "CAFE",
+   "spellings": [
+    "starbucks middle east",
+    "ستاربكس"
+   ]
+  },
+  {
+   "name": "Station Service E.Leclerc",
+   "type": "FUEL_STATION",
+   "spellings": [
+    "leclerc",
+    "station-service"
+   ]
+  },
+  {
+   "name": "Stella McCartney",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Stihl",
+   "type": "HARDWARE",
+   "spellings": []
+  },
+  {
+   "name": "Stop Cafe",
+   "type": "CONVENIENCE_STORE",
+   "spellings": []
+  },
+  {
+   "name": "Suavinex",
+   "type": "TOYS",
+   "spellings": []
+  },
+  {
+   "name": "Subaru",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Suitsupply",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Sunglass Hut",
+   "type": "OPTICIAN",
+   "spellings": []
+  },
+  {
+   "name": "Super C",
+   "type": "SUPERMARKET",
+   "spellings": []
+  },
+  {
+   "name": "Superdry",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Sushi Shop",
+   "type": "FAST_FOOD",
+   "spellings": [
+    "Sushi Shop (Europe)"
+   ]
+  },
+  {
+   "name": "Swarovski",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Swiss-Belhotel",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Swiss-Belinn",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Swissôtel",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Synlab",
+   "type": "CLINIC",
+   "spellings": []
+  },
+  {
+   "name": "Søstrene Grene",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "T-Mobile",
+   "type": "ELECTRONICS",
+   "spellings": [
+    "T-Mobile International",
+    "t-mobile pl"
+   ]
+  },
+  {
+   "name": "T4 Tea For U",
+   "type": "CAFE",
+   "spellings": [
+    "T4 Tea House"
+   ]
+  },
+  {
+   "name": "TAG Heuer",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Tally Weijl",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Tamimi Markets",
+   "type": "SUPERMARKET",
+   "spellings": [
+    "أسواق التميمي"
+   ]
+  },
+  {
+   "name": "Tape à l'Œil",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Tartine et Chocolat",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "TCBY",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Ted Baker",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Tele2",
+   "type": "ELECTRONICS",
+   "spellings": []
+  },
+  {
+   "name": "Telepizza",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Terranova",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Tesco",
+   "type": "CONVENIENCE_STORE",
+   "spellings": []
+  },
+  {
+   "name": "Tesco Express",
+   "type": "CONVENIENCE_STORE",
+   "spellings": [
+    "tesco metro"
+   ]
+  },
+  {
+   "name": "Tescoma",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "Texas Chicken",
+   "type": "FAST_FOOD",
+   "spellings": [
+    "church's texas chicken",
+    "church's texas chicken®"
+   ]
+  },
+  {
+   "name": "Tezenis",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "TGI Fridays",
+   "type": "RESTAURANT",
+   "spellings": []
+  },
+  {
+   "name": "The Athlete's Foot",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "The Body Shop",
+   "type": "BEAUTY",
+   "spellings": []
+  },
+  {
+   "name": "The Chicken Rice Shop",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "The Coffee Bean & Tea Leaf",
+   "type": "CAFE",
+   "spellings": [
+    "coffee bean & tea leaf"
+   ]
+  },
+  {
+   "name": "The Hoxton",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "The Luxury Collection",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "The North Face",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "The Pizza Company",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "The Ritz-Carlton",
+   "type": "HOTEL",
+   "spellings": [
+    "ritz carlton",
+    "the ritz"
+   ]
+  },
+  {
+   "name": "The Walking Company",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "The Westin",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Thom Browne",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Thomas Cook",
+   "type": "TRAVEL_AGENCY",
+   "spellings": []
+  },
+  {
+   "name": "Thomas Sabo",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Tiffany & Company",
+   "type": "JEWELRY",
+   "spellings": [
+    "tiffany's"
+   ]
+  },
+  {
+   "name": "Tiger Mart",
+   "type": "CONVENIENCE_STORE",
+   "spellings": [
+    "exxon tiger mart"
+   ]
+  },
+  {
+   "name": "Tiger Sugar",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Tim Hortons",
+   "type": "CAFE",
+   "spellings": [
+    "تيم هورتونز"
+   ]
+  },
+  {
+   "name": "Tod's",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Tom Ford",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Tom Tailor",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Tommy Hilfiger",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Tommy Hilfiger Kids",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Toni & Guy",
+   "type": "SALON",
+   "spellings": []
+  },
+  {
+   "name": "Tony Roma's",
+   "type": "RESTAURANT",
+   "spellings": [
+    "tony roma"
+   ]
+  },
+  {
+   "name": "Topshop",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "TotalEnergies",
+   "type": "CONVENIENCE_STORE",
+   "spellings": [
+    "total access",
+    "totalenergies access"
+   ]
+  },
+  {
+   "name": "Tous",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Trademark Collection",
+   "type": "HOTEL",
+   "spellings": [
+    "trademark by wyndham",
+    "trademark wyndham"
+   ]
+  },
+  {
+   "name": "Travelex",
+   "type": "MONEY_TRANSFER",
+   "spellings": []
+  },
+  {
+   "name": "Tribute Portfolio",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Tumi",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Turkish Airlines",
+   "type": "TRAVEL_AGENCY",
+   "spellings": []
+  },
+  {
+   "name": "Tyreplus",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "U.S. Polo Assn.",
+   "type": "CLOTHING",
+   "spellings": [
+    "u s polo"
+   ]
+  },
+  {
+   "name": "UGG",
+   "type": "CLOTHING",
+   "spellings": [
+    "ugg / ugg australia"
+   ]
+  },
+  {
+   "name": "Ultramar",
+   "type": "FUEL_STATION",
+   "spellings": []
+  },
+  {
+   "name": "Unbound Collection",
+   "type": "HOTEL",
+   "spellings": [
+    "the unbound collection by hyatt",
+    "unbound hyatt"
+   ]
+  },
+  {
+   "name": "Uncle Tetsu's Cheesecake",
+   "type": "BAKERY",
+   "spellings": []
+  },
+  {
+   "name": "Under Armour",
+   "type": "CLOTHING",
+   "spellings": [
+    "under armor"
+   ]
+  },
+  {
+   "name": "Under Armour Youth",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Undiz",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Uniqlo",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "United Colors of Benetton",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Uno Pizzeria & Grill",
+   "type": "RESTAURANT",
+   "spellings": [
+    "pizzeria uno",
+    "uno chicago grill"
+   ]
+  },
+  {
+   "name": "Urban Outfitters",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "V Perfumes",
+   "type": "BEAUTY",
+   "spellings": []
+  },
+  {
+   "name": "Vacheron Constantin",
+   "type": "JEWELRY",
+   "spellings": []
+  },
+  {
+   "name": "Valero",
+   "type": "FUEL_STATION",
+   "spellings": []
+  },
+  {
+   "name": "Van Heusen",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Vanessa Bruno",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Vapiano",
+   "type": "RESTAURANT",
+   "spellings": []
+  },
+  {
+   "name": "Vero Moda",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Versace",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Vertbaudet",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Vianor",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Vib",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Victoria's Secret",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Vilebrequin",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Villeroy & Boch",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "Vision Express",
+   "type": "OPTICIAN",
+   "spellings": []
+  },
+  {
+   "name": "voco",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Volcom",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Volkswagen Commercial Vehicles",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "W Hotels",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Wacoal",
+   "type": "CLOTHING",
+   "spellings": [
+    "ワコール",
+    "華歌爾",
+    "와코루"
+   ]
+  },
+  {
+   "name": "Wagamama",
+   "type": "RESTAURANT",
+   "spellings": []
+  },
+  {
+   "name": "Waldorf Astoria",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Wall Street English",
+   "type": "EDUCATION",
+   "spellings": []
+  },
+  {
+   "name": "Walmart",
+   "type": "FUEL_STATION",
+   "spellings": []
+  },
+  {
+   "name": "Wash Me",
+   "type": "LAUNDRY",
+   "spellings": [
+    "revolution laundry"
+   ]
+  },
+  {
+   "name": "Watsons",
+   "type": "PHARMACY",
+   "spellings": []
+  },
+  {
+   "name": "Wayback Burgers",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Weekend Max Mara",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Wendy's",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "west elm",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "Western Union",
+   "type": "MONEY_TRANSFER",
+   "spellings": []
+  },
+  {
+   "name": "Which Wich?",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "WHSmith",
+   "type": "BOOKSTORE",
+   "spellings": []
+  },
+  {
+   "name": "Wild Bean Cafe",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Winchell's Donut House",
+   "type": "FAST_FOOD",
+   "spellings": [
+    "winchells donuts",
+    "winchells doughnut house",
+    "winchells doughnuts"
+   ]
+  },
+  {
+   "name": "Wok to Walk",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "Women'secret",
+   "type": "CLOTHING",
+   "spellings": [
+    "women's secret"
+   ]
+  },
+  {
+   "name": "World Duty Free",
+   "type": "DEPARTMENT_STORE",
+   "spellings": []
+  },
+  {
+   "name": "World Gym",
+   "type": "GYM",
+   "spellings": []
+  },
+  {
+   "name": "Worldhotel",
+   "type": "HOTEL",
+   "spellings": [
+    "WorldHotels"
+   ]
+  },
+  {
+   "name": "Wyndham Garden",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Wyndham Grand",
+   "type": "HOTEL",
+   "spellings": []
+  },
+  {
+   "name": "Würth",
+   "type": "HARDWARE",
+   "spellings": []
+  },
+  {
+   "name": "Xiaomi",
+   "type": "ELECTRONICS",
+   "spellings": []
+  },
+  {
+   "name": "Xing Fu Tang",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Xpeng",
+   "type": "CAR_SERVICE",
+   "spellings": []
+  },
+  {
+   "name": "Yataş Bedding",
+   "type": "HOME_FURNISHING",
+   "spellings": [
+    "yataş"
+   ]
+  },
+  {
+   "name": "Yi Fang Tea",
+   "type": "CAFE",
+   "spellings": [
+    "yi fang",
+    "yi fang fruit tea",
+    "yi fang taiwan fruit tea"
+   ]
+  },
+  {
+   "name": "Yogen Früz",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Yogorino",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Yogurtland",
+   "type": "CAFE",
+   "spellings": []
+  },
+  {
+   "name": "Yves Rocher",
+   "type": "BEAUTY",
+   "spellings": [
+    "ив роше"
+   ]
+  },
+  {
+   "name": "Zain Saudi Arabia",
+   "type": "TELECOM",
+   "spellings": [
+    "زين",
+    "زين السعودية",
+    "شركة الاتصالات المتنقلة السعودية",
+    "شركة زين السعودية"
+   ]
+  },
+  {
+   "name": "Zara Home",
+   "type": "HOME_FURNISHING",
+   "spellings": []
+  },
+  {
+   "name": "Zegna",
+   "type": "CLOTHING",
+   "spellings": [
+    "ermenegildo zegna"
+   ]
+  },
+  {
+   "name": "Zilli",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "Škoda",
+   "type": "CAR_SERVICE",
+   "spellings": [
+    "škoda auto"
+   ]
+  },
+  {
+   "name": "ردتاغ",
+   "type": "CLOTHING",
+   "spellings": []
+  },
+  {
+   "name": "كانتون",
+   "type": "FAST_FOOD",
+   "spellings": []
+  },
+  {
+   "name": "نفطال",
+   "type": "FUEL_STATION",
+   "spellings": []
+  }
+ ]
+}

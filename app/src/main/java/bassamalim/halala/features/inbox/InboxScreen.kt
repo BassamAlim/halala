@@ -72,6 +72,7 @@ fun InboxScreen(viewModel: InboxViewModel = hiltViewModel()) {
 
 private fun title(kind: InboxKind) = when (kind) {
     InboxKind.MERCHANTS -> R.plurals.inbox_merchants
+    InboxKind.SAME_MERCHANT -> R.plurals.inbox_same_merchant
     InboxKind.ALERTS -> R.plurals.inbox_alerts
     InboxKind.RECURRING -> R.plurals.inbox_recurring
     InboxKind.PEOPLE -> R.plurals.inbox_people
@@ -80,6 +81,7 @@ private fun title(kind: InboxKind) = when (kind) {
 
 private fun hint(kind: InboxKind) = when (kind) {
     InboxKind.MERCHANTS -> R.string.inbox_merchants_hint
+    InboxKind.SAME_MERCHANT -> R.string.inbox_people_hint
     InboxKind.ALERTS -> R.string.inbox_alerts_hint
     InboxKind.RECURRING -> R.string.inbox_recurring_hint
     InboxKind.PEOPLE -> R.string.inbox_people_hint
