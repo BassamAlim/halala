@@ -247,7 +247,10 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   go to Groq, which answers again and names the result it rests on. A surer answer replaces the
   first, keeping the page (`Merchant.webUrl`, `webTitle`), shown as "Found online: <title>" (it
   opens the page) on Review and the Merchant screen; either way `searchedOnline` stops it being
-  searched again. At most 800 searches a month (a count in DataStore). The key is
+  searched again. At most 800 searches a month (a count in DataStore). The Merchant screen's
+  "Look it up" (for one nothing surer than the AI has identified) does the same at once
+  (`WebLookup.lookUpNow`; the AI from the name alone when no search can be had), and its answer
+  stands unless the AI had said something surer. The key is
   `BuildConfig.TAVILY_API_KEY`, as Groq's (`TAVILY_API_KEY`); a build without it never searches.
 - **The owner's definitions** (no board, no screen): Halala is the owner's first. Places anyone
   pays at go in the bundled `KnownMerchants` list (a new build); the owner's own merchants and
@@ -341,7 +344,12 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   month at the median rate. All in exact integers.
 - **Savings goals** (`SavingsGoal`, `Goals`): a target, an optional date and the accounts it is
   saved in (none is fine: a goal can be held in deposits alone); what is saved is their balances
-  plus the running term deposits filed under it. A month's saving needed = what is left over the
+  plus the running term deposits filed under it, plus what you marked toward it on Transaction
+  detail (`GoalContribution`: a transfer, move or investment, "Put in" or "Took out", for money
+  kept where Halala has no account, like Al Rajhi Capital; a plain one becomes `SAVINGS_DEPOSIT`
+  or `SAVINGS_WITHDRAWAL`, so neither spending nor income, and goes back to its `kindBefore`
+  when unmarked; a move is marked by its sending leg, and none is counted that an account the
+  goal holds already counts). A month's saving needed = what is left over the
   months to the target month (rounded up); "you averaged" = the net flow into those accounts
   over the last three months, a third of it.
 - **Term deposits** (`Deposit`, no board): an Awaeed isn't an account of yours. The bank opens
@@ -481,7 +489,7 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   split purchase, 10 budgets, 11 savings goals, 12 assets and their snapshots, 13 the zakat
   method, 14 retirement scenarios, 15 savings terms, 16 tags and the transactions carrying them,
   17 an asset's price source, 18 the places of purchases, 19 term deposits, 20 a budget's tag,
-  21 merchants looked up online),
+  21 merchants looked up online, 22 goal contributions),
   keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
 - **Encrypted backups** (Backup and export › Encrypted backups, no board): a `.halala` file
   (`core/backup/BackupFile`) is the JSON export zipped and sealed with AES-256-GCM under a key
@@ -555,7 +563,7 @@ Amounts show the riyal sign for SAR (`Currency.kt`), the ISO code otherwise.
 `Category`, `ExpenseType`), rules (`Rule`, `core/domain/Rules`, `ClassificationRepository`), the
 history of changes with undo (`AuditBatch`, `AuditChange`), the review reminder
 (`core/reminders`), and merchant identification (business types, the bundled list, Groq in
-`core/ai`). Screens: **Review** (Review board: one card per merchant, biggest first, with what it
+`core/ai`). Screens: **Review** (Review board: one card per merchant (never a person: transfers are filed on their own detail), biggest first, with what it
 was identified as, the chosen category to confirm for the ones sure enough, the All / Suggested /
 Needs you filter, and the last answer's undo; reached from the Inbox tab), **Rules** (Rules
 board; from Settings and from a transaction's "Filed automatically" card), category and type on
@@ -615,10 +623,14 @@ month on this month's lowest balance, nothing under 5,000; a term maturing withi
 on Wealth and is reminded three days before; the terms form has no board), and fetched fund
 and gold prices (see Assets).
 
-**Phase 6 (delight)** is built: **Money flow** (Money flow board, Activity's second segment:
-for a month and an account, salary or what came in, a Sankey (`Sankey` component,
-`core/domain/MoneyFlow`) of moves to each of your accounts, what was spent from it and what
-stayed; a leg the bank called a move with no other side is "no match": "It went to someone"
+**Phase 6 (delight)** is built: **Money flow** (Money flow board, Activity's second segment,
+redrawn top to bottom for a phone: for a month and an account, salary or what came in, the share
+spent and kept and spending against the month before, then a vertical Sankey (`Sankey`
+component, `core/domain/MoneyFlow`) from where the money came from (salary, your accounts,
+people, refunds, what was already there) through the account to where it went (your accounts,
+saved, people, the top five categories and the rest, not filed yet, what stayed); tap a part on
+the chart or in the "Came in" and "Went out" lists below it to light it up and see its biggest
+transactions; a leg the bank called a move with no other side is "no match": "It went to someone"
 makes it a plain transfer, "Pick the account" records the other leg there and pairs them) and
 the **Assistant** (see the product rule; first built as a fifth tab, now Ask behind Home's icon), the **Inbox** tab in its place (no board: one row for each kind of thing waiting for your say, with its count, opening where it is answered: merchants to file → Review, alerts → Alerts, a subscription found, missed or dearer → Subscriptions and bills, "Same person?" → People, trips to tag → Tags; `InboxDomain` counts what those screens would show and stores nothing; no badge on the tab, as the design system says),
 **Encrypted backups** (see the product rule), and the **home-screen widget** (`core/widget`,
