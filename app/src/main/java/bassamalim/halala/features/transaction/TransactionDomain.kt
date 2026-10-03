@@ -87,6 +87,9 @@ class TransactionDomain @Inject constructor(
     /** It pays [loanId] back. */
     suspend fun repay(loanId: Long, id: Long) = loansRepository.repay(loanId, id)
 
+    /** It repays several loans, [shares] (loan id → minor units) of it each. */
+    suspend fun repayMany(id: Long, shares: Map<Long, Long>) = loansRepository.repayMany(id, shares)
+
     /** It is a plain transfer again (and, if it was all that was lent, the loan goes). */
     suspend fun unlinkLoan(id: Long) = loansRepository.unlink(id)
 

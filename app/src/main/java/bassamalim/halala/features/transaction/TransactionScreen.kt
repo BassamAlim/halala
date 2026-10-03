@@ -71,6 +71,7 @@ import bassamalim.halala.core.ui.components.MONEY_MARK
 import bassamalim.halala.core.ui.components.MoneyText
 import bassamalim.halala.core.ui.components.HalalaTextField
 import bassamalim.halala.core.ui.components.SegmentedControl
+import bassamalim.halala.core.domain.RepayProblem
 import bassamalim.halala.core.domain.SplitProblem
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -379,20 +380,57 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
             onAdd = viewModel::onNewCategoryClick
         )
 
-        TransactionSheet.Repay -> (state.loan as? LoanLink.Open)?.let { loan ->
-            ChoiceSheet(
-                title = stringResource(R.string.loan_repays_title),
-                options = loan.suggestions,
-                selected = null,
-                label = {
-                    stringResource(
+        is TransactionSheet.Repay -> (state.loan as? LoanLink.Open)?.let { loan ->
+            HalalaSheet(onDismiss = viewModel::onSheetDismiss) {
+                Text(text = stringResource(R.string.loan_repays_title), style = HalalaType.Title)
+                Text(text = stringResource(R.string.loan_repays_several), style = HalalaType.Label, color = HalalaColors.TextMuted)
+                val labels = loan.suggestions.associate {
+                    it.loanId to stringResource(
                         R.string.loan_repay_option, it.remaining, it.currency,
                         stringResource(if (it.lent) R.string.loan_lent_on else R.string.loan_borrowed_on, it.lentOn)
                     )
-                },
-                onPick = viewModel::onRepayPick,
-                onDismiss = viewModel::onSheetDismiss
-            )
+                }
+                ChoiceChipsMulti(
+                    options = loan.suggestions.map { PersonChoice(it.loanId, labels.getValue(it.loanId)) },
+                    selected = sheet.selected,
+                    onToggle = viewModel::onRepayToggle
+                )
+                if (sheet.selected.size > 1) ListCard(Modifier.fillMaxWidth()) {
+                    sheet.selected.forEachIndexed { index, loanId ->
+                        val suggestion = loan.suggestions.first { it.loanId == loanId }
+                        ListRow(
+                            title = stringResource(if (suggestion.lent) R.string.loan_lent_on else R.string.loan_borrowed_on, suggestion.lentOn),
+                            divider = index > 0,
+                            trailing = {
+                                HalalaTextField(
+                                    value = sheet.amounts[loanId].orEmpty(),
+                                    onValueChange = { viewModel.onRepayAmountChange(loanId, it) },
+                                    numeric = true,
+                                    isError = RepayProblem.ShareMissing in sheet.problems,
+                                    modifier = Modifier.width(SHARE_FIELD)
+                                )
+                            }
+                        )
+                    }
+                }
+                sheet.problems.firstOrNull()?.let { problem ->
+                    Text(
+                        text = when (problem) {
+                            RepayProblem.ShareMissing -> stringResource(R.string.loan_repay_share_missing)
+                            RepayProblem.NotTheWhole -> stringResource(R.string.loan_repay_not_whole, state.amount, state.currency)
+                        },
+                        style = HalalaType.Label,
+                        color = HalalaColors.StateOver
+                    )
+                }
+                HalalaButton(
+                    text = stringResource(if (sheet.selected.size > 1) R.string.loan_repays_these else R.string.loan_repays),
+                    onClick = viewModel::onRepayConfirm,
+                    enabled = sheet.selected.isNotEmpty(),
+                    kind = ButtonKind.Primary,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
 
         TransactionSheet.Type -> ChoiceSheet(
@@ -682,15 +720,38 @@ private fun LoanCard(loan: LoanLink, viewModel: TransactionViewModel) {
                 },
                 loan.person
             )
-            Text(text = what, style = HalalaType.Body)
-            if (loan.settled) Text(text = stringResource(R.string.loan_settled), style = HalalaType.Label, color = HalalaColors.TextMuted)
-            else MoneyText(
-                text = stringResource(R.string.loan_still_owed, MONEY_MARK),
-                amount = loan.remaining,
-                currency = loan.currency,
-                style = HalalaType.Label,
-                color = HalalaColors.TextMuted
-            )
+            if (loan.shares.isNotEmpty()) {
+                // A transfer that repays several: each loan, its share and what is left of it.
+                Text(
+                    text = pluralStringResource(R.plurals.loan_part_repays_several, loan.shares.size, loan.shares.size),
+                    style = HalalaType.Body
+                )
+                loan.shares.forEach { share ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        Text(text = share.person, style = HalalaType.Label, modifier = Modifier.weight(1f))
+                        Text(text = share.amount, style = HalalaNumbers.Meta)
+                    }
+                    if (share.settled) Text(text = stringResource(R.string.loan_settled), style = HalalaType.Caption, color = HalalaColors.TextMuted)
+                    else MoneyText(
+                        text = stringResource(R.string.loan_still_owed, MONEY_MARK),
+                        amount = share.remaining,
+                        currency = loan.currency,
+                        style = HalalaType.Caption,
+                        color = HalalaColors.TextMuted
+                    )
+                }
+            }
+            else {
+                Text(text = what, style = HalalaType.Body)
+                if (loan.settled) Text(text = stringResource(R.string.loan_settled), style = HalalaType.Label, color = HalalaColors.TextMuted)
+                else MoneyText(
+                    text = stringResource(R.string.loan_still_owed, MONEY_MARK),
+                    amount = loan.remaining,
+                    currency = loan.currency,
+                    style = HalalaType.Label,
+                    color = HalalaColors.TextMuted
+                )
+            }
             HalalaButton(
                 text = stringResource(R.string.loan_unlink),
                 onClick = viewModel::onUnlinkClick,

@@ -74,4 +74,14 @@ class LoansTest {
         )
         assertEquals(1_200L to 300L, Loans.owed(states, "SAR"))
     }
+
+    @Test
+    fun `a transfer spread over loans pays the oldest off first, the rest to the last`() {
+        assertEquals(mapOf(1L to 300L, 2L to 700L), Loans.allocate(1_000, listOf(1L to 300L, 2L to 500L)))
+        // Not enough to reach the second: it gets nothing until you say otherwise.
+        assertEquals(mapOf(1L to 300L, 2L to 0L), Loans.allocate(300, listOf(1L to 500L, 2L to 500L)))
+        assertEquals(setOf(RepayProblem.NotTheWhole), Loans.validateShares(1_000, mapOf(1L to 300L, 2L to 500L)))
+        assertEquals(setOf(RepayProblem.ShareMissing), Loans.validateShares(1_000, mapOf(1L to 1_000L, 2L to null)))
+        assertEquals(emptySet<RepayProblem>(), Loans.validateShares(1_000, mapOf(1L to 300L, 2L to 700L)))
+    }
 }

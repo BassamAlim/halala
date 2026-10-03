@@ -59,6 +59,12 @@ sealed interface Screen {
     /** Every merchant, the busiest first. */
     @Serializable data object Merchants : Screen
 
+    /**
+     * What a category came to in one month ("2026-09"), from Insights: by merchant and each
+     * transaction. [categoryId] 0 is spending not yet filed.
+     */
+    @Serializable data class CategorySpending(val categoryId: Long, val month: String) : Screen
+
     /** One merchant: its name, the ways its bank writes it, merging and splitting. */
     @Serializable data class Merchant(val id: Long) : Screen
 

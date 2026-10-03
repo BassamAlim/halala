@@ -11,14 +11,20 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.buildAnnotatedString
@@ -27,6 +33,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
 import bassamalim.halala.core.Globals
+import bassamalim.halala.core.ui.components.CardLabel
 import bassamalim.halala.core.ui.components.Donut
 import bassamalim.halala.core.ui.components.HalalaCard
 import bassamalim.halala.core.ui.components.LineChart
@@ -50,7 +57,7 @@ private val SLICE_INKS = listOf(1f, 0.72f, 0.52f, 0.38f, 0.27f, 0.18f).map { Hal
 
 /**
  * Activity's Insights (no board): what a month cost against the five before (tap a bar to look
- * at that month), where it went by category, how it built up against the month before, and
+ * at that month; the chevrons page six months older or newer), where it went by category, how it built up against the month before, and
  * where the most went.
  */
 @Composable
@@ -82,7 +89,15 @@ fun InsightsContent(viewModel: InsightsViewModel = hiltViewModel()) {
             }
         }
 
-        HalalaCard(label = stringResource(R.string.insights_by_month), modifier = Modifier.fillMaxWidth()) {
+        HalalaCard(modifier = Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    CardLabel(stringResource(R.string.insights_by_month))
+                    Text(text = state.range, style = HalalaType.Caption, color = HalalaColors.TextMuted)
+                }
+                PageButton(R.string.insights_older, enabled = state.hasOlder, back = true, onClick = viewModel::onOlderClick)
+                PageButton(R.string.insights_newer, enabled = state.hasNewer, back = false, onClick = viewModel::onNewerClick)
+            }
             MonthBars(state.months, viewModel::onMonthClick)
         }
 
@@ -98,13 +113,17 @@ fun InsightsContent(viewModel: InsightsViewModel = hiltViewModel()) {
                     Text(text = state.spent, style = HalalaNumbers.Amount)
                     Text(text = state.monthName, style = HalalaType.Caption, color = HalalaColors.TextMuted)
                 }
-                state.slices.forEachIndexed { i, slice ->
+                // Each opens what it was made of; Other opens into its categories, inked as Other.
+                state.legend.forEachIndexed { i, slice ->
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xs),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = Sizes.touchTarget)
+                            .clickable(role = Role.Button) { viewModel.onSliceClick(slice) },
                         horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(Modifier.size(Sizes.legendDot).background(SLICE_INKS[i % SLICE_INKS.size], Radius.pill))
+                        Box(Modifier.size(Sizes.legendDot).background(SLICE_INKS[minOf(i, SLICE_INKS.lastIndex)], Radius.pill))
                         Text(
                             text = when (slice.name) {
                                 null -> stringResource(R.string.digest_unfiled)
@@ -118,8 +137,25 @@ fun InsightsContent(viewModel: InsightsViewModel = hiltViewModel()) {
                         )
                         Text(text = stringResource(R.string.insights_percent, slice.percent), style = HalalaNumbers.Meta, color = HalalaColors.TextMuted)
                         Text(text = slice.amount, style = HalalaNumbers.Meta)
+                        Icon(
+                            painter = painterResource(R.drawable.ic_chevron_right),
+                            contentDescription = null,
+                            tint = HalalaColors.TextMuted,
+                            modifier = Modifier
+                                .size(Sizes.icon)
+                                .then(if (slice.isOther) Modifier.rotate(90f) else Modifier)
+                        )
                     }
                 }
+                if (state.otherOpen) Text(
+                    text = stringResource(R.string.insights_fewer),
+                    style = HalalaType.Label,
+                    color = HalalaColors.TextMuted,
+                    modifier = Modifier
+                        .heightIn(min = Sizes.touchTarget)
+                        .clickable(role = Role.Button, onClick = viewModel::onOtherCloseClick)
+                        .wrapContentHeight()
+                )
             }
         }
 
@@ -192,6 +228,27 @@ private fun MonthBars(months: List<MonthBar>, onClick: (java.time.YearMonth) -> 
                 )
             }
         }
+    }
+}
+
+/** A chevron to page the bars six months older ([back]) or newer; dimmed with nowhere to go. */
+@Composable
+private fun PageButton(description: Int, enabled: Boolean, back: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(Sizes.touchTarget)
+            .clip(Radius.pill)
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_chevron_right),
+            contentDescription = stringResource(description),
+            tint = if (enabled) HalalaColors.Text else HalalaColors.Line,
+            modifier = Modifier
+                .size(Sizes.icon)
+                .then(if (back) Modifier.rotate(180f) else Modifier)
+        )
     }
 }
 

@@ -1,5 +1,6 @@
 package bassamalim.halala.features.transaction
 
+import bassamalim.halala.core.domain.RepayProblem
 import bassamalim.halala.core.enums.AmountTone
 import bassamalim.halala.core.enums.ExpenseType
 import bassamalim.halala.core.enums.TransactionKind
@@ -118,7 +119,10 @@ sealed interface LoanLink {
      */
     data class Open(val lent: Boolean, val person: String, val personId: Long?, val suggestions: List<Suggestion>) : LoanLink
 
-    /** Part of a loan: [repays] it or lent it; [remaining] is what is still owed ("1,000.00"). */
+    /**
+     * Part of a loan: [repays] it or lent it; [remaining] is what is still owed ("1,000.00").
+     * [shares] are the loans it repays when it repays several (empty for one).
+     */
     data class Part(
         val lent: Boolean,
         val repays: Boolean,
@@ -126,12 +130,26 @@ sealed interface LoanLink {
         val personId: Long,
         val remaining: String,
         val currency: String,
-        val settled: Boolean
+        val settled: Boolean,
+        val shares: List<RepaidShare> = emptyList()
     ) : LoanLink
 }
 
-/** An open loan a transfer would repay: [remaining] still owed, lent on [lentOn] ("12 Sep"). */
-data class Suggestion(val loanId: Long, val lent: Boolean, val remaining: String, val currency: String, val lentOn: String)
+/** One of the loans a transfer repays a share of: [amount] its share, [remaining] still owed after. */
+data class RepaidShare(val person: String, val amount: String, val remaining: String, val settled: Boolean)
+
+/**
+ * An open loan a transfer would repay: [remaining] still owed ([remainingMinor] to divide the
+ * transfer by), lent on [lentOn] ("12 Sep").
+ */
+data class Suggestion(
+    val loanId: Long,
+    val lent: Boolean,
+    val remaining: String,
+    val remainingMinor: Long,
+    val currency: String,
+    val lentOn: String
+)
 
 sealed interface TransactionSheet {
     /**
@@ -184,8 +202,15 @@ sealed interface TransactionSheet {
     /** "It's my salary", to confirm: it and their transfers in from now on. */
     data object Salary : TransactionSheet
 
-    /** Which of the person's open loans it repays, when there are several. */
-    data object Repay : TransactionSheet
+    /**
+     * Which of the person's open loans it repays, when there are several: [selected] (oldest
+     * first), and with more than one, each one's share as typed ([amounts], loan id → text).
+     */
+    data class Repay(
+        val selected: List<Long> = emptyList(),
+        val amounts: Map<Long, String> = emptyMap(),
+        val problems: Set<RepayProblem> = emptySet()
+    ) : TransactionSheet
 
     data object Category : TransactionSheet
     data object Type : TransactionSheet

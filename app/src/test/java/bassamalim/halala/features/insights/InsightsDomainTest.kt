@@ -5,6 +5,7 @@ import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.enums.TransactionSource
+import bassamalim.halala.features.categorySpending.CategorySpendingDomain
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.Instant
@@ -48,6 +49,20 @@ class InsightsDomainTest {
         assertEquals(listOf("C7", "C6", "C5", "C4", "C3", ""), shares.map { it.name })
         // C2, C1 and the unfiled 50.
         assertEquals(350L, shares.last().minor)
+    }
+
+    @Test
+    fun `a category's month is its spending in that month only, unfiled as no category`() {
+        val details = listOf(
+            tx("2026-10-01", 300, 1), tx("2026-10-02", 400, 2), tx("2026-09-30", 500, 1),
+            tx("2026-10-03", 600, null), tx("2026-10-04", 700, 1, direction = Direction.CREDIT)
+        )
+        val october = YearMonth.of(2026, 10)
+        fun amounts(category: Long?) =
+            CategorySpendingDomain.of(details, category, october, "SAR", zone).map { it.transaction.amountMinor }
+        assertEquals(listOf(300L), amounts(1))
+        assertEquals(listOf(600L), amounts(null))
+        assertEquals(listOf(null, "C2", "C1"), InsightsDomain.categories(InsightsDomain.spending(details, "SAR"), october, zone).map { it.name })
     }
 
     @Test

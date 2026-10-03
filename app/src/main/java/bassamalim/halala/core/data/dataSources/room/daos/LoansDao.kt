@@ -34,8 +34,15 @@ interface LoansDao {
     @Query("SELECT * FROM loan_events ORDER BY id")
     suspend fun getEvents(): List<LoanEvent>
 
-    @Query("SELECT * FROM loan_events WHERE transactionId = :transactionId")
+    /** One of [transactionId]'s events, to tell whether it is part of a loan at all. */
+    @Query("SELECT * FROM loan_events WHERE transactionId = :transactionId ORDER BY id LIMIT 1")
     suspend fun getEventFor(transactionId: Long): LoanEvent?
+
+    @Query("SELECT * FROM loan_events WHERE transactionId = :transactionId ORDER BY id")
+    suspend fun getEventsFor(transactionId: Long): List<LoanEvent>
+
+    @Query("DELETE FROM loan_events WHERE transactionId = :transactionId")
+    suspend fun deleteEventsFor(transactionId: Long)
 
     /** The person a transfer's title names, by its key. */
     @Query("SELECT personId FROM person_aliases WHERE aliasKey = :key AND :key != ''")
@@ -72,6 +79,20 @@ interface LoansDao {
         return id
     }
 
+    /** A transfer repays several loans, a share each: the events and the transfer's kind, as one write. */
+    @Transaction
+    suspend fun linkAll(events: List<LoanEvent>, transactionId: Long, kind: TransactionKind) {
+        events.forEach { insertEvent(it) }
+        setKind(transactionId, kind)
+    }
+
+    /** Its repayments gone, the transfer is [kind] again, as one write. */
+    @Transaction
+    suspend fun unlinkRepayments(transactionId: Long, kind: TransactionKind) {
+        deleteEventsFor(transactionId)
+        setKind(transactionId, kind)
+    }
+
     /** A new loan and the transfer that lent (or borrowed) it, as one write. */
     @Transaction
     suspend fun open(loan: Loan, eventUid: String, transactionId: Long, kind: TransactionKind): Long {
@@ -100,7 +121,7 @@ interface LoansDao {
 
 private const val EVENT_SELECT = """
         SELECT e.id, e.loanId, e.type, e.transactionId,
-            COALESCE(t.amountMinor, e.amountMinor) AS amountMinor, COALESCE(t.occurredAt, e.at) AS at,
+            COALESCE(e.amountMinor, t.amountMinor) AS amountMinor, COALESCE(t.occurredAt, e.at) AS at,
             t.kind AS kind, a.nickname AS accountNickname, i.name AS institutionName
         FROM loan_events e
         LEFT JOIN transactions t ON t.id = e.transactionId

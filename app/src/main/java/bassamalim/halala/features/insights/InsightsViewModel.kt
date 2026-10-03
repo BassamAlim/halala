@@ -18,14 +18,20 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import java.time.YearMonth
 import javax.inject.Inject
 
 /** A month's bar: its share of the tallest month, for drawing. */
 data class MonthBar(val month: YearMonth, val label: String, val fraction: Float, val selected: Boolean)
 
-/** A slice of the category chart. [name] is null for unfiled, "" for Other. */
-data class Slice(val name: String?, val amount: String, val percent: Int, val fraction: Float)
+/**
+ * A slice of the category chart. [name] is null for unfiled, "" for Other; [categoryId] is null
+ * for both.
+ */
+data class Slice(val categoryId: Long?, val name: String?, val amount: String, val percent: Int, val fraction: Float) {
+    val isOther get() = name == ""
+}
 
 /** A merchant's row, its bar a share of the biggest. */
 data class MerchantBar(val id: Long, val name: String, val amount: String, val fraction: Float)
@@ -39,7 +45,14 @@ data class InsightsUiState(
     val change: Int? = null,
     val previousMonthName: String = "",
     val months: List<MonthBar> = emptyList(),
+    /** The months the bars cover ("May – October"), and whether there are older or newer ones to page to. */
+    val range: String = "",
+    val hasOlder: Boolean = false,
+    val hasNewer: Boolean = false,
     val slices: List<Slice> = emptyList(),
+    /** The category list under the ring: [slices], or with Other opened, every category. */
+    val legend: List<Slice> = emptyList(),
+    val otherOpen: Boolean = false,
     val pace: List<Long> = emptyList(),
     val pacePrevious: List<Long> = emptyList(),
     val paceTips: List<Pair<String, String>> = emptyList(),
@@ -54,10 +67,14 @@ class InsightsViewModel @Inject constructor(
     private val navigator: Navigator
 ) : ViewModel() {
 
-    /** The month picked on the bars; null is this month. */
+    /** The month picked on the bars, and the last month the bars show; null is this month. */
     private val picked = MutableStateFlow<YearMonth?>(null)
+    private val lastShown = MutableStateFlow<YearMonth?>(null)
 
-    val uiState: StateFlow<InsightsUiState> = combine(domain.observeTransactions(), picked) { details, picked ->
+    /** Whether Other is opened into the categories it gathers. */
+    private val otherOpen = MutableStateFlow(false)
+
+    val uiState: StateFlow<InsightsUiState> = combine(domain.observeTransactions(), picked, lastShown, otherOpen) { details, picked, lastShown, otherOpen ->
         val zone = domain.zone()
         val today = domain.today()
         val currency = Globals.PRIMARY_CURRENCY
@@ -65,11 +82,16 @@ class InsightsViewModel @Inject constructor(
         val month = picked ?: YearMonth.from(today)
         fun f(minor: Long) = Money.format(minor, currency, decimals = false)
 
-        val byMonth = InsightsDomain.byMonth(spending, YearMonth.from(today), MONTHS, zone)
+        val thisMonth = YearMonth.from(today)
+        val last = lastShown ?: thisMonth
+        val byMonth = InsightsDomain.byMonth(spending, last, MONTHS, zone)
+        val first = byMonth.first().first
         val tallest = byMonth.maxOf { it.second }.coerceAtLeast(1)
         val spent = InsightsDomain.byMonth(spending, month, 2, zone)
         val slices = InsightsDomain.byCategory(spending, month, zone)
         val total = Money.sum(slices.map { it.minor }).coerceAtLeast(1)
+        fun slice(it: Share) =
+            Slice(it.id, it.name, f(it.minor), Math.multiplyExact(it.minor, 100L).plus(total / 2).div(total).toInt(), it.minor.toFloat() / total)
         val (pace, before) = InsightsDomain.cumulative(spending, month, today, zone)
         val merchants = InsightsDomain.topMerchants(spending, month, zone, MERCHANTS)
         val biggest = merchants.maxOfOrNull { it.minor }?.coerceAtLeast(1) ?: 1
@@ -80,10 +102,13 @@ class InsightsViewModel @Inject constructor(
             spent = f(-spent.last().second),
             change = Digests.percent(spent.last().second, spent.first().second),
             previousMonthName = monthLabel(month.minusMonths(1), today),
+            range = "${monthLabel(first, today)} – ${monthLabel(last, today)}",
+            hasOlder = InsightsDomain.firstMonth(spending, zone)?.let { it < first } == true,
+            hasNewer = last < thisMonth,
             months = byMonth.map { (m, minor) -> MonthBar(m, monthShortLabel(m), minor.toFloat() / tallest, m == month) },
-            slices = slices.map {
-                Slice(it.name, f(it.minor), Math.multiplyExact(it.minor, 100L).plus(total / 2).div(total).toInt(), it.minor.toFloat() / total)
-            },
+            slices = slices.map(::slice),
+            legend = (if (otherOpen) InsightsDomain.categories(spending, month, zone) else slices).map(::slice),
+            otherOpen = otherOpen,
             pace = pace,
             pacePrevious = before,
             paceTips = pace.mapIndexed { i, v -> shortDateLabel(month.atDay(i + 1), today) to f(v) },
@@ -96,7 +121,28 @@ class InsightsViewModel @Inject constructor(
         picked.value = month
     }
 
+    /** Six months back (or forward, never past this one); the page follows the newest shown. */
+    fun onOlderClick() = page(-MONTHS.toLong())
+
+    fun onNewerClick() = page(MONTHS.toLong())
+
+    private fun page(by: Long) {
+        val thisMonth = YearMonth.from(domain.today())
+        val last = minOf((lastShown.value ?: thisMonth).plusMonths(by), thisMonth)
+        lastShown.value = last.takeIf { it != thisMonth }
+        picked.value = last.takeIf { it != thisMonth }
+    }
+
     fun onMerchantClick(id: Long) = navigator.navigate(Screen.Merchant(id))
+
+    /** A category opens what it was made of that month; Other opens into its categories, and closes again. */
+    fun onSliceClick(slice: Slice) {
+        if (slice.isOther) return otherOpen.update { !it }
+        val month = picked.value ?: YearMonth.from(domain.today())
+        navigator.navigate(Screen.CategorySpending(slice.categoryId ?: 0, month.toString()))
+    }
+
+    fun onOtherCloseClick() = otherOpen.update { false }
 
     private companion object {
         const val MONTHS = 6

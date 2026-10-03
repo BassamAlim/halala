@@ -185,7 +185,11 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   transfer names can be added by name to split with. "Paid for someone else" (spending that
   isn't a transfer) is a split whose one share is the whole, with an optional due date. Undoing a split drops its loans and frees
   their repayments. Transaction detail asks whether a transfer repays one of the person's open loans
-  (`Loans.repaidBy`; with several, you choose which, oldest first) and offers marking it as a loan. Merging people moves their loans.
+  (`Loans.repaidBy`; with several, you choose which, oldest first, or more than one: the transfer
+  is spread over them, oldest paid off first and the rest to the newest (`Loans.allocate`), each share
+  editable and together exactly the transfer (`Loans.validateShares`); each loan's event carries its
+  share, `LoansRepository.repayMany`). "Not part of a loan" takes back every share; a loan going frees
+  a transfer only when it repays no other and offers marking it as a loan. Merging people moves their loans.
 - **Subscriptions, bills and planned payments** are one `RecurringSeries` (the spec's
   RecurringSeries): kind (`SUBSCRIPTION`, `BILL`, `PLANNED` for family support and the like),
   amount every N days/weeks/months/years from an `anchor` (occurrences count from the anchor, so
@@ -527,7 +531,7 @@ month on this month's lowest balance, nothing under 5,000; a term maturing withi
 on Wealth and is reminded three days before; the terms form has no board), and fetched fund
 and gold prices (see Assets).
 
-**Phase 6 (delight)** is built: **Insights** (Activity's third segment, no board: the month's spending against the month before, six months' bars that pick the month, a category ring in one ink stepped (spending is never coloured; the top five and Other), spending through the month against the month before (`LineChart`'s dashed second line), and where the most went; `InsightsDomain`), **Money flow** (Money flow board, Activity's second segment,
+**Phase 6 (delight)** is built: **Insights** (Activity's third segment, no board: the month's spending against the month before, six months' bars that pick the month (chevrons page six months older, back to the first month anything was spent, or newer, up to this one; paging picks the newest shown), a category ring in one ink stepped (spending is never coloured; the top five and Other), each category tapping through to **Category spending** (`Screen.CategorySpending`, no board: that month's total, by merchant, and its transactions; unfiled too) and Other opening into the categories it gathers, spending through the month against the month before (`LineChart`'s dashed second line), and where the most went; `InsightsDomain`), **Money flow** (Money flow board, Activity's second segment,
 redrawn top to bottom for a phone: for a month and an account, salary or what came in, the share
 spent and kept and spending against the month before, then a vertical Sankey (`Sankey`
 component, `core/domain/MoneyFlow`) from where the money came from (salary, your accounts,

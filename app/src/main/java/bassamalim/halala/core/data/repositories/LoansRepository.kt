@@ -92,6 +92,35 @@ class LoansRepository @Inject constructor(
         return true
     }
 
+    /**
+     * [transactionId] pays back several loans, [shares] (loan id → minor units) of it each. Each
+     * loan must be paid back money going this way, in the transfer's currency, and the shares
+     * must be the whole transfer; one loan is [repay]. False when it can't be.
+     */
+    suspend fun repayMany(transactionId: Long, shares: Map<Long, Long>): Boolean {
+        if (shares.size == 1) return repay(shares.keys.single(), transactionId)
+        val tx = transactionsDao.get(transactionId) ?: return false
+        if (shares.isEmpty() || !isFree(transactionId, tx.kind)) return false
+        if (Loans.validateShares(tx.amountMinor, shares).isNotEmpty()) return false
+        val loans = shares.keys.map { loansDao.getLoan(it) ?: return false }
+        if (loans.any { it.direction.repaying != tx.direction || it.currency != tx.currency }) return false
+
+        loansDao.linkAll(
+            loans.map { loan ->
+                LoanEvent(
+                    uid = UUID.randomUUID().toString(),
+                    loanId = loan.id,
+                    type = LoanEventType.REPAYMENT,
+                    transactionId = transactionId,
+                    amountMinor = shares.getValue(loan.id)
+                )
+            },
+            transactionId,
+            Loans.kindOf(LoanEventType.REPAYMENT, loans.first().direction)
+        )
+        return true
+    }
+
     /** Lets go of what is still owed on [loanId]: it is settled, as of now. */
     suspend fun forgive(loanId: Long) {
         val loan = loansDao.getLoan(loanId) ?: return
@@ -121,13 +150,17 @@ class LoansRepository @Inject constructor(
      */
     suspend fun unlink(transactionId: Long) {
         val event = loansDao.getEventFor(transactionId) ?: return
+        // Repaying (one loan or several): its shares go, and it is a plain transfer again.
+        if (event.type != LoanEventType.DISBURSEMENT) {
+            val tx = transactionsDao.get(transactionId) ?: return
+            return loansDao.unlinkRepayments(transactionId, Loans.plainKind(tx.direction))
+        }
         val rows = loansDao.getEventRows(event.loanId)
         val lastLent = event.type == LoanEventType.DISBURSEMENT &&
                 rows.none { it.type == LoanEventType.DISBURSEMENT && it.id != event.id }
         val freed = if (lastLent) rows.mapNotNull { it.transactionId } else listOf(transactionId)
 
-        val kinds = freed.mapNotNull { id -> transactionsDao.get(id)?.let { id to Loans.plainKind(it.direction) } }.toMap()
-        loansDao.unlink(kinds, eventId = event.id.takeUnless { lastLent }, loanId = event.loanId.takeIf { lastLent })
+        loansDao.unlink(plainKinds(freed, event.loanId), eventId = event.id.takeUnless { lastLent }, loanId = event.loanId.takeIf { lastLent })
     }
 
     /**
@@ -168,10 +201,18 @@ class LoansRepository @Inject constructor(
     suspend fun unsplit(transactionId: Long) {
         for (loan in loansDao.getSplitOf(transactionId)) {
             val freed = loansDao.getEventRows(loan.id).mapNotNull { it.transactionId }
-            val kinds = freed.mapNotNull { id -> transactionsDao.get(id)?.let { id to Loans.plainKind(it.direction) } }.toMap()
-            loansDao.unlink(kinds, eventId = null, loanId = loan.id)
+            loansDao.unlink(plainKinds(freed, loan.id), eventId = null, loanId = loan.id)
         }
     }
+
+    /**
+     * The plain kinds [ids] go back to as [loanId] lets them go; one that also repays another
+     * loan stays that loan's repayment (only its share of this one goes, with the loan).
+     */
+    private suspend fun plainKinds(ids: List<Long>, loanId: Long): Map<Long, TransactionKind> = ids
+        .filter { id -> loansDao.getEventsFor(id).all { it.loanId == loanId } }
+        .mapNotNull { id -> transactionsDao.get(id)?.let { id to Loans.plainKind(it.direction) } }
+        .toMap()
 
     /** A plain transfer to or from someone, or a refund: not a move between your own accounts, nor part of a loan. */
     private suspend fun isFree(transactionId: Long, kind: TransactionKind) =

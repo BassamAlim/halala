@@ -249,17 +249,54 @@ class TransactionViewModel @Inject constructor(
         }
     }
 
-    /** One loan it could repay: that one. Several: you choose which. */
+    /** One loan it could repay: that one. Several: you choose which, one or more. */
     fun onRepaysClick() {
-        val suggestions = (uiState.value.loan as? LoanLink.Open)?.suggestions.orEmpty()
-        if (suggestions.size == 1) onRepayPick(suggestions.single())
-        else if (suggestions.size > 1) sheet.update { TransactionSheet.Repay }
+        val suggestions = suggestions()
+        if (suggestions.size == 1) {
+            val loanId = suggestions.single().loanId
+            viewModelScope.launch { domain.repay(loanId, id) }
+        } else if (suggestions.size > 1) sheet.update { TransactionSheet.Repay() }
     }
 
-    fun onRepayPick(suggestion: Suggestion) {
-        sheet.update { null }
-        viewModelScope.launch { domain.repay(suggestion.loanId, id) }
+    /**
+     * A loan picked or let go. With several picked, the transfer is spread over them again,
+     * oldest paid off first (the rest to the newest), to be changed as you like.
+     */
+    fun onRepayToggle(loanId: Long) {
+        val repay = sheet.value as? TransactionSheet.Repay ?: return
+        val picked = repay.selected.let { if (loanId in it) it - loanId else it + loanId }
+        val ordered = suggestions().filter { it.loanId in picked }
+        val shares = Loans.allocate(uiState.value.amountMinor, ordered.map { it.loanId to it.remainingMinor })
+        val currency = uiState.value.currency
+        sheet.update {
+            TransactionSheet.Repay(
+                selected = ordered.map { it.loanId },
+                amounts = shares.mapValues { (_, minor) -> Money.input(minor, currency) }
+            )
+        }
     }
+
+    fun onRepayAmountChange(loanId: Long, text: String) = sheet.update {
+        (it as? TransactionSheet.Repay)?.copy(amounts = it.amounts + (loanId to text), problems = emptySet()) ?: it
+    }
+
+    fun onRepayConfirm() {
+        val repay = sheet.value as? TransactionSheet.Repay ?: return
+        if (repay.selected.isEmpty()) return
+        val currency = uiState.value.currency
+        val shares = repay.selected.associateWith { loanId -> repay.amounts[loanId]?.let { Money.parse(it, currency) } }
+        if (repay.selected.size > 1) {
+            val problems = Loans.validateShares(uiState.value.amountMinor, shares)
+            if (problems.isNotEmpty()) return sheet.update { repay.copy(problems = problems) }
+        }
+        sheet.update { null }
+        viewModelScope.launch {
+            if (repay.selected.size == 1) domain.repay(repay.selected.single(), id)
+            else domain.repayMany(id, shares.mapValues { it.value!! })
+        }
+    }
+
+    private fun suggestions() = (uiState.value.loan as? LoanLink.Open)?.suggestions.orEmpty()
 
     fun onUnlinkClick() = sheet.update { TransactionSheet.Unlink }
 
@@ -421,10 +458,20 @@ class TransactionViewModel @Inject constructor(
         val personId = detail.personId
         val person = detail.personName.orEmpty()
 
-        val part = loans.firstOrNull { state -> state.events.any { it.transactionId == tx.id } }
+        val parts = loans.filter { state -> state.events.any { it.transactionId == tx.id } }
+        val part = parts.firstOrNull()
         if (part != null) {
             val event = part.events.first { it.transactionId == tx.id }
+            fun nameOf(state: LoanState) = people.firstOrNull { it.person.id == state.loan.personId }?.person?.name ?: person
             return LoanLink.Part(
+                shares = if (parts.size < 2) emptyList() else parts.map { state ->
+                    RepaidShare(
+                        person = nameOf(state),
+                        amount = Money.format(state.events.first { it.transactionId == tx.id }.amountMinor, state.loan.currency),
+                        remaining = Money.format(state.remainingMinor, state.loan.currency),
+                        settled = !state.isOpen
+                    )
+                },
                 lent = part.loan.direction == LoanDirection.LENT,
                 repays = event.type != LoanEventType.DISBURSEMENT,
                 person = people.firstOrNull { it.person.id == part.loan.personId }?.person?.name ?: person,
@@ -446,6 +493,7 @@ class TransactionViewModel @Inject constructor(
                     loanId = it.loan.id,
                     lent = it.loan.direction == LoanDirection.LENT,
                     remaining = Money.format(it.remainingMinor, it.loan.currency),
+                    remainingMinor = it.remainingMinor,
                     currency = it.loan.currency,
                     lentOn = it.lentAt?.let { at -> shortDateLabel(at.atZone(domain.zone()).toLocalDate(), today) }.orEmpty()
                 )

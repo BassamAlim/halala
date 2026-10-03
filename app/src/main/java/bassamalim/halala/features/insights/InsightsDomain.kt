@@ -40,6 +40,9 @@ class InsightsDomain @Inject constructor(
 
         private fun TransactionDetail.month(zone: ZoneId) = YearMonth.from(transaction.occurredAt.atZone(zone))
 
+        /** The first month anything was spent, for how far back the bars go; null with none. */
+        fun firstMonth(spending: List<TransactionDetail>, zone: ZoneId): YearMonth? = spending.minOfOrNull { it.month(zone) }
+
         /** What was spent in each of the [count] months up to [last], oldest first. */
         fun byMonth(spending: List<TransactionDetail>, last: YearMonth, count: Int, zone: ZoneId): List<Pair<YearMonth, Long>> {
             val sums = spending.groupBy { it.month(zone) }.mapValues { (_, list) -> Money.sum(list.map { it.yourMinor }) }
@@ -59,9 +62,13 @@ class InsightsDomain @Inject constructor(
             .filter { it.minor > 0 }
             .sortedByDescending { it.minor }
 
+        /** By category, every one, biggest first; unfiled has no id and no name. */
+        fun categories(spending: List<TransactionDetail>, month: YearMonth, zone: ZoneId): List<Share> =
+            shares(spending, month, zone) { it.transaction.categoryId to it.categoryName }
+
         /** By category, the biggest [SLICES] and then everything else as one share with no id and name "" (Other). */
         fun byCategory(spending: List<TransactionDetail>, month: YearMonth, zone: ZoneId): List<Share> {
-            val all = shares(spending, month, zone) { it.transaction.categoryId to it.categoryName }
+            val all = categories(spending, month, zone)
             if (all.size <= SLICES + 1) return all
             return all.take(SLICES) + Share(null, "", Money.sum(all.drop(SLICES).map { it.minor }))
         }

@@ -509,16 +509,24 @@
     <string name="salary_pays_you">Pays your salary</string>
     <string name="salary_since">Their transfers in count as salary since %1$s</string>
     <string name="salary_stop">Not my salary anymore</string>
-    <string name="loan_repays_which">It repays one of them</string>
-    <string name="loan_repays_title">Which loan does it repay?</string>
+    <string name="loan_repays_which">Choose the loans it repays</string>
+    <string name="loan_repays_title">Which loans does it repay?</string>
+    <string name="loan_repays_several">Choose every loan it pays back. With more than one, say how much goes to each.</string>
+    <string name="loan_repays_these">It repays these</string>
+    <string name="loan_repay_share_missing">Give each loan an amount above zero.</string>
+    <string name="loan_repay_not_whole">The amounts need to add up to the whole transfer, %1$s %2$s.</string>
+    <plurals name="loan_part_repays_several">
+        <item quantity="one">It repays %1$d loan.</item>
+        <item quantity="other">It repays %1$d loans.</item>
+    </plurals>
     <string name="loan_repay_option">%1$s %2$s, %3$s</string>
     <plurals name="loan_suggest_many_lent">
-        <item quantity="one">%1$s owes you on %2$d loan. Does this repay one?</item>
-        <item quantity="other">%1$s owes you on %2$d loans. Does this repay one?</item>
+        <item quantity="one">%1$s owes you on %2$d loan. Does this pay it back?</item>
+        <item quantity="other">%1$s owes you on %2$d loans. Does this pay any of them back?</item>
     </plurals>
     <plurals name="loan_suggest_many_borrowed">
-        <item quantity="one">You owe %1$s on %2$d loan. Does this repay one?</item>
-        <item quantity="other">You owe %1$s on %2$d loans. Does this repay one?</item>
+        <item quantity="one">You owe %1$s on %2$d loan. Does this pay it back?</item>
+        <item quantity="other">You owe %1$s on %2$d loans. Does this pay any of them back?</item>
     </plurals>
     <string name="loan_part_lent">Lent to %1$s</string>
     <string name="loan_part_borrowed">Borrowed from %1$s</string>
@@ -929,6 +937,10 @@
     <string name="insights_less_than">%1$d%% less than %2$s</string>
     <string name="insights_same_as">The same as %1$s</string>
     <string name="insights_by_month">By month</string>
+    <string name="insights_by_merchant">By merchant</string>
+    <string name="insights_fewer">Show fewer</string>
+    <string name="insights_older">Older months</string>
+    <string name="insights_newer">Newer months</string>
     <string name="insights_by_category">By category</string>
     <string name="insights_other">Other</string>
     <string name="insights_percent">%1$d%%</string>
