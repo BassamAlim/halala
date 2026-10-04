@@ -127,7 +127,10 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   is missing or under 48px is kept as none. Logos live in the encrypted ledger
   (`merchant_logos`), never exported (a restore fetches them again); `MerchantLogos` decodes them
   once and `LocalMerchantLogos` hands them to `Avatar` (pass `merchantId`), which falls back to
-  the initial. There is no way yet to correct a wrong logo.
+  the initial. **A wrong logo is corrected on Merchant** (the Logo row under What it is; no
+  board): you type its website (any form `GroqProtocol.domainOf` reads) and its icon is fetched
+  then (`LogoLookup.correct`; offline, the next run fetches it), or "No logo" keeps the initial
+  and never fetches one. Either way the AI isn't asked its website again.
 - **The owner's definitions** (no board, no screen): Halala is the owner's first. Places anyone
   pays at go in the bundled `KnownMerchants` list (a new build), backed by the chains of
   OpenStreetMap's name-suggestion-index in Saudi Arabia and worldwide
@@ -160,8 +163,7 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   `IdentifyWorker`, only when someone new has appeared, and sends every person's names as banks
   wrote them (`Identification.sendable` ones, at most 300 people) and nothing else. Merging keeps
   the one you named, else the one with more transfers; "Not the same" is remembered. What the AI
-  said and what you dismissed are in DataStore by `People.pairKey` (uids, never a name). Phone
-  contacts aren't linked yet. **Salary by transfer**: an incoming plain transfer from someone
+  said and what you dismissed are in DataStore by `People.pairKey` (uids, never a name). **Salary by transfer**: an incoming plain transfer from someone
   can be marked "It's my salary" (Transaction detail, confirmed): that person's `salarySince`
   becomes its time, and it and their transfers in after it become `SALARY` (`PeopleDao.markSalaries`,
   run by `applyRules` and when it is set), so pay cycles and the forecast see them. Salary names
@@ -456,8 +458,7 @@ on Home, since the boards don't show where Settings lives), and **Plan**, **Weal
 **Assistant** as placeholder tabs (Wealth already links to Accounts). No board draws
 **Accounts**, **Account** (add/edit), **New transaction**, **Count your wallet**, **Backup and
 export** or **Locked**: they are built from the system's components (Settings' list card, the
-onboarding board's bank/••digits/name rows, the segmented control) — replace them when boards
-exist.
+onboarding board's bank/••digits/name rows, the segmented control).
 
 **Phase 1 (SMS core)** is built in `core/sms`: the receiver and worker (`SmsReceiver`,
 `SmsWorker`), per-bank parsers (`BankFormats`, `SmsParser`) with fixture tests, the ingest
@@ -487,8 +488,7 @@ suggestion, or the category sheet when there is none; toward the start changes) 
 card as a split (one purchase: Transaction detail opens on its split sheet), a subscription or a
 bill (the series form, started from the newest charge: monthly, next due on or after today,
 linked to the merchant); loans are marked on transfers, which never reach Review. Web search
-for cryptic names is built (see Identifying merchants). Still to come in Phase 2: the usage cap
-in Settings, and merchant logos and locations.
+for cryptic names is built (see Identifying merchants).
 
 **Phase 3 (people and recurring)** has begun: people (`Person`, `PersonAlias`, `PeopleRepository`,
 found by `applyRules`) and loans (`Loan`, `LoanEvent`, `LoansRepository`, `core/domain/Loans`).
@@ -505,8 +505,7 @@ price rise, a missed charge and what was found, Next 30 days and Later, each wit
 reached from the Plan tab's card and Home's Coming up), **Subscription or bill** (no board: the
 form, from the list or its + Add), Home's **People owe you** and **Coming up** cards (Home
 board; always shown, so they are a way in even when empty), and the Plan tab's Subscriptions and bills card (Plan board; the rest of Plan comes with
-Phase 4), and Transaction detail's **Split** card and sheet (no board). Still to come in
-Phase 3: linking people to IBANs and contacts.
+Phase 4), and Transaction detail's **Split** card and sheet (no board).
 
 **Phase 4 (planning)** is built: pay cycles, budgets, savings goals, the forecast, anomaly
 alerts and digests. Screens: the **Plan** tab (Plan board:
@@ -547,5 +546,4 @@ count, and "+ Cash", which opens the lock as always and then the form on the wal
 (`QuickAddRequest`); refreshed when the app goes to the background and after each SMS run),
 **Tags** (from Activity; a tag's form with what carries it; the Tags row on Transaction
 detail; no board draws them), and **Where you spend** (see the product rule).
-The widget shows amounts outside the lock: it is there only if you add it. The board's
-"See 52 transactions" link waits for a filtered feed.
+The widget shows amounts outside the lock: it is there only if you add it.

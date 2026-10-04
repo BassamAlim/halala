@@ -20,6 +20,12 @@ class LogosRepository @Inject constructor(private val merchantsDao: MerchantsDao
         for ((id, website) in websites) merchantsDao.setWebsite(id, website)
     }
 
+    /**
+     * You said its website ([website]; null: it has no logo). Its logo is let go, to be fetched
+     * again from the new one; the AI is never asked again.
+     */
+    suspend fun correctWebsite(merchantId: Long, website: String?) = merchantsDao.correctWebsite(merchantId, website)
+
     suspend fun toFetch(): List<MerchantSite> = merchantsDao.getLogosToFetch()
 
     /** A logo, or null for one tried that gave nothing worth showing: never tried again. */

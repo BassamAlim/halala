@@ -19,6 +19,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -130,6 +131,12 @@ fun MerchantScreen(viewModel: MerchantViewModel = hiltViewModel()) {
                             },
                             onClick = viewModel::onBusinessTypeClick
                         )
+                        ListRow(
+                            title = stringResource(R.string.merchant_logo),
+                            subtitle = state.website ?: stringResource(R.string.merchant_logo_none),
+                            divider = true,
+                            onClick = viewModel::onLogoClick
+                        )
                     }
                     state.webUrl?.let { url -> FoundOnline(state.webTitle ?: url, url) }
                     if (state.canLookUp) {
@@ -223,6 +230,48 @@ fun MerchantScreen(viewModel: MerchantViewModel = hiltViewModel()) {
             )
         }
 
+        is MerchantSheet.Logo -> HalalaSheet(onDismiss = viewModel::onSheetDismiss) {
+            Text(text = stringResource(R.string.merchant_logo), style = HalalaType.Title)
+            Text(
+                text = stringResource(R.string.merchant_logo_body),
+                style = HalalaType.Label,
+                color = HalalaColors.TextMuted
+            )
+            FormField(
+                label = stringResource(R.string.merchant_website),
+                error = sheet.problem?.let { stringResource(logoProblemLabel(it)) }
+            ) {
+                HalalaTextField(
+                    value = sheet.website,
+                    onValueChange = viewModel::onWebsiteChange,
+                    placeholder = stringResource(R.string.merchant_website_hint),
+                    keyboardType = KeyboardType.Uri,
+                    isError = sheet.problem != null,
+                    imeAction = ImeAction.Done
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = Spacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+            ) {
+                HalalaButton(
+                    text = stringResource(R.string.merchant_logo_remove),
+                    onClick = viewModel::onLogoRemove,
+                    enabled = !sheet.working,
+                    modifier = Modifier.weight(1f)
+                )
+                HalalaButton(
+                    text = stringResource(if (sheet.working) R.string.merchant_logo_fetching else R.string.save),
+                    onClick = viewModel::onLogoSave,
+                    enabled = !sheet.working,
+                    kind = ButtonKind.Primary,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
         is MerchantSheet.Split -> ConfirmSheet(
             title = stringResource(R.string.merchant_split_title, sheet.spelling.descriptor, state.name),
             body = stringResource(R.string.merchant_split_body, state.name),
@@ -314,6 +363,12 @@ fun MerchantScreen(viewModel: MerchantViewModel = hiltViewModel()) {
 
         null -> Unit
     }
+}
+
+private fun logoProblemLabel(problem: LogoProblem): Int = when (problem) {
+    LogoProblem.NotAWebsite -> R.string.merchant_website_invalid
+    LogoProblem.NoneFound -> R.string.merchant_logo_not_found
+    LogoProblem.Offline -> R.string.merchant_logo_offline
 }
 
 /** How looking it up went, in words. */

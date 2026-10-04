@@ -70,6 +70,7 @@ class MerchantViewModel @Inject constructor(
             canLookUp = domain.canAsk() && (merchant.identifiedBy == null || merchant.identifiedBy == IdentifiedBy.AI),
             lookup = lookup,
             filesUnder = Identification.categoryFor(merchant.businessType, categories)?.name,
+            website = merchant.website,
             spellings = aliases.map { SpellingRow(it.alias.id, it.alias.descriptor, it.alias.matchedBy, it.transactions) },
             canSplit = aliases.size > 1,
             transactions = mine.map { it.toItem(zone, today) },
@@ -101,6 +102,26 @@ class MerchantViewModel @Inject constructor(
             val problem = domain.rename(id, rename.name)
             sheet.update { if (problem == null) null else rename.copy(problem = problem) }
         }
+    }
+
+    fun onLogoClick() = sheet.update { MerchantSheet.Logo(uiState.value.website.orEmpty()) }
+
+    fun onWebsiteChange(website: String) = sheet.update { MerchantSheet.Logo(website) }
+
+    /** Fetched now: the sheet closes on the new logo and stays to say why there is none. */
+    fun onLogoSave() {
+        val logo = sheet.value as? MerchantSheet.Logo ?: return
+        if (logo.working) return
+        sheet.update { logo.copy(working = true, problem = null) }
+        viewModelScope.launch {
+            val problem = domain.setWebsite(id, logo.website)
+            sheet.update { if (problem == null) null else logo.copy(problem = problem) }
+        }
+    }
+
+    fun onLogoRemove() {
+        sheet.update { null }
+        viewModelScope.launch { domain.removeLogo(id) }
     }
 
     fun onSpellingClick(spelling: SpellingRow) {

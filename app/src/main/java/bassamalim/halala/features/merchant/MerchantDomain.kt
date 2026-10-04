@@ -1,6 +1,7 @@
 package bassamalim.halala.features.merchant
 
 import bassamalim.halala.core.ai.ApiKeys
+import bassamalim.halala.core.ai.GroqProtocol
 import bassamalim.halala.core.ai.LookupFound
 import bassamalim.halala.core.ai.LookupResult
 import bassamalim.halala.core.ai.WebLookup
@@ -10,11 +11,14 @@ import bassamalim.halala.core.data.dataSources.room.relations.AliasWithCount
 import bassamalim.halala.core.data.dataSources.room.relations.MerchantWithStats
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.data.repositories.ClassificationRepository
+import bassamalim.halala.core.data.repositories.LogosRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.toneOf
 import bassamalim.halala.core.enums.AmountTone
 import bassamalim.halala.core.enums.BusinessType
+import bassamalim.halala.core.logos.LogoLookup
+import bassamalim.halala.core.logos.LogoOutcome
 import kotlinx.coroutines.flow.Flow
 import java.time.Clock
 import java.time.LocalDate
@@ -23,10 +27,14 @@ import javax.inject.Inject
 
 enum class NameProblem { Missing }
 
+enum class LogoProblem { NotAWebsite, NoneFound, Offline }
+
 class MerchantDomain @Inject constructor(
     private val classificationRepository: ClassificationRepository,
     private val transactionsRepository: TransactionsRepository,
     private val webLookup: WebLookup,
+    private val logoLookup: LogoLookup,
+    private val logosRepository: LogosRepository,
     private val keys: ApiKeys,
     private val clock: Clock
 ) {
@@ -60,6 +68,19 @@ class MerchantDomain @Inject constructor(
         classificationRepository.renameMerchant(id, name)
         return null
     }
+
+    /** Its logo is [text]'s icon, fetched now; the problem when there is one. */
+    suspend fun setWebsite(id: Long, text: String): LogoProblem? {
+        val website = GroqProtocol.domainOf(text) ?: return LogoProblem.NotAWebsite
+        return when (logoLookup.correct(id, website)) {
+            LogoOutcome.SHOWN -> null
+            LogoOutcome.NONE -> LogoProblem.NoneFound
+            LogoOutcome.OFFLINE -> LogoProblem.Offline
+        }
+    }
+
+    /** It has no logo: the initial shows, and none is fetched again. */
+    suspend fun removeLogo(id: Long) = logosRepository.correctWebsite(id, null)
 
     /** [fromId] becomes part of [intoId], as one change you can undo. */
     suspend fun merge(fromId: Long, intoId: Long) = classificationRepository.mergeMerchants(fromId, intoId)

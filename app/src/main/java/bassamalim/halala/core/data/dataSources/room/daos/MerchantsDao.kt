@@ -116,6 +116,15 @@ interface MerchantsDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun putLogo(logo: MerchantLogo)
 
+    @Query("DELETE FROM merchant_logos WHERE merchantId = :merchantId")
+    suspend fun deleteLogo(merchantId: Long)
+
+    @Transaction
+    suspend fun correctWebsite(id: Long, website: String?) {
+        setWebsite(id, website)
+        deleteLogo(id)
+    }
+
     @Query("SELECT * FROM merchant_logos WHERE image IS NOT NULL")
     fun observeLogos(): Flow<List<MerchantLogo>>
 

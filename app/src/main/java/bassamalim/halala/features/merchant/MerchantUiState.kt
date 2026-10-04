@@ -33,6 +33,8 @@ data class MerchantUiState(
     val lookup: Lookup? = null,
     /** The category its spending files under, by what it is: none when no category takes it. */
     val filesUnder: String? = null,
+    /** The website its logo is the icon of; none when it has no logo to fetch. */
+    val website: String? = null,
     val spellings: List<SpellingRow> = emptyList(),
     /** A merchant known by one spelling has none to take out. */
     val canSplit: Boolean = false,
@@ -63,6 +65,9 @@ sealed interface MerchantSheet {
 
     /** Saying what the business is. */
     data object BusinessType : MerchantSheet
+
+    /** Correcting its logo: the website it comes from, [working] while it is fetched. */
+    data class Logo(val website: String, val working: Boolean = false, val problem: LogoProblem? = null) : MerchantSheet
 
     /** What looking it up found, to take or leave. */
     data class Found(val found: LookupFound) : MerchantSheet

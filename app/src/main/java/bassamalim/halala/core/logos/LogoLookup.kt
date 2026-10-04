@@ -19,6 +19,9 @@ import java.net.URLEncoder
 import javax.inject.Inject
 import javax.net.ssl.HttpsURLConnection
 
+/** How fetching a logo you asked for went. */
+enum class LogoOutcome { SHOWN, NONE, OFFLINE }
+
 /**
  * Merchants' logos, which you chose to have fetched online. First each identified merchant's own
  * website is asked of Groq, once, in batches of names as the bank wrote them (the same names, and
@@ -69,6 +72,21 @@ class LogoLookup @Inject constructor(
             }
             logos.putLogo(site.merchantId, image)
         }
+    }
+
+    /**
+     * You said [merchantId]'s website is [website]: its icon is fetched now. Offline, it waits for
+     * the next run like any other.
+     */
+    suspend fun correct(merchantId: Long, website: String): LogoOutcome = withContext(io) {
+        logos.correctWebsite(merchantId, website)
+        val image = try {
+            fetch(website)
+        } catch (_: IOException) {
+            return@withContext LogoOutcome.OFFLINE
+        }
+        logos.putLogo(merchantId, image)
+        if (image == null) LogoOutcome.NONE else LogoOutcome.SHOWN
     }
 
     /** The icon for [domain] as a PNG, or null when there is none worth showing. */

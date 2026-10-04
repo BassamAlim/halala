@@ -1253,6 +1253,16 @@
     <string name="merchant_is">What it is</string>
     <string name="merchant_is_title">What is %1$s?</string>
     <string name="merchant_is_unknown">Not identified yet</string>
+    <string name="merchant_logo">Logo</string>
+    <string name="merchant_logo_none">None</string>
+    <string name="merchant_logo_body">Its logo is its website\'s icon. Put the right website, or choose no logo to show its initial.</string>
+    <string name="merchant_website">Website</string>
+    <string name="merchant_website_hint">panda.com.sa</string>
+    <string name="merchant_website_invalid">That isn\'t a website</string>
+    <string name="merchant_logo_not_found">That website has no icon worth showing</string>
+    <string name="merchant_logo_offline">Couldn\'t reach it. It\'s fetched once you\'re online.</string>
+    <string name="merchant_logo_remove">No logo</string>
+    <string name="merchant_logo_fetching">Fetching…</string>
     <string name="merchant_look_up">Look it up</string>
     <string name="merchant_looking_up">Looking it up…</string>
     <string name="merchant_lookup_found_title">Is it this?</string>
