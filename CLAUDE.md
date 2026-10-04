@@ -121,8 +121,7 @@ Rules that matter:
 - Room queries return `Flow`; writes are `suspend`. **Bump the DB version and write a
   migration** in `Migrations.kt` — never a destructive fallback: the phone is the only copy of the
   ledger. Schemas are exported to `app/schemas` and CI checks they're committed.
-- **Every word on screen is a string resource** (`res/values/strings.xml`), so Arabic can be
-  added as `values-ar` later. ViewModels hand over enums and `DayLabel`s; `core/ui/Labels.kt`
+- **Every word on screen is a string resource** (`res/values/strings.xml`). ViewModels hand over enums and `DayLabel`s; `core/ui/Labels.kt`
   turns them into words. Layouts use start/end, never left/right; the back and chevron glyphs are
   `autoMirrored`.
 
