@@ -136,8 +136,64 @@ object GroqProtocol {
         ) to (answer.source - 1).takeIf { it in 0 until resultCount }
     }
 
-    /** Enough for a batch of 40 short answers, with room to spare. */
-    private const val MAX_TOKENS = 4096
+    /** Asking each of [names]' own website, numbered from 1 as [request] numbers them: for its logo. */
+    fun websitesRequest(names: List<String>): String = buildJsonObject {
+        put("model", MODEL)
+        put("temperature", 0)
+        put("reasoning_effort", "none")
+        put("max_completion_tokens", MAX_TOKENS)
+        putJsonArray("messages") {
+            addJsonObject {
+                put("role", "system")
+                put("content", WEBSITE_INSTRUCTIONS)
+            }
+            addJsonObject {
+                put("role", "user")
+                put("content", buildJsonObject {
+                    putJsonArray("items") {
+                        names.forEachIndexed { index, name ->
+                            addJsonObject {
+                                put("id", (index + 1).toString())
+                                put("name", name)
+                            }
+                        }
+                    }
+                }.toString())
+            }
+        }
+        putJsonObject("response_format") {
+            put("type", "json_schema")
+            putJsonObject("json_schema") {
+                put("name", "websites")
+                put("strict", true)
+                put("schema", WEBSITE_SCHEMA)
+            }
+        }
+    }.toString()
+
+    /** Each name's website as a bare domain ("panda.com.sa"), in order; null where none was given. */
+    fun parseWebsites(body: String, count: Int): List<String?> {
+        val answers = json.decodeFromString<Websites>(contentOf(body)).items.associateBy { it.id.trim() }
+        return (1..count).map { id -> answers[id.toString()]?.website?.let(::domainOf) }
+    }
+
+    /** "https://www.Panda.com.sa/ar" → "panda.com.sa"; null for anything that isn't a domain. */
+    fun domainOf(text: String): String? {
+        val host = text.trim().lowercase()
+            .substringAfter("://")
+            .substringBefore('/')
+            .substringBefore('?')
+            .removePrefix("www.")
+        return host.takeIf { DOMAIN.matches(it) }
+    }
+
+    private val DOMAIN = Regex("^[a-z0-9-]+(\\.[a-z0-9-]+)*\\.[a-z]{2,}$")
+
+    /**
+     * Groq refuses any request asking for more than its free tier's 1,000 output tokens a minute,
+     * so this is the ceiling: an answer runs about 30 tokens a merchant, 15 a website.
+     */
+    const val MAX_TOKENS = 1000
 
     /** Each result's text, cut short: enough to tell what a business is. */
     private const val MAX_RESULT_CHARS = 600
@@ -162,6 +218,38 @@ object GroqProtocol {
 
     @Serializable
     private data class Answer(val id: String, val name: String, val businessType: String, val confidence: Int)
+
+    @Serializable
+    private data class Websites(val items: List<Website> = emptyList())
+
+    @Serializable
+    private data class Website(val id: String, val website: String)
+
+    private val WEBSITE_SCHEMA: JsonObject = buildJsonObject {
+        put("type", "object")
+        putJsonObject("properties") {
+            putJsonObject("items") {
+                put("type", "array")
+                putJsonObject("items") {
+                    put("type", "object")
+                    putJsonObject("properties") {
+                        putJsonObject("id") { put("type", "string") }
+                        putJsonObject("website") { put("type", "string") }
+                    }
+                    put("required", JsonArray(listOf("id", "website").map(::JsonPrimitive)))
+                    put("additionalProperties", false)
+                }
+            }
+        }
+        put("required", JsonArray(listOf(JsonPrimitive("items"))))
+        put("additionalProperties", false)
+    }
+
+    private val WEBSITE_INSTRUCTIONS = """
+        Each item is how a bank in Saudi Arabia wrote a merchant's name on a card payment or bill.
+        For each, answer with its id and website: the business's own official website as a bare domain, such as "panda.com.sa".
+        Prefer its Saudi site when it has one. Use an empty string when you don't know it for certain; never guess, and never give a directory, map or social media site.
+    """.trimIndent()
 
     @Serializable
     private data class SourcedAnswer(val name: String, val businessType: String, val confidence: Int, val source: Int)

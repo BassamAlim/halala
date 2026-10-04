@@ -23,37 +23,57 @@ class BackupKeyStore @Inject constructor(application: Application) {
     fun isSet() = file.exists()
 
     fun save(key: BackupKey) {
-        val plain = ByteArrayOutputStream().also { out ->
-            DataOutputStream(out).use {
-                it.writeInt(key.stretch.memoryKib)
-                it.writeInt(key.stretch.iterations)
-                it.writeInt(key.stretch.parallelism)
-                it.writeInt(key.salt.size)
-                it.write(key.salt)
-                it.writeInt(key.key.size)
-                it.write(key.key)
-            }
-        }.toByteArray()
         val temp = File(file.parentFile, file.name + ".tmp")
-        temp.writeBytes(keystore.wrap(plain))
+        temp.writeBytes(keystore.wrap(encode(key)))
         check(temp.renameTo(file)) { "Couldn't store the backup key." }
     }
 
     fun load(): BackupKey? {
         if (!file.exists()) return null
-        return DataInputStream(keystore.unwrap(file.readBytes()).inputStream()).use {
-            val stretch = Stretch(it.readInt(), it.readInt(), it.readInt())
-            val salt = ByteArray(it.readInt()).also(it::readFully)
-            val key = ByteArray(it.readInt()).also(it::readFully)
-            BackupKey(key, salt, stretch)
-        }
+        return decode(keystore.unwrap(file.readBytes()))
     }
 
     fun clear() {
         file.delete()
     }
 
-    private companion object {
-        const val KEY_ALIAS = "halala_backup_key_wrap"
+    companion object {
+        private const val KEY_ALIAS = "halala_backup_key_wrap"
+
+        /** What follows the key in a store written since recovery keys: its slot and the hint. */
+        private const val WITH_RECOVERY = 2
+
+        fun encode(key: BackupKey): ByteArray = ByteArrayOutputStream().also { out ->
+            DataOutputStream(out).use {
+                it.writeInt(key.stretch.memoryKib)
+                it.writeInt(key.stretch.iterations)
+                it.writeInt(key.stretch.parallelism)
+                it.writeSized(key.salt)
+                it.writeSized(key.key)
+                val recovery = key.recovery ?: return@use
+                it.writeInt(WITH_RECOVERY)
+                it.writeSized(recovery.salt)
+                it.writeSized(recovery.nonce)
+                it.writeSized(recovery.sealedKey)
+                it.writeUTF(key.hint)
+            }
+        }.toByteArray()
+
+        /** Reads what [encode] wrote, or a store from before recovery keys (the key alone). */
+        fun decode(bytes: ByteArray): BackupKey = DataInputStream(bytes.inputStream()).use {
+            val stretch = Stretch(it.readInt(), it.readInt(), it.readInt())
+            val salt = it.readSized()
+            val key = it.readSized()
+            if (it.available() == 0 || it.readInt() != WITH_RECOVERY) return@use BackupKey(key, salt, stretch)
+            val recovery = RecoverySlot(salt = it.readSized(), nonce = it.readSized(), sealedKey = it.readSized())
+            BackupKey(key, salt, stretch, recovery, hint = it.readUTF())
+        }
+
+        private fun DataOutputStream.writeSized(bytes: ByteArray) {
+            writeInt(bytes.size)
+            write(bytes)
+        }
+
+        private fun DataInputStream.readSized(): ByteArray = ByteArray(readInt()).also(::readFully)
     }
 }

@@ -133,6 +133,13 @@ class PreferencesRepository @Inject constructor(
         dataStore.edit { it[PEOPLE_DISMISSED] = it[PEOPLE_DISMISSED].orEmpty() + key }
     }
 
+    /** Pairs of merchants you said aren't one, by `People.pairKey` of their uids. */
+    fun observeMerchantsDismissed(): Flow<Set<String>> = dataStore.data.map { it[MERCHANTS_DISMISSED].orEmpty() }
+
+    suspend fun dismissMerchantPair(key: String) {
+        dataStore.edit { it[MERCHANTS_DISMISSED] = it[MERCHANTS_DISMISSED].orEmpty() + key }
+    }
+
     /** Budget alerts already sent, by `Budgets.toldKey` (a budget id, a day and a percent: no amount). */
     suspend fun budgetAlertsTold(): Set<String> = dataStore.data.first()[BUDGET_TOLD].orEmpty()
 
@@ -176,6 +183,7 @@ class PreferencesRepository @Inject constructor(
         private val TAG_DISMISSED = stringSetPreferencesKey("tag_suggestions_dismissed")
         private val PEOPLE_SAME = stringSetPreferencesKey("people_same")
         private val PEOPLE_DISMISSED = stringSetPreferencesKey("people_merge_dismissed")
+        private val MERCHANTS_DISMISSED = stringSetPreferencesKey("merchants_merge_dismissed")
         private val PEOPLE_ASKED = stringSetPreferencesKey("people_asked")
         private val BUDGET_TOLD = stringSetPreferencesKey("budget_alerts_told")
         private val WEB_SEARCH_MONTH = stringPreferencesKey("web_search_month")

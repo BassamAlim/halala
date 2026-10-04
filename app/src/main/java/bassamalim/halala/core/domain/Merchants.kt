@@ -19,6 +19,9 @@ object Merchants {
     /** Keys shorter than this only ever match exactly: four letters are too few to judge by. */
     private const val MIN_FUZZY = 5
 
+    /** A cut-short spelling needs this many letters: "carrefou" is surely Carrefour, "noon" no one. */
+    private const val MIN_CUT = 8
+
     /**
      * The kinds whose title names a business. A transfer's title is a person (`People`), and a
      * person is never merged into a look-alike.
@@ -95,6 +98,54 @@ object Merchants {
             .filter { (_, score) -> score >= SIMILAR }
             .maxByOrNull { (_, score) -> score }
             ?.first
+    }
+
+    /**
+     * The merchant a key never seen before is a cut-short spelling of, or the one cut short
+     * from it: banks cut a merchant's name at a fixed width, so "JARIR BOOK" is "JARIR
+     * BOOKSTORE". Only a cut inside a word counts, since a whole word less ("AL RAJHI" and
+     * "AL RAJHI TAKAFUL") can be another business, and only for [MIN_CUT] letters or more.
+     * Null when it is cut from none, or from two merchants' spellings and so can't say which.
+     */
+    fun cutShortOf(key: String, aliases: Map<String, Long>): Long? =
+        aliases.entries
+            .filter { (other, _) -> isCut(key, other) || isCut(other, key) }
+            .map { it.value }
+            .distinct()
+            .singleOrNull()
+
+    /**
+     * Merchants already apart that one spelling of says is cut short from the other's: what
+     * [cutShortOf] would have joined had it come first, by merchant id, the smaller first.
+     */
+    fun cutShortPairs(aliases: Map<String, Long>): Set<Pair<Long, Long>> {
+        // Sorted run-together, every key a spelling is cut from follows it directly.
+        val sorted = aliases.entries.sortedBy { it.key.replace(" ", "") }
+        val pairs = mutableSetOf<Pair<Long, Long>>()
+        for ((i, short) in sorted.withIndex()) {
+            val compact = short.key.replace(" ", "")
+            val from = sorted.asSequence().drop(i + 1)
+                .takeWhile { it.key.replace(" ", "").startsWith(compact) }
+                .filter { it.value != short.value && isCut(short.key, it.key) }
+                .map { it.value }
+                .distinct()
+            // Cut from two merchants: no telling which.
+            from.singleOrNull()?.let { pairs += minOf(it, short.value) to maxOf(it, short.value) }
+        }
+        return pairs
+    }
+
+    /** Whether [short] is [long] cut inside one of its words. */
+    private fun isCut(short: String, long: String): Boolean {
+        val cut = short.replace(" ", "")
+        if (cut.length < MIN_CUT || !long.replace(" ", "").startsWith(cut)) return false
+
+        var end = 0
+        for (word in long.split(" ")) {
+            end += word.length
+            if (end >= cut.length) return end > cut.length
+        }
+        return false
     }
 
     private fun bigrams(key: String): List<String> {

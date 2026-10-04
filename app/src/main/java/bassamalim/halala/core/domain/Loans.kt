@@ -41,8 +41,12 @@ object Loans {
     fun plainKind(direction: Direction): TransactionKind =
         if (direction == Direction.DEBIT) TransactionKind.TRANSFER_OUT else TransactionKind.TRANSFER_IN
 
-    /** The transfers that can be marked as lending or borrowing: plain ones, to or from someone. */
-    val MARKABLE = setOf(TransactionKind.TRANSFER_OUT, TransactionKind.TRANSFER_IN)
+    /**
+     * What can be marked as lending, borrowing or repaying: a plain transfer to or from someone,
+     * or a refund (one that is someone else's money to give back, or money lent coming back
+     * from a merchant rather than from the person). A refund names no one, so you choose who.
+     */
+    val MARKABLE = setOf(TransactionKind.TRANSFER_OUT, TransactionKind.TRANSFER_IN, TransactionKind.REFUND)
 
     fun stateOf(loan: Loan, events: List<LoanEventRow>): LoanState {
         fun total(type: LoanEventType) = Money.sum(events.filter { it.type == type }.map { it.amountMinor })
@@ -75,9 +79,9 @@ object Loans {
     }
 
     /**
-     * The loan a transfer would repay, to suggest: the oldest still open with the same person,
-     * in its currency, that money going this way pays back. Null for a transfer already part of
-     * a loan, or not a plain one.
+     * The loans a transfer could repay, to ask about, oldest first: those still open with the
+     * same person, in its currency, that money going this way pays back. You choose which when
+     * there are several. None for a transfer already part of a loan, or not a plain one.
      */
     fun repaidBy(
         personId: Long?,
@@ -85,12 +89,35 @@ object Loans {
         currency: String,
         kind: TransactionKind,
         states: List<LoanState>
-    ): LoanState? {
-        if (personId == null || kind !in MARKABLE) return null
-        return states.firstOrNull {
+    ): List<LoanState> {
+        if (personId == null || kind !in MARKABLE) return emptyList()
+        return states.filter {
             it.isOpen && it.loan.personId == personId && it.loan.currency == currency &&
                     it.loan.direction.repaying == direction
         }
+    }
+
+    /**
+     * A transfer of [totalMinor] spread over loans ([remaining]: loan id → still owed, in the
+     * order you'd pay them, oldest first): each paid off in turn, and what is left over goes to
+     * the last, so the shares always add up to the transfer.
+     */
+    fun allocate(totalMinor: Long, remaining: List<Pair<Long, Long>>): Map<Long, Long> {
+        var left = totalMinor
+        return remaining.mapIndexed { i, (id, owed) ->
+            val share = if (i == remaining.lastIndex) left else minOf(owed, left)
+            left -= share
+            id to share
+        }.toMap()
+    }
+
+    /**
+     * What is wrong with repaying several loans with [totalMinor] ([shares]: loan id → share,
+     * null when it couldn't be read): every share above zero, and together exactly the transfer.
+     */
+    fun validateShares(totalMinor: Long, shares: Map<Long, Long?>): Set<RepayProblem> = buildSet {
+        if (shares.values.any { it == null || it <= 0 }) add(RepayProblem.ShareMissing)
+        else if (Money.sum(shares.values.filterNotNull()) != totalMinor) add(RepayProblem.NotTheWhole)
     }
 
     /** What is owed to you and what you owe, over the open loans in [currency]. */
@@ -99,4 +126,13 @@ object Loans {
         return Money.sum(open.filter { it.loan.direction == LoanDirection.LENT }.map { it.remainingMinor }) to
                 Money.sum(open.filter { it.loan.direction == LoanDirection.BORROWED }.map { it.remainingMinor })
     }
+}
+
+/** Why a transfer can't be spread over loans that way. */
+enum class RepayProblem {
+    /** A loan chosen with no share, or a share that isn't above zero. */
+    ShareMissing,
+
+    /** The shares don't add up to the transfer. */
+    NotTheWhole
 }

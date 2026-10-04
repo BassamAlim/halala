@@ -11,6 +11,10 @@ import bassamalim.halala.core.enums.AccountType
 import kotlinx.coroutines.flow.map
 import bassamalim.halala.core.data.repositories.LoansRepository
 import bassamalim.halala.core.data.repositories.PeopleRepository
+import bassamalim.halala.core.data.repositories.PlacesRepository
+import bassamalim.halala.core.data.dataSources.room.entities.TransactionPlace
+import bassamalim.halala.core.places.LocationAccess
+import bassamalim.halala.core.places.PlaceCapture
 import bassamalim.halala.core.data.dataSources.room.relations.PersonWithStats
 import bassamalim.halala.core.data.repositories.TransactionsRepository
 import bassamalim.halala.core.domain.DescribedRule
@@ -30,9 +34,17 @@ class TransactionDomain @Inject constructor(
     private val accountsRepository: AccountsRepository,
     private val loansRepository: LoansRepository,
     private val peopleRepository: PeopleRepository,
+    private val placesRepository: PlacesRepository,
+    private val placeCapture: PlaceCapture,
     private val goalsRepository: GoalsRepository,
     private val clock: Clock
 ) {
+
+    /** Where it was made, when that was kept. */
+    fun observePlace(id: Long): Flow<TransactionPlace?> = placesRepository.observe(id)
+
+    /** Whether Halala may keep where purchases happen, which is why one has no place. */
+    fun locationAccess(): LocationAccess = placeCapture.access()
 
     fun observeGoals(): Flow<List<SavingsGoal>> = goalsRepository.observeAll()
 
@@ -54,6 +66,12 @@ class TransactionDomain @Inject constructor(
 
     suspend fun unsplit(id: Long) = loansRepository.unsplit(id)
 
+    /** [personId] pays your salary: transaction [id] and their transfers in after it are salary. */
+    suspend fun markSalary(id: Long, personId: Long) {
+        val tx = transactionsRepository.get(id) ?: return
+        peopleRepository.setSalarySince(personId, tx.occurredAt)
+    }
+
     /** Someone to split with whom no transfer has named: their id. */
     suspend fun addPerson(name: String) = peopleRepository.add(name)
 
@@ -68,6 +86,9 @@ class TransactionDomain @Inject constructor(
 
     /** It pays [loanId] back. */
     suspend fun repay(loanId: Long, id: Long) = loansRepository.repay(loanId, id)
+
+    /** It repays several loans, [shares] (loan id → minor units) of it each. */
+    suspend fun repayMany(id: Long, shares: Map<Long, Long>) = loansRepository.repayMany(id, shares)
 
     /** It is a plain transfer again (and, if it was all that was lent, the loan goes). */
     suspend fun unlinkLoan(id: Long) = loansRepository.unlink(id)

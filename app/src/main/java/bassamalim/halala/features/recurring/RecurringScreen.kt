@@ -112,6 +112,7 @@ private fun LazyListScope.group(label: Int, rows: List<SeriesRow>, viewModel: Re
                     amount = row.amount,
                     tone = AmountTone.Spending,
                     initial = row.initial,
+                    merchantId = row.merchantId,
                     autoLabel = when {
                         row.priceUp -> stringResource(R.string.recurring_badge_price_up)
                         row.kind == RecurringKind.PLANNED -> stringResource(R.string.recurring_badge_planned)

@@ -1,6 +1,7 @@
 package bassamalim.halala.core.data.repositories
 
 import bassamalim.halala.core.data.dataSources.definitions.DefinitionsFile
+import bassamalim.halala.core.data.dataSources.room.Seed
 import bassamalim.halala.core.data.dataSources.room.daos.ClassificationDao
 import bassamalim.halala.core.data.dataSources.room.daos.MerchantsDao
 import bassamalim.halala.core.data.dataSources.room.daos.PeopleDao
@@ -239,24 +240,45 @@ class ClassificationRepository @Inject constructor(
     suspend fun applyRules() = writing.withLock {
         resolveMerchants()
         resolvePeople()
+        peopleDao.markSalaries()
         identifyKnown()
         syncAutoRules()
         fileByRules()
+        fileFees()
+    }
+
+    /**
+     * A bank's fee names no merchant for a rule to match, so it is filed under Fees & charges
+     * by what it is. One you filed elsewhere stays there.
+     */
+    // ponytail: found by its seeded name; renaming the category stops this. Give categories a
+    // stable key if that bites.
+    private suspend fun fileFees() {
+        val fees = classificationDao.getCategories().firstOrNull { it.name.equals(Seed.FEES, ignoreCase = true) } ?: return
+        transactionsDao.fileFees(fees.id, fees.expenseType)
     }
 
     /** Runs the rules alone, for what you do here (inside [audited], which holds the lock). */
-    // ponytail: re-reads every candidate and tries every rule on each; index rules by merchant
-    // key and narrow to new rows if history gets slow.
+    // ponytail: re-reads every candidate (each tries only its merchant's rules, Rules.matcher);
+    // narrow to new rows if history gets slow.
     private suspend fun fileByRules() {
         val rules = classificationDao.getRules()
         if (rules.none { it.enabled }) return
         val ruleFor = Rules.matcher(rules, lookup())
+        val enabled = rules.filter { it.enabled }.map { it.id }.toSet()
 
         transactionsDao.getRuleCandidates()
             .filter { it.kind.countsInTotals }
             .groupBy(ruleFor)
             .forEach { (rule, transactions) ->
-                if (rule == null) return@forEach
+                if (rule == null) {
+                    // Filed by a rule that no longer matches it (edited narrower): back to review.
+                    // What a rule that is off filed stays filed.
+                    transactions.filter { it.ruleId in enabled }.map { it.id }.chunked(500).forEach { ids ->
+                        transactionsDao.setCategory(ids, null, null, null)
+                    }
+                    return@forEach
+                }
                 val stale = transactions.filter {
                     it.ruleId != rule.id || it.categoryId != rule.actions.categoryId ||
                             it.expenseType != rule.actions.expenseType
@@ -282,6 +304,8 @@ class ClassificationRepository @Inject constructor(
 
     suspend fun getAliases(): List<MerchantAlias> = merchantsDao.getAliases()
 
+    fun observeAllAliases(): Flow<List<MerchantAlias>> = merchantsDao.observeAllAliases()
+
     /** What you call it. The bank's descriptors stay as they were written. */
     suspend fun renameMerchant(id: Long, name: String): Long? {
         val merchant = merchantsDao.getMerchant(id) ?: return null
@@ -305,7 +329,11 @@ class ClassificationRepository @Inject constructor(
         return audited(AuditAction.MERCHANT_TYPED, merchant.name, type.name) {
             classificationDao.getRules().filter { it.isAutoFor(merchantId) }.forEach { dropAutoRule(it) }
             merchantsDao.updateMerchant(
-                merchant.copy(businessType = type, identifiedBy = IdentifiedBy.YOU, confidence = null, autoRuled = false)
+                merchant.copy(
+                    businessType = type, identifiedBy = IdentifiedBy.YOU, confidence = null, autoRuled = false,
+                    // A type you pick yourself rests on no page.
+                    webUrl = null, webTitle = null
+                )
             )
             syncAutoRules()
             fileByRules()
@@ -434,37 +462,40 @@ class ClassificationRepository @Inject constructor(
 
     suspend fun descriptorOf(id: Long): String? = merchantsDao.getDescriptor(id)
 
+    /** [id] was searched for online when you asked, so it isn't searched again on its own. */
+    suspend fun markSearched(id: Long) = writing.withLock {
+        val merchant = merchantsDao.getMerchant(id) ?: return@withLock
+        if (!merchant.searchedOnline) merchantsDao.updateMerchant(merchant.copy(searchedOnline = true))
+    }
+
     /**
-     * What looking [id] up when you asked found: [answer] stands when nothing else has
-     * identified it yet, or the AI's earlier answer was no surer (the list's or yours is never
-     * touched). [url] and [title] are the page it rests on, when it was searched for online,
-     * which also stops it being searched again on its own. True when it changed what it is.
+     * "Use this": what looking [id] up when you asked found becomes what it is, as you said it
+     * (so it files, however sure the AI was), with its name unless you named it, as one change
+     * you can undo. [url] and [title] are the page it rests on, kept to show. Never over the
+     * list's answer or yours. The batch's id, or null when nothing changed.
      */
-    suspend fun recordLookup(id: Long, answer: IdentifiedAs, url: String?, title: String?, searched: Boolean): Boolean =
-        writing.withLock {
-            val merchant = merchantsDao.getMerchant(id) ?: return@withLock false
-            val open = merchant.identifiedBy == null || merchant.identifiedBy == IdentifiedBy.AI
-            val takes = open && answer.type != BusinessType.UNKNOWN &&
-                    (merchant.identifiedBy == null || answer.confidence >= (merchant.confidence ?: 0))
-            if (!takes) {
-                if (searched && !merchant.searchedOnline) merchantsDao.updateMerchant(merchant.copy(searchedOnline = true))
-                return@withLock false
-            }
+    suspend fun acceptLookup(id: Long, answer: IdentifiedAs, url: String?, title: String?): Long? {
+        val merchant = merchantsDao.getMerchant(id) ?: return null
+        if (merchant.identifiedBy != null && merchant.identifiedBy != IdentifiedBy.AI) return null
+        if (answer.type == BusinessType.UNKNOWN) return null
+
+        return audited(AuditAction.MERCHANT_LOOKED_UP, merchant.name, answer.type.name) {
+            classificationDao.getRules().filter { it.isAutoFor(id) }.forEach { dropAutoRule(it) }
             merchantsDao.updateMerchant(
                 merchant.copy(
                     name = answer.name.trim().takeIf { it.isNotEmpty() && it.length <= MAX_NAME && !merchant.namedByYou } ?: merchant.name,
                     businessType = answer.type,
-                    identifiedBy = IdentifiedBy.AI,
-                    confidence = answer.confidence.coerceIn(0, 100),
-                    searchedOnline = merchant.searchedOnline || searched,
-                    webUrl = url ?: merchant.webUrl.takeIf { merchant.identifiedBy == IdentifiedBy.AI },
-                    webTitle = title ?: merchant.webTitle.takeIf { merchant.identifiedBy == IdentifiedBy.AI }
+                    identifiedBy = IdentifiedBy.YOU,
+                    confidence = null,
+                    autoRuled = false,
+                    webUrl = url,
+                    webTitle = title
                 )
             )
             syncAutoRules()
             fileByRules()
-            true
         }
+    }
 
     /** Merchants whose name is never sent (it may hold more than a shop's name): left for you. */
     suspend fun withhold(ids: Collection<Long>) = writing.withLock {
@@ -576,7 +607,7 @@ class ClassificationRepository @Inject constructor(
 
     /**
      * Keeps every transaction's merchant key in step with its title, then gives each descriptor
-     * not seen before its merchant: the one it is spelled like, else a new one named after it.
+     * not seen before its merchant: the one it is spelled like or cut short from, else a new one named after it.
      * Oldest first, so the first spelling of a merchant is the one others are compared with.
      */
     private suspend fun resolveMerchants() {
@@ -591,7 +622,8 @@ class ClassificationRepository @Inject constructor(
             if (row.kind !in Merchants.KINDS || row.title.isBlank() || key in aliases) continue
 
             val similar = Merchants.similarTo(key, aliases)
-            val merchantId = similar ?: merchantsDao.insertMerchant(
+            val cut = if (similar == null) Merchants.cutShortOf(key, aliases) else null
+            val merchantId = similar ?: cut ?: merchantsDao.insertMerchant(
                 Merchant(uid = UUID.randomUUID().toString(), name = Merchants.nameOf(row.title))
             )
             merchantsDao.insertAlias(
@@ -599,7 +631,11 @@ class ClassificationRepository @Inject constructor(
                     merchantId = merchantId,
                     aliasKey = key,
                     descriptor = row.title.trim(),
-                    matchedBy = if (similar != null) AliasMatch.SIMILAR else AliasMatch.FIRST
+                    matchedBy = when {
+                        similar != null -> AliasMatch.SIMILAR
+                        cut != null -> AliasMatch.CUT_SHORT
+                        else -> AliasMatch.FIRST
+                    }
                 )
             )
             aliases[key] = merchantId

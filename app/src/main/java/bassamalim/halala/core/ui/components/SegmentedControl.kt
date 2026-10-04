@@ -46,7 +46,7 @@ import bassamalim.halala.core.ui.theme.Spacing
 
 /**
  * The segmented control from the Activity board: a surface track with a line border, the chosen
- * segment raised on surface-2, which slides to the one you choose. Pass `Modifier.fillMaxWidth()`
+ * segment raised in the line's tone, which slides to the one you choose. Pass `Modifier.fillMaxWidth()`
  * to spread the segments evenly.
  */
 @Composable
@@ -83,7 +83,7 @@ fun SegmentedControl(
             .drawBehind {
                 if (width.value == 0f) return@drawBehind
                 drawRoundRect(
-                    color = HalalaColors.Surface2,
+                    color = HalalaColors.Line,
                     topLeft = Offset(start.value, 0f),
                     size = Size(width.value, size.height),
                     cornerRadius = CornerRadius(SEGMENT_RADIUS.toPx())
@@ -113,7 +113,9 @@ fun SegmentedControl(
                     text = option,
                     style = if (selected) HalalaType.Label.copy(fontWeight = FontWeight(500)) else HalalaType.Label,
                     color = ink,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
         }

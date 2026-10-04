@@ -23,6 +23,8 @@ import java.time.Clock
 import java.time.LocalDate
 import javax.inject.Inject
 import kotlin.math.sqrt
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flowOn
 
 enum class MapPeriod { MONTH, THREE_MONTHS, YEAR, ALL }
 
@@ -96,7 +98,7 @@ class SpendingMapViewModel @Inject constructor(
             top = top.map { PlaceRow(it.key, it.name, it.count, Money.format(it.spentMinor, c, decimals = false), it.latitude, it.longitude) },
             focus = top.firstOrNull { it.key == filters.focus }?.let { it.latitude to it.longitude }
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SpendingMapUiState())
+    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SpendingMapUiState())
 
     fun onBackClick() = navigator.popBackStack()
     fun onPeriodClick(period: MapPeriod) = filters.update { it.copy(period = period, focus = null) }

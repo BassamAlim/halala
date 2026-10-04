@@ -61,7 +61,9 @@ data class CompoundUiState(
     val contributed: String = "",
     val returns: String = "",
     val curve: List<Long> = emptyList(),
-    val putIn: List<Long> = emptyList()
+    val putIn: List<Long> = emptyList(),
+    /** The pot at the end of each year. */
+    val pots: List<String> = emptyList()
 )
 
 @HiltViewModel
@@ -83,7 +85,8 @@ class CompoundViewModel @Inject constructor(private val navigator: Navigator) : 
             contributed = result?.let { Money.format(it.contributedMinor, currency, decimals = false) }.orEmpty(),
             returns = result?.let { Money.format(it.returnsMinor, currency, decimals = false) }.orEmpty(),
             curve = result?.curve?.map { it.potMinor }.orEmpty(),
-            putIn = result?.curve?.map { it.contributedMinor }.orEmpty()
+            putIn = result?.curve?.map { it.contributedMinor }.orEmpty(),
+            pots = result?.curve?.map { Money.format(it.potMinor, currency, decimals = false) }.orEmpty()
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CompoundUiState())
 
@@ -151,6 +154,9 @@ fun CompoundScreen(viewModel: CompoundViewModel = hiltViewModel()) {
             LineChart(
                 values = state.curve,
                 secondary = state.putIn,
+                tips = state.pots.mapIndexed { year, pot ->
+                    (if (year == 0) stringResource(R.string.compound_year_0) else stringResource(R.string.compound_year_n, year)) to pot
+                },
                 labels = listOf(stringResource(R.string.compound_year_0), stringResource(R.string.compound_year_n, form.years)),
                 description = stringResource(R.string.retirement_chart),
                 height = Sizes.fab * 2 + Sizes.chip

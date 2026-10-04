@@ -193,6 +193,20 @@ class ClassificationRepositoryTest {
     }
 
     @Test
+    fun `narrowing a rule sends what it no longer matches back to review`() = runTest {
+        val small = spend("Wasel 12", 5_000)
+        val big = spend("WASEL Riyadh", 40_000)
+        classification.saveRule(0, RuleConditions(contains = "wasel"), RuleActions(shopping))
+        val rule = classification.getRules().single()
+
+        classification.saveRule(rule.id, RuleConditions(contains = "wasel", minMinor = 20_000), RuleActions(shopping))
+
+        assertNull(transactions.get(small)!!.categoryId)
+        assertNull(transactions.get(small)!!.ruleId)
+        assertEquals(shopping, transactions.get(big)!!.categoryId)
+    }
+
+    @Test
     fun `a rule needs a condition, a category and amounts that make a range`() {
         assertEquals(
             CheckedRule.Invalid(setOf(RuleProblem.ConditionMissing, RuleProblem.CategoryMissing)),
@@ -515,6 +529,27 @@ class ClassificationRepositoryTest {
     }
 
     @Test
+    fun `identified merchants are asked their website once, and each website's logo is tried once`() = runTest {
+        val panda = spend("PANDA 1042")
+        val unknown = spend("ZZYZX 9")
+        classification.applyRules()
+        classification.recordIdentifications(mapOf(merchantOf(unknown)!! to IdentifiedAs("", BusinessType.UNKNOWN, 20)))
+        val logos = LogosRepository(db.merchantsDao())
+
+        // Panda, from the bundled list; never one nobody could identify.
+        assertEquals(listOf("PANDA 1042"), logos.websitesToAsk().map { it.descriptor })
+        logos.recordWebsites(mapOf(merchantOf(panda)!! to "panda.com.sa"))
+        assertTrue(logos.websitesToAsk().isEmpty())
+
+        assertEquals(listOf("panda.com.sa"), logos.toFetch().map { it.website })
+        logos.putLogo(merchantOf(panda)!!, null)
+        assertTrue(logos.toFetch().isEmpty())
+        assertTrue(logos.observeLogos().first().isEmpty())
+        logos.putLogo(merchantOf(panda)!!, byteArrayOf(1, 2, 3))
+        assertEquals(listOf(merchantOf(panda)!!), logos.observeLogos().first().keys.toList())
+    }
+
+    @Test
     fun `a name you gave stays when the AI identifies the merchant`() = runTest {
         val id = spend("ZZYZX 9")
         classification.applyRules()
@@ -524,6 +559,22 @@ class ClassificationRepositoryTest {
 
         assertEquals("Corner shop", classification.getMerchant(merchantOf(id)!!)!!.name)
         assertEquals(groceries, transactions.get(id)!!.categoryId)
+    }
+
+    @Test
+    fun `a bank's fee files under fees and charges, unless you filed it elsewhere`() = runTest {
+        fun fee(title: String) = TransactionDraft(cash, Direction.DEBIT, 575, TEST_CLOCK.instant(), TransactionKind.FEE, title)
+        val untitled = transactions.add(fee(""))
+        val named = transactions.add(fee("TRANSFER FEE"))
+        val yours = transactions.add(fee("SADAD FEE"))
+        classification.file(yours, shopping, null)
+
+        classification.applyRules()
+
+        val fees = db.classificationDao().getCategories().single { it.name == "Fees & charges" }.id
+        assertEquals(fees, transactions.get(untitled)!!.categoryId)
+        assertEquals(fees, transactions.get(named)!!.categoryId)
+        assertEquals(shopping, transactions.get(yours)!!.categoryId)
     }
 
     @Test
@@ -541,6 +592,31 @@ class ClassificationRepositoryTest {
         classification.undo(batch)
         assertNull(transactions.get(id)!!.categoryId)
         assertEquals(IdentifiedBy.LIST, classification.getMerchant(merchantOf(id)!!)!!.identifiedBy)
+    }
+
+    @Test
+    fun `taking what a lookup found files it, can be undone, and never overrides the list`() = runTest {
+        val id = spend("ZZYZX 9")
+        classification.applyRules()
+        val merchantId = merchantOf(id)!!
+        val before = classification.getMerchant(merchantId)!!
+
+        val batch = classification.acceptLookup(
+            merchantId, IdentifiedAs("Zzyzx Mart", BusinessType.CONVENIENCE_STORE, 40), "https://zzyzx.sa", "Zzyzx Mart"
+        )!!
+        val found = classification.getMerchant(merchantId)!!
+        assertEquals("Zzyzx Mart", found.name)
+        assertEquals(IdentifiedBy.YOU, found.identifiedBy)
+        assertEquals("https://zzyzx.sa", found.webUrl)
+        assertEquals(groceries, transactions.get(id)!!.categoryId)
+
+        classification.undo(batch)
+        assertEquals(before, classification.getMerchant(merchantId))
+        assertNull(transactions.get(id)!!.categoryId)
+
+        val panda = spend("PANDA 1042")
+        classification.applyRules()
+        assertNull(classification.acceptLookup(merchantOf(panda)!!, IdentifiedAs("Panda", BusinessType.ELECTRONICS, 99), null, null))
     }
 
     @Test

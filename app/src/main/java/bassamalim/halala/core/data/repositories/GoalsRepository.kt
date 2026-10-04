@@ -11,8 +11,10 @@ import bassamalim.halala.core.domain.GoalState
 import bassamalim.halala.core.domain.Goals
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.enums.Direction
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.first
 import java.time.Clock
 import java.time.LocalDate
@@ -60,7 +62,7 @@ class GoalsRepository @Inject constructor(
                 today
             )
         }
-    }
+    }.flowOn(Dispatchers.Default)
 
     fun observeAll(): Flow<List<SavingsGoal>> = goalsDao.observeAll()
 

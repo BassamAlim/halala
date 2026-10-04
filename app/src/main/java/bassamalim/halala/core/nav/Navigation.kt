@@ -28,6 +28,7 @@ import bassamalim.halala.core.ui.outToLeft
 import bassamalim.halala.core.ui.outToRight
 import bassamalim.halala.features.accounts.AccountsScreen
 import bassamalim.halala.features.categories.CategoriesScreen
+import bassamalim.halala.features.categorySpending.CategorySpendingScreen
 import bassamalim.halala.features.editRule.EditRuleScreen
 import bassamalim.halala.features.history.HistoryScreen
 import bassamalim.halala.features.editAccount.EditAccountScreen
@@ -123,6 +124,7 @@ fun NavGraph(navController: NavHostController, startDestination: Screen) {
         screen<Screen.Merchants> { MerchantsScreen() }
 
         screen<Screen.Merchant> { MerchantScreen() }
+        screen<Screen.CategorySpending> { CategorySpendingScreen() }
 
         screen<Screen.People> { PeopleScreen() }
 

@@ -21,6 +21,16 @@ class KnownMerchantsTest {
     }
 
     @Test
+    fun `chains from OpenStreetMap are found too, after the list kept by hand`() {
+        assertEquals(KnownMerchants.Known("Texas Chicken", BusinessType.FAST_FOOD), identify("TEXAS CHICKEN 0412"))
+        assertEquals("Al Tazaj", identify("الطازج")?.name)
+        // The hand-kept list's answer stands.
+        assertEquals(BusinessType.ELECTRONICS, identify("JARIR BOOKSTORE")?.type)
+        // A brand called a plain word never comes from there.
+        assertNull(identify("GARAGE ALNAKHEEL"))
+    }
+
+    @Test
     fun `the longest spelling wins`() {
         assertEquals(BusinessType.MONEY_TRANSFER, identify("STC PAY")?.type)
         assertEquals(BusinessType.TELECOM, identify("STC 900")?.type)
@@ -29,7 +39,8 @@ class KnownMerchantsTest {
     @Test
     fun `a short name only matches a whole word`() {
         assertNull(identify("NOONDAY CAFE"))
-        assertNull(identify("Applebees"))
+        // Not Apple: OpenStreetMap knows the restaurant.
+        assertEquals("Applebee's", identify("Applebees")?.name)
         assertEquals("Noon", identify("noon")?.name)
     }
 

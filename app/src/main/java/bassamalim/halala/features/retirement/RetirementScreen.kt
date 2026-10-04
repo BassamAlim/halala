@@ -88,6 +88,7 @@ fun RetirementScreen(viewModel: RetirementViewModel = hiltViewModel()) {
                 values = result.curve,
                 secondary = result.contributed,
                 labels = listOf(stringResource(R.string.retirement_age, result.fromAge), result.retireAt.toString()),
+                tips = result.pots.mapIndexed { year, pot -> stringResource(R.string.retirement_age, result.fromAge + year) to pot },
                 description = stringResource(R.string.retirement_chart),
                 height = Sizes.fab * 2 + Sizes.chip
             )

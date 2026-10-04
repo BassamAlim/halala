@@ -1,5 +1,6 @@
 package bassamalim.halala.features.merchant
 
+import bassamalim.halala.core.ai.LookupFound
 import bassamalim.halala.core.ai.LookupOutcome
 import bassamalim.halala.core.enums.AliasMatch
 import bassamalim.halala.core.enums.BusinessType
@@ -8,6 +9,7 @@ import bassamalim.halala.core.models.TransactionItem
 
 data class MerchantUiState(
     val isLoading: Boolean = true,
+    val id: Long = 0,
     val name: String = "",
     val initial: String = "",
     /** Spent at it, as a summary shows money: "18,400". */
@@ -20,7 +22,7 @@ data class MerchantUiState(
     val businessType: BusinessType? = null,
     val identifiedBy: IdentifiedBy? = null,
     val confidence: Int? = null,
-    /** The page a web search found it on, while the AI's answer stands. */
+    /** The page a web search found it on, while the AI's answer (or one you took) stands. */
     val webTitle: String? = null,
     val webUrl: String? = null,
     /**
@@ -31,6 +33,8 @@ data class MerchantUiState(
     val lookup: Lookup? = null,
     /** The category its spending files under, by what it is: none when no category takes it. */
     val filesUnder: String? = null,
+    /** The website its logo is the icon of; none when it has no logo to fetch. */
+    val website: String? = null,
     val spellings: List<SpellingRow> = emptyList(),
     /** A merchant known by one spelling has none to take out. */
     val canSplit: Boolean = false,
@@ -40,7 +44,7 @@ data class MerchantUiState(
     val sheet: MerchantSheet? = null
 )
 
-/** Looking it up: [working] while it goes, then its [outcome]. */
+/** Looking it up: [working] while it goes, then its [outcome] (what it found opens a sheet). */
 data class Lookup(val working: Boolean, val outcome: LookupOutcome? = null)
 
 /** One way the bank writes it. */
@@ -61,4 +65,10 @@ sealed interface MerchantSheet {
 
     /** Saying what the business is. */
     data object BusinessType : MerchantSheet
+
+    /** Correcting its logo: the website it comes from, [working] while it is fetched. */
+    data class Logo(val website: String, val working: Boolean = false, val problem: LogoProblem? = null) : MerchantSheet
+
+    /** What looking it up found, to take or leave. */
+    data class Found(val found: LookupFound) : MerchantSheet
 }

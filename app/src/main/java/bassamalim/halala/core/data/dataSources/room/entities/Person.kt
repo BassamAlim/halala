@@ -5,11 +5,13 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import java.time.Instant
 
 /**
  * Someone you send money to or get it from (the spec's counterparty): "AHMED ALI ALQAHTANI" and
  * "Ahmed Ali" are one person with two aliases. [name] starts as the bank first wrote it, tidied,
- * until you name them yourself ([namedByYou]).
+ * until you name them yourself ([namedByYou]). [salarySince]: they pay your salary, so their
+ * transfers in from then on are your salary (`PeopleDao.markSalaries`); null when they don't.
  */
 @Entity(tableName = "people", indices = [Index(value = ["uid"], unique = true)])
 data class Person(
@@ -17,7 +19,8 @@ data class Person(
     val uid: String,
     val name: String,
     @ColumnInfo(defaultValue = "0")
-    val namedByYou: Boolean = false
+    val namedByYou: Boolean = false,
+    val salarySince: Instant? = null
 )
 
 /**

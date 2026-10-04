@@ -64,7 +64,7 @@ data class ExportFile(
     val goalContributions: List<ExportGoalContribution> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 22
+        const val SCHEMA_VERSION = 25
     }
 }
 
@@ -113,6 +113,8 @@ data class ExportTransaction(
     /** Since schema 5: a foreign charge before conversion, and the SMS it was read from. */
     val originalAmountMinor: Long? = null,
     val originalCurrency: String? = null,
+    /** The amount is Halala's estimate of a foreign charge (schema 24). */
+    val estimated: Boolean = false,
     val rawMessageHash: String? = null
 )
 
@@ -163,7 +165,10 @@ data class ExportMerchant(
     /** Since schema 21: looked up online (never again), and the page it was found on. */
     val searchedOnline: Boolean = false,
     val webUrl: String? = null,
-    val webTitle: String? = null
+    val webTitle: String? = null,
+    /** Since schema 23: its own website, for its logo (the logo itself is fetched again). */
+    val website: String? = null,
+    val websiteAsked: Boolean = false
 )
 
 /** One spelling: its key (lower case, letters only), as first written, and how it joined. */
@@ -180,7 +185,9 @@ data class ExportPerson(
     val uid: String,
     val name: String,
     val namedByYou: Boolean,
-    val aliases: List<ExportPersonAlias>
+    val aliases: List<ExportPersonAlias>,
+    /** When they began paying your salary by transfer; null when they don't. */
+    val salarySince: String? = null
 )
 
 @Serializable

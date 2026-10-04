@@ -68,13 +68,17 @@ class ForecastViewModel @Inject constructor(
             salaryFrom = inputs.cycle.takeIf { it.fromSalary && inputs.salaryMinor != null }?.end?.minusDays(1)?.dayOfMonth?.toString(),
             salaryTo = inputs.cycle.takeIf { it.fromSalary && inputs.salaryMinor != null }?.end?.plusDays(1)?.let { shortDateLabel(it, today) },
             chart = estimate?.let {
+                val past = ForecastDomain.history(inputs.balanceMinor, inputs.cycle.start, today, accounts, details, domain.zone())
                 ForecastChart(
-                    past = ForecastDomain.history(inputs.balanceMinor, inputs.cycle.start, today, accounts, details, domain.zone()),
+                    past = past,
                     future = future,
                     endLow = it.lowMinor,
                     endHigh = it.highMinor,
                     startLabel = shortDateLabel(inputs.cycle.start, today),
-                    endLabel = shortDateLabel(cycleLast, today)
+                    endLabel = shortDateLabel(cycleLast, today),
+                    tips = (past + future.drop(1)).mapIndexed { day, balance ->
+                        shortDateLabel(inputs.cycle.start.plusDays(day.toLong()), today) to Money.format(balance, currency, decimals = false)
+                    }
                 )
             },
             months = months.map {

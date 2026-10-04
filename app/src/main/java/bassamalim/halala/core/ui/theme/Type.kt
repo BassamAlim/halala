@@ -113,11 +113,11 @@ object HalalaType {
         letterSpacing = 0.06.em
     )
 
-    /** Bottom nav labels. */
+    /** Bottom nav labels: 12sp, since they are muted when not current. */
     val NavLabel = TextStyle(
         fontFamily = InstrumentSans,
         fontWeight = FontWeight(500),
-        fontSize = 11.sp,
+        fontSize = 12.sp,
         lineHeight = 14.sp
     )
 }

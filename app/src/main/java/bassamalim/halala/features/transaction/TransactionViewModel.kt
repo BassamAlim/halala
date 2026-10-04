@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
+import bassamalim.halala.core.domain.ESTIMATE
+import bassamalim.halala.core.domain.ForeignRates
 import bassamalim.halala.core.domain.LoanState
 import bassamalim.halala.core.domain.Loans
 import bassamalim.halala.core.domain.Splits
@@ -23,6 +25,7 @@ import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.enums.ExpenseType
 import bassamalim.halala.core.enums.LoanDirection
 import bassamalim.halala.core.enums.LoanEventType
+import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.models.CategoryOption
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
@@ -58,13 +61,16 @@ class TransactionViewModel @Inject constructor(
 
     private data class Savings(val goals: List<SavingsGoal>, val contributions: List<GoalContribution>, val types: Map<Long, AccountType>)
 
+        /** Looked at again when the screen comes back, after you may have allowed it. */
+    private val locationAccess = MutableStateFlow(domain.locationAccess())
+
     val uiState: StateFlow<TransactionUiState> = combine(
         combine(domain.observe(id), domain.observeLoans(), domain.observePeople(), ::Triple),
         combine(domain.observeCategories(), domain.observeRules(), ::Pair),
+        combine(domain.observePlace(id), locationAccess, ::Pair),
         combine(domain.observeGoals(), domain.observeContributions(), domain.observeAccountTypes(), ::Savings),
-        confirmingDelete,
-        sheet
-    ) { (detail, loans, people), (categories, rules), savings, confirming, sheet ->
+        combine(confirmingDelete, sheet, ::Pair)
+    ) { (detail, loans, people), (categories, rules), (place, access), savings, (confirming, sheet) ->
         // Gone (deleted from here or elsewhere): the screen stays as it was while it leaves.
         if (detail == null) return@combine TransactionUiState(isLoading = true)
 
@@ -91,7 +97,7 @@ class TransactionViewModel @Inject constructor(
                 if (tone == AmountTone.Spending) -tx.amountMinor else tx.amountMinor,
                 tx.currency,
                 showPlus = tone == AmountTone.Income
-            ),
+            ).let { if (tx.estimated) "$ESTIMATE $it" else it },
             currency = tx.currency,
             amountMinor = tx.amountMinor,
             whenLabel = "${dateLabel(local.toLocalDate(), today)} · ${timeLabel(local.toLocalTime())}",
@@ -100,6 +106,15 @@ class TransactionViewModel @Inject constructor(
             toLabel = there?.let { if (detail.isTransferInLeg) here else it },
             note = tx.note,
             source = tx.source,
+            foreign = tx.originalAmountMinor?.takeIf { it > 0 }?.let { original ->
+                val currency = tx.originalCurrency ?: return@let null
+                ForeignCharge(
+                    amount = Money.format(original, currency),
+                    currency = currency,
+                    rate = ForeignRates.label(ForeignRates.rateOf(original, currency, tx.amountMinor, tx.currency)),
+                    estimated = tx.estimated
+                )
+            },
             createdLabel = dateLabel(tx.createdAt.atZone(zone).toLocalDate(), today),
             isConfirmingDelete = confirming,
             canCategorise = Rules.canCategorise(detail),
@@ -130,9 +145,13 @@ class TransactionViewModel @Inject constructor(
             goal = contribution?.let { c ->
                 savings.goals.firstOrNull { it.id == c.goalId }?.let { GoalLink(it.name, c.withdrawn) }
             },
+            canMarkSalary = tx.kind == TransactionKind.TRANSFER_IN && detail.personId != null && !detail.isInternalTransfer,
             canMarkGoal = contribution == null && savings.goals.isNotEmpty() && Goals.canContribute(detail, loanPart),
             goals = savings.goals.map { PersonChoice(it.id, it.name) },
-            sheet = (sheet as? TransactionSheet.Split)?.let { previewed(it, tx.amountMinor, tx.currency) } ?: sheet
+            sheet = (sheet as? TransactionSheet.Split)?.let { previewed(it, tx.amountMinor, tx.currency) } ?: sheet,
+            showsPlace = Rules.canCategorise(detail),
+            place = place?.let { PlaceInfo(it.latitude, it.longitude, it.accuracyMeters) },
+            locationAccess = access
         )
     }.stateIn(
         scope = viewModelScope,
@@ -142,6 +161,8 @@ class TransactionViewModel @Inject constructor(
 
     fun onBackClick() = navigator.popBackStack()
 
+    fun onCheckLocation() = locationAccess.update { domain.locationAccess() }
+
     fun onEditClick() = navigator.navigate(Screen.EditTransaction(id = id))
 
     fun onCategoryClick() = sheet.update { TransactionSheet.Category }
@@ -149,6 +170,12 @@ class TransactionViewModel @Inject constructor(
     fun onTypeClick() = sheet.update { TransactionSheet.Type }
 
     fun onSheetDismiss() = sheet.update { null }
+
+    /** The picker's + New category: the Categories form; back here, the new one is in the picker. */
+    fun onNewCategoryClick() {
+        sheet.update { null }
+        navigator.navigate(Screen.Categories(add = true))
+    }
 
     /** A named merchant can be remembered, so it asks; a nameless one is filed on its own. */
     fun onCategoryPick(category: CategoryOption) {
@@ -222,10 +249,54 @@ class TransactionViewModel @Inject constructor(
         }
     }
 
+    /** One loan it could repay: that one. Several: you choose which, one or more. */
     fun onRepaysClick() {
-        val suggestion = (uiState.value.loan as? LoanLink.Open)?.suggestion ?: return
-        viewModelScope.launch { domain.repay(suggestion.loanId, id) }
+        val suggestions = suggestions()
+        if (suggestions.size == 1) {
+            val loanId = suggestions.single().loanId
+            viewModelScope.launch { domain.repay(loanId, id) }
+        } else if (suggestions.size > 1) sheet.update { TransactionSheet.Repay() }
     }
+
+    /**
+     * A loan picked or let go. With several picked, the transfer is spread over them again,
+     * oldest paid off first (the rest to the newest), to be changed as you like.
+     */
+    fun onRepayToggle(loanId: Long) {
+        val repay = sheet.value as? TransactionSheet.Repay ?: return
+        val picked = repay.selected.let { if (loanId in it) it - loanId else it + loanId }
+        val ordered = suggestions().filter { it.loanId in picked }
+        val shares = Loans.allocate(uiState.value.amountMinor, ordered.map { it.loanId to it.remainingMinor })
+        val currency = uiState.value.currency
+        sheet.update {
+            TransactionSheet.Repay(
+                selected = ordered.map { it.loanId },
+                amounts = shares.mapValues { (_, minor) -> Money.input(minor, currency) }
+            )
+        }
+    }
+
+    fun onRepayAmountChange(loanId: Long, text: String) = sheet.update {
+        (it as? TransactionSheet.Repay)?.copy(amounts = it.amounts + (loanId to text), problems = emptySet()) ?: it
+    }
+
+    fun onRepayConfirm() {
+        val repay = sheet.value as? TransactionSheet.Repay ?: return
+        if (repay.selected.isEmpty()) return
+        val currency = uiState.value.currency
+        val shares = repay.selected.associateWith { loanId -> repay.amounts[loanId]?.let { Money.parse(it, currency) } }
+        if (repay.selected.size > 1) {
+            val problems = Loans.validateShares(uiState.value.amountMinor, shares)
+            if (problems.isNotEmpty()) return sheet.update { repay.copy(problems = problems) }
+        }
+        sheet.update { null }
+        viewModelScope.launch {
+            if (repay.selected.size == 1) domain.repay(repay.selected.single(), id)
+            else domain.repayMany(id, shares.mapValues { it.value!! })
+        }
+    }
+
+    private fun suggestions() = (uiState.value.loan as? LoanLink.Open)?.suggestions.orEmpty()
 
     fun onUnlinkClick() = sheet.update { TransactionSheet.Unlink }
 
@@ -342,6 +413,14 @@ class TransactionViewModel @Inject constructor(
         navigator.navigate(Screen.Person(part.personId))
     }
 
+    fun onSalaryClick() = sheet.update { TransactionSheet.Salary }
+
+    fun onSalaryConfirm() {
+        val personId = uiState.value.personId ?: return
+        sheet.update { null }
+        viewModelScope.launch { domain.markSalary(id, personId) }
+    }
+
     fun onPersonClick() {
         val personId = uiState.value.personId ?: return
         navigator.navigate(Screen.Person(personId))
@@ -379,10 +458,20 @@ class TransactionViewModel @Inject constructor(
         val personId = detail.personId
         val person = detail.personName.orEmpty()
 
-        val part = loans.firstOrNull { state -> state.events.any { it.transactionId == tx.id } }
+        val parts = loans.filter { state -> state.events.any { it.transactionId == tx.id } }
+        val part = parts.firstOrNull()
         if (part != null) {
             val event = part.events.first { it.transactionId == tx.id }
+            fun nameOf(state: LoanState) = people.firstOrNull { it.person.id == state.loan.personId }?.person?.name ?: person
             return LoanLink.Part(
+                shares = if (parts.size < 2) emptyList() else parts.map { state ->
+                    RepaidShare(
+                        person = nameOf(state),
+                        amount = Money.format(state.events.first { it.transactionId == tx.id }.amountMinor, state.loan.currency),
+                        remaining = Money.format(state.remainingMinor, state.loan.currency),
+                        settled = !state.isOpen
+                    )
+                },
                 lent = part.loan.direction == LoanDirection.LENT,
                 repays = event.type != LoanEventType.DISBURSEMENT,
                 person = people.firstOrNull { it.person.id == part.loan.personId }?.person?.name ?: person,
@@ -399,11 +488,12 @@ class TransactionViewModel @Inject constructor(
             lent = tx.direction == Direction.DEBIT,
             person = person,
             personId = personId,
-            suggestion = repaid?.let {
+            suggestions = repaid.map {
                 Suggestion(
                     loanId = it.loan.id,
                     lent = it.loan.direction == LoanDirection.LENT,
                     remaining = Money.format(it.remainingMinor, it.loan.currency),
+                    remainingMinor = it.remainingMinor,
                     currency = it.loan.currency,
                     lentOn = it.lentAt?.let { at -> shortDateLabel(at.atZone(domain.zone()).toLocalDate(), today) }.orEmpty()
                 )

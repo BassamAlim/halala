@@ -35,7 +35,7 @@ A single-user Android app that reads bank SMS, turns each one into a structured 
 | Login | Biometric on every open |
 | Build process | Spec written for AI-assisted implementation (Claude Code) with owner review |
 
-**Out of scope for v1:** receipt OCR, email parsing, bank statement import, multi-user or shared budgets, credit cards, Arabic UI (planned later), iOS.
+**Out of scope for v1:** receipt OCR, email parsing, bank statement import, multi-user or shared budgets, credit cards, Arabic UI, iOS.
 
 ## Architecture & tech stack
 
@@ -43,7 +43,7 @@ A single-module-per-layer Kotlin app: clean architecture (data / domain / UI), e
 
 | Layer | Choice | Notes |
 | --- | --- | --- |
-| Language / UI | Kotlin 2.x, Jetpack Compose, Material 3 | English UI for v1; all strings in resources and layouts RTL-safe so Arabic can be added later. Arabic SMS are still parsed. |
+| Language / UI | Kotlin 2.x, Jetpack Compose, Material 3 | English UI; all strings in resources and layouts RTL-safe. Arabic SMS are still parsed. |
 | Min SDK | Android 10 (API 29), target latest | Covers any recent phone; needed for modern biometrics and scoped storage |
 | DI | Hilt |  |
 | Database | Room over SQLCipher | Whole DB encrypted; key held in Android Keystore, unlocked by biometric |
@@ -71,7 +71,6 @@ One `LlmProvider` interface with implementations for Groq and Gemini, selectable
 - Everyday volume is tiny: roughly 5–20 SMS a day, most resolved by rules without any AI call.
 - The one-time back-import is the only heavy load; it is batched (see *Ingestion*) so it fits under the 200K tokens/day cap over a few days.
 - If free tiers disappear, Gemini 3.1 Flash-Lite paid costs US$0.25 per million input tokens and US$1.50 per million output tokens, which keeps this app far below US$5/month.
-- A monthly token counter and hard cap are shown in settings.
 
 **What leaves the phone:** only a merchant's name as the bank wrote it ("PANDA 1042 RIYADH"), for purchases, refunds and bills. Its digits are kept: they are part of how the bank names the shop. Never: amounts, dates, accounts, balances, your categories, names of people (a transfer's title), OTPs, whole SMS. As a safeguard against a parser capturing too much, a name holding one of your accounts' last four digits or an IBAN is never sent.
 
@@ -86,8 +85,8 @@ Everything hangs off two tables: **RawMessage** (the untouched SMS, kept forever
 | RawMessage | sender, body, received time, hash, parse status, parser version | Source of truth; re-parsable |
 | Transaction | account, direction (debit/credit), amount, currency, SAR amount, time, kind, merchant, counterparty, category, expense type, tags, note, location, confidence, review state, raw message link | The core record |
 | Transaction kind | purchase, refund, transfer-out, transfer-in, internal-transfer, salary, ATM withdrawal, cash deposit, fee, bill payment, investment buy/sell, savings deposit/withdrawal, loan-given, loan-received, loan-repayment | Drives which screens and totals include it |
-| Merchant | canonical name, aliases (raw descriptors), business type (and who identified it: the bundled list, AI or you), logo, website, location | "ABC TRDG EST 1234" and "ABC TRADING" both map to one merchant |
-| Counterparty | display name, phone contact link, known IBANs / account names | People you transfer to or lend to |
+| Merchant | canonical name, aliases (raw descriptors), business type (and who identified it: the bundled list, AI or you), logo, website | "ABC TRDG EST 1234" and "ABC TRADING" both map to one merchant |
+| Counterparty | display name, account names | People you transfer to or lend to |
 | InternalTransfer | out-leg transaction, in-leg transaction, match confidence | Pairs the two sides of a move between your own accounts |
 | Category | name, icon, colour, default expense type, business types it takes | One level, e.g. Groceries takes supermarkets |
 | ExpenseType | fixed / variable × essential / discretionary | Second axis, independent of category |
@@ -138,7 +137,7 @@ The result is that after roughly 15–30 minutes of cluster review you get a ful
 
 ### Location capture
 
-When a live purchase SMS arrives, request one coarse location fix (with a 10-second timeout) and attach it to the transaction. No background tracking, no location for back-imported history, and an off switch. Stored location also helps merchant resolution: the same descriptor at a known location is a strong match.
+When a live purchase SMS arrives, request one coarse location fix (with a 10-second timeout) and attach it to the transaction. No background tracking, no location for back-imported history, and an off switch.
 
 ### Pipeline diagram
 
@@ -155,7 +154,7 @@ The AI only identifies: given a merchant's name, it says what the business is. W
 ### Merchant resolution
 
 1. Normalise the descriptor and look it up in local Merchant aliases. Hit → done.
-2. Fuzzy match (token similarity ≥ 0.85) against known merchants, boosted if the stored location is within 300 m of that merchant's past locations.
+2. Fuzzy match (token similarity ≥ 0.85) against known merchants.
 3. A new merchant is looked up in a bundled list of well-known Saudi merchants (Panda, Tamimi, Othaim, Jahez, HungerStation, STC, Aldrees, Nahdi, Jarir…), which gives its name and business type with no call.
 4. Otherwise, an LLM call with the merchant's name alone: returns canonical name, business type (one of the app's list, or unknown) and confidence. If the LLM's confidence is below 0.80, it gets a web search tool (Tavily) and looks the name up online before answering (see below).
 5. The result is kept on the merchant, so the same merchant never costs another call.
@@ -231,7 +230,7 @@ A chat screen that answers questions like "How much did I spend on coffee since 
 
 ### Transfers to and from people
 
-- Every transfer names a counterparty from the SMS (name or IBAN); you can link it to a phone contact once, and it is remembered.
+- Every transfer names a counterparty from the SMS (name or IBAN).
 - Per-person ledger: total sent, total received, net, and a timeline, with filters for loans only or all transfers.
 
 ### Loans (owed to me / I owe)
@@ -380,7 +379,7 @@ Every export includes a `schemaVersion`; importers migrate older versions forwar
 
 ## Roadmap, open questions & risks
 
-Build the ledger core first and make it trustworthy; every later feature reads from it. Each phase ends with a tagged GitHub release you actually use for a week before starting the next.
+Build the ledger core first and make it trustworthy; every later feature reads from it.
 
 1. **Phase 0 — Foundations.** Repo, GitHub Actions (build, test, signed release), Room + SQLCipher, biometric lock, accounts screen, manual transactions, cash wallet, CSV/JSON export.
 2. **Phase 1 — SMS core.** Live SMS receiver, parsers and fixture tests for all five banks plus Al Rajhi Capital, account routing by last-4, dedupe, internal transfer pairing, balance checkpoints, transactions feed, back-import.
@@ -390,7 +389,7 @@ Build the ledger core first and make it trustworthy; every later feature reads f
 6. **Phase 5 — Wealth.** Fund holdings and NAV fetcher, gold with daily price, other assets, net worth snapshots and timeline, zakat calculator, compound interest and retirement planner.
 7. **Phase 6 — Delight.** Assistant with tool calling, AI tag suggestions, spending heatmap, Money Flow Sankey, home-screen widget, encrypted scheduled backups and full re-import.
 
-Later ideas: receipt OCR, email receipts, bank statement PDF import, warranty vault, shared household mode.
+Later ideas: email receipts, warranty vault, shared household mode.
 
 **Open questions**
 
@@ -406,7 +405,7 @@ Later ideas: receipt OCR, email receipts, bank statement PDF import, warranty va
 | Banks change SMS formats | Missed or misread transactions | Fixture tests in CI, parse-failure alerts, raw SMS kept for re-parsing once a template is added, balance-mismatch detection |
 | Free AI tiers shrink or vanish | Classification stops | Provider interface with fallback, rules handle most traffic, paid Flash-Lite stays well under US$5/month |
 | Fund price scraping breaks | Stale portfolio value | Show price date, alert when stale over 7 days, manual entry fallback |
-| Android restricts SMS access further | Core intake breaks | Sideloading avoids Play policy; keep a notification-listener intake as a backup path |
+| Android restricts SMS access further | Core intake breaks | Sideloading avoids Play policy |
 | Losing the phone or the passphrase | Data loss | Scheduled encrypted backups off-device; passphrase hint and a printed recovery key at setup |
 | Back-import overwhelms the free tier | Slow first run | Cluster-first classification, batching, spread over several days with progress shown |
 

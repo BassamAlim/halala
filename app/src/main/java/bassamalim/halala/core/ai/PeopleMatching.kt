@@ -41,7 +41,7 @@ object PeopleMatchProtocol {
             put("model", GroqProtocol.MODEL)
             put("temperature", 0)
             put("reasoning_effort", "none")
-            put("max_completion_tokens", MAX_TOKENS)
+            put("max_completion_tokens", GroqProtocol.MAX_TOKENS)
             putJsonArray("messages") {
                 addJsonObject {
                     put("role", "system")
@@ -73,7 +73,6 @@ object PeopleMatchProtocol {
             members.flatMapIndexed { at, first -> members.drop(at + 1).map { second -> first - 1 to second - 1 } }
         }.toSet()
 
-    private const val MAX_TOKENS = 4096
 
     private val json = Json { ignoreUnknownKeys = true }
 

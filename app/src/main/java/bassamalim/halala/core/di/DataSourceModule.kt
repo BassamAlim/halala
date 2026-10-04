@@ -10,10 +10,13 @@ import bassamalim.halala.core.data.dataSources.keystore.DatabaseKey
 import bassamalim.halala.core.data.dataSources.room.AppDatabase
 import bassamalim.halala.core.data.dataSources.room.MIGRATIONS
 import bassamalim.halala.core.data.dataSources.room.Seed
+import bassamalim.halala.core.data.dataSources.room.daos.SharedLedgerDao
+import bassamalim.halala.core.data.dataSources.room.daos.TransactionsDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import java.io.File
 import java.time.Clock
@@ -60,7 +63,8 @@ object DataSourceModule {
     fun provideAccountsDao(database: AppDatabase) = database.accountsDao()
 
     @Provides @Singleton
-    fun provideTransactionsDao(database: AppDatabase) = database.transactionsDao()
+    fun provideTransactionsDao(database: AppDatabase, @ApplicationScope scope: CoroutineScope): TransactionsDao =
+        SharedLedgerDao(database.transactionsDao(), scope)
 
     @Provides @Singleton
     fun provideSmsDao(database: AppDatabase) = database.smsDao()

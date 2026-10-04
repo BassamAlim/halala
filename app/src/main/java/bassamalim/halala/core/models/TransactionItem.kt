@@ -23,5 +23,7 @@ data class TransactionItem(
     val date: LocalDate,
     val day: DayLabel,
     val category: String? = null,
-    val auto: Boolean = false
+    val auto: Boolean = false,
+    /** Its merchant, for the logo. */
+    val merchantId: Long? = null
 )

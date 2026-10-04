@@ -67,6 +67,8 @@ sealed interface RecurringAlert {
  */
 data class SeriesRow(
     val id: Long,
+    /** What it is paid to, for its logo. */
+    val merchantId: Long?,
     val name: String,
     val initial: String,
     val kind: RecurringKind,

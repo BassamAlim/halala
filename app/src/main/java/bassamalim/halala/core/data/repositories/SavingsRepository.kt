@@ -14,8 +14,10 @@ import bassamalim.halala.core.enums.AccountType
 import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.models.TransferDraft
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
@@ -75,7 +77,7 @@ class SavingsRepository @Inject constructor(
                 goalName = names[deposit.goalId]
             )
         }
-    }
+    }.flowOn(Dispatchers.Default)
 
     suspend fun getDeposits(): List<Deposit> = savingsDao.getDeposits()
 
@@ -137,7 +139,7 @@ class SavingsRepository @Inject constructor(
                 lowestThisMonthMinor = Savings.lowestThisMonth(account.balanceMinor, flows, today)
             )
         }
-    }
+    }.flowOn(Dispatchers.Default)
 
     suspend fun getAll(): List<SavingsTerms> = savingsDao.getAll()
 

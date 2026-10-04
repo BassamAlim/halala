@@ -342,6 +342,57 @@ class MigrationsTest {
         helper.runMigrationsAndValidate(DB, 23, true, *MIGRATIONS).close()
     }
 
+    @Test
+    fun `23 to 24 adds merchants' websites and logos, and matches the schema`() {
+        helper.createDatabase(DB, 23).use { }
+        helper.runMigrationsAndValidate(DB, 24, true, *MIGRATIONS).close()
+    }
+
+    @Test
+    fun `24 to 25 marks every transaction as exact and matches the schema`() {
+        helper.createDatabase(DB, 24).use { db ->
+            db.execSQL(
+                "INSERT INTO accounts (id, uid, institutionId, nickname, type, last4, ibanSuffix, currency, " +
+                        "openingBalanceMinor, archived, createdAt) VALUES (1, 'a', NULL, 'Cash', 'CASH', NULL, NULL, 'SAR', 0, 0, 0)"
+            )
+            db.execSQL(
+                "INSERT INTO transactions (uid, accountId, direction, amountMinor, currency, occurredAt, kind, " +
+                        "title, note, source, createdAt) VALUES ('t', 1, 'DEBIT', 1250, 'SAR', 0, 'PURCHASE', 'Panda', '', 'MANUAL', 0)"
+            )
+        }
+        helper.runMigrationsAndValidate(DB, 25, true, *MIGRATIONS).use { db ->
+            db.query("SELECT amountMinor, estimated FROM transactions").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(1250L, cursor.getLong(0))
+                assertEquals(0, cursor.getInt(1))
+            }
+        }
+    }
+
+    @Test
+    fun `25 to 26 lets someone pay your salary and matches the schema`() {
+        helper.createDatabase(DB, 25).use { }
+        helper.runMigrationsAndValidate(DB, 26, true, *MIGRATIONS).close()
+    }
+
+    @Test
+    fun `26 to 27 lets a transfer repay several loans and matches the schema`() {
+        helper.createDatabase(DB, 26).use { }
+        helper.runMigrationsAndValidate(DB, 27, true, *MIGRATIONS).close()
+    }
+
+    @Test
+    fun `23 to 24 also mends a 23 that had logos instead of goal contributions`() {
+        helper.createDatabase(DB, 23).use { db ->
+            db.execSQL("DROP TABLE `goal_contributions`")
+            db.execSQL("ALTER TABLE `merchants` ADD COLUMN `website` TEXT")
+            db.execSQL("ALTER TABLE `merchants` ADD COLUMN `websiteAsked` INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("CREATE TABLE `merchant_logos` (`merchantId` INTEGER NOT NULL, `image` BLOB, PRIMARY KEY(`merchantId`), " +
+                    "FOREIGN KEY(`merchantId`) REFERENCES `merchants`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )")
+        }
+        helper.runMigrationsAndValidate(DB, 24, true, *MIGRATIONS).close()
+    }
+
     private companion object {
         const val DB = "migration-test"
     }

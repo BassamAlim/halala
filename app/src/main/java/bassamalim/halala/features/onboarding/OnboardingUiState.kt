@@ -8,6 +8,8 @@ data class OnboardingUiState(
     val isReading: Boolean = false,
     /** You said no to reading SMS: say how to allow it. */
     val permissionDenied: Boolean = false,
+    /** On a first run, a backup can be restored instead (a new phone). */
+    val offerRestore: Boolean = false,
     val rows: List<FoundRow> = emptyList(),
     /** The broker found alongside, which needs no name: "Al Rajhi Capital". */
     val alsoFound: String? = null,

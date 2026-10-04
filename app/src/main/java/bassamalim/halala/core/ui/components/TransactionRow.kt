@@ -1,6 +1,9 @@
 package bassamalim.halala.core.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.ui.layout.ContentScale
+import bassamalim.halala.core.ui.LocalMerchantLogos
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -58,6 +61,8 @@ fun TransactionRow(
     divider: Boolean = false,
     /** A figure that no longer stands (a settled loan's nothing owed): muted whatever its tone. */
     muted: Boolean = false,
+    /** The merchant, whose logo shows in place of the initial once fetched. */
+    merchantId: Long? = null,
     onClick: (() -> Unit)? = null
 ) {
     Column(modifier.fillMaxWidth()) {
@@ -71,7 +76,7 @@ fun TransactionRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.md)
         ) {
-            Avatar(initial = initial, tone = tone)
+            Avatar(initial = initial, tone = tone, merchantId = merchantId)
 
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xxs)) {
                 Row(
@@ -113,11 +118,26 @@ fun TransactionRow(
 }
 
 /**
- * A 40dp merchant or person initial on surface-2. Income puts the letter in the income colour;
- * a move between your accounts is a dashed outline around the swap glyph.
+ * A 40dp merchant or person initial on surface-2, or the merchant's logo when one was fetched
+ * ([merchantId]). Income puts the letter in the income colour; a move between your accounts is a
+ * dashed outline around the swap glyph.
  */
 @Composable
-fun Avatar(initial: String, modifier: Modifier = Modifier, tone: AmountTone = AmountTone.Spending) {
+fun Avatar(initial: String, modifier: Modifier = Modifier, tone: AmountTone = AmountTone.Spending, merchantId: Long? = null) {
+    val logo = merchantId?.let { LocalMerchantLogos.current[it] }
+    if (logo != null && tone != AmountTone.Internal) {
+        Image(
+            bitmap = logo,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = modifier
+                .size(Sizes.avatar)
+                .clip(Radius.sm)
+                .background(HalalaColors.Surface2)
+        )
+        return
+    }
+
     if (tone == AmountTone.Internal) {
         Box(
             modifier = modifier
@@ -125,7 +145,7 @@ fun Avatar(initial: String, modifier: Modifier = Modifier, tone: AmountTone = Am
                 .drawBehind {
                     drawRoundRect(
                         color = HalalaColors.Line,
-                        cornerRadius = CornerRadius(AVATAR_RADIUS.toPx()),
+                        cornerRadius = CornerRadius(Radius.smSize.toPx()),
                         style = Stroke(
                             width = Sizes.border.toPx(),
                             pathEffect = PathEffect.dashPathEffect(floatArrayOf(DASH.toPx(), DASH.toPx()))
@@ -159,7 +179,6 @@ fun Avatar(initial: String, modifier: Modifier = Modifier, tone: AmountTone = Am
     }
 }
 
-private val AVATAR_RADIUS = Spacing.md
 private val DASH = Spacing.xs
 
 /** A muted caption over a group of rows: "Today", "Yesterday", "Sat 27 Sep". */

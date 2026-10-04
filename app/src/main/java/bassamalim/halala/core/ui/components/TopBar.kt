@@ -86,7 +86,7 @@ fun TopBar(
                     .padding(horizontal = Spacing.xs),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = actionLabel, style = HalalaType.Body, color = HalalaColors.Accent)
+                Text(text = actionLabel, style = HalalaType.BodyStrong, color = HalalaColors.Accent)
             }
         }
     }

@@ -48,7 +48,7 @@ class LoansTest {
     }
 
     @Test
-    fun `money from someone you lent to suggests their oldest open loan`() {
+    fun `money from someone you lent to offers their open loans, oldest first`() {
         val states = Loans.statesOf(
             listOf(loan(1), loan(2), loan(3, LoanDirection.BORROWED)),
             listOf(
@@ -57,11 +57,13 @@ class LoansTest {
                 event(3, LoanEventType.DISBURSEMENT, 1_000, 1)
             )
         )
-        assertEquals(2L, Loans.repaidBy(1, Direction.CREDIT, "SAR", TransactionKind.TRANSFER_IN, states)?.loan?.id)
-        assertEquals(3L, Loans.repaidBy(1, Direction.DEBIT, "SAR", TransactionKind.TRANSFER_OUT, states)?.loan?.id)
-        assertNull(Loans.repaidBy(2, Direction.CREDIT, "SAR", TransactionKind.TRANSFER_IN, states))
-        assertNull(Loans.repaidBy(1, Direction.CREDIT, "USD", TransactionKind.TRANSFER_IN, states))
-        assertNull(Loans.repaidBy(1, Direction.CREDIT, "SAR", TransactionKind.LOAN_REPAYMENT, states))
+        fun ids(personId: Long, direction: Direction, currency: String, kind: TransactionKind) =
+            Loans.repaidBy(personId, direction, currency, kind, states).map { it.loan.id }
+        assertEquals(listOf(2L, 1L), ids(1, Direction.CREDIT, "SAR", TransactionKind.TRANSFER_IN))
+        assertEquals(listOf(3L), ids(1, Direction.DEBIT, "SAR", TransactionKind.TRANSFER_OUT))
+        assertEquals(emptyList<Long>(), ids(2, Direction.CREDIT, "SAR", TransactionKind.TRANSFER_IN))
+        assertEquals(emptyList<Long>(), ids(1, Direction.CREDIT, "USD", TransactionKind.TRANSFER_IN))
+        assertEquals(emptyList<Long>(), ids(1, Direction.CREDIT, "SAR", TransactionKind.LOAN_REPAYMENT))
     }
 
     @Test
@@ -71,5 +73,15 @@ class LoansTest {
             listOf(event(1, LoanEventType.DISBURSEMENT, 1_200, 0, id = 1), event(2, LoanEventType.DISBURSEMENT, 300, 0, id = 2))
         )
         assertEquals(1_200L to 300L, Loans.owed(states, "SAR"))
+    }
+
+    @Test
+    fun `a transfer spread over loans pays the oldest off first, the rest to the last`() {
+        assertEquals(mapOf(1L to 300L, 2L to 700L), Loans.allocate(1_000, listOf(1L to 300L, 2L to 500L)))
+        // Not enough to reach the second: it gets nothing until you say otherwise.
+        assertEquals(mapOf(1L to 300L, 2L to 0L), Loans.allocate(300, listOf(1L to 500L, 2L to 500L)))
+        assertEquals(setOf(RepayProblem.NotTheWhole), Loans.validateShares(1_000, mapOf(1L to 300L, 2L to 500L)))
+        assertEquals(setOf(RepayProblem.ShareMissing), Loans.validateShares(1_000, mapOf(1L to 1_000L, 2L to null)))
+        assertEquals(emptySet<RepayProblem>(), Loans.validateShares(1_000, mapOf(1L to 300L, 2L to 700L)))
     }
 }

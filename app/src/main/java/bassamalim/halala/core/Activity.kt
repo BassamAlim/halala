@@ -9,6 +9,11 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import bassamalim.halala.core.ui.ground
+import bassamalim.halala.core.ui.LocalMerchantLogos
+import bassamalim.halala.core.ui.MerchantLogos
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,6 +42,7 @@ class Activity : FragmentActivity() {
     @Inject lateinit var navigator: Navigator
     @Inject lateinit var lockManager: LockManager
     @Inject lateinit var quickAdd: QuickAddRequest
+    @Inject lateinit var merchantLogos: MerchantLogos
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // The app is dark-only, so the system bars are told so rather than asked.
@@ -52,18 +58,21 @@ class Activity : FragmentActivity() {
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
 
         setContent {
-            HalalaTheme {
-                // The top and sides are kept clear here, once. The bottom is each screen's: the
-                // tabs draw their nav behind the gesture bar, sub-screens stop above it and the
-                // keyboard (see NavGraph).
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .ground()
-                        .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
-                ) {
-                    // Every cold start opens on the lock; nothing is on screen before it.
-                    Navigation(navigator = navigator, startDestination = Screen.Lock(resumable = false))
+            val logos by merchantLogos.images.collectAsStateWithLifecycle()
+            CompositionLocalProvider(LocalMerchantLogos provides logos) {
+                HalalaTheme {
+                    // The top and sides are kept clear here, once. The bottom is each screen's: the
+                    // tabs draw their nav behind the gesture bar, sub-screens stop above it and the
+                    // keyboard (see NavGraph).
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .ground()
+                            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
+                    ) {
+                        // Every cold start opens on the lock; nothing is on screen before it.
+                        Navigation(navigator = navigator, startDestination = Screen.Lock(resumable = false))
+                    }
                 }
             }
         }

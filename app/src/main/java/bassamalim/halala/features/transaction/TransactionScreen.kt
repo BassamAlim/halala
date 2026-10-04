@@ -1,6 +1,16 @@
 package bassamalim.halala.features.transaction
 
 import bassamalim.halala.core.ui.components.Skeleton
+import bassamalim.halala.core.ui.components.HeatMap
+import bassamalim.halala.core.ui.components.HeatPoint
+import bassamalim.halala.core.ui.components.MapPlaceholder
+import bassamalim.halala.core.ui.components.openLocationSettings
+import bassamalim.halala.core.ui.components.rememberLocationRequest
+import bassamalim.halala.core.places.LocationAccess
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import bassamalim.halala.core.ui.components.currencyInlineContent
 import bassamalim.halala.core.ui.components.appendCurrency
 import androidx.compose.foundation.clickable
@@ -14,6 +24,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -60,6 +71,7 @@ import bassamalim.halala.core.ui.components.MONEY_MARK
 import bassamalim.halala.core.ui.components.MoneyText
 import bassamalim.halala.core.ui.components.HalalaTextField
 import bassamalim.halala.core.ui.components.SegmentedControl
+import bassamalim.halala.core.domain.RepayProblem
 import bassamalim.halala.core.domain.SplitProblem
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -80,8 +92,8 @@ import bassamalim.halala.core.ui.identifiedLabel
 
 /**
  * One transaction, from the Transaction detail board: the figure, when and where, what it is,
- * its category and type, the rule that filed it, and how it got here. Tags, location, the raw
- * SMS and loan/split actions arrive with the phases that fill them.
+ * its category and type, its tags, where a purchase was made, its loan and split, the rule that
+ * filed it, and how it got here. The raw SMS isn't shown yet.
  */
 @Composable
 fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
@@ -117,7 +129,7 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.sm)
         ) {
-            Avatar(initial = state.initial, tone = state.tone)
+            Avatar(initial = state.initial, tone = state.tone, merchantId = state.merchantId.takeIf { state.personName == null })
             Text(text = title, style = HalalaType.Title, textAlign = TextAlign.Center)
             Text(
                 text = buildAnnotatedString {
@@ -193,6 +205,8 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
             TransactionTags(row = { value -> DetailRow(tagsLabel) { value() } })
         }
 
+        if (state.showsPlace) PlaceCard(state, viewModel)
+
         state.loan?.let { loan -> LoanCard(loan, viewModel) }
 
         state.goal?.let { goal ->
@@ -210,6 +224,12 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
                 )
             }
         }
+        if (state.canMarkSalary) HalalaButton(
+            text = stringResource(R.string.salary_mark),
+            onClick = viewModel::onSalaryClick,
+            modifier = Modifier.fillMaxWidth()
+        )
+
         if (state.canMarkGoal) HalalaButton(
             text = stringResource(R.string.goal_toward_mark),
             onClick = viewModel::onGoalClick,
@@ -317,6 +337,16 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
                 style = HalalaType.Label,
                 color = HalalaColors.TextMuted
             )
+            state.foreign?.let { foreign ->
+                Text(
+                    text = stringResource(
+                        if (foreign.estimated) R.string.transaction_foreign_estimated else R.string.transaction_foreign,
+                        foreign.amount, foreign.currency, foreign.rate, state.currency
+                    ),
+                    style = HalalaType.Label,
+                    color = HalalaColors.TextMuted
+                )
+            }
         }
 
         HalalaButton(
@@ -345,8 +375,63 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
             selected = state.category,
             label = { it.name },
             onPick = viewModel::onCategoryPick,
-            onDismiss = viewModel::onSheetDismiss
+            onDismiss = viewModel::onSheetDismiss,
+            addLabel = stringResource(R.string.category_new_chip),
+            onAdd = viewModel::onNewCategoryClick
         )
+
+        is TransactionSheet.Repay -> (state.loan as? LoanLink.Open)?.let { loan ->
+            HalalaSheet(onDismiss = viewModel::onSheetDismiss) {
+                Text(text = stringResource(R.string.loan_repays_title), style = HalalaType.Title)
+                Text(text = stringResource(R.string.loan_repays_several), style = HalalaType.Label, color = HalalaColors.TextMuted)
+                val labels = loan.suggestions.associate {
+                    it.loanId to stringResource(
+                        R.string.loan_repay_option, it.remaining, it.currency,
+                        stringResource(if (it.lent) R.string.loan_lent_on else R.string.loan_borrowed_on, it.lentOn)
+                    )
+                }
+                ChoiceChipsMulti(
+                    options = loan.suggestions.map { PersonChoice(it.loanId, labels.getValue(it.loanId)) },
+                    selected = sheet.selected,
+                    onToggle = viewModel::onRepayToggle
+                )
+                if (sheet.selected.size > 1) ListCard(Modifier.fillMaxWidth()) {
+                    sheet.selected.forEachIndexed { index, loanId ->
+                        val suggestion = loan.suggestions.first { it.loanId == loanId }
+                        ListRow(
+                            title = stringResource(if (suggestion.lent) R.string.loan_lent_on else R.string.loan_borrowed_on, suggestion.lentOn),
+                            divider = index > 0,
+                            trailing = {
+                                HalalaTextField(
+                                    value = sheet.amounts[loanId].orEmpty(),
+                                    onValueChange = { viewModel.onRepayAmountChange(loanId, it) },
+                                    numeric = true,
+                                    isError = RepayProblem.ShareMissing in sheet.problems,
+                                    modifier = Modifier.width(SHARE_FIELD)
+                                )
+                            }
+                        )
+                    }
+                }
+                sheet.problems.firstOrNull()?.let { problem ->
+                    Text(
+                        text = when (problem) {
+                            RepayProblem.ShareMissing -> stringResource(R.string.loan_repay_share_missing)
+                            RepayProblem.NotTheWhole -> stringResource(R.string.loan_repay_not_whole, state.amount, state.currency)
+                        },
+                        style = HalalaType.Label,
+                        color = HalalaColors.StateOver
+                    )
+                }
+                HalalaButton(
+                    text = stringResource(if (sheet.selected.size > 1) R.string.loan_repays_these else R.string.loan_repays),
+                    onClick = viewModel::onRepayConfirm,
+                    enabled = sheet.selected.isNotEmpty(),
+                    kind = ButtonKind.Primary,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
 
         TransactionSheet.Type -> ChoiceSheet(
             title = stringResource(R.string.expense_type),
@@ -554,6 +639,16 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
             destructive = false
         )
 
+        TransactionSheet.Salary -> ConfirmSheet(
+            title = stringResource(R.string.salary_mark_title, state.personName.orEmpty()),
+            body = stringResource(R.string.salary_mark_body, state.personName.orEmpty()),
+            confirmLabel = stringResource(R.string.salary_mark),
+            dismissLabel = stringResource(R.string.cancel),
+            onConfirm = viewModel::onSalaryConfirm,
+            onDismiss = viewModel::onSheetDismiss,
+            destructive = false
+        )
+
         TransactionSheet.Unlink -> ConfirmSheet(
             title = stringResource(R.string.loan_unlink_title),
             body = stringResource(R.string.loan_unlink_body),
@@ -576,7 +671,15 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
 private fun LoanCard(loan: LoanLink, viewModel: TransactionViewModel) {
     when (loan) {
         is LoanLink.Open -> HalalaCard(label = stringResource(R.string.loan)) {
-            loan.suggestion?.let { suggestion ->
+            val several = loan.suggestions.size > 1
+            if (several) Text(
+                text = pluralStringResource(
+                    if (loan.suggestions.first().lent) R.plurals.loan_suggest_many_lent else R.plurals.loan_suggest_many_borrowed,
+                    loan.suggestions.size, loan.person, loan.suggestions.size
+                ),
+                style = HalalaType.Body
+            )
+            else loan.suggestions.firstOrNull()?.let { suggestion ->
                 MoneyText(
                     text = stringResource(
                         if (suggestion.lent) R.string.loan_suggest_lent else R.string.loan_suggest_borrowed,
@@ -587,8 +690,10 @@ private fun LoanCard(loan: LoanLink, viewModel: TransactionViewModel) {
                     style = HalalaType.Body,
                     color = HalalaColors.Text
                 )
+            }
+            if (loan.suggestions.isNotEmpty()) {
                 HalalaButton(
-                    text = stringResource(R.string.loan_repays),
+                    text = stringResource(if (several) R.string.loan_repays_which else R.string.loan_repays),
                     onClick = viewModel::onRepaysClick,
                     kind = ButtonKind.Primary,
                     modifier = Modifier
@@ -597,8 +702,7 @@ private fun LoanCard(loan: LoanLink, viewModel: TransactionViewModel) {
                 )
             }
             HalalaButton(
-                text = if (loan.person.isBlank()) stringResource(R.string.loan_mark_confirm)
-                else stringResource(if (loan.lent) R.string.loan_mark_lent else R.string.loan_mark_borrowed, loan.person),
+                text = stringResource(if (loan.lent) R.string.loan_mark_lent else R.string.loan_mark_borrowed),
                 onClick = viewModel::onMarkLoanClick,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -616,15 +720,38 @@ private fun LoanCard(loan: LoanLink, viewModel: TransactionViewModel) {
                 },
                 loan.person
             )
-            Text(text = what, style = HalalaType.Body)
-            if (loan.settled) Text(text = stringResource(R.string.loan_settled), style = HalalaType.Label, color = HalalaColors.TextMuted)
-            else MoneyText(
-                text = stringResource(R.string.loan_still_owed, MONEY_MARK),
-                amount = loan.remaining,
-                currency = loan.currency,
-                style = HalalaType.Label,
-                color = HalalaColors.TextMuted
-            )
+            if (loan.shares.isNotEmpty()) {
+                // A transfer that repays several: each loan, its share and what is left of it.
+                Text(
+                    text = pluralStringResource(R.plurals.loan_part_repays_several, loan.shares.size, loan.shares.size),
+                    style = HalalaType.Body
+                )
+                loan.shares.forEach { share ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        Text(text = share.person, style = HalalaType.Label, modifier = Modifier.weight(1f))
+                        Text(text = share.amount, style = HalalaNumbers.Meta)
+                    }
+                    if (share.settled) Text(text = stringResource(R.string.loan_settled), style = HalalaType.Caption, color = HalalaColors.TextMuted)
+                    else MoneyText(
+                        text = stringResource(R.string.loan_still_owed, MONEY_MARK),
+                        amount = share.remaining,
+                        currency = loan.currency,
+                        style = HalalaType.Caption,
+                        color = HalalaColors.TextMuted
+                    )
+                }
+            }
+            else {
+                Text(text = what, style = HalalaType.Body)
+                if (loan.settled) Text(text = stringResource(R.string.loan_settled), style = HalalaType.Label, color = HalalaColors.TextMuted)
+                else MoneyText(
+                    text = stringResource(R.string.loan_still_owed, MONEY_MARK),
+                    amount = loan.remaining,
+                    currency = loan.currency,
+                    style = HalalaType.Label,
+                    color = HalalaColors.TextMuted
+                )
+            }
             HalalaButton(
                 text = stringResource(R.string.loan_unlink),
                 onClick = viewModel::onUnlinkClick,
@@ -637,6 +764,71 @@ private fun LoanCard(loan: LoanLink, viewModel: TransactionViewModel) {
 }
 
 /** A label on the left and its value on the right, divided from the row above. */
+/**
+ * Where a purchase was made: a small map of the spot, or the drawn street grid saying why there
+ * is none (location not allowed all the time, location off, or nothing kept for this one, as for
+ * history from before). The map is a picture here: the page scrolls over it.
+ */
+@Composable
+private fun PlaceCard(state: TransactionUiState, viewModel: TransactionViewModel) {
+    val context = LocalContext.current
+    val askLocation = rememberLocationRequest(viewModel::onCheckLocation)
+    LifecycleResumeEffect(viewModel) {
+        viewModel.onCheckLocation()
+        onPauseOrDispose { }
+    }
+    val mapModifier = Modifier
+        .fillMaxWidth()
+        .height(Sizes.placeMap)
+        .clip(Radius.lg)
+
+    HalalaCard(label = stringResource(R.string.transaction_place)) {
+        val place = state.place
+        when {
+            place != null -> {
+                Box(mapModifier) {
+                    HeatMap(
+                        points = listOf(HeatPoint(place.latitude, place.longitude, 1f)),
+                        focus = null,
+                        modifier = Modifier.matchParentSize()
+                    )
+                    // Takes the touches so the map stays put and the page scrolls.
+                    Box(Modifier.matchParentSize().pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent() } })
+                }
+                Text(
+                    text = stringResource(R.string.transaction_place_within, place.accuracyMeters),
+                    style = HalalaType.Label,
+                    color = HalalaColors.TextMuted
+                )
+            }
+            state.locationAccess == LocationAccess.SERVICES_OFF -> MapPlaceholder(
+                message = stringResource(R.string.map_location_off),
+                action = stringResource(R.string.map_turn_location_on),
+                onAction = { openLocationSettings(context) },
+                modifier = mapModifier
+            )
+            state.locationAccess == LocationAccess.FOREGROUND_ONLY -> MapPlaceholder(
+                message = stringResource(R.string.map_needs_always),
+                action = stringResource(R.string.map_allow_always),
+                onAction = askLocation,
+                modifier = mapModifier
+            )
+            state.locationAccess == LocationAccess.DENIED -> MapPlaceholder(
+                message = stringResource(R.string.map_no_permission),
+                action = stringResource(R.string.map_allow),
+                onAction = askLocation,
+                modifier = mapModifier
+            )
+            else -> MapPlaceholder(
+                message = stringResource(R.string.transaction_place_none),
+                action = null,
+                onAction = {},
+                modifier = mapModifier
+            )
+        }
+    }
+}
+
 @Composable
 private fun DetailRow(label: String, divider: Boolean = true, value: @Composable () -> Unit) {
     Column {
@@ -661,8 +853,15 @@ private fun Value(text: String) {
 
 /** Choosing several people: each chip on while picked. */
 @Composable
-private fun ChoiceChipsMulti(options: List<PersonChoice>, selected: List<Long>, onToggle: (Long) -> Unit) {
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+private fun ColumnScope.ChoiceChipsMulti(options: List<PersonChoice>, selected: List<Long>, onToggle: (Long) -> Unit) {
+    // Everyone you transfer with can be many: they scroll, so what comes after stays on screen.
+    FlowRow(
+        modifier = Modifier
+            .weight(1f, fill = false)
+            .verticalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm)
+    ) {
         options.forEach { option ->
             HalalaChip(
                 label = option.name,

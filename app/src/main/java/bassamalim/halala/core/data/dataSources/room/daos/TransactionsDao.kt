@@ -40,8 +40,13 @@ private const val DETAIL_SELECT = """
 @Dao
 interface TransactionsDao {
 
+    /** The whole ledger, newest first. In the app it is one query shared by every screen ([SharedLedgerDao]). */
     @Query("$DETAIL_SELECT ORDER BY t.occurredAt DESC, t.id DESC")
     fun observeAllDetails(): Flow<List<TransactionDetail>>
+
+    /** The same, read once and fresh: for what reads right after writing. */
+    @Query("$DETAIL_SELECT ORDER BY t.occurredAt DESC, t.id DESC")
+    suspend fun getAllDetails(): List<TransactionDetail>
 
     @Query("$DETAIL_SELECT WHERE t.id = :id")
     fun observeDetail(id: Long): Flow<TransactionDetail?>
@@ -75,6 +80,16 @@ interface TransactionsDao {
         """
     )
     suspend fun getRuleCandidates(): List<Transaction>
+
+    @Query(
+        "SELECT * FROM transactions WHERE originalCurrency = :original AND currency = :currency " +
+                "AND estimated = 0 AND originalAmountMinor > 0 ORDER BY occurredAt"
+    )
+    suspend fun quotedConversions(original: String, currency: String): List<Transaction>
+
+    /** Bank fees not yet filed go under [categoryId]; ones you filed elsewhere stay. */
+    @Query("UPDATE transactions SET categoryId = :categoryId, expenseType = :expenseType WHERE kind = 'FEE' AND categoryId IS NULL")
+    suspend fun fileFees(categoryId: Long, expenseType: ExpenseType?)
 
     @Query("UPDATE transactions SET categoryId = :categoryId, expenseType = :expenseType, ruleId = :ruleId WHERE id IN (:ids)")
     suspend fun setCategory(ids: List<Long>, categoryId: Long?, expenseType: ExpenseType?, ruleId: Long?)

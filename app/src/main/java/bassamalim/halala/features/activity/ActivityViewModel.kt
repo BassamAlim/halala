@@ -10,10 +10,12 @@ import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
 import bassamalim.halala.core.utils.accountLabel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
@@ -24,9 +26,13 @@ class ActivityViewModel @Inject constructor(
     private val navigator: Navigator
 ) : ViewModel() {
 
-    /** What this screen owns rather than the database: the search and the account filter. */
+    /** What this screen owns rather than the database: the search and the filters. */
     private val filters = MutableStateFlow(Filters())
 
+    /**
+     * The search echoes from [filters] on the main thread, so typing never waits; what it finds
+     * is worked out over the whole ledger in the background and follows.
+     */
     val uiState: StateFlow<ActivityUiState> = combine(
         domain.observeAccounts(),
         domain.observeTransactions(),
@@ -34,13 +40,14 @@ class ActivityViewModel @Inject constructor(
     ) { accounts, transactions, filters ->
         val zone = domain.zone()
         val today = domain.today()
-        val shown = ActivityDomain.filter(transactions, filters.accountId, filters.query)
+        val shown = ActivityDomain.filter(transactions, filters.accountId, filters.query, filters.uncategorised)
         val month = inOut(ActivityDomain.thisMonth(shown, zone, today), Globals.PRIMARY_CURRENCY)
 
         ActivityUiState(
             isLoading = false,
             query = filters.query,
             selectedAccountId = filters.accountId,
+            uncategorisedOnly = filters.uncategorised,
             accountFilters = accounts
                 .filter { !it.account.archived && it.account.type.listed }
                 .map { AccountFilter(it.account.id, accountLabel(it.institutionName, it.account.nickname)) },
@@ -52,6 +59,8 @@ class ActivityViewModel @Inject constructor(
                 .map { (_, items) -> DayGroup(items.first().day, items) },
             hasAny = transactions.isNotEmpty()
         )
+    }.flowOn(Dispatchers.Default).combine(filters) { state, filters ->
+        state.copy(query = filters.query, selectedAccountId = filters.accountId, uncategorisedOnly = filters.uncategorised)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -65,6 +74,8 @@ class ActivityViewModel @Inject constructor(
         it.copy(accountId = if (accountId == it.accountId) null else accountId)
     }
 
+    fun onUncategorisedClick() = filters.update { it.copy(uncategorised = !it.uncategorised) }
+
     fun onTransactionClick(id: Long) = navigator.navigate(Screen.Transaction(id))
 
     fun onMapClick() = navigator.navigate(Screen.SpendingMap)
@@ -77,5 +88,9 @@ class ActivityViewModel @Inject constructor(
 
     fun onDigestsClick() = navigator.navigate(Screen.Digests)
 
-    private data class Filters(val query: String = "", val accountId: Long? = null)
+    private data class Filters(
+        val query: String = "",
+        val accountId: Long? = null,
+        val uncategorised: Boolean = false
+    )
 }

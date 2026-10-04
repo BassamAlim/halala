@@ -130,6 +130,7 @@ fun ReviewScreen(viewModel: ReviewViewModel = hiltViewModel()) {
                             currency = card.currency,
                             tone = AmountTone.Spending,
                             initial = card.initial,
+                            merchantId = card.merchantId,
                             // One transaction opens itself; many open their merchant.
                             onClick = if (card.count == 1 || card.merchantId != null) ({ viewModel.onCardClick(card) }) else null
                         )
@@ -230,7 +231,9 @@ fun ReviewScreen(viewModel: ReviewViewModel = hiltViewModel()) {
             selected = card.suggestion?.category,
             label = { it.name },
             onPick = viewModel::onCategoryPick,
-            onDismiss = viewModel::onPickDismiss
+            onDismiss = viewModel::onPickDismiss,
+            addLabel = stringResource(R.string.category_new_chip),
+            onAdd = viewModel::onNewCategoryClick
         )
     }
 }

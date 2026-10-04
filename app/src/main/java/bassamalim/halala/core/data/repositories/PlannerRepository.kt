@@ -49,7 +49,7 @@ class PlannerRepository @Inject constructor(
 
     /** What you saved a month (income less spending) over the last three months, on average; never below zero. */
     suspend fun averageSaving(currency: String): Long {
-        val details = transactionsDao.observeAllDetails().first()
+        val details = transactionsDao.getAllDetails()
         val months = Digests.finished(DigestKind.MONTH, LocalDate.now(clock), 3)
         val saved = months.sumOf {
             Digests.income(details, it, currency, clock.zone) - Money.sum(Digests.spendingByCategory(details, it, currency, clock.zone).values)

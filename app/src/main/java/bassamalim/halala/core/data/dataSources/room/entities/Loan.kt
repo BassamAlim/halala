@@ -71,8 +71,8 @@ data class Loan(
     indices = [
         Index(value = ["uid"], unique = true),
         Index(value = ["loanId"]),
-        // A transfer is part of one loan at most.
-        Index(value = ["transactionId"], unique = true)
+        // A transfer lends to one loan, but can repay several, a share each.
+        Index(value = ["transactionId"])
     ]
 )
 data class LoanEvent(
@@ -81,7 +81,10 @@ data class LoanEvent(
     val loanId: Long,
     val type: LoanEventType,
     val transactionId: Long? = null,
-    /** Only without a transaction. Integer minor units, > 0. */
+    /**
+     * Integer minor units, > 0: an event without a transaction, or a transfer's share when it
+     * repays several loans. Null takes the whole transaction's amount.
+     */
     val amountMinor: Long? = null,
     val at: Instant? = null
 )

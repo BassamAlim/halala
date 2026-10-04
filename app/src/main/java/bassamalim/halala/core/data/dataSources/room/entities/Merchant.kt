@@ -40,7 +40,25 @@ data class Merchant(
     val searchedOnline: Boolean = false,
     /** The page the answer came from, when one did ("Found online"), and its title. */
     val webUrl: String? = null,
-    val webTitle: String? = null
+    val webTitle: String? = null,
+    /** Its own website's domain ("panda.com.sa"), for its logo; asked about once ([websiteAsked]). */
+    val website: String? = null,
+    @ColumnInfo(defaultValue = "0")
+    val websiteAsked: Boolean = false
+)
+
+/**
+ * A merchant's logo: its website's icon, fetched once. A row with no [image] was tried and gave
+ * nothing worth showing (the initial stays). In the encrypted ledger, since the set of logos says
+ * where you shop; never exported, as it can be fetched again.
+ */
+@Entity(
+    tableName = "merchant_logos",
+    foreignKeys = [ForeignKey(entity = Merchant::class, parentColumns = ["id"], childColumns = ["merchantId"], onDelete = ForeignKey.CASCADE)]
+)
+class MerchantLogo(
+    @PrimaryKey val merchantId: Long,
+    val image: ByteArray?
 )
 
 /**

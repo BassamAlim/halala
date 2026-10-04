@@ -99,6 +99,55 @@ class LoansRepositoryTest {
     }
 
     @Test
+    fun `a refund can be borrowed from someone chosen, or repay money lent`() = runTest {
+        fun refund() = TransactionDraft(cash, Direction.CREDIT, 150_000, TEST_CLOCK.instant(), TransactionKind.REFUND, "Some Shop")
+        val loanId = loans.open(transfer("KHALID ALI", 150_000), null)!!
+        val personId = state().loan.personId
+
+        val back = transactions.add(refund())
+        assertTrue(loans.repay(loanId, back))
+        assertEquals(0, state().remainingMinor)
+
+        // Naming no one, it's borrowed only from whoever you choose.
+        val owed = transactions.add(refund())
+        assertNull(loans.open(owed, null))
+        loans.open(owed, null, personId = personId)!!
+        assertEquals(TransactionKind.LOAN_RECEIVED, transactions.get(owed)!!.kind)
+        assertEquals(LoanDirection.BORROWED, loans.observeStates().first().last().loan.direction)
+    }
+
+    @Test
+    fun `one transfer can repay several loans, a share each, and be taken back whole`() = runTest {
+        val first = loans.open(transfer("KHALID ALI", 30_000), null)!!
+        val second = loans.open(transfer("KHALID ALI", 50_000), null)!!
+        val back = transfer("KHALID ALI", 60_000, Direction.CREDIT)
+
+        assertFalse(loans.repayMany(back, mapOf(first to 30_000, second to 20_000))) // Not the whole transfer.
+        assertTrue(loans.repayMany(back, mapOf(first to 30_000, second to 30_000)))
+        assertEquals(TransactionKind.LOAN_REPAYMENT, transactions.get(back)!!.kind)
+        suspend fun remaining() = loans.observeStates().first().associate { it.loan.id to it.remainingMinor }
+        assertEquals(mapOf(first to 0L, second to 20_000L), remaining())
+
+        loans.unlink(back)
+        assertEquals(TransactionKind.TRANSFER_IN, transactions.get(back)!!.kind)
+        assertEquals(mapOf(first to 30_000L, second to 50_000L), remaining())
+    }
+
+    @Test
+    fun `a loan going keeps a transfer that also repays another`() = runTest {
+        val firstLent = transfer("KHALID ALI", 30_000)
+        val first = loans.open(firstLent, null)!!
+        val second = loans.open(transfer("KHALID ALI", 50_000), null)!!
+        val back = transfer("KHALID ALI", 60_000, Direction.CREDIT)
+        loans.repayMany(back, mapOf(first to 30_000, second to 30_000))
+
+        loans.unlink(firstLent)
+
+        assertEquals(TransactionKind.LOAN_REPAYMENT, transactions.get(back)!!.kind)
+        assertEquals(listOf(second to 20_000L), loans.observeStates().first().map { it.loan.id to it.remainingMinor })
+    }
+
+    @Test
     fun `forgiving settles it, and paying more than owed settles it no further`() = runTest {
         val loanId = loans.open(transfer("KHALID ALI", 150_000), null)!!
         loans.repay(loanId, transfer("KHALID ALI", 200_000, Direction.CREDIT))

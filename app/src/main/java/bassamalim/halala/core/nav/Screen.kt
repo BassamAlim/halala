@@ -42,17 +42,28 @@ sealed interface Screen {
      */
     @Serializable data class Onboarding(val fromSettings: Boolean = false) : Screen
 
-    @Serializable data object Export : Screen
+    /**
+     * Backup and export. From onboarding ([fromOnboarding]) it only restores, and a restore
+     * finishes onboarding: the ledger it brings is already set up.
+     */
+    @Serializable data class Export(val fromOnboarding: Boolean = false) : Screen
 
     /** The review inbox: uncategorised spending, a merchant at a time. */
     @Serializable data object Review : Screen
 
     @Serializable data object Rules : Screen
 
-    @Serializable data object Categories : Screen
+    /** Every category; [add] opens on a new one's form (from a category picker). */
+    @Serializable data class Categories(val add: Boolean = false) : Screen
 
     /** Every merchant, the busiest first. */
     @Serializable data object Merchants : Screen
+
+    /**
+     * What a category came to in one month ("2026-09"), from Insights: by merchant and each
+     * transaction. [categoryId] 0 is spending not yet filed.
+     */
+    @Serializable data class CategorySpending(val categoryId: Long, val month: String) : Screen
 
     /** One merchant: its name, the ways its bank writes it, merging and splitting. */
     @Serializable data class Merchant(val id: Long) : Screen

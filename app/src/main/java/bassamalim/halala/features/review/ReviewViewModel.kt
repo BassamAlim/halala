@@ -12,10 +12,12 @@ import bassamalim.halala.core.utils.accountLabel
 import bassamalim.halala.core.utils.dayLabel
 import bassamalim.halala.core.utils.initialOf
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -93,7 +95,7 @@ class ReviewViewModel @Inject constructor(
             picking = picking,
             justFiled = justFiled
         )
-    }.stateIn(
+    }.flowOn(Dispatchers.Default).stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = ReviewUiState()
@@ -129,6 +131,12 @@ class ReviewViewModel @Inject constructor(
         navigator.navigate(Screen.EditRecurring(fromTransaction = card.transactionId, subscription = subscription))
 
     fun onPickDismiss() = picking.update { null }
+
+    /** The picker's + New category: the Categories form; back here, the new one is in the picker. */
+    fun onNewCategoryClick() {
+        picking.update { null }
+        navigator.navigate(Screen.Categories(add = true))
+    }
 
     fun onCategoryPick(category: CategoryOption) {
         val card = picking.value ?: return

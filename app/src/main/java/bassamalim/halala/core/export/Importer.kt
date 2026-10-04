@@ -175,7 +175,9 @@ class Importer @Inject constructor(
                     autoRuled = merchant.autoRuled,
                     searchedOnline = merchant.searchedOnline,
                     webUrl = merchant.webUrl,
-                    webTitle = merchant.webTitle
+                    webTitle = merchant.webTitle,
+                    website = merchant.website,
+                    websiteAsked = merchant.websiteAsked
                 )
             }
             val merchantIds = merchants.associate { it.uid to it.id }
@@ -235,6 +237,7 @@ class Importer @Inject constructor(
                     rawMessageId = tx.rawMessageHash?.let(rawIds::get),
                     originalAmountMinor = tx.originalAmountMinor,
                     originalCurrency = tx.originalCurrency,
+                    estimated = tx.estimated,
                     categoryId = tx.categoryUid?.let { categoryIds.named(it, "category") },
                     expenseType = converters.toExpenseType(tx.expenseType),
                     // Filed by a rule left behind: it reads as filed by you, and stays filed.
@@ -266,7 +269,10 @@ class Importer @Inject constructor(
 
             // A file from before people (schema 5) has none: the app finds them again on opening.
             val people = file.people.mapIndexed { index, person ->
-                Person(id = index + 1L, uid = person.uid, name = person.name, namedByYou = person.namedByYou)
+                Person(
+                    id = index + 1L, uid = person.uid, name = person.name, namedByYou = person.namedByYou,
+                    salarySince = person.salarySince?.let(Instant::parse)
+                )
             }
             val personIds = people.associate { it.uid to it.id }
             val personAliases = file.people

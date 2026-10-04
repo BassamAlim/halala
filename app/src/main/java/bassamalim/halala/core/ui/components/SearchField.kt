@@ -49,7 +49,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 
 /**
- * The 44dp search field: surface, line border, radius-md, a muted glyph. Focus shows the
+ * The 44dp search field: the same box as [HalalaTextField] (surface-2, line border, radius-md)
+ * with a muted glyph. Focus shows the
  * focus ring. (The placeholder invites a question; handing it to the assistant comes later.)
  */
 @Composable
@@ -68,7 +69,7 @@ fun SearchField(
             .fillMaxWidth()
             .heightIn(min = Sizes.touchTarget)
             .clip(Radius.md)
-            .background(HalalaColors.Surface)
+            .background(HalalaColors.Surface2)
             .border(
                 width = if (focused) FOCUS_RING else Sizes.border,
                 color = if (focused) HalalaColors.FocusRing else HalalaColors.Line,
@@ -125,7 +126,7 @@ fun SearchField(
 }
 
 /**
- * The app's text input, from the onboarding board: surface-2, line border, radius-sm, at least a
+ * The app's text input, from the onboarding board: surface-2, line border, radius-md, at least a
  * touch target tall. [numeric] sets it in Plex Mono with a number keyboard, for amounts and
  * digits. [secret] hides what is typed and keeps the keyboard from learning it, for keys.
  */
@@ -155,7 +156,7 @@ fun HalalaTextField(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = Sizes.touchTarget)
-            .clip(Radius.sm)
+            .clip(Radius.md)
             .background(HalalaColors.Surface2)
             .border(
                 width = if (focused || isError) FOCUS_RING else Sizes.border,
@@ -164,7 +165,7 @@ fun HalalaTextField(
                     focused -> HalalaColors.FocusRing
                     else -> HalalaColors.Line
                 },
-                shape = Radius.sm
+                shape = Radius.md
             )
             .padding(horizontal = Insets.field, vertical = Spacing.sm),
         contentAlignment = Alignment.CenterStart

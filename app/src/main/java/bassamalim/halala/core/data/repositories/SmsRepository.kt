@@ -20,6 +20,9 @@ class SmsRepository @Inject constructor(
     private val smsDao: SmsDao
 ) {
 
+    /** When the newest kept message arrived; null before any. */
+    suspend fun newestReceivedAt(): Instant? = smsDao.newestReceivedAt()
+
     /** The new message's id, or null when it was already stored. */
     suspend fun insertRaw(message: RawMessage): Long? = smsDao.insertRaw(message).takeIf { it > 0 }
 

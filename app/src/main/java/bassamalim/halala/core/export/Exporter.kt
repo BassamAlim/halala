@@ -224,6 +224,7 @@ class Exporter @Inject constructor(
                         merchantUid = merchantOf[tx.id]?.uid,
                         originalAmountMinor = tx.originalAmountMinor,
                         originalCurrency = tx.originalCurrency,
+                        estimated = tx.estimated,
                         rawMessageHash = tx.rawMessageId?.let(rawHashes::get)
                     )
                 },
@@ -273,7 +274,9 @@ class Exporter @Inject constructor(
                         autoRuled = merchant.autoRuled,
                         searchedOnline = merchant.searchedOnline,
                         webUrl = merchant.webUrl,
-                        webTitle = merchant.webTitle
+                        webTitle = merchant.webTitle,
+                        website = merchant.website,
+                        websiteAsked = merchant.websiteAsked
                     )
                 },
                 rawMessages = snapshot.rawMessages.map { message ->
@@ -300,6 +303,7 @@ class Exporter @Inject constructor(
                         uid = person.uid,
                         name = person.name,
                         namedByYou = person.namedByYou,
+                        salarySince = person.salarySince?.toString(),
                         aliases = snapshot.personAliases
                             .filter { it.personId == person.id }
                             .map { ExportPersonAlias(it.aliasKey, it.descriptor) }

@@ -26,6 +26,7 @@ fun TransactionItemRow(
         initial = item.initial,
         autoLabel = if (item.auto) stringResource(R.string.auto) else null,
         divider = divider,
+        merchantId = item.merchantId,
         onClick = onClick,
         modifier = modifier
     )

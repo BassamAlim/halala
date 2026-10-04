@@ -1,11 +1,14 @@
 package bassamalim.halala.features.categories
 
 import bassamalim.halala.core.utils.OneAtATime
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.toRoute
 import bassamalim.halala.core.enums.BusinessType
 import bassamalim.halala.core.enums.ExpenseType
 import bassamalim.halala.core.nav.Navigator
+import bassamalim.halala.core.nav.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -19,12 +22,16 @@ import javax.inject.Inject
 @HiltViewModel
 class CategoriesViewModel @Inject constructor(
     private val domain: CategoriesDomain,
-    private val navigator: Navigator
+    private val navigator: Navigator,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val saving = OneAtATime()
 
-    private val form = MutableStateFlow<CategoryForm?>(null)
+    /** Opened from a picker to add one: saving it goes back there. */
+    private val adding = savedStateHandle.toRoute<Screen.Categories>().add
+
+    private val form = MutableStateFlow(CategoryForm().takeIf { adding })
     private val deletingId = MutableStateFlow<Long?>(null)
 
     val uiState: StateFlow<CategoriesUiState> = combine(
@@ -74,6 +81,7 @@ class CategoriesViewModel @Inject constructor(
         saving.launch(viewModelScope) {
             val problem = domain.save(written, others)
             form.update { if (problem == null) null else it?.copy(problem = problem) }
+            if (problem == null && adding && written.id == null) navigator.popBackStack()
             // The sheet closes, and the next one opened saves afresh.
             false
         }

@@ -48,10 +48,32 @@ class Backups @Inject constructor(
 
     fun hasPassphrase() = keys.isSet()
 
-    /** Stretches [passphrase] (slow: Argon2id) and keeps the key for scheduled backups. */
-    suspend fun setPassphrase(passphrase: CharArray) = withContext(io) {
-        keys.save(BackupFile.key(passphrase))
+    /** Whether backups from now on also open with a recovery key. */
+    suspend fun hasRecoveryKey(): Boolean = withContext(io) { runCatching { keys.load()?.recovery != null }.getOrDefault(false) }
+
+    /**
+     * Stretches [passphrase] (slow: Argon2id) and keeps the key for scheduled backups, with
+     * [hint] written into every backup. Returns the new recovery key, to be written down: it is
+     * shown once and never stored.
+     */
+    suspend fun setPassphrase(passphrase: CharArray, hint: String): String = withContext(io) {
+        val key = BackupFile.key(passphrase)
         passphrase.fill(' ')
+        val code = BackupFile.newRecoveryCode()
+        keys.save(key.with(BackupFile.recoverySlot(key, code), hint.trim()))
+        code
+    }
+
+    /**
+     * A new recovery key for the passphrase already set, without asking for it (its key is kept).
+     * Backups from now on open with it; earlier ones with the key they were made with. Null when
+     * no passphrase is set.
+     */
+    suspend fun newRecoveryKey(): String? = withContext(io) {
+        val key = runCatching { keys.load() }.getOrNull() ?: return@withContext null
+        val code = BackupFile.newRecoveryCode()
+        keys.save(key.with(BackupFile.recoverySlot(key, code)))
+        code
     }
 
     suspend fun clearPassphrase() {

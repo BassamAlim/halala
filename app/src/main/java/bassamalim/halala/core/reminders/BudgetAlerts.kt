@@ -10,7 +10,6 @@ import bassamalim.halala.core.domain.Budgets
 import bassamalim.halala.core.enums.BudgetScope
 import bassamalim.halala.core.ui.expenseTypeRes
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 /**
@@ -27,7 +26,7 @@ class BudgetAlerts @Inject constructor(
 
     /** What to tell about now; remembered as told, so the next look doesn't repeat it. */
     suspend fun notices(): List<DueNotice> {
-        val overview = budgets.observeOverview(Globals.PRIMARY_CURRENCY).first()
+        val overview = budgets.overview(Globals.PRIMARY_CURRENCY)
         val cycle = overview.cycle
         val told = preferences.budgetAlertsTold()
         val due = Budgets.alerts(overview.statuses, cycle, told)

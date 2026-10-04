@@ -34,3 +34,9 @@ data class ToIdentify(
     val merchantId: Long,
     val descriptor: String
 )
+
+/** A merchant's website, for fetching its logo. */
+data class MerchantSite(
+    val merchantId: Long,
+    val website: String
+)

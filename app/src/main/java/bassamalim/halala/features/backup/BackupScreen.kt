@@ -40,6 +40,7 @@ import bassamalim.halala.core.ui.components.ListCard
 import bassamalim.halala.core.ui.components.ListRow
 import bassamalim.halala.core.ui.components.TopBar
 import bassamalim.halala.core.ui.theme.HalalaColors
+import bassamalim.halala.core.ui.theme.HalalaNumbers
 import bassamalim.halala.core.ui.theme.HalalaType
 import bassamalim.halala.core.ui.theme.Insets
 import bassamalim.halala.core.ui.theme.Spacing
@@ -101,6 +102,12 @@ fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
                     title = stringResource(if (state.hasPassphrase) R.string.backup_change_passphrase else R.string.backup_set_passphrase),
                     subtitle = stringResource(if (state.hasPassphrase) R.string.backup_passphrase_on else R.string.backup_passphrase_off),
                     onClick = viewModel::onPassphraseClick
+                )
+                if (state.hasPassphrase) ListRow(
+                    title = stringResource(R.string.backup_recovery),
+                    subtitle = stringResource(if (state.hasRecoveryKey) R.string.backup_recovery_on else R.string.backup_recovery_off),
+                    divider = true,
+                    onClick = viewModel::onRecoveryClick
                 )
                 ListRow(
                     title = stringResource(R.string.backup_folder),
@@ -179,10 +186,21 @@ fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
                     onValueChange = viewModel::onSecondChange,
                     secret = true,
                     isError = form.problem == PassphraseProblem.MISMATCH,
+                )
+            }
+            FormField(
+                label = stringResource(R.string.backup_hint),
+                error = stringResource(R.string.backup_hint_is_passphrase).takeIf { form.problem == PassphraseProblem.HINT_IS_PASSPHRASE }
+            ) {
+                HalalaTextField(
+                    value = form.hint,
+                    onValueChange = viewModel::onHintChange,
+                    isError = form.problem == PassphraseProblem.HINT_IS_PASSPHRASE,
                     imeAction = ImeAction.Done,
                     onImeAction = viewModel::onPassphraseSave
                 )
             }
+            Text(text = stringResource(R.string.backup_hint_explain), style = HalalaType.Caption, color = HalalaColors.TextMuted)
             HalalaButton(
                 text = stringResource(if (state.working) R.string.backup_working else R.string.save),
                 onClick = viewModel::onPassphraseSave,
@@ -192,6 +210,30 @@ fun BackupScreen(viewModel: BackupViewModel = hiltViewModel()) {
             )
         }
     }
+
+    state.recoveryCode?.let { code ->
+        HalalaSheet(viewModel::onRecoveryDone) {
+            Text(text = stringResource(R.string.backup_recovery_title), style = HalalaType.Title)
+            Text(text = stringResource(R.string.backup_recovery_body), style = HalalaType.Label, color = HalalaColors.TextMuted)
+            Text(text = code, style = HalalaNumbers.AmountLg, color = HalalaColors.Text)
+            HalalaButton(
+                text = stringResource(R.string.backup_recovery_done),
+                onClick = viewModel::onRecoveryDone,
+                kind = ButtonKind.Primary,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+
+    if (state.confirmingNewRecovery) ConfirmSheet(
+        title = stringResource(R.string.backup_recovery_replace_title),
+        body = stringResource(R.string.backup_recovery_replace_body),
+        confirmLabel = stringResource(R.string.backup_recovery_replace),
+        dismissLabel = stringResource(R.string.cancel),
+        onConfirm = viewModel::onNewRecoveryConfirm,
+        onDismiss = viewModel::onNewRecoveryDismiss,
+        destructive = false
+    )
 
     if (state.confirmingOff) ConfirmSheet(
         title = stringResource(R.string.backup_turn_off_title),

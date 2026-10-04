@@ -2,6 +2,7 @@ package bassamalim.halala.features.export
 
 import bassamalim.halala.core.backup.BackupFile
 import bassamalim.halala.core.backup.WrongPassphrase
+import bassamalim.halala.core.data.repositories.PreferencesRepository
 import bassamalim.halala.core.export.Exporter
 import bassamalim.halala.core.export.Importer
 import bassamalim.halala.core.export.LedgerSnapshot
@@ -9,7 +10,8 @@ import javax.inject.Inject
 
 class ExportDomain @Inject constructor(
     private val exporter: Exporter,
-    private val importer: Importer
+    private val importer: Importer,
+    private val preferencesRepository: PreferencesRepository
 ) {
 
     fun csvFileName(): String = "${exporter.fileStem()}.zip"
@@ -25,8 +27,17 @@ class ExportDomain @Inject constructor(
 
     fun isBackup(bytes: ByteArray) = BackupFile.isBackup(bytes)
 
-    /** The ledger an encrypted backup holds; throws [WrongPassphrase] when [passphrase] doesn't open it. */
-    fun readBackup(bytes: ByteArray, passphrase: CharArray): LedgerSnapshot = Importer.read(BackupFile.open(bytes, passphrase))
+    fun hintOf(bytes: ByteArray): String? = BackupFile.hint(bytes)
+
+    /**
+     * The ledger an encrypted backup holds; throws [WrongPassphrase] when [secret] (the
+     * passphrase, or the recovery key when [isRecoveryCode]) doesn't open it.
+     */
+    fun readBackup(bytes: ByteArray, secret: CharArray, isRecoveryCode: Boolean): LedgerSnapshot =
+        Importer.read(BackupFile.open(bytes, secret, isRecoveryCode))
+
+    /** A restore from onboarding ends it. */
+    suspend fun finishOnboarding() = preferencesRepository.setOnboarded()
 
     /** Replaces the whole ledger with [snapshot]. */
     suspend fun restore(snapshot: LedgerSnapshot) = importer.restore(snapshot)

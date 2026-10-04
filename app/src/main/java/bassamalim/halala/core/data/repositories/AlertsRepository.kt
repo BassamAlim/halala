@@ -6,8 +6,10 @@ import bassamalim.halala.core.data.dataSources.room.daos.TransactionsDao
 import bassamalim.halala.core.data.dataSources.room.entities.DismissedAlert
 import bassamalim.halala.core.domain.Anomalies
 import bassamalim.halala.core.domain.Anomaly
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import java.time.Clock
 import java.time.Duration
@@ -38,7 +40,7 @@ class AlertsRepository @Inject constructor(
             dismissed = dismissed.toSet(),
             now = clock.instant()
         )
-    }
+    }.flowOn(Dispatchers.Default)
 
     suspend fun dismiss(key: String) = alertsDao.dismiss(DismissedAlert(key, clock.instant()))
 

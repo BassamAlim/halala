@@ -13,6 +13,7 @@ import bassamalim.halala.core.domain.feedOf
 import bassamalim.halala.core.domain.toItem
 import bassamalim.halala.core.enums.AmountTone
 import bassamalim.halala.core.enums.LoanDirection
+import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.enums.LoanEventType
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
@@ -57,6 +58,8 @@ class PersonViewModel @Inject constructor(
         val zone = domain.zone()
         val today = domain.today()
         val mine = feedOf(details.filter { it.personId == id })
+        // Refunds name no one, so anyone's loan can be paid back by one.
+        val refunds = details.filter { it.transaction.kind == TransactionKind.REFUND && !it.isInternalTransfer }
         val currency = Globals.PRIMARY_CURRENCY
         val flow = PeopleDomain.flowsByPerson(mine, currency)[id]
         val net = flow?.netMinor ?: 0
@@ -71,13 +74,14 @@ class PersonViewModel @Inject constructor(
             net = Money.format(net, currency, decimals = false, showPlus = net > 0),
             netTone = if (net > 0) AmountTone.Income else AmountTone.Spending,
             count = mine.size,
+            salarySince = person.salarySince?.let { shortDateLabel(it.atZone(zone).toLocalDate(), today) },
             spellings = aliases.map { SpellingRow(it.alias.id, it.alias.descriptor, it.transactions) },
             canSplit = aliases.size > 1,
             transactions = mine.map { it.toItem(zone, today) },
             loans = loans
                 .filter { it.loan.personId == id }
                 .sortedWith(compareBy({ !it.isOpen }, { it.loan.dueOn ?: LocalDate.MAX }, { it.lentAt }))
-                .map { state -> loanOf(state, mine, zone, today) },
+                .map { state -> loanOf(state, mine, refunds, zone, today) },
             mergeOptions = (sheet as? PersonSheet.Merge)
                 ?.let { PersonDomain.mergeOptions(people, id, it.query) }
                 ?.map { PersonOption(it.person.id, it.person.name, it.transactions) }
@@ -126,6 +130,11 @@ class PersonViewModel @Inject constructor(
         viewModelScope.launch { domain.setDueOn(due.loanId, date) }
     }
 
+    /** They no longer pay your salary: what comes next is a plain transfer; what was salary stays. */
+    fun onSalaryStopClick() {
+        viewModelScope.launch { domain.stopSalary(id) }
+    }
+
     fun onRenameClick() = sheet.update { PersonSheet.Rename(uiState.value.name) }
 
     fun onNameChange(name: String) = sheet.update { PersonSheet.Rename(name) }
@@ -165,7 +174,13 @@ class PersonViewModel @Inject constructor(
         }
     }
 
-    private fun loanOf(state: LoanState, mine: List<TransactionDetail>, zone: ZoneId, today: LocalDate): PersonLoan {
+    private fun loanOf(
+        state: LoanState,
+        mine: List<TransactionDetail>,
+        refunds: List<TransactionDetail>,
+        zone: ZoneId,
+        today: LocalDate
+    ): PersonLoan {
         val loan = state.loan
         val lent = loan.direction == LoanDirection.LENT
         fun day(at: Instant?) = at?.let { shortDateLabel(it.atZone(zone).toLocalDate(), today) }.orEmpty()
@@ -208,11 +223,12 @@ class PersonViewModel @Inject constructor(
                     tone = if (incoming == true) AmountTone.Income else AmountTone.Spending
                 )
             },
-            candidates = if (!state.isOpen) emptyList() else mine
+            candidates = if (!state.isOpen) emptyList() else (mine + refunds)
                 .filter {
                     it.transaction.kind in Loans.MARKABLE && it.transaction.direction == loan.direction.repaying &&
                             it.transaction.currency == loan.currency
                 }
+                .sortedByDescending { it.transaction.occurredAt }
                 .map { it.toItem(zone, today) }
         )
     }

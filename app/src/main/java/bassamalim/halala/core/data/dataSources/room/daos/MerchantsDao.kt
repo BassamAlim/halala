@@ -8,8 +8,10 @@ import androidx.room.Transaction
 import androidx.room.Update
 import bassamalim.halala.core.data.dataSources.room.entities.Merchant
 import bassamalim.halala.core.data.dataSources.room.entities.MerchantAlias
+import bassamalim.halala.core.data.dataSources.room.entities.MerchantLogo
 import bassamalim.halala.core.data.dataSources.room.relations.AliasWithCount
 import bassamalim.halala.core.data.dataSources.room.relations.KeyRow
+import bassamalim.halala.core.data.dataSources.room.relations.MerchantSite
 import bassamalim.halala.core.data.dataSources.room.relations.MerchantWithStats
 import bassamalim.halala.core.data.dataSources.room.relations.ToIdentify
 import kotlinx.coroutines.flow.Flow
@@ -81,6 +83,51 @@ interface MerchantsDao {
     )
     suspend fun getToSearch(below: Int, floorMinor: Long): List<ToIdentify>
 
+    /**
+     * Identified merchants (by the list, you or the AI; not withheld, not unknown) whose website
+     * hasn't been asked about, with a transaction, the busiest first, each with its first spelling.
+     */
+    @Query(
+        """
+        SELECT m.id AS merchantId,
+            (SELECT a.descriptor FROM merchant_aliases a WHERE a.merchantId = m.id ORDER BY a.id LIMIT 1) AS descriptor
+        FROM merchants m
+        WHERE m.websiteAsked = 0 AND m.identifiedBy IN ('LIST', 'YOU', 'AI') AND m.businessType != 'UNKNOWN'
+            AND EXISTS (SELECT 1 FROM transactions t JOIN merchant_aliases a ON a.aliasKey = t.merchantKey WHERE a.merchantId = m.id)
+        ORDER BY (SELECT COUNT(*) FROM transactions t JOIN merchant_aliases a ON a.aliasKey = t.merchantKey
+            WHERE a.merchantId = m.id) DESC, m.id
+        """
+    )
+    suspend fun getWebsitesToAsk(): List<ToIdentify>
+
+    @Query("UPDATE merchants SET website = :website, websiteAsked = 1 WHERE id = :id")
+    suspend fun setWebsite(id: Long, website: String?)
+
+    /** Merchants with a website and no logo tried yet. */
+    @Query(
+        """
+        SELECT m.id AS merchantId, m.website AS website FROM merchants m
+        WHERE m.website IS NOT NULL AND NOT EXISTS (SELECT 1 FROM merchant_logos l WHERE l.merchantId = m.id)
+        ORDER BY m.id
+        """
+    )
+    suspend fun getLogosToFetch(): List<MerchantSite>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun putLogo(logo: MerchantLogo)
+
+    @Query("DELETE FROM merchant_logos WHERE merchantId = :merchantId")
+    suspend fun deleteLogo(merchantId: Long)
+
+    @Transaction
+    suspend fun correctWebsite(id: Long, website: String?) {
+        setWebsite(id, website)
+        deleteLogo(id)
+    }
+
+    @Query("SELECT * FROM merchant_logos WHERE image IS NOT NULL")
+    fun observeLogos(): Flow<List<MerchantLogo>>
+
     @Query("SELECT * FROM merchants WHERE id = :id")
     suspend fun getMerchant(id: Long): Merchant?
 
@@ -100,6 +147,9 @@ interface MerchantsDao {
 
     @Query("SELECT * FROM merchant_aliases ORDER BY id")
     suspend fun getAliases(): List<MerchantAlias>
+
+    @Query("SELECT * FROM merchant_aliases ORDER BY id")
+    fun observeAllAliases(): Flow<List<MerchantAlias>>
 
     @Query("SELECT * FROM merchant_aliases WHERE id = :id")
     suspend fun getAlias(id: Long): MerchantAlias?

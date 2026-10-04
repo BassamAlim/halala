@@ -54,4 +54,33 @@ class MerchantsTest {
         assertNull(Merchants.similarTo("noonn", aliases))
         assertNull(Merchants.similarTo("jarir", aliases))
     }
+
+    @Test
+    fun `a key cut inside a word joins the merchant it was cut from, either way round`() {
+        val aliases = mapOf("jarir bookstore" to 1L, "al rajhi" to 2L, "clean laundry" to 3L)
+
+        // Dice misses these: 0.76 for jarirbook.
+        assertTrue(Merchants.similarity("jarir book", "jarir bookstore") < Merchants.SIMILAR)
+        assertEquals(1L, Merchants.cutShortOf("jarir book", aliases))
+        assertEquals(1L, Merchants.cutShortOf("jarirbooks", aliases))
+        assertEquals(3L, Merchants.cutShortOf("clean laundry machine", mapOf("clean laund" to 3L)))
+        // A whole word more is another business, not a cut.
+        assertNull(Merchants.cutShortOf("al rajhi takaful", aliases))
+        assertNull(Merchants.cutShortOf("clean laundry machine", aliases))
+        // Too short to judge, and cut from two merchants at once.
+        assertNull(Merchants.cutShortOf("jarirbo", aliases))
+        assertNull(Merchants.cutShortOf("jarir book", mapOf("jarir bookstore" to 1L, "jarir bookshop" to 2L)))
+    }
+
+    @Test
+    fun `merchants already apart are paired when one spelling is the other's cut short`() {
+        val aliases = mapOf(
+            "jarir book" to 1L, "jarir bookstore" to 2L, "jarir" to 2L,
+            "al rajhi" to 3L, "al rajhi takaful" to 4L,
+            "nahdi pharm" to 5L, "nahdi pharmacy" to 6L, "nahdi pharmaceutical" to 7L,
+            "clean laundry" to 8L, "clean laund" to 8L
+        )
+        // Not Al Rajhi (a whole word), not Nahdi (cut from two), not a merchant with itself.
+        assertEquals(setOf(1L to 2L), Merchants.cutShortPairs(aliases))
+    }
 }

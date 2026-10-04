@@ -1,5 +1,6 @@
 package bassamalim.halala.features.transaction
 
+import bassamalim.halala.core.domain.RepayProblem
 import bassamalim.halala.core.enums.AmountTone
 import bassamalim.halala.core.enums.ExpenseType
 import bassamalim.halala.core.enums.TransactionKind
@@ -9,6 +10,7 @@ import bassamalim.halala.core.models.RuleWords
 import bassamalim.halala.core.enums.BusinessType
 import bassamalim.halala.core.enums.IdentifiedBy
 import bassamalim.halala.core.domain.SplitProblem
+import bassamalim.halala.core.places.LocationAccess
 import java.time.LocalDate
 
 data class TransactionUiState(
@@ -31,6 +33,8 @@ data class TransactionUiState(
     val toLabel: String? = null,
     val note: String = "",
     val source: TransactionSource = TransactionSource.MANUAL,
+    /** A foreign charge: what the merchant asked for, and the rate it became this amount at. */
+    val foreign: ForeignCharge? = null,
     /** "30 Sep": the day it was written down. */
     val createdLabel: String = "",
     val isConfirmingDelete: Boolean = false,
@@ -60,13 +64,25 @@ data class TransactionUiState(
     val goal: GoalLink? = null,
     /** It can be marked toward a goal: money to or from a broker, say, or a move. */
     val canMarkGoal: Boolean = false,
+    /** A plain transfer in from someone: it can be marked as your salary, and theirs from now on. */
+    val canMarkSalary: Boolean = false,
     val goals: List<PersonChoice> = emptyList(),
     /** Everyone to split with, the latest first. */
     val people: List<PersonChoice> = emptyList(),
-    val sheet: TransactionSheet? = null
+    val sheet: TransactionSheet? = null,
+    /** Purchases have a place card: the place, or why there is none. */
+    val showsPlace: Boolean = false,
+    val place: PlaceInfo? = null,
+    val locationAccess: LocationAccess = LocationAccess.GRANTED
 ) {
     val isMove get() = fromLabel != null
 }
+
+/**
+ * "7.99" [currency] at [rate] ("3.8438") per unit; [estimated] when the bank's SMS gave only
+ * the foreign amount and Halala worked out the rest.
+ */
+data class ForeignCharge(val amount: String, val currency: String, val rate: String, val estimated: Boolean)
 
 /** The rule behind an automatic filing, as the "Filed automatically" card words it. */
 data class FiledBy(
@@ -79,6 +95,9 @@ data class FiledBy(
     val identifiedBy: IdentifiedBy? = null,
     val confidence: Int? = null
 )
+
+/** Where a purchase was made, and how close the phone could tell ([accuracyMeters]). */
+data class PlaceInfo(val latitude: Double, val longitude: Double, val accuracyMeters: Int)
 
 /**
  * A bill you split: each person's share ("100.00") and what is left as yours; [whole] when one
@@ -96,11 +115,14 @@ sealed interface LoanLink {
     /**
      * A plain transfer: it can be marked as lending ([lent]) or borrowing, to or from [person]
      * ([personId], null when it names nobody) or someone else.
-     * [suggestion] is the open loan it would pay back, to ask about.
+     * [suggestions] are the open loans it could pay back, oldest first, to ask about.
      */
-    data class Open(val lent: Boolean, val person: String, val personId: Long?, val suggestion: Suggestion?) : LoanLink
+    data class Open(val lent: Boolean, val person: String, val personId: Long?, val suggestions: List<Suggestion>) : LoanLink
 
-    /** Part of a loan: [repays] it or lent it; [remaining] is what is still owed ("1,000.00"). */
+    /**
+     * Part of a loan: [repays] it or lent it; [remaining] is what is still owed ("1,000.00").
+     * [shares] are the loans it repays when it repays several (empty for one).
+     */
     data class Part(
         val lent: Boolean,
         val repays: Boolean,
@@ -108,12 +130,26 @@ sealed interface LoanLink {
         val personId: Long,
         val remaining: String,
         val currency: String,
-        val settled: Boolean
+        val settled: Boolean,
+        val shares: List<RepaidShare> = emptyList()
     ) : LoanLink
 }
 
-/** An open loan a transfer would repay: [remaining] still owed, lent on [lentOn] ("12 Sep"). */
-data class Suggestion(val loanId: Long, val lent: Boolean, val remaining: String, val currency: String, val lentOn: String)
+/** One of the loans a transfer repays a share of: [amount] its share, [remaining] still owed after. */
+data class RepaidShare(val person: String, val amount: String, val remaining: String, val settled: Boolean)
+
+/**
+ * An open loan a transfer would repay: [remaining] still owed ([remainingMinor] to divide the
+ * transfer by), lent on [lentOn] ("12 Sep").
+ */
+data class Suggestion(
+    val loanId: Long,
+    val lent: Boolean,
+    val remaining: String,
+    val remainingMinor: Long,
+    val currency: String,
+    val lentOn: String
+)
 
 sealed interface TransactionSheet {
     /**
@@ -162,6 +198,19 @@ sealed interface TransactionSheet {
 
     /** Undoing the split, or, [whole], that it was paid for someone. */
     data class Unsplit(val whole: Boolean) : TransactionSheet
+
+    /** "It's my salary", to confirm: it and their transfers in from now on. */
+    data object Salary : TransactionSheet
+
+    /**
+     * Which of the person's open loans it repays, when there are several: [selected] (oldest
+     * first), and with more than one, each one's share as typed ([amounts], loan id → text).
+     */
+    data class Repay(
+        val selected: List<Long> = emptyList(),
+        val amounts: Map<Long, String> = emptyMap(),
+        val problems: Set<RepayProblem> = emptySet()
+    ) : TransactionSheet
 
     data object Category : TransactionSheet
     data object Type : TransactionSheet

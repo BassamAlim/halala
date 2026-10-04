@@ -31,7 +31,7 @@ import bassamalim.halala.core.ui.theme.Radius
 import bassamalim.halala.core.ui.theme.Sizes
 import bassamalim.halala.core.ui.theme.Spacing
 
-/** The loading fill: surface-2 with a lighter band sweeping across it. Clip before it. */
+/** The loading fill: the card's tone with a surface-2 band sweeping across it. Clip before it. */
 fun Modifier.shimmer(): Modifier = composed {
     val shift by rememberInfiniteTransition(label = "shimmer").animateFloat(
         initialValue = -1f,
@@ -42,7 +42,7 @@ fun Modifier.shimmer(): Modifier = composed {
     drawBehind {
         drawRect(
             Brush.horizontalGradient(
-                colors = listOf(HalalaColors.Surface2, HalalaColors.Line, HalalaColors.Surface2),
+                colors = listOf(HalalaColors.Card, HalalaColors.Surface2, HalalaColors.Card),
                 startX = size.width * shift,
                 endX = size.width * (shift + 1f)
             )

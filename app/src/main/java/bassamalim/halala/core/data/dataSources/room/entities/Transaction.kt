@@ -74,6 +74,12 @@ data class Transaction(
     /** A foreign charge: what the merchant asked for, before the bank converted it. */
     val originalAmountMinor: Long? = null,
     val originalCurrency: String? = null,
+    /**
+     * The bank's SMS gave only [originalAmountMinor]: [amountMinor] is Halala's estimate in the
+     * account's currency (`ForeignRates`), until you correct it.
+     */
+    @ColumnInfo(defaultValue = "0")
+    val estimated: Boolean = false,
     /** What it was for. Null until you or a rule says. */
     val categoryId: Long? = null,
     val expenseType: ExpenseType? = null,

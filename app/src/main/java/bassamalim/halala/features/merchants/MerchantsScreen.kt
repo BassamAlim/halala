@@ -7,7 +7,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -17,6 +20,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
+import bassamalim.halala.core.ui.components.GroupLabel
+import bassamalim.halala.core.ui.components.HalalaButton
+import bassamalim.halala.core.ui.components.HalalaCard
 import bassamalim.halala.core.ui.components.ListCard
 import bassamalim.halala.core.ui.components.ListRow
 import bassamalim.halala.core.ui.components.SearchField
@@ -68,6 +74,7 @@ fun MerchantsScreen(viewModel: MerchantsViewModel = hiltViewModel()) {
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(bottom = Spacing.section)
         ) {
+            suggestions(state, viewModel)
             if (state.merchants.isNotEmpty()) item {
                 ListCard(Modifier.fillMaxWidth()) {
                     state.merchants.forEachIndexed { index, merchant ->
@@ -91,6 +98,30 @@ fun MerchantsScreen(viewModel: MerchantsViewModel = hiltViewModel()) {
                     color = HalalaColors.TextMuted,
                     modifier = Modifier.padding(top = Spacing.card)
                 )
+            }
+        }
+    }
+}
+
+/** Pairs that may be one merchant, above the list: you say, Halala never merges them on its own. */
+private fun LazyListScope.suggestions(state: MerchantsUiState, viewModel: MerchantsViewModel) {
+    if (state.suggestions.isEmpty()) return
+    item(key = "same") { GroupLabel(stringResource(R.string.merchants_same_title)) }
+    items(state.suggestions, key = { "same-${it.key}" }) { row ->
+        HalalaCard(
+            modifier = Modifier.padding(bottom = Spacing.sm),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md)
+        ) {
+            Text(text = stringResource(R.string.people_same_pair, row.goesName, row.keepName), style = HalalaType.Body)
+            Text(
+                text = row.website?.let { stringResource(R.string.merchants_same_website, it, row.keepName) }
+                    ?: stringResource(R.string.merchants_same_cut, row.keepName),
+                style = HalalaType.Caption,
+                color = HalalaColors.TextMuted
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                HalalaButton(stringResource(R.string.people_same_merge), { viewModel.onMerge(row) }, Modifier.weight(1f))
+                HalalaButton(stringResource(R.string.people_same_not), { viewModel.onNotSame(row) }, Modifier.weight(1f))
             }
         }
     }

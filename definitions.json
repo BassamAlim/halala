@@ -1,8 +1,15 @@
 {
   "categories": [
-    {"name": "Car Insurance", "expenseType": "FIXED_ESSENTIAL"}
+    {"name": "Car Insurance", "expenseType": "FIXED_ESSENTIAL"},
+    {"name": "Productivity", "expenseType": "FIXED_DISCRETIONARY"}
   ],
   "merchants": [
-    {"name": "Tameeni", "type": "INSURANCE", "category": "Car Insurance"}
+    {"name": "Tameeni", "type": "INSURANCE", "category": "Car Insurance"},
+    {"name": "Keeta", "type": "FOOD_DELIVERY", "category": "Restaurants"},
+    {"name": "Jahez", "type": "FOOD_DELIVERY", "category": "Restaurants", "spellings": ["جاهز"]},
+    {"name": "Amazon", "type": "ONLINE_MARKETPLACE", "category": "Shopping", "spellings": ["Amazon SA", "AMZN Mktp"]},
+    {"name": "Noon", "type": "ONLINE_MARKETPLACE", "category": "Shopping", "spellings": ["Noon com"]},
+    {"name": "Anthropic", "type": "SOFTWARE", "category": "Productivity", "spellings": ["Claude AI", "Claude"]},
+    {"name": "PlayStation", "type": "GAMING", "category": "Entertainment", "spellings": ["PlayStation Network", "Sony PlayStation"]}
   ]
 }

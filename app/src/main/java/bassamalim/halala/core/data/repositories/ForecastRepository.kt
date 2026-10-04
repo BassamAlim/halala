@@ -10,8 +10,10 @@ import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.PayCycles
 import bassamalim.halala.core.enums.AccountType
 import bassamalim.halala.core.enums.SeriesStatus
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import java.time.Clock
 import java.time.LocalDate
 import javax.inject.Inject
@@ -68,7 +70,7 @@ class ForecastRepository @Inject constructor(
             scheduled = active.flatMap { Forecasts.occurrences(it, today, today.plusMonths(HORIZON_MONTHS)) },
             salaryMinor = cycle.salaryMinor
         )
-    }
+    }.flowOn(Dispatchers.Default)
 
     private companion object {
         const val RECENT_CYCLES = 3

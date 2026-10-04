@@ -31,6 +31,9 @@ class TransactionsRepository @Inject constructor(
 
     fun observeAll(): Flow<List<TransactionDetail>> = transactionsDao.observeAllDetails()
 
+    /** The whole ledger read once, fresh (the observed one is shared and may lag a write). */
+    suspend fun getAllDetails(): List<TransactionDetail> = transactionsDao.getAllDetails()
+
     fun observe(id: Long): Flow<TransactionDetail?> = transactionsDao.observeDetail(id)
 
     suspend fun get(id: Long): Transaction? = transactionsDao.get(id)
@@ -38,6 +41,13 @@ class TransactionsRepository @Inject constructor(
     suspend fun getAll(): List<Transaction> = transactionsDao.getAll()
 
     suspend fun getAllTransfers(): List<InternalTransfer> = transactionsDao.getAllTransfers()
+
+    /**
+     * Foreign charges whose SMS gave both amounts: [original] converted into [currency] at the
+     * rate the bank used, for estimating the ones that gave only the foreign amount.
+     */
+    suspend fun quotedConversions(original: String, currency: String): List<Transaction> =
+        transactionsDao.quotedConversions(original, currency)
 
     /** The pairing this transaction is a leg of, if it is one. */
     suspend fun getTransferFor(id: Long): InternalTransfer? = transactionsDao.getTransferFor(id)
@@ -72,6 +82,8 @@ class TransactionsRepository @Inject constructor(
                 accountId = draft.accountId,
                 direction = draft.direction,
                 amountMinor = draft.amountMinor,
+                // Saying what the bank charged replaces the estimate.
+                estimated = existing.estimated && draft.amountMinor == existing.amountMinor,
                 currency = currencyOf(draft.accountId),
                 occurredAt = draft.occurredAt,
                 kind = draft.kind,
@@ -151,6 +163,7 @@ class TransactionsRepository @Inject constructor(
                 merchantKey = "",
                 originalAmountMinor = null,
                 originalCurrency = null,
+                estimated = false,
                 categoryId = null,
                 expenseType = null,
                 ruleId = null

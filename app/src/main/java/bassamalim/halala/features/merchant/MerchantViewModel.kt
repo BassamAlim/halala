@@ -54,6 +54,7 @@ class MerchantViewModel @Inject constructor(
 
         MerchantUiState(
             isLoading = false,
+            id = merchant.id,
             name = merchant.name,
             initial = initialOf(merchant.name),
             spent = Money.format(MerchantDomain.spent(mine, currency), currency, decimals = false),
@@ -63,11 +64,13 @@ class MerchantViewModel @Inject constructor(
             businessType = merchant.businessType,
             identifiedBy = merchant.identifiedBy,
             confidence = merchant.confidence,
-            webTitle = merchant.webTitle.takeIf { merchant.identifiedBy == IdentifiedBy.AI },
-            webUrl = merchant.webUrl.takeIf { merchant.identifiedBy == IdentifiedBy.AI },
+            // The page stands behind the AI's answer, or one you took from a lookup.
+            webTitle = merchant.webTitle.takeIf { merchant.identifiedBy == IdentifiedBy.AI || merchant.identifiedBy == IdentifiedBy.YOU },
+            webUrl = merchant.webUrl.takeIf { merchant.identifiedBy == IdentifiedBy.AI || merchant.identifiedBy == IdentifiedBy.YOU },
             canLookUp = domain.canAsk() && (merchant.identifiedBy == null || merchant.identifiedBy == IdentifiedBy.AI),
             lookup = lookup,
             filesUnder = Identification.categoryFor(merchant.businessType, categories)?.name,
+            website = merchant.website,
             spellings = aliases.map { SpellingRow(it.alias.id, it.alias.descriptor, it.alias.matchedBy, it.transactions) },
             canSplit = aliases.size > 1,
             transactions = mine.map { it.toItem(zone, today) },
@@ -101,6 +104,26 @@ class MerchantViewModel @Inject constructor(
         }
     }
 
+    fun onLogoClick() = sheet.update { MerchantSheet.Logo(uiState.value.website.orEmpty()) }
+
+    fun onWebsiteChange(website: String) = sheet.update { MerchantSheet.Logo(website) }
+
+    /** Fetched now: the sheet closes on the new logo and stays to say why there is none. */
+    fun onLogoSave() {
+        val logo = sheet.value as? MerchantSheet.Logo ?: return
+        if (logo.working) return
+        sheet.update { logo.copy(working = true, problem = null) }
+        viewModelScope.launch {
+            val problem = domain.setWebsite(id, logo.website)
+            sheet.update { if (problem == null) null else logo.copy(problem = problem) }
+        }
+    }
+
+    fun onLogoRemove() {
+        sheet.update { null }
+        viewModelScope.launch { domain.removeLogo(id) }
+    }
+
     fun onSpellingClick(spelling: SpellingRow) {
         if (uiState.value.canSplit) sheet.update { MerchantSheet.Split(spelling) }
     }
@@ -113,14 +136,23 @@ class MerchantViewModel @Inject constructor(
 
     fun onMergeClick() = sheet.update { MerchantSheet.Merge() }
 
-    /** "Look it up": asked once at a time; what it found shows where it says what it is. */
+    /** "Look it up": asked once at a time; what it found is offered, to take or leave. */
     fun onLookUpClick() {
         if (lookup.value?.working == true) return
         lookup.update { Lookup(working = true) }
         viewModelScope.launch {
-            val outcome = domain.lookUp(id)
-            lookup.update { Lookup(working = false, outcome = outcome) }
+            val result = domain.lookUp(id)
+            // What it found is offered in a sheet; only the other outcomes need saying.
+            lookup.update { if (result.found == null) Lookup(working = false, outcome = result.outcome) else null }
+            result.found?.let { found -> sheet.update { MerchantSheet.Found(found) } }
         }
+    }
+
+    /** "Use this": what it found becomes what it is. */
+    fun onLookupAccept() {
+        val found = (sheet.value as? MerchantSheet.Found)?.found ?: return
+        sheet.update { null }
+        viewModelScope.launch { domain.acceptLookup(id, found) }
     }
 
     fun onBusinessTypeClick() = sheet.update { MerchantSheet.BusinessType }

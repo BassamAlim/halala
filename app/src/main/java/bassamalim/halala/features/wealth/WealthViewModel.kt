@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import bassamalim.halala.core.Globals
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.AssetsRepository
+import bassamalim.halala.core.data.repositories.GoalsRepository
 import bassamalim.halala.core.data.repositories.LoansRepository
 import bassamalim.halala.core.data.repositories.SavingsRepository
 import bassamalim.halala.core.utils.shortDateLabel
@@ -32,6 +33,8 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
 import kotlin.math.abs
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flowOn
 
 /** How far back the timeline looks. */
 enum class WealthRange { THREE_MONTHS, YEAR, ALL }
@@ -50,6 +53,8 @@ data class WealthUiState(
     val range: WealthRange = WealthRange.YEAR,
     val chart: List<Long> = emptyList(),
     val chartLabels: List<String> = emptyList(),
+    /** Each point's day and net worth, as words. */
+    val chartTips: List<Pair<String, String>> = emptyList(),
     val parts: List<WealthPart> = emptyList(),
     val accountCount: Int = 0,
     val assetCount: Int = 0,
@@ -64,6 +69,7 @@ class WealthViewModel @Inject constructor(
     loansRepository: LoansRepository,
     transactionsRepository: TransactionsRepository,
     savingsRepository: SavingsRepository,
+    goalsRepository: GoalsRepository,
     private val navigator: Navigator,
     private val clock: Clock
 ) : ViewModel() {
@@ -71,15 +77,17 @@ class WealthViewModel @Inject constructor(
     private val range = MutableStateFlow(WealthRange.YEAR)
 
     val uiState: StateFlow<WealthUiState> = combine(
-        combine(accountsRepository.observeAll(), assetsRepository.observeAll(), ::Pair),
+        combine(accountsRepository.observeAll(), assetsRepository.observeAll(), goalsRepository.observeContributions(), ::Triple),
         loansRepository.observeStates(),
         transactionsRepository.observeAll(),
         combine(assetsRepository.observeSnapshots(), savingsRepository.observe(), savingsRepository.observeDeposits(), ::Triple),
         range
-    ) { (accounts, assets), loans, details, (snapshots, savings, deposits), range ->
+    ) { (accounts, assets, contributions), loans, details, (snapshots, savings, deposits), range ->
         val today = LocalDate.now(clock)
         val currency = Globals.PRIMARY_CURRENCY
-        val now = NetWorth.now(accounts, assets, loans, currency, today)
+        val byId = details.associateBy { it.transaction.id }
+        val elsewhere = NetWorth.heldElsewhere(contributions.mapNotNull { c -> byId[c.transactionId]?.let { c to it } }, currency, clock.zone)
+        val now = NetWorth.now(accounts, assets, loans, currency, today, Money.sum(elsewhere.values))
         val assetsNow = Money.sum(assets.filter { it.currency == currency }.map { Assets.valueOf(it, today) })
         val included = accounts.filter { !it.account.archived && it.account.currency == currency }
         val earliest = details.minOfOrNull { it.transaction.occurredAt }?.atZone(clock.zone)?.toLocalDate() ?: today
@@ -90,13 +98,14 @@ class WealthViewModel @Inject constructor(
         }.coerceAtLeast(earliest.minusDays(1)).coerceAtMost(today.minusDays(1))
         val timeline = NetWorth.timeline(
             now.totalMinor, assetsNow, minOf(from, today.minusYears(1)), today, details,
-            included.map { it.account.id }.toSet(), loans, currency, snapshots, clock.zone
+            included.map { it.account.id }.toSet(), loans, currency, snapshots, clock.zone, elsewhere
         )
         val shown = timeline.filter { !it.first.isBefore(from) }
         fun valueOn(day: LocalDate) = timeline.firstOrNull { !it.first.isBefore(day) }?.second
         val monthStart = Digests.periodOf(DigestKind.MONTH, today).start
         val monthBase = valueOn(monthStart.minusDays(1).coerceAtLeast(timeline.first().first))
         val yearBase = valueOn(today.withDayOfYear(1).minusDays(1).coerceAtLeast(timeline.first().first))
+        val points = sample(shown)
         val largest = now.parts.values.maxOfOrNull { abs(it) }?.takeIf { it > 0 } ?: 1
 
         WealthUiState(
@@ -107,7 +116,8 @@ class WealthViewModel @Inject constructor(
             yearChange = yearBase?.let { Money.format(now.totalMinor - it, currency, decimals = false, showPlus = true) },
             rising = monthBase == null || now.totalMinor >= monthBase,
             range = range,
-            chart = sample(shown.map { it.second }),
+            chart = points.map { it.second },
+            chartTips = points.map { (day, value) -> shortDateLabel(day, today) to Money.format(value, currency, decimals = false) },
             chartLabels = listOfNotNull(shown.firstOrNull()?.first, shown.lastOrNull()?.first).map { it.format(LABEL) },
             parts = WealthClass.entries.mapNotNull { kind ->
                 val amount = now.parts[kind] ?: return@mapNotNull null
@@ -137,7 +147,7 @@ class WealthViewModel @Inject constructor(
                     )
                 }
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WealthUiState())
+    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WealthUiState())
 
     fun onRangeClick(value: WealthRange) = range.update { value }
 
@@ -156,7 +166,7 @@ class WealthViewModel @Inject constructor(
         const val MATURING_DAYS = 30L
         val LABEL: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM yyyy", Locale.US)
 
-        fun sample(values: List<Long>): List<Long> {
+        fun <T> sample(values: List<T>): List<T> {
             if (values.size <= MAX_POINTS) return values
             val step = values.size.toDouble() / MAX_POINTS
             return (0 until MAX_POINTS).map { values[(it * step).toInt()] } + values.last()

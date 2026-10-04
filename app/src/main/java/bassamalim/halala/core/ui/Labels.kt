@@ -185,8 +185,8 @@ fun auditSentence(action: AuditAction, subject: String, detail: String): String 
         AuditAction.MERCHANTS_MERGED -> stringResource(R.string.audit_merchants_merged, name, detail)
         AuditAction.ALIAS_SPLIT -> stringResource(R.string.audit_alias_split, name, detail)
         // The batch keeps the type by its name, which is the same in every language.
-        AuditAction.MERCHANT_TYPED -> stringResource(
-            R.string.audit_merchant_typed,
+        AuditAction.MERCHANT_TYPED, AuditAction.MERCHANT_LOOKED_UP -> stringResource(
+            if (action == AuditAction.MERCHANT_TYPED) R.string.audit_merchant_typed else R.string.audit_merchant_looked_up,
             name,
             businessTypeLabel(BusinessType.entries.firstOrNull { it.name == detail } ?: BusinessType.UNKNOWN)
         )
@@ -199,6 +199,7 @@ fun aliasMatchLabel(match: AliasMatch): String = stringResource(
     when (match) {
         AliasMatch.FIRST -> R.string.merchant_spelling_first
         AliasMatch.SIMILAR -> R.string.merchant_spelling_similar
+        AliasMatch.CUT_SHORT -> R.string.merchant_spelling_cut
         AliasMatch.YOU -> R.string.merchant_spelling_you
     }
 )

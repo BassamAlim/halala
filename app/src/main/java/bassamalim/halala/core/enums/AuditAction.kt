@@ -33,7 +33,10 @@ enum class AuditAction {
     ALIAS_SPLIT,
 
     /** You said what a merchant's business is. */
-    MERCHANT_TYPED
+    MERCHANT_TYPED,
+
+    /** You took what looking a merchant up found: its name and business. */
+    MERCHANT_LOOKED_UP
 }
 
 /** What kind of row a recorded change touched. */
