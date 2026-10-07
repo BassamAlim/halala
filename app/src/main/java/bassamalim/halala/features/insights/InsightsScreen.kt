@@ -9,12 +9,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -38,12 +41,14 @@ import bassamalim.halala.core.ui.components.Donut
 import bassamalim.halala.core.ui.components.HalalaCard
 import bassamalim.halala.core.ui.components.LineChart
 import bassamalim.halala.core.ui.components.ProgressBar
+import bassamalim.halala.core.ui.components.ScreenTitle
 import bassamalim.halala.core.ui.components.appendCurrency
 import bassamalim.halala.core.ui.components.currencyInlineContent
 import bassamalim.halala.core.ui.settle
 import bassamalim.halala.core.ui.theme.HalalaColors
 import bassamalim.halala.core.ui.theme.HalalaNumbers
 import bassamalim.halala.core.ui.theme.HalalaType
+import bassamalim.halala.core.ui.theme.Insets
 import bassamalim.halala.core.ui.theme.Radius
 import bassamalim.halala.core.ui.theme.Sizes
 import bassamalim.halala.core.ui.theme.Spacing
@@ -56,16 +61,25 @@ import kotlin.math.abs
 private val SLICE_INKS = listOf(1f, 0.72f, 0.52f, 0.38f, 0.27f, 0.18f).map { HalalaColors.Text.copy(alpha = it) }
 
 /**
- * Activity's Insights (no board): what a month cost against the five before (tap a bar to look
+ * The Insights tab (no board): what a month cost against the five before (tap a bar to look
  * at that month; the chevrons page six months older or newer), where it went by category, how it built up against the month before, and
  * where the most went.
  */
 @Composable
-fun InsightsContent(viewModel: InsightsViewModel = hiltViewModel()) {
+fun InsightsScreen(viewModel: InsightsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    if (state.isLoading) return
 
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.card)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = Spacing.screen)
+            .padding(top = Insets.screenTop, bottom = Spacing.section),
+        verticalArrangement = Arrangement.spacedBy(Spacing.card)
+    ) {
+        ScreenTitle(stringResource(R.string.tab_insights))
+        if (state.isLoading) return@Column
+
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
             Text(text = stringResource(R.string.insights_spent_in, state.monthName), style = HalalaType.Label, color = HalalaColors.TextMuted)
             Text(

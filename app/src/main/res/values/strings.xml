@@ -47,7 +47,8 @@
     <!-- Tabs -->
     <string name="tab_home">Home</string>
     <string name="tab_activity">Activity</string>
-    <string name="tab_inbox">Inbox</string>
+    <string name="tab_insights">Insights</string>
+    <string name="inbox">Inbox</string>
     <string name="tab_plan">Plan</string>
     <string name="tab_wealth">Wealth</string>
 
@@ -931,7 +932,6 @@
     <string name="due_maturing_text">On %1$s. Check what happens at maturity.</string>
     <string name="activity_transactions">Transactions</string>
     <string name="activity_money_flow">Money flow</string>
-    <string name="activity_insights">Insights</string>
     <string name="insights_spent_in">Spent in %1$s</string>
     <string name="insights_more_than">%1$d%% more than %2$s</string>
     <string name="insights_less_than">%1$d%% less than %2$s</string>

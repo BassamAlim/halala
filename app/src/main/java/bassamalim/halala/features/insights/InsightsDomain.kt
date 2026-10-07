@@ -15,7 +15,7 @@ import javax.inject.Inject
 data class Share(val id: Long?, val name: String?, val minor: Long)
 
 /**
- * The charts on Activity's Insights: a month's spending by month, category and merchant, and
+ * The charts on the Insights tab: a month's spending by month, category and merchant, and
  * how it built up through the month. Spending is money out that counts in totals, your share of
  * it, in one currency, as budgets and digests count it.
  */

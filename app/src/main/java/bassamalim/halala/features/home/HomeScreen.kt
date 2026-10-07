@@ -49,8 +49,8 @@ import bassamalim.halala.core.ui.theme.Sizes
 import bassamalim.halala.core.ui.theme.Spacing
 
 /**
- * Home, from the Home board as far as it can be filled: the mark and wordmark, Ask and Settings
- * (the board's review pill became the Inbox tab), the wallet and the banks in the two summary cards, what
+ * Home, from the Home board as far as it can be filled: the mark and wordmark, Inbox, Ask and Settings
+ * (the board's review pill became the Inbox icon), the wallet and the banks in the two summary cards, what
  * people owe you, what is coming up, and the latest transactions, under the balance card once
  * there is a budget for everything.
  */
@@ -61,6 +61,7 @@ fun HomeScreen(onSeeAllClick: () -> Unit, viewModel: HomeViewModel = hiltViewMod
     HomeContent(
         state = state,
         onSettingsClick = viewModel::onSettingsClick,
+        onInboxClick = viewModel::onInboxClick,
         onAskClick = viewModel::onAskClick,
         onCashClick = viewModel::onCashClick,
         onAccountsClick = viewModel::onAccountsClick,
@@ -76,6 +77,7 @@ fun HomeScreen(onSeeAllClick: () -> Unit, viewModel: HomeViewModel = hiltViewMod
 private fun HomeContent(
     state: HomeUiState,
     onSettingsClick: () -> Unit,
+    onInboxClick: () -> Unit,
     onAskClick: () -> Unit,
     onCashClick: () -> Unit,
     onAccountsClick: () -> Unit,
@@ -115,6 +117,21 @@ private fun HomeContent(
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(Sizes.touchTarget)
+                        .clip(Radius.pill)
+                        .clickable(role = Role.Button, onClick = onInboxClick),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_inbox),
+                        contentDescription = stringResource(R.string.inbox),
+                        tint = HalalaColors.TextMuted,
+                        modifier = Modifier.size(Sizes.icon)
+                    )
+                }
+
                 Box(
                     modifier = Modifier
                         .size(Sizes.touchTarget)

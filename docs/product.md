@@ -450,7 +450,7 @@ archive, several per bank by last four), manual transactions and moves, the cash
 count, CSV/JSON export, and the CI and release workflows.
 
 Screens and where they come from: **Home** (Home board: mark and wordmark, wallet and banks in the
-summary-card grid, Recent; the balance card waits for budgets; the board's review pill is gone, replaced by the Inbox tab),
+summary-card grid, Recent; the balance card waits for budgets; the board's review pill is gone, replaced by the Inbox icon beside Ask and Settings),
 **Activity** (Activity board: search, a row of plain chips to browse by (Merchants, People, Where you spend, Tags, Digests; no board), an Uncategorised chip (spending with no category yet, as the inbox counts it; on top of the account) and account filter chips, month In/Out, rows by day; Money flow
 waits for Phase 6), **Transaction** (Transaction detail board, minus category, tags, location
 and SMS), **Settings** (Settings board, only the rows that are true today; reached from a gear
@@ -474,7 +474,7 @@ history of changes with undo (`AuditBatch`, `AuditChange`), the review reminder
 (`core/reminders`), and merchant identification (business types, the bundled list, Groq in
 `core/ai`). Screens: **Review** (Review board: one card per merchant (never a person: transfers are filed on their own detail), biggest first, with what it
 was identified as, the chosen category to confirm for the ones sure enough, the All / Suggested /
-Needs you filter, and the last answer's undo; reached from the Inbox tab), **Rules** (Rules
+Needs you filter, and the last answer's undo; reached from the Inbox), **Rules** (Rules
 board; from Settings and from a transaction's "Filed automatically" card), category and type on
 Transaction detail, and, with no board, built from the system's components:
 **Categories** (add; tap to rename, change the type and the business types it takes, or
@@ -530,7 +530,7 @@ month on this month's lowest balance, nothing under 5,000; a term maturing withi
 on Wealth and is reminded three days before; the terms form has no board), and fetched fund
 and gold prices (see Assets).
 
-**Phase 6 (delight)** is built: **Insights** (Activity's third segment, no board: the month's spending against the month before, six months' bars that pick the month (chevrons page six months older, back to the first month anything was spent, or newer, up to this one; paging picks the newest shown), a category ring in one ink stepped (spending is never coloured; the top five and Other), each category tapping through to **Category spending** (`Screen.CategorySpending`, no board: that month's total, by merchant, and its transactions; unfiled too) and Other opening into the categories it gathers, spending through the month against the month before (`LineChart`'s dashed second line), and where the most went; `InsightsDomain`), **Money flow** (Money flow board, Activity's second segment,
+**Phase 6 (delight)** is built: **Insights** (a tab of its own, between Activity and Plan; first built as Activity's third segment; no board: the month's spending against the month before, six months' bars that pick the month (chevrons page six months older, back to the first month anything was spent, or newer, up to this one; paging picks the newest shown), a category ring in one ink stepped (spending is never coloured; the top five and Other), each category tapping through to **Category spending** (`Screen.CategorySpending`, no board: that month's total, by merchant, and its transactions; unfiled too) and Other opening into the categories it gathers, spending through the month against the month before (`LineChart`'s dashed second line), and where the most went; `InsightsDomain`), **Money flow** (Money flow board, Activity's second segment,
 redrawn top to bottom for a phone: for a month and an account, salary or what came in, the share
 spent and kept and spending against the month before, then a vertical Sankey (`Sankey`
 component, `core/domain/MoneyFlow`) from where the money came from (salary, your accounts,
@@ -539,7 +539,7 @@ saved, people, the top five categories and the rest, not filed yet, what stayed)
 the chart or in the "Came in" and "Went out" lists below it to light it up and see its biggest
 transactions; a leg the bank called a move with no other side is "no match": "It went to someone"
 makes it a plain transfer, "Pick the account" records the other leg there and pairs them) and
-the **Assistant** (see the product rule; first built as a fifth tab, now Ask behind Home's icon), the **Inbox** tab in its place (no board: one row for each kind of thing waiting for your say, with its count, opening where it is answered: merchants to file → Review, alerts → Alerts, a subscription found, missed or dearer → Subscriptions and bills, "Same merchant?" → Merchants, "Same person?" → People, trips to tag → Tags; `InboxDomain` counts what those screens would show and stores nothing; no badge on the tab, as the design system says),
+the **Assistant** (see the product rule; first built as a fifth tab, now Ask behind Home's icon), the **Inbox** (first built as a tab in its place, now behind Home's icon, its tab given to Insights; no board: one row for each kind of thing waiting for your say, with its count, opening where it is answered: merchants to file → Review, alerts → Alerts, a subscription found, missed or dearer → Subscriptions and bills, "Same merchant?" → Merchants, "Same person?" → People, trips to tag → Tags; `InboxDomain` counts what those screens would show and stores nothing; no badge on the icon, as the design system says),
 **Encrypted backups** (see the product rule), and the **home-screen widget** (`core/widget`,
 no board: this cycle's spending against the total budget with its state colour, the Review
 count, and "+ Cash", which opens the lock as always and then the form on the wallet

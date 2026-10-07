@@ -101,6 +101,9 @@ sealed interface Screen {
     /** Ask: a question about your transactions, read into a query by the AI. */
     @Serializable data object Ask : Screen
 
+    /** Everything waiting for your say, one row a kind. */
+    @Serializable data object Inbox : Screen
+
     /** Funds, gold and other things you own. */
     @Serializable data object Assets : Screen
 
