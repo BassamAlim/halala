@@ -98,8 +98,9 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   leaves the phone** for identification (the assistant sends your question, and people's names go to find one person under two names, see below and People), and never one holding your accounts' or cards' last four digits, ten or
   more digits, or an IBAN (`Identification.sendable`; those are `WITHHELD` for you). The AI is
   Groq (`qwen/qwen3.8-27b`, strict JSON schema, reasoning off), always on, with no setting. Its key is built in, not typed: `BuildConfig.GROQ_API_KEY`, from `GROQ_API_KEY` in
-  `.env` locally or the repository secret of that name in CI (a build without it
-  identifies from the bundled list only). `IdentifyWorker` (online only, one at a time)
+  `.env` on the machine that builds it. **CI and the releases are built with no keys** (an APK
+  anyone can download must not carry one), so they identify from the bundled list only, as any
+  build without it does. `IdentifyWorker` (online only, one at a time)
   runs after every SMS run and as the app opens, in batches of 20 names (Groq's free tier refuses a request for over 1,000 output tokens a minute, `GroqProtocol.MAX_TOKENS`), the busiest first;
   what it says is recorded without a batch (the rule names why), and each merchant is asked once.
   **Web search** (`core/ai/WebSearch.kt`, `WebLookup`, the spec's Tavily step): after

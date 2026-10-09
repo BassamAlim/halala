@@ -19,7 +19,10 @@ val envProperties = Properties().apply {
 }
 val hasReleaseKeystore = !envProperties.getProperty("KEYSTORE_PATH").isNullOrBlank()
 
-/** Groq's key is built in: from `.env` locally, from the `GROQ_API_KEY` secret in CI. */
+/**
+ * Groq's key is built in from `.env` (or the environment) on your own machine. CI and the releases
+ * are given none: an APK anyone can download must not carry a key.
+ */
 val groqApiKey = envProperties.getProperty("GROQ_API_KEY")
     ?: providers.environmentVariable("GROQ_API_KEY").orNull
     ?: ""
