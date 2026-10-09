@@ -185,8 +185,9 @@ cd halala
 ./gradlew :app:installDebug         # install on a connected device
 ```
 
-It builds with no configuration. To turn on merchant identification and web lookup, put your
-own keys in a `.env` at the root (it is gitignored):
+It builds with no configuration. The APKs on the Releases page carry no API keys, so they
+identify merchants from the bundled list only. To turn on AI identification and web lookup,
+build it yourself with your own keys in a `.env` at the root (it is gitignored):
 
 ```properties
 GROQ_API_KEY=...
