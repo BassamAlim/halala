@@ -332,8 +332,11 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   Halala's settings when Android won't ask again, or the location switch); it looks again on
   resume. The map (`HeatMap`, osmdroid, tiles inverted for the dark theme) shows a heat of
   your spending by period and category, and the top places (purchases within about 200 m,
-  named by their usual merchant; `core/domain/Places`). Reached from Activity's "Where you
-  spend" chip. Transaction detail's **Where** card (for spending) shows a purchase's place on a
+  named by their usual merchant; `core/domain/Places`). It lives on Activity's **Insights**:
+  a "Where you spend" card for the month picked on the bars (a small map the page scrolls over,
+  how many purchases were placed and what they came to, the three places most went, or the
+  street-grid placeholder with its fix); the card opens the whole map, where the period and
+  category are chosen. Transaction detail's **Where** card (for spending) shows a purchase's place on a
   small map the page scrolls over, with its accuracy, or the street-grid placeholder saying why
   there is none (location not allowed all the time, off, or nothing kept, as for history and
   what you add by hand), with the button that fixes it when one can.
@@ -452,7 +455,7 @@ count, CSV/JSON export, and the CI and release workflows.
 
 Screens and where they come from: **Home** (Home board: mark and wordmark, wallet and banks in the
 summary-card grid, Recent; the balance card waits for budgets; the board's review pill is gone, replaced by the Inbox tab),
-**Activity** (Activity board: search, a row of plain chips to browse by (Merchants, People, Where you spend, Tags, Digests; no board), an Uncategorised chip (spending with no category yet, as the inbox counts it; on top of the account) and account filter chips, month In/Out, rows by day; Money flow
+**Activity** (Activity board: search, a row of plain chips to browse by (Merchants, People, Tags, Digests; no board), an Uncategorised chip (spending with no category yet, as the inbox counts it; on top of the account) and account filter chips, month In/Out, rows by day; Money flow
 waits for Phase 6), **Transaction** (Transaction detail board, minus category, tags, location
 and SMS), **Settings** (Settings board, only the rows that are true today; reached from a gear
 on Home, since the boards don't show where Settings lives), and **Plan**, **Wealth**,

@@ -1,10 +1,17 @@
 package bassamalim.halala.features.insights
 
+import bassamalim.halala.core.data.dataSources.room.entities.TransactionPlace
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
+import bassamalim.halala.core.data.repositories.PlacesRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
 import bassamalim.halala.core.domain.Budgets
 import bassamalim.halala.core.domain.Money
+import bassamalim.halala.core.domain.Places
+import bassamalim.halala.core.domain.Spot
+import bassamalim.halala.core.places.LocationAccess
+import bassamalim.halala.core.places.PlaceCapture
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import java.time.Clock
 import java.time.LocalDate
 import java.time.YearMonth
@@ -14,17 +21,26 @@ import javax.inject.Inject
 /** One share of a month's spending: a category (or a merchant) and what went to it. */
 data class Share(val id: Long?, val name: String?, val minor: Long)
 
+/** The ledger the charts read: every transaction, and the places kept for purchases. */
+data class InsightsLedger(val details: List<TransactionDetail>, val places: List<TransactionPlace>)
+
 /**
- * The charts on Activity's Insights: a month's spending by month, category and merchant, and
- * how it built up through the month. Spending is money out that counts in totals, your share of
- * it, in one currency, as budgets and digests count it.
+ * The charts on Activity's Insights: a month's spending by month, category and merchant, how it
+ * built up through the month, and where it was spent. Spending is money out that counts in
+ * totals, your share of it, in one currency, as budgets and digests count it.
  */
 class InsightsDomain @Inject constructor(
     private val transactionsRepository: TransactionsRepository,
+    private val placesRepository: PlacesRepository,
+    private val capture: PlaceCapture,
     private val clock: Clock
 ) {
 
-    fun observeTransactions(): Flow<List<TransactionDetail>> = transactionsRepository.observeAll()
+    fun observeLedger(): Flow<InsightsLedger> =
+        combine(transactionsRepository.observeAll(), placesRepository.observeAll(), ::InsightsLedger)
+
+    /** What location Halala has, for whether the map can show. */
+    fun locationAccess(): LocationAccess = capture.access()
 
     fun zone(): ZoneId = clock.zone
 
@@ -76,6 +92,10 @@ class InsightsDomain @Inject constructor(
         /** The [count] merchants most was spent at, by your name for each. */
         fun topMerchants(spending: List<TransactionDetail>, month: YearMonth, zone: ZoneId, count: Int): List<Share> =
             shares(spending.filter { it.merchantId != null }, month, zone) { it.merchantId to it.merchantName }.take(count)
+
+        /** [month]'s purchases that have a place, for the map. */
+        fun placed(details: List<TransactionDetail>, places: List<TransactionPlace>, currency: String, month: YearMonth, zone: ZoneId): List<Spot> =
+            Places.spots(details, places, currency) { it.month(zone) == month }
 
         /**
          * Spending to the end of each day of [month] (to [today] in the month under way), and the

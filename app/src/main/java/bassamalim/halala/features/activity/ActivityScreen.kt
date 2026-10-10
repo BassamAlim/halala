@@ -96,7 +96,6 @@ fun ActivityScreen(viewModel: ActivityViewModel = hiltViewModel()) {
         onTransactionClick = viewModel::onTransactionClick,
         onMerchantsClick = viewModel::onMerchantsClick,
         onPeopleClick = viewModel::onPeopleClick,
-        onMapClick = viewModel::onMapClick,
         onTagsClick = viewModel::onTagsClick,
         onDigestsClick = viewModel::onDigestsClick
     )
@@ -112,7 +111,6 @@ private fun ActivityContent(
     onTransactionClick: (Long) -> Unit,
     onMerchantsClick: () -> Unit,
     onPeopleClick: () -> Unit,
-    onMapClick: () -> Unit,
     onTagsClick: () -> Unit,
     onDigestsClick: () -> Unit
 ) {
@@ -145,7 +143,6 @@ private fun ActivityContent(
             ) {
                 item { HalalaChip(label = stringResource(R.string.merchants), onClick = onMerchantsClick) }
                 item { HalalaChip(label = stringResource(R.string.people), onClick = onPeopleClick) }
-                item { HalalaChip(label = stringResource(R.string.map_title), onClick = onMapClick) }
                 item { HalalaChip(label = stringResource(R.string.tags), onClick = onTagsClick) }
                 item { HalalaChip(label = stringResource(R.string.digests), onClick = onDigestsClick) }
             }
