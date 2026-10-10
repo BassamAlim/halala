@@ -44,7 +44,7 @@ import bassamalim.halala.core.ui.theme.Sizes
 import bassamalim.halala.core.ui.theme.Spacing
 
 /**
- * The Money flow board, under Activity's title: the month and account, the headline and how
+ * The Money flow board, under the Insights tab's title: the month and account, the headline and how
  * much was spent and kept, the Sankey (top to bottom: where it came from, the account, where it
  * went; tap a part to see what makes it up), the parts named in two lists, and the moves with a
  * side missing.

@@ -56,6 +56,7 @@ import bassamalim.halala.features.savings.SavingsTermsScreen
 import bassamalim.halala.features.retirement.RetirementScreen
 import bassamalim.halala.features.digest.DigestScreen
 import bassamalim.halala.features.assistant.AssistantScreen
+import bassamalim.halala.features.inbox.InboxScreen
 import bassamalim.halala.features.digest.DigestsScreen
 import bassamalim.halala.features.editGoal.EditGoalScreen
 import bassamalim.halala.features.editBudget.EditBudgetScreen
@@ -167,6 +168,7 @@ fun NavGraph(navController: NavHostController, startDestination: Screen) {
 
         screen<Screen.Digests> { DigestsScreen() }
         screen<Screen.Ask> { AssistantScreen() }
+        screen<Screen.Inbox> { InboxScreen() }
 
         screen<Screen.EditGoal> { EditGoalScreen() }
 

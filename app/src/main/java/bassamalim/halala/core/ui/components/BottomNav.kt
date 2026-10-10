@@ -49,7 +49,7 @@ data class BottomNavItem(val label: String, @param:DrawableRes val icon: Int)
 
 /**
  * The five fixed tabs: surface fill, a line on top, 22dp icons over 11sp labels. The current tab
- * is accent and the others muted; a short jade line slides along the top line to it. There is no indicator pill. What waits for you is counted inside the Inbox tab,
+ * is accent and the others muted; a short jade line slides along the top line to it. There is no indicator pill. What waits for you is counted inside the Inbox (Home's icon),
  * never as a badge here.
  */
 @Composable

@@ -92,6 +92,8 @@ class HomeViewModel @Inject constructor(
 
     fun onAskClick() = navigator.navigate(Screen.Ask)
 
+    fun onInboxClick() = navigator.navigate(Screen.Inbox)
+
     fun onCashClick() {
         uiState.value.cashWalletId?.let { navigator.navigate(Screen.ReconcileCash(it)) }
     }

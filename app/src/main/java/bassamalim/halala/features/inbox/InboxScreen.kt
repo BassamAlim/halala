@@ -21,7 +21,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
 import bassamalim.halala.core.ui.components.ListCard
 import bassamalim.halala.core.ui.components.ListRow
-import bassamalim.halala.core.ui.components.ScreenTitle
+import bassamalim.halala.core.ui.components.TopBar
 import bassamalim.halala.core.ui.theme.HalalaColors
 import bassamalim.halala.core.ui.theme.HalalaType
 import bassamalim.halala.core.ui.theme.Insets
@@ -29,7 +29,7 @@ import bassamalim.halala.core.ui.theme.Sizes
 import bassamalim.halala.core.ui.theme.Spacing
 
 /**
- * The Inbox tab (no board: the system's list card): everything waiting for your say, one row a
+ * The Inbox, behind Home's icon (no board: the system's list card): everything waiting for your say, one row a
  * kind, each opening the screen where it is answered.
  */
 @Composable
@@ -44,7 +44,7 @@ fun InboxScreen(viewModel: InboxViewModel = hiltViewModel()) {
             .padding(top = Insets.screenTop, bottom = Spacing.section),
         verticalArrangement = Arrangement.spacedBy(Spacing.card)
     ) {
-        ScreenTitle(stringResource(R.string.tab_inbox))
+        TopBar(title = stringResource(R.string.inbox), onBack = viewModel::onBackClick)
         if (state.isLoading) return@Column
 
         if (state.rows.isEmpty()) {

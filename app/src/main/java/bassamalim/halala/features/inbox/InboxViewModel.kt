@@ -28,6 +28,8 @@ class InboxViewModel @Inject constructor(
         .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), InboxUiState())
 
+    fun onBackClick() = navigator.popBackStack()
+
     fun onRowClick(kind: InboxKind) = navigator.navigate(
         when (kind) {
             InboxKind.MERCHANTS -> Screen.Review
