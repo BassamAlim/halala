@@ -39,7 +39,7 @@ import bassamalim.halala.core.ui.theme.Radius
 import bassamalim.halala.core.ui.theme.Sizes
 import bassamalim.halala.core.ui.theme.Spacing
 
-/** Where you spend: the map with its heat, the period and category, and the top places. No board draws it. */
+/** Where you spend: the map with its heat, the period and category, and the top places; opened from Insights. No board draws it. */
 @Composable
 fun SpendingMapScreen(viewModel: SpendingMapViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()

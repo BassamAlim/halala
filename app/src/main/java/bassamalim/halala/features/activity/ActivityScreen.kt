@@ -48,20 +48,22 @@ import bassamalim.halala.core.ui.theme.Spacing
 
 /**
  * The transactions feed, from the Activity board: search, account filters, this month's in and
- * out, and the rows by day; its second segment is Money flow, its third Insights (charts).
+ * out, and the rows by day; its second segment is Insights, which switches between the spending
+ * charts and Money flow.
  */
 @Composable
 fun ActivityScreen(viewModel: ActivityViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var segment by rememberSaveable { mutableIntStateOf(0) }
-    // Three segments don't fit beside the title, so they get a row of their own.
+    // Insights' own view: the spending charts, or Money flow.
+    var insight by rememberSaveable { mutableIntStateOf(0) }
+    // The segments get a row of their own under the title.
     val title = @Composable {
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
             ScreenTitle(stringResource(R.string.tab_activity))
             SegmentedControl(
                 options = listOf(
                     stringResource(R.string.activity_transactions),
-                    stringResource(R.string.activity_money_flow),
                     stringResource(R.string.activity_insights)
                 ),
                 selectedIndex = segment,
@@ -82,7 +84,12 @@ fun ActivityScreen(viewModel: ActivityViewModel = hiltViewModel()) {
             verticalArrangement = Arrangement.spacedBy(Spacing.card)
         ) {
             title()
-            if (segment == 1) MoneyFlowContent() else InsightsContent()
+            SegmentedControl(
+                options = listOf(stringResource(R.string.insights_spending), stringResource(R.string.activity_money_flow)),
+                selectedIndex = insight,
+                onSelect = { insight = it }
+            )
+            if (insight == 0) InsightsContent() else MoneyFlowContent()
         }
         return
     }
@@ -96,7 +103,6 @@ fun ActivityScreen(viewModel: ActivityViewModel = hiltViewModel()) {
         onTransactionClick = viewModel::onTransactionClick,
         onMerchantsClick = viewModel::onMerchantsClick,
         onPeopleClick = viewModel::onPeopleClick,
-        onMapClick = viewModel::onMapClick,
         onTagsClick = viewModel::onTagsClick,
         onDigestsClick = viewModel::onDigestsClick
     )
@@ -112,7 +118,6 @@ private fun ActivityContent(
     onTransactionClick: (Long) -> Unit,
     onMerchantsClick: () -> Unit,
     onPeopleClick: () -> Unit,
-    onMapClick: () -> Unit,
     onTagsClick: () -> Unit,
     onDigestsClick: () -> Unit
 ) {
@@ -145,7 +150,6 @@ private fun ActivityContent(
             ) {
                 item { HalalaChip(label = stringResource(R.string.merchants), onClick = onMerchantsClick) }
                 item { HalalaChip(label = stringResource(R.string.people), onClick = onPeopleClick) }
-                item { HalalaChip(label = stringResource(R.string.map_title), onClick = onMapClick) }
                 item { HalalaChip(label = stringResource(R.string.tags), onClick = onTagsClick) }
                 item { HalalaChip(label = stringResource(R.string.digests), onClick = onDigestsClick) }
             }

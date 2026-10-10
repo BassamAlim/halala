@@ -24,19 +24,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import bassamalim.halala.R
 import bassamalim.halala.core.Globals
+import bassamalim.halala.core.places.LocationAccess
 import bassamalim.halala.core.ui.components.CardLabel
 import bassamalim.halala.core.ui.components.Donut
 import bassamalim.halala.core.ui.components.HalalaCard
+import bassamalim.halala.core.ui.components.HeatMap
 import bassamalim.halala.core.ui.components.LineChart
+import bassamalim.halala.core.ui.components.MapPlaceholder
+import bassamalim.halala.core.ui.components.openLocationSettings
+import bassamalim.halala.core.ui.components.rememberLocationRequest
 import bassamalim.halala.core.ui.components.ProgressBar
 import bassamalim.halala.core.ui.components.appendCurrency
 import bassamalim.halala.core.ui.components.currencyInlineContent
@@ -57,8 +66,8 @@ private val SLICE_INKS = listOf(1f, 0.72f, 0.52f, 0.38f, 0.27f, 0.18f).map { Hal
 
 /**
  * Activity's Insights (no board): what a month cost against the five before (tap a bar to look
- * at that month; the chevrons page six months older or newer), where it went by category, how it built up against the month before, and
- * where the most went.
+ * at that month; the chevrons page six months older or newer), where it went by category, how it built up against the month before,
+ * where the most went, and where you spent it on the map.
  */
 @Composable
 fun InsightsContent(viewModel: InsightsViewModel = hiltViewModel()) {
@@ -192,6 +201,85 @@ fun InsightsContent(viewModel: InsightsViewModel = hiltViewModel()) {
                     ProgressBar(progress = bar.fraction)
                 }
             }
+        }
+
+        PlacesCard(state, viewModel)
+    }
+}
+
+/**
+ * Where you spend, the picked month: the heat on a small map the page scrolls over, and the
+ * places most went; the card opens the whole map. Without location all the time, the
+ * street-grid placeholder says why, with the button that fixes it.
+ */
+@Composable
+private fun PlacesCard(state: InsightsUiState, viewModel: InsightsViewModel) {
+    val context = LocalContext.current
+    val askLocation = rememberLocationRequest(viewModel::onCheckAccess)
+    // Back from Android's settings, or the location switch: look again.
+    LifecycleResumeEffect(viewModel) {
+        viewModel.onCheckAccess()
+        onPauseOrDispose { }
+    }
+    val mapModifier = Modifier
+        .fillMaxWidth()
+        .height(Sizes.placeMap)
+        .clip(Radius.lg)
+
+    HalalaCard(
+        label = stringResource(R.string.map_title),
+        modifier = Modifier.fillMaxWidth(),
+        onClick = viewModel::onMapClick.takeIf { state.access == LocationAccess.GRANTED }
+    ) {
+        when (state.access) {
+            LocationAccess.GRANTED -> {
+                Box(mapModifier) {
+                    HeatMap(points = state.points, focus = null, modifier = Modifier.matchParentSize())
+                    // Takes the touches so the map stays put, the page scrolls and the card opens.
+                    Box(Modifier.matchParentSize().pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent() } })
+                }
+                Text(
+                    text = if (state.placedCount == 0) stringResource(R.string.map_empty)
+                    else pluralStringResource(R.plurals.map_summary, state.placedCount, state.placedCount, state.placedTotal),
+                    style = HalalaType.Label,
+                    color = HalalaColors.TextMuted
+                )
+                state.places.forEach { place ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xs),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(text = place.name, style = HalalaType.Label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(
+                                text = pluralStringResource(R.plurals.map_visits, place.count, place.count),
+                                style = HalalaType.Caption,
+                                color = HalalaColors.TextMuted
+                            )
+                        }
+                        Text(text = place.amount, style = HalalaNumbers.Meta)
+                    }
+                }
+            }
+            LocationAccess.SERVICES_OFF -> MapPlaceholder(
+                message = stringResource(R.string.map_location_off),
+                action = stringResource(R.string.map_turn_location_on),
+                onAction = { openLocationSettings(context) },
+                modifier = mapModifier
+            )
+            LocationAccess.FOREGROUND_ONLY -> MapPlaceholder(
+                message = stringResource(R.string.map_needs_always),
+                action = stringResource(R.string.map_allow_always),
+                onAction = askLocation,
+                modifier = mapModifier
+            )
+            LocationAccess.DENIED -> MapPlaceholder(
+                message = stringResource(R.string.map_no_permission),
+                action = stringResource(R.string.map_allow),
+                onAction = askLocation,
+                modifier = mapModifier
+            )
         }
     }
 }

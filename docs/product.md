@@ -332,8 +332,11 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   Halala's settings when Android won't ask again, or the location switch); it looks again on
   resume. The map (`HeatMap`, osmdroid, tiles inverted for the dark theme) shows a heat of
   your spending by period and category, and the top places (purchases within about 200 m,
-  named by their usual merchant; `core/domain/Places`). Reached from Activity's "Where you
-  spend" chip. Transaction detail's **Where** card (for spending) shows a purchase's place on a
+  named by their usual merchant; `core/domain/Places`). It lives on Activity's **Insights**:
+  a "Where you spend" card for the month picked on the bars (a small map the page scrolls over,
+  how many purchases were placed and what they came to, the three places most went, or the
+  street-grid placeholder with its fix); the card opens the whole map, where the period and
+  category are chosen. Transaction detail's **Where** card (for spending) shows a purchase's place on a
   small map the page scrolls over, with its accuracy, or the street-grid placeholder saying why
   there is none (location not allowed all the time, off, or nothing kept, as for history and
   what you add by hand), with the button that fixes it when one can.
@@ -451,8 +454,8 @@ archive, several per bank by last four), manual transactions and moves, the cash
 count, CSV/JSON export, and the CI and release workflows.
 
 Screens and where they come from: **Home** (Home board: mark and wordmark, wallet and banks in the
-summary-card grid, Recent; the balance card waits for budgets; the board's review pill is gone, replaced by the Inbox tab),
-**Activity** (Activity board: search, a row of plain chips to browse by (Merchants, People, Where you spend, Tags, Digests; no board), an Uncategorised chip (spending with no category yet, as the inbox counts it; on top of the account) and account filter chips, month In/Out, rows by day; Money flow
+summary-card grid, Recent; a "Spent this month" summary card (no board: the calendar month so far, counted as Insights counts it, against last month to the same day); the balance card waits for budgets; the board's review pill is gone, replaced by the Inbox tab),
+**Activity** (Activity board: search, a row of plain chips to browse by (Merchants, People, Tags, Digests; no board), an Uncategorised chip (spending with no category yet, as the inbox counts it; on top of the account) and account filter chips, month In/Out, rows by day; Money flow
 waits for Phase 6), **Transaction** (Transaction detail board, minus category, tags, location
 and SMS), **Settings** (Settings board, only the rows that are true today; reached from a gear
 on Home, since the boards don't show where Settings lives), and **Plan**, **Wealth**,
@@ -531,7 +534,7 @@ month on this month's lowest balance, nothing under 5,000; a term maturing withi
 on Wealth and is reminded three days before; the terms form has no board), and fetched fund
 and gold prices (see Assets).
 
-**Phase 6 (delight)** is built: **Insights** (Activity's third segment, no board: the month's spending against the month before, six months' bars that pick the month (chevrons page six months older, back to the first month anything was spent, or newer, up to this one; paging picks the newest shown), a category ring in one ink stepped (spending is never coloured; the top five and Other), each category tapping through to **Category spending** (`Screen.CategorySpending`, no board: that month's total, by merchant, and its transactions; unfiled too) and Other opening into the categories it gathers, spending through the month against the month before (`LineChart`'s dashed second line), and where the most went; `InsightsDomain`), **Money flow** (Money flow board, Activity's second segment,
+**Phase 6 (delight)** is built: **Insights** (Activity's second segment, beside Transactions; no board. It switches between **Spending** and **Money flow**. Spending: the month's spending against the month before, six months' bars that pick the month (chevrons page six months older, back to the first month anything was spent, or newer, up to this one; paging picks the newest shown), a category ring in one ink stepped (spending is never coloured; the top five and Other), each category tapping through to **Category spending** (`Screen.CategorySpending`, no board: that month's total, by merchant, and its transactions; unfiled too) and Other opening into the categories it gathers, spending through the month against the month before (`LineChart`'s dashed second line), and where the most went; `InsightsDomain`), **Money flow** (Money flow board, Insights' second view,
 redrawn top to bottom for a phone: for a month and an account, salary or what came in, the share
 spent and kept and spending against the month before, then a vertical Sankey (`Sankey`
 component, `core/domain/MoneyFlow`) from where the money came from (salary, your accounts,

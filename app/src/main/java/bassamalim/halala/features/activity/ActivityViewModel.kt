@@ -78,8 +78,6 @@ class ActivityViewModel @Inject constructor(
 
     fun onTransactionClick(id: Long) = navigator.navigate(Screen.Transaction(id))
 
-    fun onMapClick() = navigator.navigate(Screen.SpendingMap)
-
     fun onMerchantsClick() = navigator.navigate(Screen.Merchants)
 
     fun onPeopleClick() = navigator.navigate(Screen.People)

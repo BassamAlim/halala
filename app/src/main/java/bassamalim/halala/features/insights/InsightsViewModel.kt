@@ -5,8 +5,11 @@ import androidx.lifecycle.viewModelScope
 import bassamalim.halala.core.Globals
 import bassamalim.halala.core.domain.Digests
 import bassamalim.halala.core.domain.Money
+import bassamalim.halala.core.domain.Places
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
+import bassamalim.halala.core.places.LocationAccess
+import bassamalim.halala.core.ui.components.HeatPoint
 import bassamalim.halala.core.utils.monthLabel
 import bassamalim.halala.core.utils.monthShortLabel
 import bassamalim.halala.core.utils.shortDateLabel
@@ -21,6 +24,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import java.time.YearMonth
 import javax.inject.Inject
+import kotlin.math.sqrt
 
 /** A month's bar: its share of the tallest month, for drawing. */
 data class MonthBar(val month: YearMonth, val label: String, val fraction: Float, val selected: Boolean)
@@ -35,6 +39,9 @@ data class Slice(val categoryId: Long?, val name: String?, val amount: String, v
 
 /** A merchant's row, its bar a share of the biggest. */
 data class MerchantBar(val id: Long, val name: String, val amount: String, val fraction: Float)
+
+/** One of the places most was spent at, under the map. */
+data class PlaceBar(val name: String, val count: Int, val amount: String)
 
 data class InsightsUiState(
     val isLoading: Boolean = true,
@@ -57,10 +64,16 @@ data class InsightsUiState(
     val pacePrevious: List<Long> = emptyList(),
     val paceTips: List<Pair<String, String>> = emptyList(),
     val paceLabels: List<String> = emptyList(),
-    val merchants: List<MerchantBar> = emptyList()
+    val merchants: List<MerchantBar> = emptyList(),
+    /** Where you spend, the picked month: the map shows only with location allowed all the time. */
+    val access: LocationAccess = LocationAccess.GRANTED,
+    val points: List<HeatPoint> = emptyList(),
+    val placedCount: Int = 0,
+    val placedTotal: String = "",
+    val places: List<PlaceBar> = emptyList()
 )
 
-/** Activity's third segment: charts of what you spent, for a month you pick on the bars. */
+/** Activity's Insights, its Spending view: charts of what you spent, for a month you pick on the bars. */
 @HiltViewModel
 class InsightsViewModel @Inject constructor(
     private val domain: InsightsDomain,
@@ -74,7 +87,10 @@ class InsightsViewModel @Inject constructor(
     /** Whether Other is opened into the categories it gathers. */
     private val otherOpen = MutableStateFlow(false)
 
-    val uiState: StateFlow<InsightsUiState> = combine(domain.observeTransactions(), picked, lastShown, otherOpen) { details, picked, lastShown, otherOpen ->
+    private val access = MutableStateFlow(domain.locationAccess())
+
+    val uiState: StateFlow<InsightsUiState> = combine(domain.observeLedger(), picked, lastShown, otherOpen, access) { ledger, picked, lastShown, otherOpen, access ->
+        val details = ledger.details
         val zone = domain.zone()
         val today = domain.today()
         val currency = Globals.PRIMARY_CURRENCY
@@ -95,6 +111,9 @@ class InsightsViewModel @Inject constructor(
         val (pace, before) = InsightsDomain.cumulative(spending, month, today, zone)
         val merchants = InsightsDomain.topMerchants(spending, month, zone, MERCHANTS)
         val biggest = merchants.maxOfOrNull { it.minor }?.coerceAtLeast(1) ?: 1
+        val spots = InsightsDomain.placed(details, ledger.places, currency, month, zone)
+        // The heat grows with the square root, so one big purchase doesn't drown the rest.
+        val heaviest = spots.maxOfOrNull { it.amountMinor }?.coerceAtLeast(1) ?: 1
 
         InsightsUiState(
             isLoading = false,
@@ -113,7 +132,12 @@ class InsightsViewModel @Inject constructor(
             pacePrevious = before,
             paceTips = pace.mapIndexed { i, v -> shortDateLabel(month.atDay(i + 1), today) to f(v) },
             paceLabels = listOf(shortDateLabel(month.atDay(1), today), shortDateLabel(month.atDay(pace.size), today)),
-            merchants = merchants.map { MerchantBar(it.id!!, it.name.orEmpty(), f(it.minor), it.minor.toFloat() / biggest) }
+            merchants = merchants.map { MerchantBar(it.id!!, it.name.orEmpty(), f(it.minor), it.minor.toFloat() / biggest) },
+            access = access,
+            points = spots.map { HeatPoint(it.latitude, it.longitude, sqrt(it.amountMinor.toFloat() / heaviest)) },
+            placedCount = spots.size,
+            placedTotal = f(Money.sum(spots.map { it.amountMinor })),
+            places = Places.top(spots, PLACES).map { PlaceBar(it.name, it.count, f(it.spentMinor)) }
         )
     }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), InsightsUiState())
 
@@ -144,8 +168,15 @@ class InsightsViewModel @Inject constructor(
 
     fun onOtherCloseClick() = otherOpen.update { false }
 
+    /** The whole map, to look around, over other periods and categories. */
+    fun onMapClick() = navigator.navigate(Screen.SpendingMap)
+
+    /** Coming back from Android's settings or a permission dialog: look again. */
+    fun onCheckAccess() = access.update { domain.locationAccess() }
+
     private companion object {
         const val MONTHS = 6
         const val MERCHANTS = 5
+        const val PLACES = 3
     }
 }
