@@ -50,7 +50,8 @@ import bassamalim.halala.core.ui.theme.Spacing
 
 /**
  * Home, from the Home board as far as it can be filled: the mark and wordmark, Ask and Settings
- * (the board's review pill became the Inbox tab), the wallet and the banks in the two summary cards, what
+ * (the board's review pill became the Inbox tab), what was spent this month against last month to
+ * the same day, the wallet and the banks in the two summary cards, what
  * people owe you, what is coming up, and the latest transactions, under the balance card once
  * there is a budget for everything.
  */
@@ -177,6 +178,20 @@ private fun HomeContent(
         }
 
         // While loading, the cards keep their shape with blank figures, so nothing jumps in.
+        SummaryCard(
+            label = stringResource(R.string.home_spent_month),
+            amount = state.monthSpent,
+            currency = Globals.PRIMARY_CURRENCY,
+            caption = when {
+                state.isLoading -> ""
+                state.monthChange == null -> stringResource(R.string.home_month_first)
+                state.monthChange > 0 -> stringResource(R.string.home_month_more, state.monthChange, state.previousMonthName)
+                state.monthChange < 0 -> stringResource(R.string.home_month_less, -state.monthChange, state.previousMonthName)
+                else -> stringResource(R.string.home_month_same, state.previousMonthName)
+            },
+            modifier = Modifier.fillMaxWidth()
+        )
+
         Row(
             modifier = Modifier.height(IntrinsicSize.Min),
             horizontalArrangement = Arrangement.spacedBy(Insets.grid)

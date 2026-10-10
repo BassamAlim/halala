@@ -662,6 +662,11 @@
     <string name="budget_delete_title">Delete this budget?</string>
     <string name="budget_delete_body">Your spending stays as it is.</string>
     <string name="home_spent_cycle">Spent this pay cycle</string>
+    <string name="home_spent_month">Spent this month</string>
+    <string name="home_month_more">%1$d%% more than %2$s by this day</string>
+    <string name="home_month_less">%1$d%% less than %2$s by this day</string>
+    <string name="home_month_same">The same as %1$s by this day</string>
+    <string name="home_month_first">Nothing last month to compare with</string>
     <string name="home_on_track">On track</string>
     <string name="home_spending_fast">Spending fast</string>
     <string name="home_over_budget">Over budget</string>

@@ -17,6 +17,11 @@ data class HomeUiState(
     val youOwe: String = "",
     /** What is due within a month, the soonest first. */
     val comingUp: List<ComingUp> = emptyList(),
+    /** Spent so far this calendar month, summary style. */
+    val monthSpent: String = "",
+    /** Whole percent against last month to the same day, null when it had none; and that month's name. */
+    val monthChange: Int? = null,
+    val previousMonthName: String = "",
     /** The balance card, once there is a budget for everything. */
     val balance: BalanceInfo? = null,
     /** Anomaly alerts not dismissed. */

@@ -17,9 +17,11 @@ import bassamalim.halala.core.domain.LoanState
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.SeriesState
 import bassamalim.halala.core.enums.AccountType
+import bassamalim.halala.features.insights.InsightsDomain
 import kotlinx.coroutines.flow.Flow
 import java.time.Clock
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 import javax.inject.Inject
 
@@ -67,6 +69,15 @@ class HomeDomain @Inject constructor(
                 !it.account.archived && it.account.type != AccountType.CASH && it.account.type.listed &&
                         it.account.currency == Globals.PRIMARY_CURRENCY
             }
+
+        /**
+         * What was spent so far this calendar month, and last month to the same day, counted as
+         * Insights counts it (your share of money out that counts, in [currency]).
+         */
+        fun monthSoFar(details: List<TransactionDetail>, currency: String, today: LocalDate, zone: ZoneId): Pair<Long, Long> {
+            val (now, before) = InsightsDomain.cumulative(InsightsDomain.spending(details, currency), YearMonth.from(today), today, zone)
+            return now.last() to before.last()
+        }
 
         /** How many recent transactions Home lists before "See all". */
         const val RECENT_COUNT = 5

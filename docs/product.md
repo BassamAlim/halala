@@ -454,7 +454,7 @@ archive, several per bank by last four), manual transactions and moves, the cash
 count, CSV/JSON export, and the CI and release workflows.
 
 Screens and where they come from: **Home** (Home board: mark and wordmark, wallet and banks in the
-summary-card grid, Recent; the balance card waits for budgets; the board's review pill is gone, replaced by the Inbox tab),
+summary-card grid, Recent; a "Spent this month" summary card (no board: the calendar month so far, counted as Insights counts it, against last month to the same day); the balance card waits for budgets; the board's review pill is gone, replaced by the Inbox tab),
 **Activity** (Activity board: search, a row of plain chips to browse by (Merchants, People, Tags, Digests; no board), an Uncategorised chip (spending with no category yet, as the inbox counts it; on top of the account) and account filter chips, month In/Out, rows by day; Money flow
 waits for Phase 6), **Transaction** (Transaction detail board, minus category, tags, location
 and SMS), **Settings** (Settings board, only the rows that are true today; reached from a gear

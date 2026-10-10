@@ -3,6 +3,7 @@ package bassamalim.halala.features.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import bassamalim.halala.core.Globals
+import bassamalim.halala.core.domain.Digests
 import bassamalim.halala.core.domain.Forecasts
 import bassamalim.halala.core.domain.Loans
 import bassamalim.halala.core.domain.Money
@@ -13,6 +14,7 @@ import bassamalim.halala.core.enums.BudgetScope
 import bassamalim.halala.core.domain.BudgetState
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
+import bassamalim.halala.core.utils.monthLabel
 import bassamalim.halala.core.utils.shortDateLabel
 import bassamalim.halala.features.recurring.RecurringDomain
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
+import java.time.YearMonth
 import javax.inject.Inject
 
 @HiltViewModel
@@ -39,6 +42,7 @@ class HomeViewModel @Inject constructor(
     ) { accounts, transactions, (loans, alerts), (recurring, forecast), overview ->
         val wallet = accounts.firstOrNull { it.account.type == AccountType.CASH && !it.account.archived }
         val today = domain.today()
+        val (monthSpent, monthBefore) = HomeDomain.monthSoFar(transactions, Globals.PRIMARY_CURRENCY, today, domain.zone())
 
         HomeUiState(
             isLoading = false,
@@ -47,6 +51,9 @@ class HomeViewModel @Inject constructor(
             cashBalance = Money.format(wallet?.balanceMinor ?: 0, wallet?.account?.currency ?: Globals.PRIMARY_CURRENCY, decimals = false),
             bankBalance = Money.format(HomeDomain.bankTotal(accounts), Globals.PRIMARY_CURRENCY, decimals = false),
             bankAccountCount = HomeDomain.bankAccounts(accounts).size,
+            monthSpent = Money.format(monthSpent, Globals.PRIMARY_CURRENCY, decimals = false),
+            monthChange = Digests.percent(monthSpent, monthBefore),
+            previousMonthName = monthLabel(YearMonth.from(today).minusMonths(1), today),
             recent = feedOf(transactions)
                 .take(HomeDomain.RECENT_COUNT)
                 .map { it.toItem(domain.zone(), today) },
