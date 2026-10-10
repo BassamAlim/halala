@@ -73,7 +73,7 @@ data class InsightsUiState(
     val places: List<PlaceBar> = emptyList()
 )
 
-/** Activity's third segment: charts of what you spent, for a month you pick on the bars. */
+/** Activity's Insights, its Spending view: charts of what you spent, for a month you pick on the bars. */
 @HiltViewModel
 class InsightsViewModel @Inject constructor(
     private val domain: InsightsDomain,

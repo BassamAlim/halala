@@ -91,7 +91,7 @@ data class MoneyFlowUiState(
 )
 
 /**
- * Money flow, the Activity board's second segment: for one account and month, what came in and
+ * Money flow, Insights' second view (from the Money flow board): for one account and month, what came in and
  * where it went, as a Sankey, and the moves with one side missing.
  */
 @HiltViewModel
