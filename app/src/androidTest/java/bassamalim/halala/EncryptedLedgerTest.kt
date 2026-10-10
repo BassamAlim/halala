@@ -75,7 +75,7 @@ class EncryptedLedgerTest {
     }
 
     @Test
-    fun theLedgerIsEncryptedAndReopensWithItsKeystoreWrappedKey() = runBlocking {
+    fun theLedgerIsEncryptedAndReopensWithItsKeystoreWrappedKey() = runBlocking<Unit> {
         val passphrase = DatabaseKey(keyFile, dbFile).passphrase()
         open(passphrase).also { db ->
             AccountsRepository(db.accountsDao(), clock).create(AccountDraft(null, "Wallet", AccountType.CASH, null, "SAR", 12_345))
@@ -138,7 +138,7 @@ class EncryptedLedgerTest {
     }
 
     @Test
-    fun aBankSmsBecomesAFiledTransactionOnTheEncryptedLedger() = runBlocking {
+    fun aBankSmsBecomesAFiledTransactionOnTheEncryptedLedger() = runBlocking<Unit> {
         open(DatabaseKey(keyFile, dbFile).passphrase()).closing { db ->
             val accounts = AccountsRepository(db.accountsDao(), clock)
             val transactions = TransactionsRepository(db.transactionsDao(), db.accountsDao(), clock)
