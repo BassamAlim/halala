@@ -65,7 +65,7 @@ import kotlin.math.abs
 private val SLICE_INKS = listOf(1f, 0.72f, 0.52f, 0.38f, 0.27f, 0.18f).map { HalalaColors.Text.copy(alpha = it) }
 
 /**
- * Activity's Insights (no board): what a month cost against the five before (tap a bar to look
+ * Insights' Spending view (no board): what a month cost against the five before (tap a bar to look
  * at that month; the chevrons page six months older or newer), where it went by category, how it built up against the month before,
  * where the most went, and where you spent it on the map.
  */

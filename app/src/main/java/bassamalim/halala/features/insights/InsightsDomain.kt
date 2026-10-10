@@ -25,7 +25,7 @@ data class Share(val id: Long?, val name: String?, val minor: Long)
 data class InsightsLedger(val details: List<TransactionDetail>, val places: List<TransactionPlace>)
 
 /**
- * The charts on Activity's Insights: a month's spending by month, category and merchant, how it
+ * The charts on the Insights tab: a month's spending by month, category and merchant, how it
  * built up through the month, and where it was spent. Spending is money out that counts in
  * totals, your share of it, in one currency, as budgets and digests count it.
  */
