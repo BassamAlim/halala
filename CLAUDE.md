@@ -152,7 +152,7 @@ Don't hardcode hex values or `.dp` literals that aren't a named token in `Dimens
   ring"; design system *Logos* group): a jade coin with a thin inner ring and ه cut out, one
   even-odd shape. `ic_halala_mark` is it cropped to the coin (Home's header at 26dp, the lock at
   64dp; never tinted, 32dp minimum elsewhere). The launcher icon is the design's app icon on
-  the same 108dp adaptive grid (`ic_launcher_foreground` over bg, plus a monochrome layer for
+  the same 108dp adaptive grid, its coin scaled to 0.82 (radius ~26) so bg rings it (`ic_launcher_foreground` over bg, plus a monochrome layer for
   themed icons). The small `halala-glyph` (no ring, for under 32dp) is for the notification
   icon when notifications arrive.
 - **Motion and depth** (`core/ui/Animation.kt`): every `clickable` sinks a few dp and springs
