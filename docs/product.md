@@ -200,8 +200,16 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   time. Charges aren't stored: they are its merchant's spending (or, for `PLANNED`, transfers to
   its person), read from the ledger (`Charges`); each one from the anchor on (up to half a cadence
   early) moves the next due date on, and a series with neither merchant nor person is taken as
-  paid when its day passes. A linked one whose charge is more than `Recurring.GRACE_DAYS` late is
-  "missed"; a last charge above the known price is a price rise ("Keep it" takes the new price,
+  paid when its day passes. **Payments linked by hand** (`SeriesPayment`, `series_payments`: one
+  series per transaction at most) are how rent and the like, sent by a transfer that names no
+  one, become a series' charges: Transaction detail's "Pays a subscription or bill" (any money
+  out that counts in totals, but a move: `Charges.canPay`; the active series in its currency)
+  links it, "Not a payment of it" takes it back. A linked payment counts for its series whatever
+  it was paid to and for no other (not its merchant's or person's series, and not in detection);
+  a series with no payee and a linked payment is due after the occurrence its last payment
+  covers (the first from half a cadence before it), and from then on is expected each time, so
+  it can be missed too. Deleting either side drops the link. A linked one whose charge is more
+  than `Recurring.GRACE_DAYS` late is "missed"; a last charge above the known price is a price rise ("Keep it" takes the new price,
   "Remind me to cancel" also asks for a reminder before it renews). Heads-ups
   (`Recurring.headsUp`): a yearly (or 12-month) one renewing within 30 days, and a subscription
   not charged yet whose first day (its anchor: a free trial's end) is within a week; each is a card
@@ -210,7 +218,16 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   (status `PROPOSED`) a payee charged three times or more at a steady week, month or year, the
   last recently: a subscription when the amount barely moves (5%), a bill when it moves some
   (50%), planned for a person; you add or dismiss it (dismissed stays dismissed). It runs on
-  opening and on the screen. Monthly and yearly totals are exact integers, rounded half up. Merging
+  opening and on the screen. Monthly and yearly totals are exact integers, rounded half up.
+  **Share of income**: each active, running one in the main currency, the dearest a month
+  first, with its whole percent (half up; "under 1%" for some but less) of your usual salary
+  (`Recurring.incomeBase`: the pay cycle's, the median of the last three pay days, while a salary
+  has come within `PayCycles.STALE_DAYS`), and all of them together. Salary, not all money in:
+  fixed costs are paid from the money that comes every month, and refunds, money paid back and
+  one-off credits would make them look smaller. Without a current salary it falls back to what
+  comes in a month (`Recurring.monthlyIncome`: income as totals count it over the last three full
+  calendar months, not this one and not the month records began in, which is likely partial;
+  none until there is a full month), and the card says which it used. Merging
   merchants or people moves their series.
 - **Pay cycle** (`PayCycles`): salary to salary. Pay days are `SALARY` credits at least half the
   usual salary (median of the last three) and 20 days apart (an allowance after it doesn't start
@@ -392,7 +409,8 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   method, 14 retirement scenarios, 15 savings terms, 16 tags and the transactions carrying them,
   17 an asset's price source, 18 the places of purchases, 19 term deposits, 20 a budget's tag,
   21 merchants looked up online, 22 goal contributions, 23 merchants' websites, 24 estimated
-  foreign charges),
+  foreign charges, 26 the payments linked by hand to a subscription or bill, on each series as
+  `paymentTransactionUids`),
   keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
 - **Encrypted backups** (Backup and export › Encrypted backups, no board): a `.halala` file
   (`core/backup/BackupFile`) is the JSON export zipped and sealed with AES-256-GCM under a key
@@ -506,10 +524,13 @@ another person" and their transfers; reached from People and from Transaction de
 row), and Transaction detail's **Loan** card (no board: built from the system's card and
 buttons), **Subscriptions and bills** (Recurring board: a month and a year, alert cards for a
 price rise, a missed charge and what was found, Next 30 days and Later, each with its badges;
+plus, not on the board, the "A month, of your income" card under the totals: each one a month
+and its share of income, the dearest first, opening it;
 reached from the Plan tab's card and Home's Coming up), **Subscription or bill** (no board: the
 form, from the list or its + Add), Home's **People owe you** and **Coming up** cards (Home
 board; always shown, so they are a way in even when empty), and the Plan tab's Subscriptions and bills card (Plan board; the rest of Plan comes with
-Phase 4), and Transaction detail's **Split** card and sheet (no board).
+Phase 4), Transaction detail's **Split** card and sheet (no board), and its **Subscription or
+bill** card and "Pays a subscription or bill" sheet (no board: built like the savings goal's).
 
 **Phase 4 (planning)** is built: pay cycles, budgets, savings goals, the forecast, anomaly
 alerts and digests. Screens: the **Plan** tab (Plan board:

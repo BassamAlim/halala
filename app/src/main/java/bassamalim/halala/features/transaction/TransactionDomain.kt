@@ -12,6 +12,9 @@ import kotlinx.coroutines.flow.map
 import bassamalim.halala.core.data.repositories.LoansRepository
 import bassamalim.halala.core.data.repositories.PeopleRepository
 import bassamalim.halala.core.data.repositories.PlacesRepository
+import bassamalim.halala.core.data.repositories.RecurringRepository
+import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
+import bassamalim.halala.core.enums.SeriesStatus
 import bassamalim.halala.core.data.dataSources.room.entities.TransactionPlace
 import bassamalim.halala.core.places.LocationAccess
 import bassamalim.halala.core.places.PlaceCapture
@@ -37,6 +40,7 @@ class TransactionDomain @Inject constructor(
     private val placesRepository: PlacesRepository,
     private val placeCapture: PlaceCapture,
     private val goalsRepository: GoalsRepository,
+    private val recurringRepository: RecurringRepository,
     private val clock: Clock
 ) {
 
@@ -47,6 +51,18 @@ class TransactionDomain @Inject constructor(
     fun locationAccess(): LocationAccess = placeCapture.access()
 
     fun observeGoals(): Flow<List<SavingsGoal>> = goalsRepository.observeAll()
+
+    /** The subscriptions, bills and planned payments it can pay: the ones you added or confirmed. */
+    fun observeSeries(): Flow<List<RecurringSeries>> =
+        recurringRepository.observeAll().map { all -> all.filter { it.status == SeriesStatus.ACTIVE } }
+
+    /** Which series each transaction linked by hand pays: transaction id → series id. */
+    fun observePayments(): Flow<Map<Long, Long>> = recurringRepository.observePayments()
+
+    /** It pays [seriesId]: one of its charges, whatever it was paid to. */
+    suspend fun paySeries(id: Long, seriesId: Long) = recurringRepository.link(id, seriesId)
+
+    suspend fun unpaySeries(id: Long) = recurringRepository.unlink(id)
 
     fun observeContributions(): Flow<List<GoalContribution>> = goalsRepository.observeContributions()
 

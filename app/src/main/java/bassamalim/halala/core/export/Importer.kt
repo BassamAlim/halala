@@ -19,6 +19,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.Person
 import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
+import bassamalim.halala.core.data.dataSources.room.entities.SeriesPayment
 import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
@@ -80,7 +81,8 @@ class Importer @Inject constructor(
         transactionTags = snapshot.transactionTags,
         places = snapshot.places,
         deposits = snapshot.deposits,
-        goalContributions = snapshot.goalContributions
+        goalContributions = snapshot.goalContributions,
+        seriesPayments = snapshot.seriesPayments
     )
 
     companion object {
@@ -463,6 +465,11 @@ class Importer @Inject constructor(
                             it.withdrawn, it.kindBefore?.let(converters::toTransactionKind)
                         )
                     }
+                },
+                seriesPayments = file.recurring.zip(recurring).flatMap { (series, row) ->
+                    series.paymentTransactionUids.map { SeriesPayment(transactionIds.named(it, "transaction"), row.id) }
+                }.also { payments ->
+                    require(payments.map { it.transactionId }.toSet().size == payments.size) { "A transaction pays more than one series." }
                 }
             )
         }

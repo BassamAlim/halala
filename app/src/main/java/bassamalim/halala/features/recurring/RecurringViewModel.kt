@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import bassamalim.halala.core.Globals
 import bassamalim.halala.core.domain.HeadsUp
 import bassamalim.halala.core.domain.Money
+import bassamalim.halala.core.domain.MoneyFlow
 import bassamalim.halala.core.domain.Recurring
 import bassamalim.halala.core.domain.SeriesState
 import bassamalim.halala.core.enums.SeriesStatus
@@ -35,10 +36,15 @@ class RecurringViewModel @Inject constructor(
         viewModelScope.launch { domain.detect() }
     }
 
-    val uiState: StateFlow<RecurringUiState> = combine(domain.observeStates(), domain.observeDismissed()) { states, dismissed ->
+    val uiState: StateFlow<RecurringUiState> = combine(
+        domain.observeStates(),
+        domain.observeDismissed(),
+        domain.observeIncome(Globals.PRIMARY_CURRENCY)
+    ) { states, dismissed, income ->
         val today = domain.today()
         val currency = Globals.PRIMARY_CURRENCY
         val (monthly, yearly) = RecurringDomain.totals(states, currency)
+        val shares = RecurringDomain.shares(states, currency, income?.minor)
         val upcoming = RecurringDomain.upcoming(states)
         val horizon = today.plusDays(RecurringDomain.SOON_DAYS)
 
@@ -47,6 +53,20 @@ class RecurringViewModel @Inject constructor(
             currency = currency,
             monthly = Money.format(monthly, currency, decimals = false),
             yearly = Money.format(yearly, currency, decimals = false),
+            income = income?.let { Money.format(it.minor, currency, decimals = false) },
+            incomeFromSalary = income?.fromSalary == true,
+            incomePercent = income?.let { MoneyFlow.percentOf(monthly, it.minor) },
+            shares = shares.map { (state, percent) ->
+                ShareRow(
+                    id = state.series.id,
+                    merchantId = state.series.merchantId,
+                    name = state.series.name,
+                    initial = initialOf(state.series.name),
+                    monthly = Money.format(state.monthlyMinor, currency, decimals = false),
+                    percent = percent,
+                    underOne = percent == 0
+                )
+            },
             alerts = alertsOf(states, dismissed, today),
             soon = upcoming.filter { !it.nextDue!!.isAfter(horizon) }.map { rowOf(it, today) },
             later = upcoming.filter { it.nextDue!!.isAfter(horizon) }.map { rowOf(it, today) }

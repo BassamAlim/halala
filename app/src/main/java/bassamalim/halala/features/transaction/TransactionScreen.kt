@@ -224,6 +224,18 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
                 )
             }
         }
+        state.paysSeries?.let { name ->
+            HalalaCard(label = stringResource(R.string.series_pays_label)) {
+                Text(text = stringResource(R.string.series_pays, name), style = HalalaType.Body)
+                HalalaButton(
+                    text = stringResource(R.string.series_pays_undo),
+                    onClick = viewModel::onUnpayClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = Spacing.xs)
+                )
+            }
+        }
         if (state.canMarkSalary) HalalaButton(
             text = stringResource(R.string.salary_mark),
             onClick = viewModel::onSalaryClick,
@@ -233,6 +245,12 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
         if (state.canMarkGoal) HalalaButton(
             text = stringResource(R.string.goal_toward_mark),
             onClick = viewModel::onGoalClick,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        if (state.canPaySeries) HalalaButton(
+            text = stringResource(R.string.series_pays_mark),
+            onClick = viewModel::onPaySeriesClick,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -628,6 +646,29 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
                 modifier = Modifier.fillMaxWidth()
             )
         }
+
+        is TransactionSheet.PaySeries -> HalalaSheet(onDismiss = viewModel::onSheetDismiss) {
+            Text(text = stringResource(R.string.series_pays_mark), style = HalalaType.Title)
+            ChoiceChipsMulti(options = state.series, selected = listOfNotNull(sheet.seriesId), onToggle = viewModel::onPaySeriesPick)
+            if (sheet.noSeries) Text(text = stringResource(R.string.series_pays_none), style = HalalaType.Label, color = HalalaColors.StateOver)
+            Text(text = stringResource(R.string.series_pays_body), style = HalalaType.Label, color = HalalaColors.TextMuted)
+            HalalaButton(
+                text = stringResource(R.string.series_pays_confirm),
+                onClick = viewModel::onPaySeriesConfirm,
+                kind = ButtonKind.Primary,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        TransactionSheet.Unpay -> ConfirmSheet(
+            title = stringResource(R.string.series_pays_undo_title),
+            body = stringResource(R.string.series_pays_undo_body),
+            confirmLabel = stringResource(R.string.series_pays_undo),
+            dismissLabel = stringResource(R.string.cancel),
+            onConfirm = viewModel::onUnpayConfirm,
+            onDismiss = viewModel::onSheetDismiss,
+            destructive = false
+        )
 
         TransactionSheet.Ungoal -> ConfirmSheet(
             title = stringResource(R.string.goal_toward_undo_title),

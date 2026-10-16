@@ -27,6 +27,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.SavingsTerms
 import bassamalim.halala.core.data.dataSources.room.entities.Tag
 import bassamalim.halala.core.data.dataSources.room.entities.TransactionTag
 import bassamalim.halala.core.data.dataSources.room.entities.TransactionPlace
+import bassamalim.halala.core.data.dataSources.room.entities.SeriesPayment
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.dataSources.room.entities.ZakatProfile
 import javax.inject.Inject
@@ -65,10 +66,12 @@ class RestoreRepository @Inject constructor(
         transactionTags: List<TransactionTag>,
         places: List<TransactionPlace>,
         deposits: List<Deposit>,
-        goalContributions: List<GoalContribution>
+        goalContributions: List<GoalContribution>,
+        seriesPayments: List<SeriesPayment>
     ) = restoreDao.replaceAll(
         institutions, accounts, refs, rawMessages, categories, rules, merchants, aliases,
         transactions, transfers, checkpoints, people, personAliases, loans, loanEvents, recurring, budgets, goals,
-        assets, snapshots, zakat, scenarios, savingsTerms, tags, transactionTags, places, deposits, goalContributions
+        assets, snapshots, zakat, scenarios, savingsTerms, tags, transactionTags, places, deposits, goalContributions,
+        seriesPayments
     )
 }

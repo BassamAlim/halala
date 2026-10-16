@@ -382,6 +382,12 @@ class MigrationsTest {
     }
 
     @Test
+    fun `27 to 28 adds payments linked by hand and matches the schema`() {
+        helper.createDatabase(DB, 27).use { }
+        helper.runMigrationsAndValidate(DB, 28, true, *MIGRATIONS).close()
+    }
+
+    @Test
     fun `23 to 24 also mends a 23 that had logos instead of goal contributions`() {
         helper.createDatabase(DB, 23).use { db ->
             db.execSQL("DROP TABLE `goal_contributions`")

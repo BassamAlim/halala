@@ -67,6 +67,11 @@ data class TransactionUiState(
     /** A plain transfer in from someone: it can be marked as your salary, and theirs from now on. */
     val canMarkSalary: Boolean = false,
     val goals: List<PersonChoice> = emptyList(),
+    /** The subscription, bill or planned payment you said it pays, once linked. */
+    val paysSeries: String? = null,
+    /** Money out can be linked to a subscription, bill or planned payment in its currency. */
+    val canPaySeries: Boolean = false,
+    val series: List<PersonChoice> = emptyList(),
     /** Everyone to split with, the latest first. */
     val people: List<PersonChoice> = emptyList(),
     val sheet: TransactionSheet? = null,
@@ -180,6 +185,15 @@ sealed interface TransactionSheet {
 
     /** "Not toward a goal", to confirm. */
     data object Ungoal : TransactionSheet
+
+    /**
+     * Linking it as a payment of a subscription, bill or planned payment: [seriesId] chosen (the
+     * only one, to begin with); [noSeries] when confirmed with none chosen.
+     */
+    data class PaySeries(val seriesId: Long?, val noSeries: Boolean = false) : TransactionSheet
+
+    /** "Not a payment of it", to confirm. */
+    data object Unpay : TransactionSheet
 
     /**
      * Splitting it with [selected] people, equally or [byAmount] (each person's [amounts] as

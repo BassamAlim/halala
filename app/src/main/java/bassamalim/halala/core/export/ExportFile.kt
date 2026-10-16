@@ -64,7 +64,7 @@ data class ExportFile(
     val goalContributions: List<ExportGoalContribution> = emptyList()
 ) {
     companion object {
-        const val SCHEMA_VERSION = 25
+        const val SCHEMA_VERSION = 26
     }
 }
 
@@ -244,7 +244,9 @@ data class ExportRecurring(
     val reminderDays: Int?,
     val cancelReminder: Boolean,
     val status: String,
-    val createdAt: String
+    val createdAt: String,
+    /** Since schema 26: the transactions you linked to it by hand as its payments. */
+    val paymentTransactionUids: List<String> = emptyList()
 )
 
 /** A limit on spending each pay cycle: `scope` TOTAL, CATEGORY, EXPENSE_TYPE, MERCHANT or TAG. */

@@ -27,7 +27,11 @@ import bassamalim.halala.core.enums.AmountTone
 import bassamalim.halala.core.enums.CadenceUnit
 import bassamalim.halala.core.enums.RecurringKind
 import bassamalim.halala.core.ui.cadenceLabel
+import androidx.compose.ui.Alignment
+import bassamalim.halala.core.ui.components.Avatar
 import bassamalim.halala.core.ui.components.GroupLabel
+import bassamalim.halala.core.ui.components.ListRow
+import bassamalim.halala.core.ui.theme.HalalaNumbers
 import bassamalim.halala.core.ui.components.HalalaButton
 import bassamalim.halala.core.ui.components.HalalaCard
 import bassamalim.halala.core.ui.components.MONEY_MARK
@@ -82,6 +86,8 @@ fun RecurringScreen(viewModel: RecurringViewModel = hiltViewModel()) {
                     SummaryCard(stringResource(R.string.recurring_yearly), state.yearly, Modifier.weight(1f), currency = state.currency)
                 }
             }
+
+            if (state.shares.isNotEmpty()) item(key = "shares") { ShareCard(state, viewModel) }
 
             for (alert in state.alerts) item(key = "alert-${alert.javaClass.simpleName}-${alert.seriesId}") {
                 AlertCard(alert, viewModel)
@@ -139,6 +145,64 @@ private fun metaOf(row: SeriesRow): String {
         row.endsOn?.let { stringResource(R.string.recurring_ends, it) },
         row.reminderDays?.let { pluralStringResource(R.plurals.recurring_reminder, it, it) }
     ).joinToString(" · ")
+}
+
+/**
+ * What each one costs a month, the dearest first, and its share of what you take in: rent,
+ * insurance and the rest as parts of your income.
+ */
+@Composable
+private fun ShareCard(state: RecurringUiState, viewModel: RecurringViewModel) {
+    HalalaCard(label = stringResource(R.string.recurring_share_label), verticalArrangement = Arrangement.Top) {
+        val income = state.income
+        if (income != null && state.incomePercent != null) MoneyText(
+            text = stringResource(
+                if (state.incomeFromSalary) R.string.recurring_share_total_salary else R.string.recurring_share_total,
+                state.incomePercent, MONEY_MARK
+            ),
+            amount = income,
+            currency = state.currency,
+            style = HalalaType.Body,
+            color = HalalaColors.Text
+        ) else Text(
+            text = stringResource(R.string.recurring_share_unknown),
+            style = HalalaType.Body,
+            color = HalalaColors.TextMuted
+        )
+        Column(Modifier.padding(top = Spacing.xs)) {
+            state.shares.forEachIndexed { index, row ->
+                ListRow(
+                    title = row.name,
+                    divider = index > 0,
+                    leading = { Avatar(initial = row.initial, merchantId = row.merchantId) },
+                    trailing = {
+                        Column(
+                            modifier = Modifier.align(Alignment.CenterVertically),
+                            horizontalAlignment = Alignment.End,
+                            verticalArrangement = Arrangement.spacedBy(Spacing.xxs)
+                        ) {
+                            MoneyText(
+                                text = MONEY_MARK,
+                                amount = row.monthly,
+                                currency = state.currency,
+                                style = HalalaNumbers.Amount,
+                                color = HalalaColors.Text
+                            )
+                            row.percent?.let { percent ->
+                                Text(
+                                    text = if (row.underOne) stringResource(R.string.recurring_share_under_one)
+                                    else stringResource(R.string.recurring_share_percent, percent),
+                                    style = HalalaNumbers.Meta,
+                                    color = HalalaColors.TextMuted
+                                )
+                            }
+                        }
+                    },
+                    onClick = { viewModel.onSeriesClick(row.id) }
+                )
+            }
+        }
+    }
 }
 
 @Composable
