@@ -180,6 +180,23 @@ class RecurringTest {
         assertEquals(2_000_000L, Recurring.monthlyIncome(details, ZoneOffset.UTC, LocalDate.parse("2026-08-05"), "SAR"))
     }
 
+    @Test
+    fun `shares are of your usual salary while one is current, else of all that comes in`() {
+        val salaries = listOf("2026-07-27", "2026-08-27", "2026-09-27").mapIndexed { i, day ->
+            detail(20L + i, day, 2_000_000, Direction.CREDIT, TransactionKind.SALARY)
+        }
+        val refund = detail(30, "2026-08-15", 50_000, Direction.CREDIT, TransactionKind.REFUND)
+        assertEquals(IncomeBase(2_000_000, fromSalary = true), Recurring.incomeBase(salaries + refund, ZoneOffset.UTC, today, "SAR"))
+
+        // No salary for more than 45 days: the average of what came in, August to October (4,050,000 over three).
+        val later = LocalDate.parse("2026-11-20")
+        assertEquals(
+            IncomeBase(1_350_000, fromSalary = false),
+            Recurring.incomeBase(salaries + refund, ZoneOffset.UTC, later, "SAR")
+        )
+        assertNull(Recurring.incomeBase(emptyList(), ZoneOffset.UTC, today, "SAR"))
+    }
+
     private fun detail(
         id: Long,
         day: String,

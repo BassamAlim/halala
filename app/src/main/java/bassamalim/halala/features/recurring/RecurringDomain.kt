@@ -3,6 +3,7 @@ package bassamalim.halala.features.recurring
 import bassamalim.halala.core.data.repositories.AlertsRepository
 import bassamalim.halala.core.data.repositories.RecurringRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
+import bassamalim.halala.core.domain.IncomeBase
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.MoneyFlow
 import bassamalim.halala.core.domain.Recurring
@@ -24,9 +25,9 @@ class RecurringDomain @Inject constructor(
 
     fun observeStates(): Flow<List<SeriesState>> = recurringRepository.observeStates()
 
-    /** What comes in a month in [currency], on average; null until there is a full month of it. */
-    fun observeIncome(currency: String): Flow<Long?> = transactionsRepository.observeAll()
-        .map { details -> Recurring.monthlyIncome(details, clock.zone, today(), currency) }
+    /** Your usual salary in [currency] or, without one, what comes in a month on average; null when neither is known. */
+    fun observeIncome(currency: String): Flow<IncomeBase?> = transactionsRepository.observeAll()
+        .map { details -> Recurring.incomeBase(details, clock.zone, today(), currency) }
         .distinctUntilChanged()
 
     /** The heads-ups you said "keep it" to. */

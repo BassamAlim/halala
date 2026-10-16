@@ -156,7 +156,10 @@ private fun ShareCard(state: RecurringUiState, viewModel: RecurringViewModel) {
     HalalaCard(label = stringResource(R.string.recurring_share_label), verticalArrangement = Arrangement.Top) {
         val income = state.income
         if (income != null && state.incomePercent != null) MoneyText(
-            text = stringResource(R.string.recurring_share_total, state.incomePercent, MONEY_MARK),
+            text = stringResource(
+                if (state.incomeFromSalary) R.string.recurring_share_total_salary else R.string.recurring_share_total,
+                state.incomePercent, MONEY_MARK
+            ),
             amount = income,
             currency = state.currency,
             style = HalalaType.Body,

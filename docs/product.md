@@ -220,10 +220,14 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   (50%), planned for a person; you add or dismiss it (dismissed stays dismissed). It runs on
   opening and on the screen. Monthly and yearly totals are exact integers, rounded half up.
   **Share of income**: each active, running one in the main currency, the dearest a month
-  first, with its whole percent (half up; "under 1%" for some but less) of what comes in a month
-  (`Recurring.monthlyIncome`: income as totals count it over the last three full calendar months,
-  not this one and not the month records began in, which is likely partial; none until there is
-  a full month), and all of them together. Merging
+  first, with its whole percent (half up; "under 1%" for some but less) of your usual salary
+  (`Recurring.incomeBase`: the pay cycle's, the median of the last three pay days, while a salary
+  has come within `PayCycles.STALE_DAYS`), and all of them together. Salary, not all money in:
+  fixed costs are paid from the money that comes every month, and refunds, money paid back and
+  one-off credits would make them look smaller. Without a current salary it falls back to what
+  comes in a month (`Recurring.monthlyIncome`: income as totals count it over the last three full
+  calendar months, not this one and not the month records began in, which is likely partial;
+  none until there is a full month), and the card says which it used. Merging
   merchants or people moves their series.
 - **Pay cycle** (`PayCycles`): salary to salary. Pay days are `SALARY` credits at least half the
   usual salary (median of the last three) and 20 days apart (an allowance after it doesn't start

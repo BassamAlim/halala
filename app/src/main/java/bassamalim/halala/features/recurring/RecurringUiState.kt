@@ -9,8 +9,10 @@ data class RecurringUiState(
     /** Summary style: "6,112", "73,344". */
     val monthly: String = "",
     val yearly: String = "",
-    /** What comes in a month, on average ("25,000"); null until there is a full month of it. */
+    /** Your usual salary ("25,000") or, without one, what comes in a month on average; null when neither is known. */
     val income: String? = null,
+    /** [income] is your salary, not the average of all that comes in. */
+    val incomeFromSalary: Boolean = false,
     /** All of them together as a whole percent of [income]. */
     val incomePercent: Int? = null,
     /** What each one costs a month, the dearest first. */

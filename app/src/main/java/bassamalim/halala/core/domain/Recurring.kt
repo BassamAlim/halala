@@ -34,6 +34,9 @@ data class SeriesState(
     val chargeIds: Set<Long> = emptySet()
 )
 
+/** What shares of income are taken of, a month: your usual salary or, [fromSalary] false, all that comes in. */
+data class IncomeBase(val minor: Long, val fromSalary: Boolean)
+
 /** A heads-up before a charge worth deciding on. */
 enum class HeadsUp {
     /** A yearly (or longer) one renews within [Recurring.RENEWAL_LEAD_DAYS] days. */
@@ -237,6 +240,17 @@ object Recurring {
         val income = inOut(details.filter { monthOf(it) in months }, currency).inMinor
         if (income <= 0) return null
         return BigDecimal.valueOf(income).divide(BigDecimal.valueOf(months.size.toLong()), 0, RoundingMode.HALF_UP).longValueExact()
+    }
+
+    /**
+     * What fixed costs are a share of, in [currency]: your usual salary (the pay cycle's, the
+     * median of the last three pay days) while one is current; otherwise, with no salary or
+     * none for [PayCycles.STALE_DAYS], [monthlyIncome]. Null when neither is known.
+     */
+    fun incomeBase(details: List<TransactionDetail>, zone: ZoneId, today: LocalDate, currency: String): IncomeBase? {
+        val cycle = PayCycles.current(Budgets.salaries(details.filter { it.transaction.currency == currency }, zone), today)
+        cycle.salaryMinor?.takeIf { cycle.fromSalary && it > 0 }?.let { return IncomeBase(it, fromSalary = true) }
+        return monthlyIncome(details, zone, today, currency)?.let { IncomeBase(it, fromSalary = false) }
     }
 
     private const val MIN_CHARGES = 3

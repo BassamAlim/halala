@@ -594,7 +594,8 @@
     <string name="recurring_per_month">%1$s / mo</string>
     <string name="recurring_share_label">A month, of your income</string>
     <string name="recurring_share_total">Together %1$d%% of the %2$s you take in a month, on average over the last three months.</string>
-    <string name="recurring_share_unknown">Each one\'s share of your income shows once there is a full month of it.</string>
+    <string name="recurring_share_total_salary">Together %1$d%% of your salary, %2$s a month.</string>
+    <string name="recurring_share_unknown">Each one\'s share of your income shows once a salary arrives, or there is a full month of income.</string>
     <string name="recurring_share_percent">%1$d%%</string>
     <string name="recurring_share_under_one">under 1%%</string>
     <string name="home_coming_up">Coming up</string>

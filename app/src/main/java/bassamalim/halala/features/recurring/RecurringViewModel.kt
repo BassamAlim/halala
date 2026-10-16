@@ -44,7 +44,7 @@ class RecurringViewModel @Inject constructor(
         val today = domain.today()
         val currency = Globals.PRIMARY_CURRENCY
         val (monthly, yearly) = RecurringDomain.totals(states, currency)
-        val shares = RecurringDomain.shares(states, currency, income)
+        val shares = RecurringDomain.shares(states, currency, income?.minor)
         val upcoming = RecurringDomain.upcoming(states)
         val horizon = today.plusDays(RecurringDomain.SOON_DAYS)
 
@@ -53,8 +53,9 @@ class RecurringViewModel @Inject constructor(
             currency = currency,
             monthly = Money.format(monthly, currency, decimals = false),
             yearly = Money.format(yearly, currency, decimals = false),
-            income = income?.let { Money.format(it, currency, decimals = false) },
-            incomePercent = income?.let { MoneyFlow.percentOf(monthly, it) },
+            income = income?.let { Money.format(it.minor, currency, decimals = false) },
+            incomeFromSalary = income?.fromSalary == true,
+            incomePercent = income?.let { MoneyFlow.percentOf(monthly, it.minor) },
             shares = shares.map { (state, percent) ->
                 ShareRow(
                     id = state.series.id,
