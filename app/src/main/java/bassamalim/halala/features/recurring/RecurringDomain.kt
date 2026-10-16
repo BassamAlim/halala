@@ -2,10 +2,15 @@ package bassamalim.halala.features.recurring
 
 import bassamalim.halala.core.data.repositories.AlertsRepository
 import bassamalim.halala.core.data.repositories.RecurringRepository
+import bassamalim.halala.core.data.repositories.TransactionsRepository
 import bassamalim.halala.core.domain.Money
+import bassamalim.halala.core.domain.MoneyFlow
+import bassamalim.halala.core.domain.Recurring
 import bassamalim.halala.core.domain.SeriesState
 import bassamalim.halala.core.enums.SeriesStatus
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import java.time.Clock
 import java.time.LocalDate
 import javax.inject.Inject
@@ -13,10 +18,16 @@ import javax.inject.Inject
 class RecurringDomain @Inject constructor(
     private val recurringRepository: RecurringRepository,
     private val alertsRepository: AlertsRepository,
+    private val transactionsRepository: TransactionsRepository,
     private val clock: Clock
 ) {
 
     fun observeStates(): Flow<List<SeriesState>> = recurringRepository.observeStates()
+
+    /** What comes in a month in [currency], on average; null until there is a full month of it. */
+    fun observeIncome(currency: String): Flow<Long?> = transactionsRepository.observeAll()
+        .map { details -> Recurring.monthlyIncome(details, clock.zone, today(), currency) }
+        .distinctUntilChanged()
 
     /** The heads-ups you said "keep it" to. */
     fun observeDismissed(): Flow<Set<String>> = alertsRepository.observeDismissed()
@@ -46,6 +57,15 @@ class RecurringDomain @Inject constructor(
             val yearly = Money.sum(running.map { it.yearlyMinor })
             return Money.sum(running.map { it.monthlyMinor }) to yearly
         }
+
+        /**
+         * What each active, running one in [currency] costs a month, the dearest first, with its
+         * whole percent of [incomeMinor] (null without an income).
+         */
+        fun shares(states: List<SeriesState>, currency: String, incomeMinor: Long?): List<Pair<SeriesState, Int?>> = states
+            .filter { it.series.status == SeriesStatus.ACTIVE && it.series.currency == currency && it.monthlyMinor > 0 }
+            .sortedWith(compareByDescending<SeriesState> { it.monthlyMinor }.thenBy { it.series.name.lowercase() })
+            .map { it to incomeMinor?.let { income -> MoneyFlow.percentOf(it.monthlyMinor, income) } }
 
         /** The active ones still running, the soonest due first. */
         fun upcoming(states: List<SeriesState>): List<SeriesState> = states

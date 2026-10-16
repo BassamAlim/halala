@@ -17,6 +17,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.Person
 import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
+import bassamalim.halala.core.data.dataSources.room.entities.SeriesPayment
 import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
@@ -88,7 +89,8 @@ data class LedgerSnapshot(
     val transactionTags: List<TransactionTag> = emptyList(),
     val places: List<TransactionPlace> = emptyList(),
     val deposits: List<Deposit> = emptyList(),
-    val goalContributions: List<GoalContribution> = emptyList()
+    val goalContributions: List<GoalContribution> = emptyList(),
+    val seriesPayments: List<SeriesPayment> = emptyList()
 ) {
     /** The merchant each transaction's title names, by transaction id. */
     fun merchantOf(): Map<Long, Merchant> {
@@ -153,7 +155,8 @@ class Exporter @Inject constructor(
         transactionTags = tagsRepository.getRows(),
         places = placesRepository.getAll(),
         deposits = savingsRepository.getDeposits(),
-        goalContributions = goalsRepository.getContributions()
+        goalContributions = goalsRepository.getContributions(),
+        seriesPayments = recurringRepository.getPayments()
     )
 
     fun fileStem(): String = "halala-${clock.instant().atZone(clock.zone).toLocalDate()}"
@@ -346,7 +349,9 @@ class Exporter @Inject constructor(
                         reminderDays = series.reminderDays,
                         cancelReminder = series.cancelReminder,
                         status = series.status.name,
-                        createdAt = series.createdAt.toString()
+                        createdAt = series.createdAt.toString(),
+                        paymentTransactionUids = snapshot.seriesPayments.filter { it.seriesId == series.id }
+                            .map { transactionUids.getValue(it.transactionId) }
                     )
                 },
                 budgets = snapshot.budgets.map { budget ->

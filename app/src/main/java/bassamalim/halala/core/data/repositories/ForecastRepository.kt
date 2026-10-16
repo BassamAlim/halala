@@ -3,7 +3,6 @@ package bassamalim.halala.core.data.repositories
 import bassamalim.halala.core.data.dataSources.room.daos.AccountsDao
 import bassamalim.halala.core.data.dataSources.room.daos.TransactionsDao
 import bassamalim.halala.core.domain.Budgets
-import bassamalim.halala.core.domain.Charges
 import bassamalim.halala.core.domain.ForecastInputs
 import bassamalim.halala.core.domain.Forecasts
 import bassamalim.halala.core.domain.Money
@@ -42,7 +41,7 @@ class ForecastRepository @Inject constructor(
         val salaries = Budgets.salaries(details, zone)
         val cycle = PayCycles.current(salaries, today)
         val active = states.filter { it.series.status == SeriesStatus.ACTIVE && it.series.currency == currency }
-        val charged = active.flatMap { Charges.of(it.series, details, zone) }.map { it.transactionId }.toSet()
+        val charged = active.flatMap { it.chargeIds }.toSet()
 
         fun variable(from: LocalDate, until: LocalDate) = Money.sum(
             details.filter {

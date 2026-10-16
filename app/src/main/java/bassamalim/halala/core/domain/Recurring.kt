@@ -10,6 +10,7 @@ import bassamalim.halala.core.enums.TransactionKind
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
@@ -28,7 +29,9 @@ data class SeriesState(
     val lastCharge: Charge?,
     /** What it costs over a year and, spread, a month, in minor units. */
     val yearlyMinor: Long,
-    val monthlyMinor: Long
+    val monthlyMinor: Long,
+    /** The transactions that are its charges, so nothing else counts them again. */
+    val chargeIds: Set<Long> = emptySet()
 )
 
 /** A heads-up before a charge worth deciding on. */
@@ -136,20 +139,32 @@ object Recurring {
         BigDecimal.valueOf(yearlyMinor).divide(BigDecimal.valueOf(12), 0, RoundingMode.HALF_UP).longValueExact()
 
     /**
-     * Where [series] stands on [today], given its [charges]. A linked series (a merchant or a
-     * person) moves on one occurrence for each charge from its anchor on (a charge up to half a
-     * cadence early counts); one that isn't linked is taken as paid when its day passes.
+     * Where [series] stands on [today], given its [charges]. A series with a payee (a merchant or
+     * a person) moves on one occurrence for each charge from its anchor on (a charge up to half a
+     * cadence early counts). One without a payee is due after the occurrence its last payment
+     * linked by hand covers or, with none, is taken as paid when its day passes.
      */
     fun stateOf(series: RecurringSeries, charges: List<Charge>, today: LocalDate): SeriesState {
-        val linked = series.merchantId != null || series.personId != null
+        val byPayee = series.merchantId != null || series.personId != null
         val half = cadenceDays(series.every, series.unit) / 2
         val counted = charges.filter { !it.date.isBefore(series.anchor.minusDays(half)) }
+        // Without a payee, the charges are only the payments you linked by hand: once there is
+        // one, it is expected each time, as a payee's charge is.
+        val linked = byPayee || counted.isNotEmpty()
 
-        val next = if (linked) occurrence(series.anchor, series.every, series.unit, counted.size.toLong())
-        else {
+        fun firstFrom(date: LocalDate): LocalDate {
             var k = 0L
-            while (occurrence(series.anchor, series.every, series.unit, k).isBefore(today)) k++
-            occurrence(series.anchor, series.every, series.unit, k)
+            while (occurrence(series.anchor, series.every, series.unit, k).isBefore(date)) k++
+            return occurrence(series.anchor, series.every, series.unit, k)
+        }
+
+        val next = when {
+            byPayee -> occurrence(series.anchor, series.every, series.unit, counted.size.toLong())
+            // The last payment covers the first occurrence from half a cadence before it; the next is due after that.
+            linked -> firstFrom(counted.maxOf { it.date }.minusDays(half)).let { covered ->
+                firstFrom(covered.plusDays(1))
+            }
+            else -> firstFrom(today)
         }
         val ended = series.endsOn?.let { next.isAfter(it) } ?: false
         val last = charges.maxWithOrNull(compareBy({ it.date }, { it.transactionId }))
@@ -162,7 +177,8 @@ object Recurring {
             raisedTo = last?.amountMinor?.takeIf { it > series.amountMinor },
             lastCharge = last,
             yearlyMinor = if (ended) 0 else yearly,
-            monthlyMinor = if (ended) 0 else monthly(yearly)
+            monthlyMinor = if (ended) 0 else monthly(yearly),
+            chargeIds = charges.mapTo(mutableSetOf()) { it.transactionId }
         )
     }
 
@@ -204,6 +220,25 @@ object Recurring {
         )
     }
 
+    /** How many full months [monthlyIncome] averages over. */
+    const val INCOME_MONTHS = 3L
+
+    /**
+     * What comes in a month in [currency], on average: income as totals count it, over the last
+     * [INCOME_MONTHS] full calendar months, not counting the month records began in (it is
+     * likely partial). Null until there is a full month, or when nothing came in.
+     */
+    fun monthlyIncome(details: List<TransactionDetail>, zone: ZoneId, today: LocalDate, currency: String): Long? {
+        fun monthOf(detail: TransactionDetail) = YearMonth.from(detail.transaction.occurredAt.atZone(zone))
+        val first = details.minOfOrNull { it.transaction.occurredAt }?.atZone(zone)?.let(YearMonth::from) ?: return null
+        val thisMonth = YearMonth.from(today)
+        val months = (1..INCOME_MONTHS).map { thisMonth.minusMonths(it) }.filter { it.isAfter(first) }.toSet()
+        if (months.isEmpty()) return null
+        val income = inOut(details.filter { monthOf(it) in months }, currency).inMinor
+        if (income <= 0) return null
+        return BigDecimal.valueOf(income).divide(BigDecimal.valueOf(months.size.toLong()), 0, RoundingMode.HALF_UP).longValueExact()
+    }
+
     private const val MIN_CHARGES = 3
     private const val LOOK_BACK = 6
 
@@ -226,18 +261,34 @@ object Charges {
     private fun TransactionDetail.toCharge(zone: ZoneId) =
         Charge(transaction.id, transaction.occurredAt.atZone(zone).toLocalDate(), transaction.amountMinor)
 
-    /** The charges of [series]: its merchant's (or person's), in its currency. */
-    fun of(series: RecurringSeries, details: List<TransactionDetail>, zone: ZoneId): List<Charge> = details
+    /** Money out that can be linked by hand as a payment of a series: anything spent or sent, but a move. */
+    fun canPay(detail: TransactionDetail) =
+        detail.transaction.direction == Direction.DEBIT && !detail.isInternalTransfer && detail.transaction.kind.countsInTotals
+
+    /**
+     * The charges of [series], in its currency: the payments linked to it by hand ([paidTo],
+     * transaction id → series id), and its merchant's (or person's) that aren't linked to another.
+     */
+    fun of(
+        series: RecurringSeries,
+        details: List<TransactionDetail>,
+        zone: ZoneId,
+        paidTo: Map<Long, Long> = emptyMap()
+    ): List<Charge> = details
         .filter { detail ->
-            detail.isCharge() && detail.transaction.currency == series.currency &&
-                    ((series.merchantId != null && detail.merchantId == series.merchantId && detail.personId == null) ||
-                            (series.personId != null && detail.personId == series.personId))
+            val paid = paidTo[detail.transaction.id]
+            detail.transaction.currency == series.currency && when (paid) {
+                null -> detail.isCharge() &&
+                        ((series.merchantId != null && detail.merchantId == series.merchantId && detail.personId == null) ||
+                                (series.personId != null && detail.personId == series.personId))
+                else -> paid == series.id && canPay(detail)
+            }
         }
         .map { it.toCharge(zone) }
 
-    /** Every payee's charges, by merchant or person and currency, for detection. */
-    fun groups(details: List<TransactionDetail>, zone: ZoneId): List<ChargeGroup> {
-        val charges = details.filter { it.isCharge() }
+    /** Every payee's charges, by merchant or person and currency, for detection; [paid] ones already belong to a series. */
+    fun groups(details: List<TransactionDetail>, zone: ZoneId, paid: Set<Long> = emptySet()): List<ChargeGroup> {
+        val charges = details.filter { it.isCharge() && it.transaction.id !in paid }
         val byPerson = charges.filter { it.personId != null }
             .groupBy { it.personId!! to it.transaction.currency }
             .map { (key, list) -> ChargeGroup(list.first().personName.orEmpty(), null, key.first, key.second, list.map { it.toCharge(zone) }) }

@@ -1,7 +1,12 @@
 package bassamalim.halala.core.domain
 
 import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
+import bassamalim.halala.core.data.dataSources.room.entities.Transaction
+import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.enums.CadenceUnit
+import bassamalim.halala.core.enums.Direction
+import bassamalim.halala.core.enums.TransactionKind
+import bassamalim.halala.core.enums.TransactionSource
 import bassamalim.halala.core.enums.RecurringKind
 import bassamalim.halala.core.enums.SeriesStatus
 import org.junit.Assert.assertEquals
@@ -11,6 +16,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneOffset
 
 class RecurringTest {
 
@@ -128,4 +134,65 @@ class RecurringTest {
         val stopped = ChargeGroup("Gym", 8, null, "SAR", listOf(charge("2026-01-10"), charge("2026-02-10"), charge("2026-03-10")))
         assertEquals(emptyList<Proposal>(), Recurring.detect(listOf(stopped), today))
     }
+
+    @Test
+    fun `a payment linked by hand covers the occurrence it is closest to, and the next is expected`() {
+        val rent = series("2026-06-01", amount = 400_000, merchantId = null)
+        // Paid a few days early for October: November is next.
+        val paid = Recurring.stateOf(rent, listOf(charge("2026-09-28", 400_000)), today)
+        assertEquals(LocalDate.parse("2026-11-01"), paid.nextDue)
+        assertFalse(paid.missed)
+
+        // Linked once, in August: September's didn't come, so it is missed.
+        val late = Recurring.stateOf(rent, listOf(charge("2026-08-02", 400_000)), today)
+        assertEquals(LocalDate.parse("2026-09-01"), late.nextDue)
+        assertTrue(late.missed)
+    }
+
+    @Test
+    fun `a payment linked by hand counts for its series and no other`() {
+        val netflix = series("2026-09-03").copy(id = 1)
+        val rent = series("2026-10-01", merchantId = null).copy(id = 2)
+        val viaNetflix = detail(10, "2026-09-03", 5_600, merchantId = 1)
+        val rentTransfer = detail(11, "2026-09-29", 400_000, kind = TransactionKind.TRANSFER_OUT)
+        val paidTo = mapOf(10L to 2L, 11L to 2L)
+
+        assertEquals(emptyList<Charge>(), Charges.of(netflix, listOf(viaNetflix, rentTransfer), ZoneOffset.UTC, paidTo))
+        assertEquals(listOf(10L, 11L), Charges.of(rent, listOf(viaNetflix, rentTransfer), ZoneOffset.UTC, paidTo).map { it.transactionId })
+        assertEquals(emptyList<ChargeGroup>(), Charges.groups(listOf(viaNetflix), ZoneOffset.UTC, paid = setOf(10L)))
+    }
+
+    @Test
+    fun `income a month averages the full months before this one, not the one records began in`() {
+        val details = listOf(
+            detail(1, "2026-06-20", 900_000, Direction.CREDIT, TransactionKind.SALARY), // the first month: partial
+            detail(2, "2026-07-27", 2_000_000, Direction.CREDIT, TransactionKind.SALARY),
+            detail(3, "2026-08-27", 2_000_000, Direction.CREDIT, TransactionKind.SALARY),
+            detail(4, "2026-08-15", 50_000, Direction.CREDIT, TransactionKind.REFUND),
+            detail(5, "2026-08-16", 70_000), // spending isn't income
+            detail(6, "2026-09-27", 2_000_000, Direction.CREDIT, TransactionKind.SALARY) // this month: not yet
+        )
+        // June began the records and September isn't over: July and August, 4,050,000 over two.
+        assertEquals(2_025_000L, Recurring.monthlyIncome(details, ZoneOffset.UTC, today, "SAR"))
+        // On 10 July there is no full month yet.
+        assertNull(Recurring.monthlyIncome(details, ZoneOffset.UTC, LocalDate.parse("2026-07-10"), "SAR"))
+        // In August, only July counts.
+        assertEquals(2_000_000L, Recurring.monthlyIncome(details, ZoneOffset.UTC, LocalDate.parse("2026-08-05"), "SAR"))
+    }
+
+    private fun detail(
+        id: Long,
+        day: String,
+        minor: Long,
+        direction: Direction = Direction.DEBIT,
+        kind: TransactionKind = TransactionKind.PURCHASE,
+        merchantId: Long? = null
+    ) = TransactionDetail(
+        transaction = Transaction(
+            id = id, uid = "t$id", accountId = 1, direction = direction, amountMinor = minor, currency = "SAR",
+            occurredAt = Instant.parse("${day}T10:00:00Z"), kind = kind, source = TransactionSource.SMS, createdAt = Instant.EPOCH
+        ),
+        accountNickname = "", institutionName = null, counterpartId = null, counterpartAccountId = null,
+        counterpartNickname = null, counterpartInstitutionName = null, isTransferInLeg = false, merchantId = merchantId
+    )
 }

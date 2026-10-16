@@ -5,6 +5,8 @@ import androidx.test.core.app.ApplicationProvider
 import bassamalim.halala.core.data.TEST_CLOCK
 import bassamalim.halala.core.data.dataSources.room.AppDatabase
 import bassamalim.halala.core.data.testDatabase
+import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
+import bassamalim.halala.core.enums.CadenceUnit
 import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.enums.RecurringKind
 import bassamalim.halala.core.enums.SeriesStatus
@@ -18,6 +20,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -84,5 +87,40 @@ class RecurringRepositoryTest {
 
         classification.mergeMerchants(netflix.id, other.id)
         assertEquals(other.id, recurring.getAll().single().merchantId)
+    }
+
+    @Test
+    fun `a transfer linked by hand pays its series, and only that one`() = runTest {
+        val rent = recurring.save(
+            RecurringSeries(
+                uid = "", kind = RecurringKind.BILL, name = "Rent", amountMinor = 400_000, currency = "SAR",
+                unit = CadenceUnit.MONTH, anchor = LocalDate.parse("2026-09-01"), status = SeriesStatus.ACTIVE, createdAt = Instant.EPOCH
+            )
+        )
+        val transfer = pay("TRANSFER 2093", "2026-09-28", 400_000, TransactionKind.TRANSFER_OUT)
+
+        recurring.link(transfer, rent)
+        assertEquals(mapOf(transfer to rent), recurring.observePayments().first())
+        val state = recurring.observeStates().first().single { it.series.id == rent }
+        assertEquals(LocalDate.parse("2026-11-01"), state.nextDue)
+        assertEquals(setOf(transfer), state.chargeIds)
+
+        recurring.unlink(transfer)
+        assertEquals(emptyMap<Long, Long>(), recurring.observePayments().first())
+        assertEquals(emptySet<Long>(), recurring.observeStates().first().single { it.series.id == rent }.chargeIds)
+    }
+
+    @Test
+    fun `charges linked to another series aren't proposed again`() = runTest {
+        val rent = recurring.save(
+            RecurringSeries(
+                uid = "", kind = RecurringKind.BILL, name = "Rent", amountMinor = 5_600, currency = "SAR",
+                unit = CadenceUnit.MONTH, anchor = LocalDate.parse("2026-07-01"), status = SeriesStatus.ACTIVE, createdAt = Instant.EPOCH
+            )
+        )
+        for (day in listOf("2026-07-03", "2026-08-03", "2026-09-03")) recurring.link(pay("NETFLIX.COM", day), rent)
+        classification.applyRules()
+
+        assertEquals(0, recurring.detect())
     }
 }

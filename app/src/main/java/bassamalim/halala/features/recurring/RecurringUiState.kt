@@ -9,6 +9,12 @@ data class RecurringUiState(
     /** Summary style: "6,112", "73,344". */
     val monthly: String = "",
     val yearly: String = "",
+    /** What comes in a month, on average ("25,000"); null until there is a full month of it. */
+    val income: String? = null,
+    /** All of them together as a whole percent of [income]. */
+    val incomePercent: Int? = null,
+    /** What each one costs a month, the dearest first. */
+    val shares: List<ShareRow> = emptyList(),
     val alerts: List<RecurringAlert> = emptyList(),
     /** Due within the next 30 days, then after. */
     val soon: List<SeriesRow> = emptyList(),
@@ -60,6 +66,21 @@ sealed interface RecurringAlert {
         val unit: CadenceUnit
     ) : RecurringAlert
 }
+
+/**
+ * What one running series costs a month, summary style ("1,500"), and its whole [percent] of
+ * your income (0 for under one; null without an income).
+ */
+data class ShareRow(
+    val id: Long,
+    val merchantId: Long?,
+    val name: String,
+    val initial: String,
+    val monthly: String,
+    val percent: Int?,
+    /** Some, but under a whole percent. */
+    val underOne: Boolean
+)
 
 /**
  * One series as the board lists it: [due] ("3 Oct"), [endsOn] ("Aug 2027") for a contract, and

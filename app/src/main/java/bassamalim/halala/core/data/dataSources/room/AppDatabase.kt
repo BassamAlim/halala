@@ -49,6 +49,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.Deposit
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsTerms
+import bassamalim.halala.core.data.dataSources.room.entities.SeriesPayment
 import bassamalim.halala.core.data.dataSources.room.entities.Tag
 import bassamalim.halala.core.data.dataSources.room.entities.TransactionTag
 import bassamalim.halala.core.data.dataSources.room.entities.TransactionPlace
@@ -88,9 +89,10 @@ import bassamalim.halala.core.data.dataSources.room.entities.ZakatProfile
         TransactionPlace::class,
         Deposit::class,
         GoalContribution::class,
-        MerchantLogo::class
+        MerchantLogo::class,
+        SeriesPayment::class
     ],
-    version = 27,
+    version = 28,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

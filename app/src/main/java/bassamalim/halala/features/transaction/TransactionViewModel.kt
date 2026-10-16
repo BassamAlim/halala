@@ -10,6 +10,10 @@ import bassamalim.halala.core.domain.ForeignRates
 import bassamalim.halala.core.domain.LoanState
 import bassamalim.halala.core.domain.Loans
 import bassamalim.halala.core.domain.Splits
+import bassamalim.halala.core.domain.Charges
+import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
+import bassamalim.halala.core.data.dataSources.room.entities.TransactionPlace
+import bassamalim.halala.core.places.LocationAccess
 import bassamalim.halala.core.domain.Goals
 import bassamalim.halala.core.data.dataSources.room.entities.GoalContribution
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
@@ -61,16 +65,23 @@ class TransactionViewModel @Inject constructor(
 
     private data class Savings(val goals: List<SavingsGoal>, val contributions: List<GoalContribution>, val types: Map<Long, AccountType>)
 
+    private data class Extras(
+        val place: TransactionPlace?,
+        val access: LocationAccess,
+        val series: List<RecurringSeries>,
+        val payments: Map<Long, Long>
+    )
+
         /** Looked at again when the screen comes back, after you may have allowed it. */
     private val locationAccess = MutableStateFlow(domain.locationAccess())
 
     val uiState: StateFlow<TransactionUiState> = combine(
         combine(domain.observe(id), domain.observeLoans(), domain.observePeople(), ::Triple),
         combine(domain.observeCategories(), domain.observeRules(), ::Pair),
-        combine(domain.observePlace(id), locationAccess, ::Pair),
+        combine(domain.observePlace(id), locationAccess, domain.observeSeries(), domain.observePayments(), ::Extras),
         combine(domain.observeGoals(), domain.observeContributions(), domain.observeAccountTypes(), ::Savings),
         combine(confirmingDelete, sheet, ::Pair)
-    ) { (detail, loans, people), (categories, rules), (place, access), savings, (confirming, sheet) ->
+    ) { (detail, loans, people), (categories, rules), (place, access, allSeries, payments), savings, (confirming, sheet) ->
         // Gone (deleted from here or elsewhere): the screen stays as it was while it leaves.
         if (detail == null) return@combine TransactionUiState(isLoading = true)
 
@@ -84,6 +95,8 @@ class TransactionViewModel @Inject constructor(
         val title = titleOf(detail)
         val contribution = savings.contributions.firstOrNull { it.transactionId == tx.id || it.transactionId == detail.counterpartId }
         val loanPart = loans.any { state -> state.events.any { it.transactionId == tx.id } }
+        val series = allSeries.filter { it.currency == tx.currency }.sortedBy { it.name.lowercase() }
+        val paysSeries = payments[tx.id]?.let { seriesId -> allSeries.firstOrNull { it.id == seriesId }?.name }
         val canSplit = tx.direction == Direction.DEBIT && tx.kind.countsInTotals && !detail.isInternalTransfer &&
                 detail.sharedMinor == 0L
 
@@ -148,6 +161,9 @@ class TransactionViewModel @Inject constructor(
             canMarkSalary = tx.kind == TransactionKind.TRANSFER_IN && detail.personId != null && !detail.isInternalTransfer,
             canMarkGoal = contribution == null && savings.goals.isNotEmpty() && Goals.canContribute(detail, loanPart),
             goals = savings.goals.map { PersonChoice(it.id, it.name) },
+            paysSeries = paysSeries,
+            canPaySeries = paysSeries == null && series.isNotEmpty() && Charges.canPay(detail),
+            series = series.map { PersonChoice(it.id, it.name) },
             sheet = (sheet as? TransactionSheet.Split)?.let { previewed(it, tx.amountMinor, tx.currency) } ?: sheet,
             showsPlace = Rules.canCategorise(detail),
             place = place?.let { PlaceInfo(it.latitude, it.longitude, it.accuracyMeters) },
@@ -326,6 +342,26 @@ class TransactionViewModel @Inject constructor(
     fun onUngoalConfirm() {
         sheet.update { null }
         viewModelScope.launch { domain.uncontribute(id) }
+    }
+
+    /** "Pays a subscription or bill": the only one chosen already. */
+    fun onPaySeriesClick() = sheet.update { TransactionSheet.PaySeries(uiState.value.series.singleOrNull()?.id) }
+
+    fun onPaySeriesPick(seriesId: Long) =
+        sheet.update { (it as? TransactionSheet.PaySeries)?.copy(seriesId = seriesId, noSeries = false) ?: it }
+
+    fun onPaySeriesConfirm() {
+        val pay = sheet.value as? TransactionSheet.PaySeries ?: return
+        val seriesId = pay.seriesId ?: return sheet.update { pay.copy(noSeries = true) }
+        sheet.update { null }
+        viewModelScope.launch { domain.paySeries(id, seriesId) }
+    }
+
+    fun onUnpayClick() = sheet.update { TransactionSheet.Unpay }
+
+    fun onUnpayConfirm() {
+        sheet.update { null }
+        viewModelScope.launch { domain.unpaySeries(id) }
     }
 
     fun onSplitClick() = sheet.update { TransactionSheet.Split() }

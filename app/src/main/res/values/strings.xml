@@ -592,6 +592,11 @@
     <string name="recurring_delete_body">Its payments stay as they are. If it repeats again, Halala may suggest it.</string>
     <string name="recurring_plan_next">Next: %1$s, %2$s</string>
     <string name="recurring_per_month">%1$s / mo</string>
+    <string name="recurring_share_label">A month, of your income</string>
+    <string name="recurring_share_total">Together %1$d%% of the %2$s you take in a month, on average over the last three months.</string>
+    <string name="recurring_share_unknown">Each one\'s share of your income shows once there is a full month of it.</string>
+    <string name="recurring_share_percent">%1$d%%</string>
+    <string name="recurring_share_under_one">under 1%%</string>
     <string name="home_coming_up">Coming up</string>
     <string name="home_coming_up_empty">Nothing due in the next month. Add a subscription or bill.</string>
     <string name="home_people_owe">People owe you</string>
@@ -631,6 +636,15 @@
     <string name="goal_toward_undo">Not toward a goal</string>
     <string name="goal_toward_undo_title">Not toward a goal?</string>
     <string name="goal_toward_undo_body">It no longer counts in the goal, and counts as it did before.</string>
+    <string name="series_pays_label">Subscription or bill</string>
+    <string name="series_pays">Pays %1$s</string>
+    <string name="series_pays_mark">Pays a subscription or bill</string>
+    <string name="series_pays_none">Choose which one it pays</string>
+    <string name="series_pays_body">It counts as a payment of it, whatever it was paid to, and moves when it is next due on. For rent and the like, sent by a transfer that names no one.</string>
+    <string name="series_pays_confirm">Link it</string>
+    <string name="series_pays_undo">Not a payment of it</string>
+    <string name="series_pays_undo_title">Not a payment of it?</string>
+    <string name="series_pays_undo_body">It no longer counts as one of its payments.</string>
     <string name="paid_for">Paid for someone</string>
     <string name="paid_for_mark">Paid for someone else</string>
     <string name="paid_for_title">Paid for %1$s</string>
