@@ -20,7 +20,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.SeriesPayment
-import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
+import bassamalim.halala.core.data.dataSources.room.entities.RetirementPlan
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.Deposit
@@ -41,6 +41,7 @@ import bassamalim.halala.core.enums.LoanEventType
 import kotlinx.serialization.json.Json
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneOffset
 import javax.inject.Inject
 
 /**
@@ -75,7 +76,7 @@ class Importer @Inject constructor(
         assets = snapshot.assets,
         snapshots = snapshot.snapshots,
         zakat = snapshot.zakat,
-        scenarios = snapshot.scenarios,
+        retirement = snapshot.retirement,
         savingsTerms = snapshot.savingsTerms,
         tags = snapshot.tags,
         transactionTags = snapshot.transactionTags,
@@ -431,10 +432,18 @@ class Importer @Inject constructor(
                         paidHijriYear = it.paidHijriYear, remind = it.remind
                     )
                 },
-                scenarios = file.scenarios.mapIndexed { index, it ->
-                    RetirementScenario(
-                        index + 1L, it.uid, it.name, it.ageNow, it.retireAt, it.startMinor, it.monthlyMinor, it.returnPercent,
-                        it.inflationPercent, it.wantedMinor, it.currency, Instant.parse(it.createdAt)
+                retirement = file.retirement?.let {
+                    RetirementPlan(
+                        goalId = it.goalUid?.let { uid -> goals.associate { goal -> goal.uid to goal.id }.named(uid, "goal") },
+                        birthYear = it.birthYear, retireAt = it.retireAt, wantedMinor = it.wantedMinor,
+                        returnPercent = it.returnPercent, inflationPercent = it.inflationPercent, currency = it.currency
+                    )
+                } ?: file.scenarios.maxByOrNull { Instant.parse(it.createdAt) }?.let {
+                    // An older file's latest scenario is the plan; its age then gives the year you were born.
+                    RetirementPlan(
+                        goalId = null, birthYear = Instant.parse(it.createdAt).atZone(ZoneOffset.UTC).year - it.ageNow,
+                        retireAt = it.retireAt, wantedMinor = it.wantedMinor, returnPercent = it.returnPercent,
+                        inflationPercent = it.inflationPercent, currency = it.currency
                     )
                 },
                 savingsTerms = file.savingsTerms.map {

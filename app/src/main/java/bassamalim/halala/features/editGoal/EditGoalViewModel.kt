@@ -35,14 +35,18 @@ class EditGoalViewModel @Inject constructor(
     private val problems = MutableStateFlow(emptySet<GoalProblem>())
     private val picking = MutableStateFlow(false)
     private val confirmingDelete = MutableStateFlow(false)
+    private val setByRetirement = MutableStateFlow(false)
 
     init {
-        if (id != 0L) viewModelScope.launch { form.value = domain.load(id) ?: GoalForm() }
+        if (id != 0L) viewModelScope.launch {
+            setByRetirement.value = domain.setByRetirement(id)
+            form.value = domain.load(id) ?: GoalForm()
+        }
     }
 
     val uiState: StateFlow<EditGoalUiState> = combine(
-        form, problems, domain.observeAccounts(), picking, confirmingDelete
-    ) { form, problems, accounts, picking, confirming ->
+        combine(form, setByRetirement, ::Pair), problems, domain.observeAccounts(), picking, confirmingDelete
+    ) { (form, retirement), problems, accounts, picking, confirming ->
         val today = domain.today()
         EditGoalUiState(
             isLoading = form == null,
@@ -55,7 +59,8 @@ class EditGoalViewModel @Inject constructor(
             problems = problems,
             pickingDate = picking,
             pickFrom = form?.targetDate ?: today.plusYears(1),
-            isConfirmingDelete = confirming
+            isConfirmingDelete = confirming,
+            setByRetirement = retirement
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EditGoalUiState())
 

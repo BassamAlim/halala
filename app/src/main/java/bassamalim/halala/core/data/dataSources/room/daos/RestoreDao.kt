@@ -20,7 +20,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.Person
 import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
-import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
+import bassamalim.halala.core.data.dataSources.room.entities.RetirementPlan
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.Deposit
@@ -64,7 +64,7 @@ interface RestoreDao {
         assets: List<Asset>,
         snapshots: List<NetWorthSnapshot>,
         zakat: ZakatProfile?,
-        scenarios: List<RetirementScenario>,
+        retirement: RetirementPlan?,
         savingsTerms: List<SavingsTerms>,
         tags: List<Tag>,
         transactionTags: List<TransactionTag>,
@@ -81,6 +81,7 @@ interface RestoreDao {
         clearDeposits()
         clearGoalContributions()
         clearSeriesPayments()
+        clearRetirement()
         clearTransactionTags()
         clearPlaces()
         clearTags()
@@ -93,7 +94,6 @@ interface RestoreDao {
         clearAssets()
         clearSnapshots()
         clearZakat()
-        clearScenarios()
         clearTransfers()
         clearCheckpoints()
         clearRefs()
@@ -127,10 +127,10 @@ interface RestoreDao {
         insertTags(tags) // before budgets: a budget can be on a tag
         insertBudgets(budgets)
         insertGoals(goals)
+        retirement?.let { insertRetirement(it) }
         insertAssets(assets)
         insertSnapshots(snapshots)
         zakat?.let { insertZakat(it) }
-        insertScenarios(scenarios)
         insertSavingsTerms(savingsTerms)
         insertTransactionTags(transactionTags)
         insertPlaces(places)
@@ -159,7 +159,7 @@ interface RestoreDao {
     @Query("DELETE FROM assets") suspend fun clearAssets()
     @Query("DELETE FROM net_worth_snapshots") suspend fun clearSnapshots()
     @Query("DELETE FROM zakat_profile") suspend fun clearZakat()
-    @Query("DELETE FROM retirement_scenarios") suspend fun clearScenarios()
+    @Query("DELETE FROM retirement_plan") suspend fun clearRetirement()
     @Query("DELETE FROM savings_terms") suspend fun clearSavingsTerms()
     @Query("DELETE FROM deposits") suspend fun clearDeposits()
     @Query("DELETE FROM goal_contributions") suspend fun clearGoalContributions()
@@ -194,7 +194,7 @@ interface RestoreDao {
     @Insert suspend fun insertAssets(rows: List<Asset>)
     @Insert suspend fun insertSnapshots(rows: List<NetWorthSnapshot>)
     @Insert suspend fun insertZakat(row: ZakatProfile)
-    @Insert suspend fun insertScenarios(rows: List<RetirementScenario>)
+    @Insert suspend fun insertRetirement(row: RetirementPlan)
     @Insert suspend fun insertSavingsTerms(rows: List<SavingsTerms>)
     @Insert suspend fun insertDeposits(rows: List<Deposit>)
     @Insert suspend fun insertGoalContributions(rows: List<GoalContribution>)

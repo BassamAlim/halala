@@ -7,7 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * The phone is the only place the full ledger lives: every schema change is a migration, never
  * a destructive rebuild. Add each one here, in order, against the schemas in `app/schemas`.
  */
-val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6, Migration6To7, Migration7To8, Migration8To9, Migration9To10, Migration10To11, Migration11To12, Migration12To13, Migration13To14, Migration14To15, Migration15To16, Migration16To17, Migration17To18, Migration18To19, Migration19To20, Migration20To21, Migration21To22, Migration22To23, Migration23To24, Migration24To25, Migration25To26, Migration26To27, Migration27To28)
+val MIGRATIONS = arrayOf<Migration>(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6, Migration6To7, Migration7To8, Migration8To9, Migration9To10, Migration10To11, Migration11To12, Migration12To13, Migration13To14, Migration14To15, Migration15To16, Migration16To17, Migration17To18, Migration18To19, Migration19To20, Migration20To21, Migration21To22, Migration22To23, Migration23To24, Migration24To25, Migration25To26, Migration26To27, Migration27To28, Migration28To29)
 
 /** Phase 1: raw bank SMS, the digits learned per bank, reported balances, and SMS links. */
 private object Migration1To2 : Migration(1, 2) {
@@ -489,5 +489,27 @@ private object Migration27To28 : Migration(27, 28) {
                     "FOREIGN KEY(`seriesId`) REFERENCES `recurring_series`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )"
         )
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_series_payments_seriesId` ON `series_payments` (`seriesId`)")
+    }
+}
+
+/**
+ * Retirement is one plan you keep, not scenarios to compare: the latest scenario becomes it (its
+ * age then gives the year you were born), with no goal until you choose one.
+ */
+private object Migration28To29 : Migration(28, 29) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `retirement_plan` (`id` INTEGER NOT NULL, `goalId` INTEGER, `birthYear` INTEGER NOT NULL, " +
+                    "`retireAt` INTEGER NOT NULL, `wantedMinor` INTEGER NOT NULL, `returnPercent` TEXT NOT NULL, " +
+                    "`inflationPercent` TEXT NOT NULL, `currency` TEXT NOT NULL, PRIMARY KEY(`id`), " +
+                    "FOREIGN KEY(`goalId`) REFERENCES `savings_goals`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )"
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_retirement_plan_goalId` ON `retirement_plan` (`goalId`)")
+        db.execSQL(
+            "INSERT INTO `retirement_plan` (id, goalId, birthYear, retireAt, wantedMinor, returnPercent, inflationPercent, currency) " +
+                    "SELECT 1, NULL, CAST(strftime('%Y', createdAt / 1000, 'unixepoch') AS INTEGER) - ageNow, retireAt, wantedMinor, " +
+                    "returnPercent, inflationPercent, currency FROM `retirement_scenarios` ORDER BY createdAt DESC, id DESC LIMIT 1"
+        )
+        db.execSQL("DROP TABLE IF EXISTS `retirement_scenarios`")
     }
 }

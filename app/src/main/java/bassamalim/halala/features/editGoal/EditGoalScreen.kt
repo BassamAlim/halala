@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -26,6 +27,8 @@ import bassamalim.halala.core.ui.components.HalalaTextField
 import bassamalim.halala.core.ui.components.ListCard
 import bassamalim.halala.core.ui.components.ListRow
 import bassamalim.halala.core.ui.components.TopBar
+import bassamalim.halala.core.ui.theme.HalalaColors
+import bassamalim.halala.core.ui.theme.HalalaType
 import bassamalim.halala.core.ui.theme.Insets
 import bassamalim.halala.core.ui.theme.Spacing
 
@@ -63,7 +66,8 @@ fun EditGoalScreen(viewModel: EditGoalViewModel = hiltViewModel()) {
                 capitalization = KeyboardCapitalization.Words
             )
         }
-        FormField(
+        if (state.setByRetirement) Text(text = stringResource(R.string.goal_set_by_retirement), style = HalalaType.Label, color = HalalaColors.TextMuted)
+        else FormField(
             label = stringResource(R.string.goal_target),
             error = stringResource(R.string.amount_invalid).takeIf { GoalProblem.TargetInvalid in state.problems }
         ) {
@@ -74,7 +78,7 @@ fun EditGoalScreen(viewModel: EditGoalViewModel = hiltViewModel()) {
                 isError = GoalProblem.TargetInvalid in state.problems
             )
         }
-        ListCard(Modifier.fillMaxWidth()) {
+        if (!state.setByRetirement) ListCard(Modifier.fillMaxWidth()) {
             ListRow(
                 title = stringResource(R.string.goal_by),
                 subtitle = state.dateLabel ?: stringResource(R.string.goal_no_date),

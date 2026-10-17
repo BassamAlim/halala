@@ -320,10 +320,19 @@ These are decided (mostly by the spec); don't re-litigate them in code.
 - **Retirement and compound interest** (`Planner`): exact decimals throughout (BigDecimal,
   128-bit), saving compounding monthly at the yearly rate over twelve, inflation taken off by
   the year, the income a pot supports at a 4% yearly withdrawal, and the extra monthly saving
-  that would close a gap; rounded to minor units once. The planner starts from your savings,
-  funds and gold and from what you saved a month over the last three; scenarios are kept
-  (`retirement_scenarios`) to compare. The board's illustration compounds yearly, so its
-  figures differ slightly from these.
+  that would close a gap; rounded to minor units once. Retirement is **one plan you keep**
+  (`RetirementPlan`, one row): the year you were born (your age is this year less it), the age
+  you retire at, the income you want a month in today's money, the return and inflation, and
+  the savings goal that holds the pot. The pot is what that goal holds (the Awaeed deposits
+  filed under it and what you mark toward it) and the saving a month is what went into it over
+  the last three months, both as they stand, so the plan moves with the ledger. Saving the plan
+  sets its goal's target to the pot the income needs (in money of the day you retire) and its
+  date to the first of the year you retire, making a goal when it has none; that goal's form
+  then leaves both alone, and what it needs a month is the plan's (saving that grows with
+  returns), not the plain split other goals use. "Try something" works the same sums on a copy
+  (the age, income, pot, saving a month, rates) beside the plan, and changes nothing. The
+  Retirement board kept scenarios to compare; they are gone (the latest became the plan). The
+  board's illustration compounds yearly, so its figures differ slightly from these.
 - **Reminders for what is due** (`DueReminders`, daily at nine, periodic WorkManager work): a
   bill or subscription its lead time before it is due, a cancel reminder three days (or its lead
   time) before it renews, an open loan on its due day. Names and days, never an amount. Choosing a
@@ -406,11 +415,11 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   a restore needs: raw bank messages, account refs, balance checkpoints, full rule conditions,
   6 people with their aliases, 7 loans with their events, 8 subscriptions and bills, 9 a loan's
   split purchase, 10 budgets, 11 savings goals, 12 assets and their snapshots, 13 the zakat
-  method, 14 retirement scenarios, 15 savings terms, 16 tags and the transactions carrying them,
+  method, 14 retirement scenarios (read into the plan since 27), 15 savings terms, 16 tags and the transactions carrying them,
   17 an asset's price source, 18 the places of purchases, 19 term deposits, 20 a budget's tag,
   21 merchants looked up online, 22 goal contributions, 23 merchants' websites, 24 estimated
   foreign charges, 26 the payments linked by hand to a subscription or bill, on each series as
-  `paymentTransactionUids`),
+  `paymentTransactionUids`, 27 the retirement plan),
   keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
 - **Encrypted backups** (Backup and export › Encrypted backups, no board): a `.halala` file
   (`core/backup/BackupFile`) is the JSON export zipped and sealed with AES-256-GCM under a key
@@ -546,8 +555,8 @@ Open, Normal for it and Dismiss), **Digest** (Digest board, minus net worth) and
 **Phase 5 (wealth)** is built: the **Wealth** tab is the Net worth board (total, this month and
 year, the timeline over 3M/1Y/All, the breakdown, then Savings, Accounts and Assets),
 **Assets** and **Asset** (no board: the list and the form), and **Zakat** (Zakat board; reached
-from the Plan board's Zakat card), **Retirement** (Retirement board, with
-Scenarios), **Compound interest** (no board) and **Savings** (Savings board: a card per Awaeed deposit (see Term deposits; its
+from the Plan board's Zakat card), **Retirement** (Retirement board, as one
+saved plan on a savings goal, with Try something in place of Scenarios), **Compound interest** (no board) and **Savings** (Savings board: a card per Awaeed deposit (see Term deposits; its
 form, **Deposit**, has no board), and terms attached to a
 savings account, `SavingsTerms` and `core/domain/Savings`; Awaeed terms run from a start for a
 tenor and roll over when they renew, expected profit is simple on the balance; Hasad pays next

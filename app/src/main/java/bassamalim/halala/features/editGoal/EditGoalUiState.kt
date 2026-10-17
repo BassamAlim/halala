@@ -13,7 +13,9 @@ data class EditGoalUiState(
     val pickingDate: Boolean = false,
     /** The day the picker opens on. */
     val pickFrom: LocalDate = LocalDate.MIN,
-    val isConfirmingDelete: Boolean = false
+    val isConfirmingDelete: Boolean = false,
+    /** The retirement plan sets its target and date. */
+    val setByRetirement: Boolean = false
 )
 
 data class AccountChoice(val id: Long, val label: String)

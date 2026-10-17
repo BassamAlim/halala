@@ -18,7 +18,7 @@ import bassamalim.halala.core.data.dataSources.room.daos.RestoreDao
 import bassamalim.halala.core.data.dataSources.room.daos.SavingsDao
 import bassamalim.halala.core.data.dataSources.room.daos.TagsDao
 import bassamalim.halala.core.data.dataSources.room.daos.PlacesDao
-import bassamalim.halala.core.data.dataSources.room.daos.ScenariosDao
+import bassamalim.halala.core.data.dataSources.room.daos.RetirementDao
 import bassamalim.halala.core.data.dataSources.room.daos.SmsDao
 import bassamalim.halala.core.data.dataSources.room.daos.TransactionsDao
 import bassamalim.halala.core.data.dataSources.room.daos.ZakatDao
@@ -44,7 +44,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.Person
 import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
-import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
+import bassamalim.halala.core.data.dataSources.room.entities.RetirementPlan
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.Deposit
@@ -82,7 +82,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.ZakatProfile
         Asset::class,
         NetWorthSnapshot::class,
         ZakatProfile::class,
-        RetirementScenario::class,
+        RetirementPlan::class,
         SavingsTerms::class,
         Tag::class,
         TransactionTag::class,
@@ -92,7 +92,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.ZakatProfile
         MerchantLogo::class,
         SeriesPayment::class
     ],
-    version = 28,
+    version = 29,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -111,7 +111,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun alertsDao(): AlertsDao
     abstract fun assetsDao(): AssetsDao
     abstract fun zakatDao(): ZakatDao
-    abstract fun scenariosDao(): ScenariosDao
+    abstract fun retirementDao(): RetirementDao
     abstract fun savingsDao(): SavingsDao
     abstract fun tagsDao(): TagsDao
     abstract fun placesDao(): PlacesDao

@@ -5,6 +5,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.relations.AccountWithBalance
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.GoalsRepository
+import bassamalim.halala.core.data.repositories.PlannerRepository
 import bassamalim.halala.core.domain.Money
 import kotlinx.coroutines.flow.Flow
 import java.time.Clock
@@ -27,12 +28,16 @@ enum class GoalProblem { NameMissing, TargetInvalid }
 class EditGoalDomain @Inject constructor(
     private val goalsRepository: GoalsRepository,
     private val accountsRepository: AccountsRepository,
+    private val plannerRepository: PlannerRepository,
     private val clock: Clock
 ) {
 
     fun observeAccounts(): Flow<List<AccountWithBalance>> = accountsRepository.observeAll()
 
     fun today(): LocalDate = LocalDate.now(clock)
+
+    /** Whether the retirement plan sets [id]'s target and date. */
+    suspend fun setByRetirement(id: Long): Boolean = id != 0L && plannerRepository.getPlan()?.goalId == id
 
     suspend fun load(id: Long): GoalForm? = goalsRepository.get(id)?.let {
         GoalForm(it.name, Money.input(it.targetMinor, it.currency), it.targetDate, it.accountIds, it.currency, it.uid, it.createdAt)

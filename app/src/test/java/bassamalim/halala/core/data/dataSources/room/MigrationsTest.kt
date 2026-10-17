@@ -388,6 +388,26 @@ class MigrationsTest {
     }
 
     @Test
+    fun `28 to 29 keeps the latest scenario as the plan and matches the schema`() {
+        helper.createDatabase(DB, 28).use { db ->
+            // 2026-05-01 and 2024-01-01, in epoch millis.
+            for ((id, age, retire, at) in listOf(listOf(1L, 32L, 55L, 1_777_593_600_000L), listOf(2L, 30L, 60L, 1_704_067_200_000L))) db.execSQL(
+                "INSERT INTO retirement_scenarios (id, uid, name, ageNow, retireAt, startMinor, monthlyMinor, returnPercent, inflationPercent, wantedMinor, currency, createdAt) " +
+                        "VALUES ($id, 's$id', 'S$id', $age, $retire, 0, 0, '6', '2.5', 800000, 'SAR', $at)"
+            )
+        }
+        helper.runMigrationsAndValidate(DB, 29, true, *MIGRATIONS).use { db ->
+            db.query("SELECT birthYear, retireAt, goalId FROM retirement_plan").use { cursor ->
+                assertEquals(true, cursor.moveToFirst())
+                assertEquals(1994, cursor.getInt(0))
+                assertEquals(55, cursor.getInt(1))
+                assertEquals(true, cursor.isNull(2))
+                assertEquals(false, cursor.moveToNext())
+            }
+        }
+    }
+
+    @Test
     fun `23 to 24 also mends a 23 that had logos instead of goal contributions`() {
         helper.createDatabase(DB, 23).use { db ->
             db.execSQL("DROP TABLE `goal_contributions`")

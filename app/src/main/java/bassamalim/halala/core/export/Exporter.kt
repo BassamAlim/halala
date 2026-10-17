@@ -18,7 +18,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.SeriesPayment
-import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
+import bassamalim.halala.core.data.dataSources.room.entities.RetirementPlan
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.Deposit
@@ -83,7 +83,7 @@ data class LedgerSnapshot(
     val assets: List<Asset> = emptyList(),
     val snapshots: List<NetWorthSnapshot> = emptyList(),
     val zakat: ZakatProfile? = null,
-    val scenarios: List<RetirementScenario> = emptyList(),
+    val retirement: RetirementPlan? = null,
     val savingsTerms: List<SavingsTerms> = emptyList(),
     val tags: List<Tag> = emptyList(),
     val transactionTags: List<TransactionTag> = emptyList(),
@@ -149,7 +149,7 @@ class Exporter @Inject constructor(
         assets = assetsRepository.getAll(),
         snapshots = assetsRepository.getSnapshots(),
         zakat = zakatRepository.get().takeIf { it != ZakatProfile() },
-        scenarios = plannerRepository.getScenarios(),
+        retirement = plannerRepository.getPlan(),
         savingsTerms = savingsRepository.getAll(),
         tags = tagsRepository.getAll(),
         transactionTags = tagsRepository.getRows(),
@@ -404,12 +404,6 @@ class Exporter @Inject constructor(
                         it.includeFunds, it.includeGold, it.includeOwed, it.otherDebtsMinor, it.paidHijriYear, it.remind
                     )
                 },
-                scenarios = snapshot.scenarios.map {
-                    ExportScenario(
-                        it.uid, it.name, it.ageNow, it.retireAt, it.startMinor, it.monthlyMinor, it.returnPercent,
-                        it.inflationPercent, it.wantedMinor, it.currency, it.createdAt.toString()
-                    )
-                },
                 savingsTerms = snapshot.savingsTerms.map {
                     ExportSavingsTerms(
                         accountUids.getValue(it.accountId), it.kind.name, it.ratePercent, it.startDate?.toString(),
@@ -423,6 +417,12 @@ class Exporter @Inject constructor(
                             it.tenorMonths, it.maturityChoice?.name, it.closedOn?.toString()
                         )
                     }
+                },
+                retirement = snapshot.retirement?.let {
+                    ExportRetirement(
+                        it.goalId?.let(snapshot.goals.associate { goal -> goal.id to goal.uid }::get), it.birthYear, it.retireAt,
+                        it.wantedMinor, it.returnPercent, it.inflationPercent, it.currency
+                    )
                 },
                 goalContributions = snapshot.goals.associate { it.id to it.uid }.let { goalUids ->
                     snapshot.goalContributions.map {

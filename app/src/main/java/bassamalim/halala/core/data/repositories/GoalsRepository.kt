@@ -3,6 +3,7 @@ package bassamalim.halala.core.data.repositories
 import bassamalim.halala.core.data.dataSources.room.daos.AccountsDao
 import bassamalim.halala.core.data.dataSources.room.daos.GoalsDao
 import bassamalim.halala.core.data.dataSources.room.daos.LoansDao
+import bassamalim.halala.core.data.dataSources.room.daos.RetirementDao
 import bassamalim.halala.core.data.dataSources.room.daos.SavingsDao
 import bassamalim.halala.core.data.dataSources.room.daos.TransactionsDao
 import bassamalim.halala.core.data.dataSources.room.entities.GoalContribution
@@ -10,6 +11,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.domain.GoalState
 import bassamalim.halala.core.domain.Goals
 import bassamalim.halala.core.domain.Money
+import bassamalim.halala.core.domain.Planner
 import bassamalim.halala.core.enums.Direction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -22,7 +24,10 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Savings goals, each measured by the balances of the accounts it is saved in and the deposits made for it. */
+/**
+ * Savings goals, each measured by the balances of the accounts it is saved in and the deposits made
+ * for it. The retirement plan's goal grows while you save, so what it needs a month is the plan's.
+ */
 @Singleton
 class GoalsRepository @Inject constructor(
     private val goalsDao: GoalsDao,
@@ -30,16 +35,17 @@ class GoalsRepository @Inject constructor(
     private val transactionsDao: TransactionsDao,
     private val savingsDao: SavingsDao,
     private val loansDao: LoansDao,
+    private val retirementDao: RetirementDao,
     private val clock: Clock
 ) {
 
     fun observeStates(): Flow<List<GoalState>> = combine(
-        goalsDao.observeAll(),
+        combine(goalsDao.observeAll(), retirementDao.observe(), ::Pair),
         accountsDao.observeAllWithBalance(),
         transactionsDao.observeAllDetails(),
         savingsDao.observeDeposits(),
         goalsDao.observeContributions()
-    ) { goals, accounts, details, deposits, contributions ->
+    ) { (goals, plan), accounts, details, deposits, contributions ->
         val today = LocalDate.now(clock)
         val since = today.minusMonths(3).atStartOfDay(clock.zone).toInstant()
         val balances = accounts.associate { it.account.id to it.balanceMinor }
@@ -60,7 +66,11 @@ class GoalsRepository @Inject constructor(
                 flowIn.sum() + held.filter { !it.occurredAt.isBefore(since) }.sumOf { it.amountMinor } +
                         Goals.contributed(goal, toward, since),
                 today
-            )
+            ).let { state ->
+                if (plan?.goalId != goal.id) state
+                else Planner.inputsOf(plan, state.savedMinor, state.averageMonthlyMinor, today)?.let(Planner::retirement)
+                    ?.let { state.copy(neededMonthlyMinor = it.neededMonthlyMinor) } ?: state
+            }
         }
     }.flowOn(Dispatchers.Default)
 

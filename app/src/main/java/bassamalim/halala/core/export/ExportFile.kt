@@ -49,7 +49,7 @@ data class ExportFile(
     val assetSnapshots: List<ExportSnapshot> = emptyList(),
     /** Since schema 13: how you work out zakat, once you have set it. */
     val zakat: ExportZakat? = null,
-    /** Since schema 14. */
+    /** Schema 14 to 26: read into [retirement], the latest of them, and no longer written. */
     val scenarios: List<ExportScenario> = emptyList(),
     /** Since schema 15: the terms of savings accounts. */
     val savingsTerms: List<ExportSavingsTerms> = emptyList(),
@@ -61,10 +61,12 @@ data class ExportFile(
     /** Since schema 19: term deposits, each on its own. */
     val deposits: List<ExportDeposit> = emptyList(),
     /** Since schema 22: transactions you marked toward a savings goal. */
-    val goalContributions: List<ExportGoalContribution> = emptyList()
+    val goalContributions: List<ExportGoalContribution> = emptyList(),
+    /** Since schema 27: your retirement plan, once you have set it. */
+    val retirement: ExportRetirement? = null
 ) {
     companion object {
-        const val SCHEMA_VERSION = 26
+        const val SCHEMA_VERSION = 27
     }
 }
 
@@ -320,7 +322,19 @@ data class ExportZakat(
     val remind: Boolean
 )
 
-/** A retirement scenario: ages, amounts in minor units, rates as decimal text. */
+/** The retirement plan: the goal (by uid) holding the pot, the year you were born, the age you retire at, the income wanted, rates as decimal text. */
+@Serializable
+data class ExportRetirement(
+    val goalUid: String?,
+    val birthYear: Int,
+    val retireAt: Int,
+    val wantedMinor: Long,
+    val returnPercent: String,
+    val inflationPercent: String,
+    val currency: String
+)
+
+/** A retirement scenario, as files before schema 27 kept them: ages, amounts in minor units, rates as decimal text. */
 @Serializable
 data class ExportScenario(
     val uid: String,
