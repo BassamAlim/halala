@@ -100,7 +100,7 @@ object DataSourceModule {
     fun provideZakatDao(database: AppDatabase) = database.zakatDao()
 
     @Provides @Singleton
-    fun provideScenariosDao(database: AppDatabase) = database.scenariosDao()
+    fun provideRetirementDao(database: AppDatabase) = database.retirementDao()
 
     @Provides @Singleton
     fun provideSavingsDao(database: AppDatabase) = database.savingsDao()

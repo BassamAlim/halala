@@ -4,7 +4,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import bassamalim.halala.core.data.dataSources.room.entities.RetirementPlan
 import java.math.BigDecimal
+import java.time.LocalDate
 
 class PlannerTest {
 
@@ -43,5 +45,26 @@ class PlannerTest {
         val first = Planner.retirement(base)!!
         val closed = Planner.retirement(base.copy(monthlyMinor = base.monthlyMinor + first.extraMonthlyMinor))!!
         assertTrue(closed.shortMonthlyMinor <= 1)
+    }
+
+    @Test
+    fun `the needed saving a month reaches the pot the income needs`() {
+        val base = RetirementInputs(30, 60, 1_000_000, 0, BigDecimal(5), BigDecimal(2), 500_000)
+        val first = Planner.retirement(base)!!
+        val there = Planner.retirement(base.copy(monthlyMinor = first.neededMonthlyMinor))!!
+        assertTrue(there.shortMonthlyMinor <= 1)
+        assertEquals(first.neededMonthlyMinor, first.extraMonthlyMinor)
+        // A pot already big enough needs nothing more.
+        assertEquals(0L, Planner.retirement(base.copy(startMinor = first.neededMinor))!!.neededMonthlyMinor)
+    }
+
+    @Test
+    fun `a plan's age is this year less the year you were born`() {
+        val plan = RetirementPlan(goalId = 1, birthYear = 1994, retireAt = 55, wantedMinor = 800_000, returnPercent = "6", inflationPercent = "2.5", currency = "SAR")
+        val inputs = Planner.inputsOf(plan, 26_295_000, 400_000, LocalDate.parse("2026-10-17"))!!
+        assertEquals(32, inputs.ageNow)
+        assertEquals(BigDecimal("2.5"), inputs.inflationPercent)
+        assertEquals(LocalDate.parse("2049-01-01"), Planner.retireOn(plan))
+        assertNull(Planner.inputsOf(plan, 0, 0, LocalDate.parse("2049-06-01")))
     }
 }

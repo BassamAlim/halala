@@ -3,14 +3,18 @@ package bassamalim.halala.features.retirement
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import bassamalim.halala.core.Globals
-import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
+import bassamalim.halala.core.data.dataSources.room.entities.RetirementPlan
+import bassamalim.halala.core.data.repositories.GoalsRepository
 import bassamalim.halala.core.data.repositories.PlannerRepository
 import bassamalim.halala.core.domain.Assets
+import bassamalim.halala.core.domain.GoalState
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.Planner
 import bassamalim.halala.core.domain.RetirementInputs
+import bassamalim.halala.core.domain.RetirementResult
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
+import bassamalim.halala.core.utils.OneAtATime
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,29 +22,46 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
-import java.time.Instant
+import java.time.Clock
+import java.time.LocalDate
 import javax.inject.Inject
 
-/** The planner's inputs as typed. */
+/** The plan's inputs as typed, or a try's (which also gives the pot and the saving a month). */
 data class RetirementForm(
-    val ageNow: String = "",
+    val birthYear: String = "",
     val retireAt: String = "60",
-    val start: String = "",
-    val monthly: String = "",
+    val wanted: String = "",
     val returnPercent: String = "5",
     val inflationPercent: String = "2.5",
-    val wanted: String = ""
+    /** The goal that holds the pot; null makes a new one. */
+    val goalId: Long? = null,
+    val start: String = "",
+    val monthly: String = ""
 )
 
 data class RetirementUiState(
     val isLoading: Boolean = true,
-    val form: RetirementForm = RetirementForm(),
-    /** Null until every input reads. */
+    val hasPlan: Boolean = false,
+    /** The plan's goal; null without one. */
+    val goal: GoalLine? = null,
+    /** The plan's result, or the try's while trying; null until every input reads. */
     val result: RetirementView? = null,
-    val scenarios: List<RetirementScenario> = emptyList(),
-    val sheet: RetirementSheet? = null
+    /** While trying: the plan as it stands, to compare. */
+    val plan: PlanLine? = null,
+    val trying: RetirementForm? = null,
+    val editing: RetirementForm? = null,
+    /** The goals the pot can be held in. */
+    val goals: List<GoalChoice> = emptyList(),
+    val canSave: Boolean = false
 )
+
+/** The goal holding the pot: what it holds, and what went into it a month over the last three. */
+data class GoalLine(val id: Long, val name: String, val saved: String, val averaged: String)
+
+/** The plan beside a try: its age, and how far short it falls a month (null on track). */
+data class PlanLine(val retireAt: Int, val short: String?)
+
+data class GoalChoice(val id: Long, val name: String)
 
 /** The result in words' figures: the pot, its worth today, the income it supports, short or over, the extra to save. */
 data class RetirementView(
@@ -57,118 +78,141 @@ data class RetirementView(
     val fromAge: Int
 )
 
-sealed interface RetirementSheet {
-    data class Save(val name: String = "") : RetirementSheet
-    data object Scenarios : RetirementSheet
-}
-
 @HiltViewModel
 class RetirementViewModel @Inject constructor(
     private val plannerRepository: PlannerRepository,
-    private val navigator: Navigator
+    goalsRepository: GoalsRepository,
+    private val navigator: Navigator,
+    private val clock: Clock
 ) : ViewModel() {
 
     private val currency = Globals.PRIMARY_CURRENCY
-    private val form = MutableStateFlow<RetirementForm?>(null)
-    private val sheet = MutableStateFlow<RetirementSheet?>(null)
+    private val saving = OneAtATime()
+    private val editing = MutableStateFlow<RetirementForm?>(null)
+    private val trying = MutableStateFlow<RetirementForm?>(null)
 
-    init {
-        // Starts from what you have invested and what you have been saving.
-        viewModelScope.launch {
-            form.value = RetirementForm(
-                start = Money.input(plannerRepository.investedNow(currency), currency),
-                monthly = Money.input(plannerRepository.averageSaving(currency), currency)
-            )
-        }
-    }
+    /** The plan, its goal as it stands, and the goals it could be held in. */
+    private data class Standing(val plan: RetirementPlan?, val goal: GoalState?, val goals: List<GoalState>)
 
-    val uiState: StateFlow<RetirementUiState> = combine(form, plannerRepository.observeScenarios(), sheet) { form, scenarios, sheet ->
+    private val standing = combine(plannerRepository.observePlan(), goalsRepository.observeStates()) { plan, goals ->
+        Standing(plan, goals.find { it.goal.id == plan?.goalId }, goals.filter { it.goal.currency == currency })
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val uiState: StateFlow<RetirementUiState> = combine(standing, editing, trying) { standing, editing, trying ->
+        if (standing == null) return@combine RetirementUiState()
+        val today = LocalDate.now(clock)
+        val plan = standing.plan
+        val planned = plan
+            ?.let { Planner.inputsOf(it, standing.goal?.savedMinor ?: 0, standing.goal?.averageMonthlyMinor ?: 0, today) }
+            ?.let { inputs -> Planner.retirement(inputs)?.let { inputs to it } }
+        val tried = trying?.let { inputsOf(it, currency, today) }?.let { inputs -> Planner.retirement(inputs)?.let { inputs to it } }
         RetirementUiState(
-            isLoading = form == null,
-            form = form ?: RetirementForm(),
-            result = form?.let(::inputsOf)?.let { inputs ->
-                Planner.retirement(inputs)?.let {
-                    RetirementView(
-                        retireAt = inputs.retireAt,
-                        pot = Money.format(it.potMinor, currency, decimals = false),
-                        potToday = Money.format(it.potTodayMinor, currency, decimals = false),
-                        supports = Money.format(it.supportsMonthlyMinor, currency, decimals = false),
-                        short = it.shortMonthlyMinor.takeIf { short -> short > 0 }?.let { short -> Money.format(short, currency, decimals = false) },
-                        extra = Money.format(it.extraMonthlyMinor, currency, decimals = false),
-                        curve = it.curve.map { point -> point.potMinor },
-                        contributed = it.curve.map { point -> point.contributedMinor },
-                        pots = it.curve.map { point -> Money.format(point.potMinor, currency, decimals = false) },
-                        fromAge = inputs.ageNow
-                    )
-                }
-            },
-            scenarios = scenarios,
-            sheet = sheet
+            isLoading = false,
+            hasPlan = plan != null,
+            goal = standing.goal?.let { GoalLine(it.goal.id, it.goal.name, format(it.savedMinor), format(it.averageMonthlyMinor)) },
+            result = (if (trying != null) tried else planned)?.let { (inputs, result) -> viewOf(inputs, result) },
+            plan = plan?.takeIf { trying != null }?.let { PlanLine(it.retireAt, planned?.second?.shortMonthlyMinor?.takeIf { short -> short > 0 }?.let(::format)) },
+            trying = trying,
+            editing = editing,
+            goals = standing.goals.map { GoalChoice(it.goal.id, it.goal.name) },
+            canSave = editing?.let { planOf(it, currency, today) } != null
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RetirementUiState())
 
-    private fun inputsOf(form: RetirementForm): RetirementInputs? {
-        val age = form.ageNow.trim().toIntOrNull()?.takeIf { it in 15..90 } ?: return null
-        val retire = form.retireAt.trim().toIntOrNull()?.takeIf { it in (age + 1)..100 } ?: return null
-        return RetirementInputs(
-            ageNow = age,
-            retireAt = retire,
-            startMinor = Money.parse(form.start.ifBlank { "0" }, currency) ?: return null,
-            monthlyMinor = Money.parse(form.monthly.ifBlank { "0" }, currency) ?: return null,
-            returnPercent = Assets.decimal(form.returnPercent) ?: return null,
-            inflationPercent = Assets.decimal(form.inflationPercent) ?: return null,
-            wantedMonthlyMinor = Money.parse(form.wanted.ifBlank { "0" }, currency) ?: return null
-        )
+    private fun format(minor: Long) = Money.format(minor, currency, decimals = false)
+
+    private fun viewOf(inputs: RetirementInputs, result: RetirementResult) = RetirementView(
+        retireAt = inputs.retireAt,
+        pot = format(result.potMinor),
+        potToday = format(result.potTodayMinor),
+        supports = format(result.supportsMonthlyMinor),
+        short = result.shortMonthlyMinor.takeIf { it > 0 }?.let(::format),
+        extra = format(result.extraMonthlyMinor),
+        curve = result.curve.map { it.potMinor },
+        contributed = result.curve.map { it.contributedMinor },
+        pots = result.curve.map { format(it.potMinor) },
+        fromAge = inputs.ageNow
+    )
+
+    private fun formOf(plan: RetirementPlan) = RetirementForm(
+        birthYear = plan.birthYear.toString(),
+        retireAt = plan.retireAt.toString(),
+        wanted = Money.input(plan.wantedMinor, plan.currency),
+        returnPercent = plan.returnPercent,
+        inflationPercent = plan.inflationPercent,
+        goalId = plan.goalId
+    )
+
+    /** Typing goes to the plan while it is being edited, else to the try. */
+    private fun edit(change: (RetirementForm) -> RetirementForm) {
+        if (editing.value != null) editing.update { it?.let(change) } else trying.update { it?.let(change) }
     }
 
-    private fun edit(change: (RetirementForm) -> RetirementForm) = form.update { it?.let(change) }
-
     fun onBackClick() = navigator.popBackStack()
-    fun onAgeChange(text: String) = edit { it.copy(ageNow = text.filter(Char::isDigit).take(3)) }
+    fun onBirthYearChange(text: String) = edit { it.copy(birthYear = text.filter(Char::isDigit).take(4)) }
     fun onRetireChange(text: String) = edit { it.copy(retireAt = text.filter(Char::isDigit).take(3)) }
-    fun onStartChange(text: String) = edit { it.copy(start = text) }
-    fun onMonthlyChange(text: String) = edit { it.copy(monthly = text) }
+    fun onWantedChange(text: String) = edit { it.copy(wanted = text) }
     fun onReturnChange(text: String) = edit { it.copy(returnPercent = text) }
     fun onInflationChange(text: String) = edit { it.copy(inflationPercent = text) }
-    fun onWantedChange(text: String) = edit { it.copy(wanted = text) }
+    fun onStartChange(text: String) = edit { it.copy(start = text) }
+    fun onMonthlyChange(text: String) = edit { it.copy(monthly = text) }
+    fun onGoalSelect(id: Long?) = edit { it.copy(goalId = id) }
 
-    fun onCompoundClick() = navigator.navigate(Screen.Compound)
+    fun onEditClick() {
+        editing.value = standing.value?.plan?.let(::formOf) ?: RetirementForm()
+    }
 
-    fun onScenariosClick() = sheet.update { RetirementSheet.Scenarios }
-    fun onSaveClick() = sheet.update { RetirementSheet.Save() }
-    fun onNameChange(text: String) = sheet.update { RetirementSheet.Save(text) }
-    fun onSheetDismiss() = sheet.update { null }
+    fun onEditDismiss() = editing.update { null }
 
-    fun onSaveConfirm() {
-        val name = (sheet.value as? RetirementSheet.Save)?.name?.trim()?.takeIf { it.isNotEmpty() } ?: return
-        val inputs = form.value?.let(::inputsOf) ?: return
-        sheet.update { null }
-        viewModelScope.launch {
-            plannerRepository.save(
-                RetirementScenario(
-                    uid = "", name = name, ageNow = inputs.ageNow, retireAt = inputs.retireAt, startMinor = inputs.startMinor,
-                    monthlyMinor = inputs.monthlyMinor, returnPercent = inputs.returnPercent.toPlainString(),
-                    inflationPercent = inputs.inflationPercent.toPlainString(), wantedMinor = inputs.wantedMonthlyMinor,
-                    currency = currency, createdAt = Instant.EPOCH
-                )
-            )
+    /** Saves the plan; a new goal for it is named [newGoalName]. */
+    fun onSaveClick(newGoalName: String) {
+        val plan = editing.value?.let { planOf(it, currency, LocalDate.now(clock)) } ?: return
+        // The screen stays, so the guard lets the next save in once this one is written.
+        saving.launch(viewModelScope) {
+            if (plannerRepository.savePlan(plan, newGoalName)) editing.update { null }
+            false
         }
     }
 
-    fun onScenarioLoad(scenario: RetirementScenario) {
-        sheet.update { null }
-        form.value = RetirementForm(
-            ageNow = scenario.ageNow.toString(),
-            retireAt = scenario.retireAt.toString(),
-            start = Money.input(scenario.startMinor, scenario.currency),
-            monthly = Money.input(scenario.monthlyMinor, scenario.currency),
-            returnPercent = scenario.returnPercent,
-            inflationPercent = scenario.inflationPercent,
-            wanted = Money.input(scenario.wantedMinor, scenario.currency)
+    /** A try starts from the plan, the pot its goal holds and what has been going in. */
+    fun onTryClick() {
+        val standing = standing.value ?: return
+        val plan = standing.plan ?: return
+        trying.value = formOf(plan).copy(
+            start = Money.input(standing.goal?.savedMinor ?: 0, currency),
+            monthly = Money.input(standing.goal?.averageMonthlyMinor ?: 0, currency)
         )
     }
 
-    fun onScenarioDelete(id: Long) {
-        viewModelScope.launch { plannerRepository.delete(id) }
+    fun onTryDone() = trying.update { null }
+
+    fun onGoalClick(id: Long) = navigator.navigate(Screen.EditGoal(id))
+
+    fun onCompoundClick() = navigator.navigate(Screen.Compound)
+
+    companion object {
+
+        /** The plan a form describes, or null while any of it doesn't read: an age of 15 to 90, retiring after it by 100, an income wanted. */
+        fun planOf(form: RetirementForm, currency: String, today: LocalDate): RetirementPlan? {
+            val born = form.birthYear.trim().toIntOrNull()?.takeIf { today.year - it in 15..90 } ?: return null
+            val retire = form.retireAt.trim().toIntOrNull()?.takeIf { it in (today.year - born + 1)..100 } ?: return null
+            return RetirementPlan(
+                goalId = form.goalId,
+                birthYear = born,
+                retireAt = retire,
+                wantedMinor = Money.parse(form.wanted, currency)?.takeIf { it > 0 } ?: return null,
+                returnPercent = Assets.decimal(form.returnPercent)?.toPlainString() ?: return null,
+                inflationPercent = Assets.decimal(form.inflationPercent)?.toPlainString() ?: return null,
+                currency = currency
+            )
+        }
+
+        /** A try's inputs: its plan, with the pot and the saving a month it gives. */
+        fun inputsOf(form: RetirementForm, currency: String, today: LocalDate): RetirementInputs? {
+            val plan = planOf(form, currency, today) ?: return null
+            val start = Money.parse(form.start.ifBlank { "0" }, currency) ?: return null
+            val monthly = Money.parse(form.monthly.ifBlank { "0" }, currency) ?: return null
+            return Planner.inputsOf(plan, start, monthly, today)
+        }
     }
 }

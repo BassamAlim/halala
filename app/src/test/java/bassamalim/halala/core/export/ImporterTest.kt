@@ -22,7 +22,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.SeriesPayment
-import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
+import bassamalim.halala.core.data.dataSources.room.entities.RetirementPlan
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.entities.Deposit
@@ -74,6 +74,7 @@ import bassamalim.halala.core.enums.RuleSource
 import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.enums.TransactionSource
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
@@ -159,7 +160,7 @@ class ImporterTest {
         ),
         snapshots = listOf(NetWorthSnapshot(LocalDate.parse("2026-09-28"), 12_345_600, "SAR")),
         zakat = ZakatProfile(hijriMonth = 9, hijriDay = 1, goldPricePerGram = "563.25", includeGold = false, otherDebtsMinor = 5_000, paidHijriYear = 1447, remind = true),
-        scenarios = listOf(RetirementScenario(201, "scn-55", "Retire at 55", 32, 55, 26_295_000, 400_000, "6", "2.5", 800_000, "SAR", at)),
+        retirement = RetirementPlan(goalId = 182, birthYear = 1994, retireAt = 55, wantedMinor = 800_000, returnPercent = "6", inflationPercent = "2.5", currency = "SAR"),
         savingsTerms = listOf(SavingsTerms(22, SavingsKind.AWAEED, "4.40", LocalDate.parse("2026-05-14"), 6, MaturityChoice.RENEW_WITH_PROFIT)),
         tags = listOf(
             Tag(1, "tag-trip", "Trip to Türkiye", LocalDate.parse("2026-09-12"), LocalDate.parse("2026-09-19"), auto = true, createdAt = at),
@@ -199,10 +200,10 @@ class ImporterTest {
         LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK),
         RecurringRepository(db.recurringDao(), db.transactionsDao(), TEST_CLOCK),
         BudgetsRepository(db.budgetsDao(), db.transactionsDao(), db.tagsDao(), TEST_CLOCK),
-        GoalsRepository(db.goalsDao(), db.accountsDao(), db.transactionsDao(), db.savingsDao(), db.loansDao(), TEST_CLOCK),
+        GoalsRepository(db.goalsDao(), db.accountsDao(), db.transactionsDao(), db.savingsDao(), db.loansDao(), db.retirementDao(), TEST_CLOCK),
         AssetsRepository(db.assetsDao(), TEST_CLOCK),
         ZakatRepository(db.zakatDao(), db.accountsDao(), db.assetsDao(), LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK), TEST_CLOCK),
-        PlannerRepository(db.scenariosDao(), db.accountsDao(), db.assetsDao(), db.transactionsDao(), LoansRepository(db.loansDao(), db.transactionsDao(), TEST_CLOCK), TEST_CLOCK),
+        PlannerRepository(db.retirementDao(), GoalsRepository(db.goalsDao(), db.accountsDao(), db.transactionsDao(), db.savingsDao(), db.loansDao(), db.retirementDao(), TEST_CLOCK), TEST_CLOCK),
         SavingsRepository(db.savingsDao(), db.accountsDao(), db.transactionsDao(), db.goalsDao(), TransactionsRepository(db.transactionsDao(), db.accountsDao(), TEST_CLOCK), TEST_CLOCK),
         TagsRepository(db.tagsDao(), db.transactionsDao(), TEST_CLOCK),
         PlacesRepository(db.placesDao()),
@@ -250,5 +251,19 @@ class ImporterTest {
 
         assertThrows(IllegalArgumentException::class.java) { Importer.read(broken) }
         assertEquals(1, db.accountsDao().getAll().size)
+    }
+
+    @Test
+    fun `an older file's latest scenario becomes the plan`() {
+        val file = Json.decodeFromString(ExportFile.serializer(), json).copy(
+            retirement = null,
+            scenarios = listOf(
+                ExportScenario("old", "Retire at 60", 30, 60, 0, 0, "5", "2", 500_000, "SAR", "2024-01-01T00:00:00Z"),
+                ExportScenario("new", "Retire at 55", 32, 55, 0, 0, "6", "2.5", 800_000, "SAR", "2026-05-01T00:00:00Z")
+            )
+        )
+        val plan = Importer.read(Json.encodeToString(ExportFile.serializer(), file)).retirement!!
+
+        assertEquals(RetirementPlan(goalId = null, birthYear = 1994, retireAt = 55, wantedMinor = 800_000, returnPercent = "6", inflationPercent = "2.5", currency = "SAR"), plan)
     }
 }

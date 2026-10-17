@@ -1,8 +1,10 @@
 package bassamalim.halala.core.domain
 
+import bassamalim.halala.core.data.dataSources.room.entities.RetirementPlan
 import java.math.BigDecimal
 import java.math.MathContext
 import java.math.RoundingMode
+import java.time.LocalDate
 
 /** What the retirement planner is given. Amounts in minor units; rates as percent a year. */
 data class RetirementInputs(
@@ -29,6 +31,10 @@ data class RetirementResult(
     val shortMonthlyMinor: Long,
     /** The extra saving a month that would close the gap. */
     val extraMonthlyMinor: Long,
+    /** The pot the wanted income needs, in money of the day you retire. */
+    val neededMinor: Long,
+    /** The saving a month, from the pot you have, that reaches [neededMinor]; zero when the pot gets there alone. */
+    val neededMonthlyMinor: Long,
     val curve: List<GrowthPoint>
 )
 
@@ -61,6 +67,28 @@ object Planner {
         return start * factor + perPeriod * annuity
     }
 
+    /**
+     * The planner's inputs for [plan] on [today]: your age is this year less the year you were
+     * born; the pot is [startMinor] and the saving [monthlyMinor] (its goal's, as they stand). Null
+     * once you have reached the age, or when a rate doesn't read.
+     */
+    fun inputsOf(plan: RetirementPlan, startMinor: Long, monthlyMinor: Long, today: LocalDate): RetirementInputs? {
+        val age = today.year - plan.birthYear
+        if (plan.retireAt <= age) return null
+        return RetirementInputs(
+            ageNow = age,
+            retireAt = plan.retireAt,
+            startMinor = startMinor,
+            monthlyMinor = monthlyMinor,
+            returnPercent = plan.returnPercent.toBigDecimalOrNull() ?: return null,
+            inflationPercent = plan.inflationPercent.toBigDecimalOrNull() ?: return null,
+            wantedMonthlyMinor = plan.wantedMinor
+        )
+    }
+
+    /** The day a plan's goal is due: the first of the year you reach the age. */
+    fun retireOn(plan: RetirementPlan): LocalDate = LocalDate.of(plan.birthYear + plan.retireAt, 1, 1)
+
     fun retirement(inputs: RetirementInputs): RetirementResult? {
         val years = inputs.retireAt - inputs.ageNow
         if (years <= 0) return null
@@ -81,6 +109,7 @@ object Planner {
         val needed = wanted * TWELVE / WITHDRAWAL * inflation
         val annuity = if (monthlyRate.signum() == 0) BigDecimal(months) else (growth(monthlyRate, months) - BigDecimal.ONE).divide(monthlyRate, MC)
         val extra = ((needed - pot).max(BigDecimal.ZERO)).divide(annuity, MC)
+        val neededMonthly = ((needed - start * growth(monthlyRate, months)).max(BigDecimal.ZERO)).divide(annuity, MC)
 
         return RetirementResult(
             potMinor = minor(pot),
@@ -88,6 +117,8 @@ object Planner {
             supportsMonthlyMinor = minor(supports),
             shortMonthlyMinor = minor(short),
             extraMonthlyMinor = minor(extra),
+            neededMinor = minor(needed),
+            neededMonthlyMinor = minor(neededMonthly),
             curve = (0..years).map { year ->
                 GrowthPoint(
                     year = inputs.ageNow + year,

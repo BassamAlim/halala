@@ -1,59 +1,39 @@
 package bassamalim.halala.core.data.repositories
 
-import bassamalim.halala.core.data.dataSources.room.daos.AccountsDao
-import bassamalim.halala.core.data.dataSources.room.daos.AssetsDao
-import bassamalim.halala.core.data.dataSources.room.daos.ScenariosDao
-import bassamalim.halala.core.data.dataSources.room.daos.TransactionsDao
-import bassamalim.halala.core.data.dataSources.room.entities.RetirementScenario
-import bassamalim.halala.core.domain.DigestKind
-import bassamalim.halala.core.domain.Digests
-import bassamalim.halala.core.domain.Money
-import bassamalim.halala.core.domain.NetWorth
-import bassamalim.halala.core.domain.WealthClass
+import bassamalim.halala.core.data.dataSources.room.daos.RetirementDao
+import bassamalim.halala.core.data.dataSources.room.entities.RetirementPlan
+import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
+import bassamalim.halala.core.domain.Planner
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import java.time.Clock
 import java.time.LocalDate
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** What the planner starts from (what is invested, what you save a month) and the scenarios you keep. */
+/** Your retirement plan, and the savings goal it keeps in step. */
 @Singleton
 class PlannerRepository @Inject constructor(
-    private val scenariosDao: ScenariosDao,
-    private val accountsDao: AccountsDao,
-    private val assetsDao: AssetsDao,
-    private val transactionsDao: TransactionsDao,
-    private val loansRepository: LoansRepository,
+    private val retirementDao: RetirementDao,
+    private val goalsRepository: GoalsRepository,
     private val clock: Clock
 ) {
 
-    fun observeScenarios(): Flow<List<RetirementScenario>> = scenariosDao.observeAll()
+    fun observePlan(): Flow<RetirementPlan?> = retirementDao.observe()
 
-    suspend fun getScenarios(): List<RetirementScenario> = scenariosDao.getAll()
+    suspend fun getPlan(): RetirementPlan? = retirementDao.get()
 
-    suspend fun save(scenario: RetirementScenario): Long =
-        scenariosDao.insert(scenario.copy(uid = scenario.uid.ifEmpty { UUID.randomUUID().toString() }, createdAt = clock.instant()))
-
-    suspend fun delete(id: Long) = scenariosDao.delete(id)
-
-    /** The pot to start from: savings, funds and gold, as net worth has them now. */
-    suspend fun investedNow(currency: String): Long {
-        val worth = NetWorth.now(
-            accountsDao.observeAllWithBalance().first(), assetsDao.getAll(), loansRepository.observeStates().first(),
-            currency, LocalDate.now(clock)
-        )
-        return listOf(WealthClass.SAVINGS, WealthClass.FUNDS, WealthClass.GOLD).sumOf { maxOf(0, worth.parts[it] ?: 0) }
-    }
-
-    /** What you saved a month (income less spending) over the last three months, on average; never below zero. */
-    suspend fun averageSaving(currency: String): Long {
-        val details = transactionsDao.getAllDetails()
-        val months = Digests.finished(DigestKind.MONTH, LocalDate.now(clock), 3)
-        val saved = months.sumOf {
-            Digests.income(details, it, currency, clock.zone) - Money.sum(Digests.spendingByCategory(details, it, currency, clock.zone).values)
-        }
-        return maxOf(0, saved / 3)
+    /**
+     * Keeps [plan], and sets its goal's target to the pot the wanted income needs and its date to
+     * the year you retire. Without a goal (or with one since deleted) a new one is made, named
+     * [newGoalName]. False when the plan doesn't add up to a pot (an age already reached, nothing wanted).
+     */
+    suspend fun savePlan(plan: RetirementPlan, newGoalName: String): Boolean {
+        val inputs = Planner.inputsOf(plan, 0, 0, LocalDate.now(clock)) ?: return false
+        val needed = Planner.retirement(inputs)?.neededMinor?.takeIf { it > 0 } ?: return false
+        val goal = plan.goalId?.let { goalsRepository.get(it) }
+            ?: SavingsGoal(uid = "", name = newGoalName, targetMinor = needed, currency = plan.currency, accountIds = emptyList(), createdAt = clock.instant())
+        val goalId = goalsRepository.save(goal.copy(targetMinor = needed, targetDate = Planner.retireOn(plan)))
+        retirementDao.put(plan.copy(goalId = goalId))
+        return true
     }
 }

@@ -2,8 +2,10 @@ package bassamalim.halala.core.data.repositories
 
 import bassamalim.halala.core.data.TEST_CLOCK
 import bassamalim.halala.core.data.dataSources.room.AppDatabase
+import bassamalim.halala.core.data.dataSources.room.entities.RetirementPlan
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.testDatabase
+import bassamalim.halala.core.domain.Planner
 import bassamalim.halala.core.domain.inOut
 import bassamalim.halala.core.enums.AccountType
 import bassamalim.halala.core.enums.Direction
@@ -21,6 +23,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.time.Instant
+import java.time.LocalDate
 
 @RunWith(RobolectricTestRunner::class)
 class GoalsRepositoryTest {
@@ -35,7 +38,7 @@ class GoalsRepositoryTest {
     fun setUp() = runTest {
         db = testDatabase()
         transactions = TransactionsRepository(db.transactionsDao(), db.accountsDao(), TEST_CLOCK)
-        goals = GoalsRepository(db.goalsDao(), db.accountsDao(), db.transactionsDao(), db.savingsDao(), db.loansDao(), TEST_CLOCK)
+        goals = GoalsRepository(db.goalsDao(), db.accountsDao(), db.transactionsDao(), db.savingsDao(), db.loansDao(), db.retirementDao(), TEST_CLOCK)
         cash = db.accountsDao().getCashWallet()!!.id
         goal = goals.save(SavingsGoal(uid = "", name = "House", targetMinor = 10_000_000, currency = "SAR", accountIds = emptyList(), createdAt = Instant.EPOCH))
     }
@@ -86,5 +89,23 @@ class GoalsRepositoryTest {
     fun `a purchase is never toward a goal`() = runTest {
         val lunch = transactions.add(TransactionDraft(cash, Direction.DEBIT, 5_000, TEST_CLOCK.instant(), TransactionKind.PURCHASE, "Jahez"))
         assertFalse(goals.contribute(lunch, goal, withdrawn = false))
+    }
+
+    @Test
+    fun `the retirement plan sets its goal's target and date, and what it needs a month grows with returns`() = runTest {
+        val planner = PlannerRepository(db.retirementDao(), goals, TEST_CLOCK)
+        val plan = RetirementPlan(goalId = goal, birthYear = 1994, retireAt = 55, wantedMinor = 800_000, returnPercent = "6", inflationPercent = "2.5", currency = "SAR")
+        assertTrue(planner.savePlan(plan, "Retirement"))
+
+        val inputs = Planner.inputsOf(plan, 0, 0, LocalDate.now(TEST_CLOCK))!!
+        val state = goals.observeStates().first().single()
+        assertEquals(Planner.retirement(inputs)!!.neededMinor, state.goal.targetMinor)
+        assertEquals(Planner.retireOn(plan), state.goal.targetDate)
+        assertEquals(Planner.retirement(inputs)!!.neededMonthlyMinor, state.neededMonthlyMinor)
+
+        // Its goal deleted, saving the plan again makes a new one.
+        goals.delete(goal)
+        assertTrue(planner.savePlan(planner.getPlan()!!, "Retirement"))
+        assertEquals("Retirement", goals.get(planner.getPlan()!!.goalId!!)!!.name)
     }
 }
