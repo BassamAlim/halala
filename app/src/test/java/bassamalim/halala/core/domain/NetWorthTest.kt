@@ -2,6 +2,7 @@ package bassamalim.halala.core.domain
 
 import bassamalim.halala.core.data.dataSources.room.entities.Asset
 import bassamalim.halala.core.data.dataSources.room.entities.GoalContribution
+import bassamalim.halala.core.data.dataSources.room.entities.NetWorthSnapshot
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.enums.AssetType
@@ -74,5 +75,26 @@ class NetWorthTest {
         )
         assertEquals(mapOf(LocalDate.parse("2026-09-01") to 500_000L, LocalDate.parse("2026-10-01") to -500_000L), held)
         assertEquals(500_000L, NetWorth.now(emptyList(), emptyList(), emptyList(), "SAR", today, 500_000).parts[WealthClass.SAVINGS])
+    }
+
+    @Test
+    fun `buying an asset turns money into it rather than a dip`() {
+        // A car bought on 1 Oct for 50,000 and added on 10 Oct; snapshots on 2 Oct (before it) and 10 Oct.
+        val car = asset(AssetType.VEHICLE, value = 5_000_000).copy(createdAt = Instant.parse("2026-10-10T09:00:00Z"))
+        val bought = marked("2026-10-01", 5_000_000, Direction.DEBIT, withdrawn = false).second
+        val timeline = NetWorth.timeline(
+            totalNow = 6_000_000, assetsNow = 5_000_000, from = LocalDate.parse("2026-09-28"), today = today,
+            details = listOf(bought), accountIds = setOf(1), loans = emptyList(), currency = "SAR",
+            snapshots = listOf(NetWorthSnapshot(LocalDate.parse("2026-10-02"), 0, "SAR"), NetWorthSnapshot(LocalDate.parse("2026-10-10"), 5_000_000, "SAR")),
+            zone = ZoneOffset.UTC, bought = listOf(Bought(car, mapOf(LocalDate.parse("2026-10-01") to 5_000_000L)))
+        )
+        assertEquals(setOf(6_000_000L), timeline.map { it.second }.toSet())
+        // With no snapshot before it, the one carrying it holds none of it before it was bought.
+        val early = NetWorth.timeline(
+            6_000_000, 5_000_000, LocalDate.parse("2026-09-28"), today, listOf(bought), setOf(1), emptyList(), "SAR",
+            listOf(NetWorthSnapshot(LocalDate.parse("2026-10-10"), 5_000_000, "SAR")), ZoneOffset.UTC,
+            bought = listOf(Bought(car, mapOf(LocalDate.parse("2026-10-01") to 5_000_000L)))
+        )
+        assertEquals(setOf(6_000_000L), early.map { it.second }.toSet())
     }
 }

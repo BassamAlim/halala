@@ -305,13 +305,20 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   you hold); linked on the Asset form ("Price from the market" for a fund, "Today's market price"
   for gold). `PriceWorker` runs daily, online only, and right after you link one; it updates the
   price and its day and takes a net worth snapshot. Anything not linked is priced as you type it.
+  **Buying one** (`AssetPurchase`, `asset_purchases`): Transaction detail's "Bought an asset"
+  links any money out (but a move) to an asset in its currency, one asset a transaction, any
+  number of transactions an asset. It still counts as spending. Once an asset has purchases, what
+  it cost is their total (the cost you typed is kept but not shown), and its form lists them in
+  place of the cost field.
 - **Net worth** (`NetWorth`): accounts by class (current/card/wallet/cash, savings, investment),
   assets, owed to you, less what you owe people. Savings also hold what you marked toward a goal that
   left your accounts (`NetWorth.heldElsewhere`: put in less taken out, never below none; a move
   is already in balances). The timeline is read back from the ledger (each
   later day's money in and out of your accounts undone, loans as they stood), with assets from a
   daily snapshot (`net_worth_snapshots`, taken on opening, by the daily work and on saving an
-  asset).
+  asset). A purchase is a conversion, not a dip (`NetWorth.timeline`, `Bought`): from each
+  purchase's day the asset holds what was paid until a snapshot carries it (one on or after the
+  day you added it), and a snapshot carrying it holds only the share not yet bought before then.
 - **Zakat** (`Zakat`, `ZakatProfile`): 2.5% of what you choose to count (accounts, savings,
   funds, gold, owed to you) less debts due now (what you owe people plus any you add), when it
   reaches the nisab of 85 g of gold at the price you give (else your gold's); due on your Hijri
@@ -419,7 +426,8 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   17 an asset's price source, 18 the places of purchases, 19 term deposits, 20 a budget's tag,
   21 merchants looked up online, 22 goal contributions, 23 merchants' websites, 24 estimated
   foreign charges, 26 the payments linked by hand to a subscription or bill, on each series as
-  `paymentTransactionUids`, 27 the retirement plan),
+  `paymentTransactionUids`, 27 the retirement plan, 28 the transactions that bought an asset, on
+  each asset as `purchaseTransactionUids`),
   keyed by `uid`s, amounts in minor units. The screen says plainly that exports aren't encrypted.
 - **Encrypted backups** (Backup and export › Encrypted backups, no board): a `.halala` file
   (`core/backup/BackupFile`) is the JSON export zipped and sealed with AES-256-GCM under a key

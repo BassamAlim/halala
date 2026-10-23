@@ -16,6 +16,9 @@ import java.time.ZoneId
 /** The parts net worth is made of, as the Net worth board lists them. */
 enum class WealthClass { ACCOUNTS, SAVINGS, FUNDS, GOLD, OTHER_ASSETS, OWED_TO_YOU, YOU_OWE }
 
+/** An asset with what you paid for it on each day you said a transaction bought it. */
+data class Bought(val asset: Asset, val paidByDay: Map<LocalDate, Long>)
+
 /** Net worth now: each class's total (what you owe is negative) and the sum. */
 data class NetWorthNow(val parts: Map<WealthClass, Long>, val totalMinor: Long)
 
@@ -60,6 +63,11 @@ object NetWorth {
      * Net worth at the end of each day from [from] to [today]: [totalNow] with each later day's
      * money in and out of your accounts undone, loans as they stood that day, and assets as the
      * latest snapshot on or before it (the earliest one before any was taken, else today's).
+     *
+     * Buying an asset ([bought]) turns money into it, so it doesn't dip: from the day of each
+     * purchase the asset holds what was paid until a snapshot carries it (one taken on or after
+     * the day you added it), and before its purchases a snapshot carrying it holds only its share
+     * not yet paid for.
      */
     fun timeline(
         totalNow: Long,
@@ -72,7 +80,8 @@ object NetWorth {
         currency: String,
         snapshots: List<NetWorthSnapshot>,
         zone: ZoneId,
-        elsewhereByDay: Map<LocalDate, Long> = emptyMap()
+        elsewhereByDay: Map<LocalDate, Long> = emptyMap(),
+        bought: List<Bought> = emptyList()
     ): List<Pair<LocalDate, Long>> {
         val netByDay = details
             .filter { it.transaction.accountId in accountIds }
@@ -90,8 +99,21 @@ object NetWorth {
             }
         }.groupBy({ it.first }, { it.second }).mapValues { it.value.sum() }
         val sortedSnapshots = snapshots.sortedBy { it.date }
-        fun assetsOn(day: LocalDate) =
-            sortedSnapshots.lastOrNull { !it.date.isAfter(day) }?.assetsMinor ?: sortedSnapshots.firstOrNull()?.assetsMinor ?: assetsNow
+        fun snapshotOn(day: LocalDate) = sortedSnapshots.lastOrNull { !it.date.isAfter(day) } ?: sortedSnapshots.firstOrNull()
+        val purchased = bought.filter { it.asset.currency == currency && it.paidByDay.isNotEmpty() }
+        fun assetsOn(day: LocalDate): Long {
+            val snapshot = snapshotOn(day)
+            return (snapshot?.assetsMinor ?: assetsNow) + purchased.sumOf { (asset, paidByDay) ->
+                val paid = Money.sum(paidByDay.filterKeys { !it.isAfter(day) }.values)
+                val carried = snapshot == null || !snapshot.date.isBefore(asset.createdAt.atZone(zone).toLocalDate())
+                if (!carried) paid
+                else {
+                    // ponytail: the unpaid share is of its latest price, not that day's; a per-asset snapshot if it matters.
+                    val total = Money.sum(paidByDay.values)
+                    -Assets.valueOf(asset, day) * (total - paid) / total
+                }
+            }
+        }
 
         val points = mutableListOf<Pair<LocalDate, Long>>()
         var withoutAssets = totalNow - assetsNow

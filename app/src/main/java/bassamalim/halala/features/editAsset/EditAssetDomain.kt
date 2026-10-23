@@ -3,6 +3,10 @@ package bassamalim.halala.features.editAsset
 import bassamalim.halala.core.Globals
 import bassamalim.halala.core.data.dataSources.room.entities.Asset
 import bassamalim.halala.core.data.repositories.AssetsRepository
+import bassamalim.halala.core.data.repositories.TransactionsRepository
+import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import bassamalim.halala.core.domain.Assets
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.enums.AssetType
@@ -39,6 +43,7 @@ enum class AssetProblem { NameMissing, QuantityInvalid, PriceInvalid, ValueInval
 
 class EditAssetDomain @Inject constructor(
     private val assetsRepository: AssetsRepository,
+    private val transactionsRepository: TransactionsRepository,
     private val prices: Prices,
     private val clock: Clock
 ) {
@@ -49,6 +54,14 @@ class EditAssetDomain @Inject constructor(
     suspend fun gold(): GoldPrice? = prices.gold()
 
     fun today(): LocalDate = LocalDate.now(clock)
+
+    fun zone() = clock.zone
+
+    /** The transactions you said bought asset [id], newest first. */
+    fun observePurchases(id: Long): Flow<List<TransactionDetail>> =
+        combine(assetsRepository.observePurchases(), transactionsRepository.observeAll()) { purchases, details ->
+            details.filter { purchases[it.transaction.id] == id }.sortedByDescending { it.transaction.occurredAt }
+        }
 
     suspend fun load(id: Long): AssetForm? = assetsRepository.get(id)?.let {
         AssetForm(

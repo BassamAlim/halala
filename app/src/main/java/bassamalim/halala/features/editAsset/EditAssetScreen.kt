@@ -126,7 +126,25 @@ fun EditAssetScreen(viewModel: EditAssetViewModel = hiltViewModel()) {
                 onClick = viewModel::onDateClick
             )
         }
-        Field(stringResource(R.string.asset_cost), form.cost, viewModel::onCostChange, AssetProblem.CostInvalid in problems, R.string.amount_invalid, hint = stringResource(R.string.optional))
+        if (state.paid == null) Field(stringResource(R.string.asset_cost), form.cost, viewModel::onCostChange, AssetProblem.CostInvalid in problems, R.string.amount_invalid, hint = stringResource(R.string.optional))
+        else FormField(label = stringResource(R.string.asset_cost), hint = stringResource(R.string.asset_paid_hint)) {
+            ListCard(Modifier.fillMaxWidth()) {
+                state.purchases.forEachIndexed { index, purchase ->
+                    ListRow(
+                        title = purchase.title,
+                        subtitle = purchase.date,
+                        divider = index > 0,
+                        trailing = { Text(text = purchase.amount, style = HalalaNumbers.Meta) },
+                        onClick = { viewModel.onPurchaseClick(purchase.transactionId) }
+                    )
+                }
+                ListRow(
+                    title = stringResource(R.string.asset_paid_total),
+                    divider = true,
+                    trailing = { Text(text = state.paid.orEmpty(), style = HalalaNumbers.Meta) }
+                )
+            }
+        }
         Text(text = stringResource(R.string.asset_manual_hint), style = HalalaType.Caption, color = HalalaColors.TextMuted)
 
         if (!state.isNew) HalalaButton(

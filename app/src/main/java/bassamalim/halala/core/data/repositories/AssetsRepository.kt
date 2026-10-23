@@ -2,10 +2,13 @@ package bassamalim.halala.core.data.repositories
 
 import bassamalim.halala.core.data.dataSources.room.daos.AssetsDao
 import bassamalim.halala.core.data.dataSources.room.entities.Asset
+import bassamalim.halala.core.data.dataSources.room.entities.AssetPurchase
 import bassamalim.halala.core.data.dataSources.room.entities.NetWorthSnapshot
 import bassamalim.halala.core.domain.Assets
 import bassamalim.halala.core.domain.Money
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import java.time.Clock
 import java.time.LocalDate
 import java.util.UUID
@@ -19,7 +22,25 @@ class AssetsRepository @Inject constructor(
     private val clock: Clock
 ) {
 
-    fun observeAll(): Flow<List<Asset>> = assetsDao.observeAll()
+    /** Each with what it cost: its purchases' total once any are linked, else what you typed. */
+    fun observeAll(): Flow<List<Asset>> = combine(assetsDao.observeAll(), assetsDao.observePaid()) { assets, paid ->
+        val byAsset = paid.associate { it.assetId to it.paidMinor }
+        assets.map { asset -> byAsset[asset.id]?.let { asset.copy(costMinor = it) } ?: asset }
+    }
+
+    /** Which asset each transaction you said bought one bought: transaction id → asset id. */
+    fun observePurchases(): Flow<Map<Long, Long>> =
+        assetsDao.observePurchases().map { purchases -> purchases.associate { it.transactionId to it.assetId } }
+
+    suspend fun getPurchases(): List<AssetPurchase> = assetsDao.getPurchases()
+
+    /** Transaction [transactionId] bought [assetId] (and nothing else). */
+    suspend fun link(transactionId: Long, assetId: Long) {
+        if (assetsDao.get(assetId) == null) return
+        assetsDao.insertPurchase(AssetPurchase(transactionId = transactionId, assetId = assetId))
+    }
+
+    suspend fun unlink(transactionId: Long) = assetsDao.deletePurchase(transactionId)
 
     fun observeSnapshots(): Flow<List<NetWorthSnapshot>> = assetsDao.observeSnapshots()
 

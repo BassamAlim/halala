@@ -20,6 +20,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.SeriesPayment
+import bassamalim.halala.core.data.dataSources.room.entities.AssetPurchase
 import bassamalim.halala.core.data.dataSources.room.entities.RetirementPlan
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
@@ -83,7 +84,8 @@ class Importer @Inject constructor(
         places = snapshot.places,
         deposits = snapshot.deposits,
         goalContributions = snapshot.goalContributions,
-        seriesPayments = snapshot.seriesPayments
+        seriesPayments = snapshot.seriesPayments,
+        assetPurchases = snapshot.assetPurchases
     )
 
     companion object {
@@ -479,6 +481,11 @@ class Importer @Inject constructor(
                     series.paymentTransactionUids.map { SeriesPayment(transactionIds.named(it, "transaction"), row.id) }
                 }.also { payments ->
                     require(payments.map { it.transactionId }.toSet().size == payments.size) { "A transaction pays more than one series." }
+                },
+                assetPurchases = file.assets.zip(assets).flatMap { (asset, row) ->
+                    asset.purchaseTransactionUids.map { AssetPurchase(transactionIds.named(it, "transaction"), row.id) }
+                }.also { purchases ->
+                    require(purchases.map { it.transactionId }.toSet().size == purchases.size) { "A transaction buys more than one asset." }
                 }
             )
         }

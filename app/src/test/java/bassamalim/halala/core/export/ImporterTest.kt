@@ -22,6 +22,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.SeriesPayment
+import bassamalim.halala.core.data.dataSources.room.entities.AssetPurchase
 import bassamalim.halala.core.data.dataSources.room.entities.RetirementPlan
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
@@ -175,7 +176,8 @@ class ImporterTest {
         goalContributions = listOf(
             GoalContribution(1, "gc-broker", 182, 32, withdrawn = false, kindBefore = TransactionKind.TRANSFER_OUT)
         ),
-        seriesPayments = listOf(SeriesPayment(31, 162))
+        seriesPayments = listOf(SeriesPayment(31, 162)),
+        assetPurchases = listOf(AssetPurchase(32, 193))
     )
 
     private val json = Exporter.json(snapshot, appVersion = "0.2.0", now = at)

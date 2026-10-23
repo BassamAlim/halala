@@ -13,6 +13,8 @@ import bassamalim.halala.core.data.repositories.LoansRepository
 import bassamalim.halala.core.data.repositories.PeopleRepository
 import bassamalim.halala.core.data.repositories.PlacesRepository
 import bassamalim.halala.core.data.repositories.RecurringRepository
+import bassamalim.halala.core.data.repositories.AssetsRepository
+import bassamalim.halala.core.data.dataSources.room.entities.Asset
 import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.enums.SeriesStatus
 import bassamalim.halala.core.data.dataSources.room.entities.TransactionPlace
@@ -41,6 +43,7 @@ class TransactionDomain @Inject constructor(
     private val placeCapture: PlaceCapture,
     private val goalsRepository: GoalsRepository,
     private val recurringRepository: RecurringRepository,
+    private val assetsRepository: AssetsRepository,
     private val clock: Clock
 ) {
 
@@ -63,6 +66,16 @@ class TransactionDomain @Inject constructor(
     suspend fun paySeries(id: Long, seriesId: Long) = recurringRepository.link(id, seriesId)
 
     suspend fun unpaySeries(id: Long) = recurringRepository.unlink(id)
+
+    fun observeAssets(): Flow<List<Asset>> = assetsRepository.observeAll()
+
+    /** Which asset each transaction you said bought one bought: transaction id → asset id. */
+    fun observePurchases(): Flow<Map<Long, Long>> = assetsRepository.observePurchases()
+
+    /** It bought [assetId]: money turned into it, and part of what it cost. */
+    suspend fun buyAsset(id: Long, assetId: Long) = assetsRepository.link(id, assetId)
+
+    suspend fun unbuyAsset(id: Long) = assetsRepository.unlink(id)
 
     fun observeContributions(): Flow<List<GoalContribution>> = goalsRepository.observeContributions()
 

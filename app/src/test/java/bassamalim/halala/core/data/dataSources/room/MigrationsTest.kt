@@ -408,6 +408,12 @@ class MigrationsTest {
     }
 
     @Test
+    fun `29 to 30 adds asset purchases and matches the schema`() {
+        helper.createDatabase(DB, 29).use { }
+        helper.runMigrationsAndValidate(DB, 30, true, *MIGRATIONS).close()
+    }
+
+    @Test
     fun `23 to 24 also mends a 23 that had logos instead of goal contributions`() {
         helper.createDatabase(DB, 23).use { db ->
             db.execSQL("DROP TABLE `goal_contributions`")

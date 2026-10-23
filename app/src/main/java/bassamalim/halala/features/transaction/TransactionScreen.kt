@@ -236,6 +236,18 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
                 )
             }
         }
+        state.buysAsset?.let { name ->
+            HalalaCard(label = stringResource(R.string.asset_buys_label)) {
+                Text(text = stringResource(R.string.asset_buys, name), style = HalalaType.Body)
+                HalalaButton(
+                    text = stringResource(R.string.asset_buys_undo),
+                    onClick = viewModel::onUnbuyClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = Spacing.xs)
+                )
+            }
+        }
         if (state.canMarkSalary) HalalaButton(
             text = stringResource(R.string.salary_mark),
             onClick = viewModel::onSalaryClick,
@@ -251,6 +263,12 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
         if (state.canPaySeries) HalalaButton(
             text = stringResource(R.string.series_pays_mark),
             onClick = viewModel::onPaySeriesClick,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        if (state.canBuyAsset) HalalaButton(
+            text = stringResource(R.string.asset_buys_mark),
+            onClick = viewModel::onBuyAssetClick,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -659,6 +677,29 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
                 modifier = Modifier.fillMaxWidth()
             )
         }
+
+        is TransactionSheet.BuyAsset -> HalalaSheet(onDismiss = viewModel::onSheetDismiss) {
+            Text(text = stringResource(R.string.asset_buys_mark), style = HalalaType.Title)
+            ChoiceChipsMulti(options = state.assets, selected = listOfNotNull(sheet.assetId), onToggle = viewModel::onBuyAssetPick)
+            if (sheet.noAsset) Text(text = stringResource(R.string.asset_buys_none), style = HalalaType.Label, color = HalalaColors.StateOver)
+            Text(text = stringResource(R.string.asset_buys_body), style = HalalaType.Label, color = HalalaColors.TextMuted)
+            HalalaButton(
+                text = stringResource(R.string.asset_buys_confirm),
+                onClick = viewModel::onBuyAssetConfirm,
+                kind = ButtonKind.Primary,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        TransactionSheet.Unbuy -> ConfirmSheet(
+            title = stringResource(R.string.asset_buys_undo_title),
+            body = stringResource(R.string.asset_buys_undo_body),
+            confirmLabel = stringResource(R.string.asset_buys_undo),
+            dismissLabel = stringResource(R.string.cancel),
+            onConfirm = viewModel::onUnbuyConfirm,
+            onDismiss = viewModel::onSheetDismiss,
+            destructive = false
+        )
 
         TransactionSheet.Unpay -> ConfirmSheet(
             title = stringResource(R.string.series_pays_undo_title),

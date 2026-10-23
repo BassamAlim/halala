@@ -15,6 +15,7 @@ import bassamalim.halala.core.domain.DigestKind
 import bassamalim.halala.core.domain.Digests
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.NetWorth
+import bassamalim.halala.core.domain.Bought
 import bassamalim.halala.core.domain.WealthClass
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
@@ -77,12 +78,13 @@ class WealthViewModel @Inject constructor(
     private val range = MutableStateFlow(WealthRange.YEAR)
 
     val uiState: StateFlow<WealthUiState> = combine(
-        combine(accountsRepository.observeAll(), assetsRepository.observeAll(), goalsRepository.observeContributions(), ::Triple),
+        combine(accountsRepository.observeAll(), combine(assetsRepository.observeAll(), assetsRepository.observePurchases(), ::Pair), goalsRepository.observeContributions(), ::Triple),
         loansRepository.observeStates(),
         transactionsRepository.observeAll(),
         combine(assetsRepository.observeSnapshots(), savingsRepository.observe(), savingsRepository.observeDeposits(), ::Triple),
         range
-    ) { (accounts, assets, contributions), loans, details, (snapshots, savings, deposits), range ->
+    ) { (accounts, assetsAndPurchases, contributions), loans, details, (snapshots, savings, deposits), range ->
+        val (assets, purchases) = assetsAndPurchases
         val today = LocalDate.now(clock)
         val currency = Globals.PRIMARY_CURRENCY
         val byId = details.associateBy { it.transaction.id }
@@ -96,9 +98,14 @@ class WealthViewModel @Inject constructor(
             WealthRange.YEAR -> today.minusYears(1)
             WealthRange.ALL -> earliest
         }.coerceAtLeast(earliest.minusDays(1)).coerceAtMost(today.minusDays(1))
+        val bought = purchases.entries.groupBy({ it.value }, { byId[it.key] }).mapNotNull { (assetId, bought) ->
+            val asset = assets.firstOrNull { it.id == assetId } ?: return@mapNotNull null
+            Bought(asset, bought.filterNotNull().groupBy({ it.transaction.occurredAt.atZone(clock.zone).toLocalDate() }, { it.transaction.amountMinor })
+                .mapValues { Money.sum(it.value) })
+        }
         val timeline = NetWorth.timeline(
             now.totalMinor, assetsNow, minOf(from, today.minusYears(1)), today, details,
-            included.map { it.account.id }.toSet(), loans, currency, snapshots, clock.zone, elsewhere
+            included.map { it.account.id }.toSet(), loans, currency, snapshots, clock.zone, elsewhere, bought
         )
         val shown = timeline.filter { !it.first.isBefore(from) }
         fun valueOn(day: LocalDate) = timeline.firstOrNull { !it.first.isBefore(day) }?.second

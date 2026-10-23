@@ -18,6 +18,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.PersonAlias
 import bassamalim.halala.core.data.dataSources.room.entities.RawMessage
 import bassamalim.halala.core.data.dataSources.room.entities.RecurringSeries
 import bassamalim.halala.core.data.dataSources.room.entities.SeriesPayment
+import bassamalim.halala.core.data.dataSources.room.entities.AssetPurchase
 import bassamalim.halala.core.data.dataSources.room.entities.RetirementPlan
 import bassamalim.halala.core.data.dataSources.room.entities.Rule
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
@@ -90,7 +91,8 @@ data class LedgerSnapshot(
     val places: List<TransactionPlace> = emptyList(),
     val deposits: List<Deposit> = emptyList(),
     val goalContributions: List<GoalContribution> = emptyList(),
-    val seriesPayments: List<SeriesPayment> = emptyList()
+    val seriesPayments: List<SeriesPayment> = emptyList(),
+    val assetPurchases: List<AssetPurchase> = emptyList()
 ) {
     /** The merchant each transaction's title names, by transaction id. */
     fun merchantOf(): Map<Long, Merchant> {
@@ -156,7 +158,8 @@ class Exporter @Inject constructor(
         places = placesRepository.getAll(),
         deposits = savingsRepository.getDeposits(),
         goalContributions = goalsRepository.getContributions(),
-        seriesPayments = recurringRepository.getPayments()
+        seriesPayments = recurringRepository.getPayments(),
+        assetPurchases = assetsRepository.getPurchases()
     )
 
     fun fileStem(): String = "halala-${clock.instant().atZone(clock.zone).toLocalDate()}"
@@ -394,7 +397,9 @@ class Exporter @Inject constructor(
                         depreciationPercent = asset.depreciationPercent,
                         currency = asset.currency,
                         createdAt = asset.createdAt.toString(),
-                        priceSource = asset.priceSource
+                        priceSource = asset.priceSource,
+                        purchaseTransactionUids = snapshot.assetPurchases.filter { it.assetId == asset.id }
+                            .map { transactionUids.getValue(it.transactionId) }
                     )
                 },
                 assetSnapshots = snapshot.snapshots.map { ExportSnapshot(it.date.toString(), it.assetsMinor, it.currency) },

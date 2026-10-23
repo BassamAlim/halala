@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import bassamalim.halala.core.data.dataSources.room.entities.Asset
+import bassamalim.halala.core.data.dataSources.room.entities.AssetPurchase
 import bassamalim.halala.core.data.dataSources.room.entities.NetWorthSnapshot
 import kotlinx.coroutines.flow.Flow
 
@@ -39,4 +40,23 @@ interface AssetsDao {
     /** One a day: a later one the same day replaces it. */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun putSnapshot(snapshot: NetWorthSnapshot)
+
+    @Query("SELECT * FROM asset_purchases ORDER BY transactionId")
+    fun observePurchases(): Flow<List<AssetPurchase>>
+
+    @Query("SELECT * FROM asset_purchases ORDER BY transactionId")
+    suspend fun getPurchases(): List<AssetPurchase>
+
+    /** What each asset's purchases add up to, in the purchases' currency (linked only in the asset's). */
+    @Query("SELECT p.assetId AS assetId, SUM(t.amountMinor) AS paidMinor FROM asset_purchases p JOIN transactions t ON t.id = p.transactionId GROUP BY p.assetId")
+    fun observePaid(): Flow<List<AssetPaid>>
+
+    /** A transaction buys one asset at most: linking it again moves it. */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPurchase(purchase: AssetPurchase)
+
+    @Query("DELETE FROM asset_purchases WHERE transactionId = :transactionId")
+    suspend fun deletePurchase(transactionId: Long)
 }
+
+data class AssetPaid(val assetId: Long, val paidMinor: Long)

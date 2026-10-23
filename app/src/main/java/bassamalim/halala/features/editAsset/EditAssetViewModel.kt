@@ -6,6 +6,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import bassamalim.halala.core.enums.AssetType
+import bassamalim.halala.core.Globals
+import bassamalim.halala.core.domain.Money
+import bassamalim.halala.core.domain.titleOf
 import bassamalim.halala.core.prices.ListedFund
 import bassamalim.halala.core.prices.PriceProtocol
 import bassamalim.halala.core.nav.Navigator
@@ -35,8 +38,13 @@ data class EditAssetUiState(
     /** Linking a fund: what you typed, the funds it finds (null while loading, empty when none). */
     val fundSearch: FundSearch? = null,
     /** Fetching today's gold price failed (offline). */
-    val goldFailed: Boolean = false
+    val goldFailed: Boolean = false,
+    /** The transactions you said bought it; once there are any, what it cost is their total ([paid]). */
+    val purchases: List<PurchaseRow> = emptyList(),
+    val paid: String? = null
 )
+
+data class PurchaseRow(val transactionId: Long, val title: String, val date: String, val amount: String)
 
 data class FundSearch(val query: String = "", val results: List<FundOption>? = null, val failed: Boolean = false)
 
@@ -66,9 +74,10 @@ class EditAssetViewModel @Inject constructor(
     }
 
     val uiState: StateFlow<EditAssetUiState> = combine(
-        form, problems, picking, confirmingDelete, combine(search, goldFailed, ::Pair)
-    ) { form, problems, picking, confirming, (search, goldFailed) ->
+        form, problems, picking, confirmingDelete, combine(search, goldFailed, domain.observePurchases(id), ::Triple)
+    ) { form, problems, picking, confirming, (search, goldFailed, purchases) ->
         val today = domain.today()
+        val currency = form?.currency ?: Globals.PRIMARY_CURRENCY
         EditAssetUiState(
             isLoading = form == null,
             isNew = id == 0L,
@@ -79,7 +88,16 @@ class EditAssetViewModel @Inject constructor(
             pickFrom = form?.priceDate ?: today,
             isConfirmingDelete = confirming,
             fundSearch = search,
-            goldFailed = goldFailed
+            goldFailed = goldFailed,
+            purchases = purchases.map {
+                PurchaseRow(
+                    transactionId = it.transaction.id,
+                    title = titleOf(it),
+                    date = shortDateLabel(it.transaction.occurredAt.atZone(domain.zone()).toLocalDate(), today),
+                    amount = Money.format(it.transaction.amountMinor, it.transaction.currency)
+                )
+            },
+            paid = purchases.takeIf { it.isNotEmpty() }?.let { list -> Money.format(Money.sum(list.map { it.transaction.amountMinor }), currency) }
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EditAssetUiState())
 
@@ -154,6 +172,8 @@ class EditAssetViewModel @Inject constructor(
             edit { it.copy(unitPrice = gold.perGram.toPlainString(), priceDate = gold.date, priceSource = PriceProtocol.GOLD_SOURCE) }
         }
     }
+
+    fun onPurchaseClick(transactionId: Long) = navigator.navigate(Screen.Transaction(transactionId))
 
     fun onUnlinkClick() = edit { it.copy(priceSource = null) }
 
