@@ -343,7 +343,9 @@ These are decided (mostly by the spec); don't re-litigate them in code.
 - **Reminders for what is due** (`DueReminders`, daily at nine, periodic WorkManager work): a
   bill or subscription its lead time before it is due, a cancel reminder three days (or its lead
   time) before it renews, an open loan on its due day. Names and days, never an amount. Choosing a
-  reminder or a due date asks for notification permission.
+  reminder or a due date asks for notification permission. Tapping any of these (or a digest,
+  budget, alerts, maturity or zakat notice) opens the lock, then its own screen
+  (`DueReminders.screenFor`: Subscriptions, the person, Savings, Zakat, the digest, Budgets, Alerts).
 - **Tags** cut across categories: a `Tag` has a name and optional days; with `auto` set it takes
   every transaction in its days (to today while it has no end) as they arrive
   (`TagsRepository.applyActive`, run as the app opens and after each SMS run). `TransactionTag`
@@ -384,7 +386,7 @@ These are decided (mostly by the spec); don't re-litigate them in code.
 - **Notifications**: only the review reminder (off by default; daily or weekly at a time, set in
   Settings), which shows a count of merchants and never an amount, says nothing when the inbox
   is empty, and can be put off an hour or a day. It is periodic WorkManager work, so it can run
-  late in Doze. Tapping it opens the app (lock, then Home), not Review directly.
+  late in Doze. Tapping it opens the app on its lock, then Review (`OpenRequest`).
 - **Every automated decision says why** (the spec's principle): Transaction detail's
   "How it got here" card names the source (added by you, a wallet count, or an SMS), and
   "Filed automatically" names the rule (and, for an automatic one, what the merchant was

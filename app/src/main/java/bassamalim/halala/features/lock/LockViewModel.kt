@@ -7,7 +7,7 @@ import androidx.navigation.toRoute
 import bassamalim.halala.core.data.repositories.PreferencesRepository
 import bassamalim.halala.core.lock.LockManager
 import bassamalim.halala.core.nav.Navigator
-import bassamalim.halala.core.widget.QuickAddRequest
+import bassamalim.halala.core.nav.OpenRequest
 import bassamalim.halala.core.nav.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.first
@@ -19,7 +19,7 @@ class LockViewModel @Inject constructor(
     private val lockManager: LockManager,
     private val navigator: Navigator,
     private val preferences: PreferencesRepository,
-    private val quickAdd: QuickAddRequest,
+    private val openRequest: OpenRequest,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -30,8 +30,8 @@ class LockViewModel @Inject constructor(
 
         if (route.resumable) {
             navigator.popBackStack()
-            // The widget's "+ Cash", asked for while locked.
-            if (quickAdd.consume()) navigator.navigate(Screen.EditTransaction())
+            // The widget's "+ Cash" or a notification, tapped while locked.
+            openRequest.consume()?.let { navigator.navigate(it) }
             return
         }
 
@@ -42,7 +42,8 @@ class LockViewModel @Inject constructor(
             navigator.navigate(next) {
                 popUpTo<Screen.Lock> { inclusive = true }
             }
-            if (quickAdd.consume() && onboarded) navigator.navigate(Screen.EditTransaction())
+            val asked = openRequest.consume()
+            if (asked != null && onboarded) navigator.navigate(asked)
         }
     }
 }

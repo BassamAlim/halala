@@ -7,6 +7,8 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
+import bassamalim.halala.core.nav.OpenRequest
+import bassamalim.halala.core.nav.Screen
 import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
@@ -95,12 +97,12 @@ class ReviewReminders @Inject constructor(
                     .build()
             )
 
-            // Opens the app on its lock, then Home; Review is behind its Inbox icon.
+            // Opens the app on its lock, then Review.
             val open = PendingIntent.getActivity(
                 context,
-                0,
-                context.packageManager.getLaunchIntentForPackage(context.packageName),
-                PendingIntent.FLAG_IMMUTABLE
+                NOTIFICATION_ID,
+                OpenRequest.intent(context, Screen.Review),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
 
             manager.notify(

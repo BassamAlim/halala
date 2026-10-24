@@ -26,10 +26,10 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import bassamalim.halala.core.lock.LockManager
 import bassamalim.halala.core.widget.HalalaWidget
-import bassamalim.halala.core.widget.QuickAddRequest
 import kotlinx.coroutines.launch
 import bassamalim.halala.core.nav.Navigation
 import bassamalim.halala.core.nav.Navigator
+import bassamalim.halala.core.nav.OpenRequest
 import bassamalim.halala.core.nav.Screen
 import bassamalim.halala.core.ui.theme.HalalaTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -41,7 +41,7 @@ class Activity : FragmentActivity() {
 
     @Inject lateinit var navigator: Navigator
     @Inject lateinit var lockManager: LockManager
-    @Inject lateinit var quickAdd: QuickAddRequest
+    @Inject lateinit var openRequest: OpenRequest
     @Inject lateinit var merchantLogos: MerchantLogos
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,7 +52,7 @@ class Activity : FragmentActivity() {
         )
 
         super.onCreate(savedInstanceState)
-        if (savedInstanceState == null && intent?.action == QuickAddRequest.ACTION) quickAdd.request()
+        if (savedInstanceState == null) openRequest.request(intent)
 
         // No screenshots, and a blank card in recent apps: this is a ledger.
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
@@ -78,10 +78,10 @@ class Activity : FragmentActivity() {
         }
     }
 
-    /** The widget's "+ Cash" while the app is open: the form now, or after the lock. */
+    /** The widget or a notification while the app is open: its screen now, or after the lock. */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        if (intent.action == QuickAddRequest.ACTION) quickAdd.request()
+        openRequest.request(intent)
     }
 
     override fun onStart() {
@@ -90,9 +90,13 @@ class Activity : FragmentActivity() {
         if (lockManager.shouldLockOnResume(SystemClock.elapsedRealtime())) {
             lockManager.onLocked()
             navigator.navigate(Screen.Lock(resumable = true)) { launchSingleTop = true }
-        } else if (!lockManager.isLocked() && quickAdd.consume()) {
-            navigator.navigate(Screen.EditTransaction())
         }
+    }
+
+    // Here rather than onStart: a tap while the app is already in front never stops it.
+    override fun onResume() {
+        super.onResume()
+        if (!lockManager.isLocked()) openRequest.consume()?.let { navigator.navigate(it) }
     }
 
     override fun onStop() {

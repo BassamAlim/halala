@@ -32,6 +32,7 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import bassamalim.halala.R
 import bassamalim.halala.core.Activity
+import bassamalim.halala.core.nav.OpenRequest
 import bassamalim.halala.core.Globals
 import bassamalim.halala.core.data.repositories.BudgetsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
@@ -90,7 +91,7 @@ class HalalaWidget : GlanceAppWidget() {
     @Composable
     private fun Content(context: Context, model: WidgetModel) {
         val open = Intent(context, Activity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        val quickAdd = Intent(open).setAction(QuickAddRequest.ACTION)
+        val quickAdd = Intent(open).setAction(OpenRequest.QUICK_ADD)
         val muted = ColorProvider(HalalaColors.TextMuted)
         val text = ColorProvider(HalalaColors.Text)
         val bar = when (model.state) {

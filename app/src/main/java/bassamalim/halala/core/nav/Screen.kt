@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
  * types rather than strings parsed out of a URL. An id of 0 means "a new one", the same sentinel
  * the entities use for "not inserted yet".
  */
+@Serializable
 sealed interface Screen {
 
     /**

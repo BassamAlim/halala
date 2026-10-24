@@ -5,6 +5,8 @@ import android.app.PendingIntent
 import android.content.Context
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
+import bassamalim.halala.core.nav.OpenRequest
+import bassamalim.halala.core.nav.Screen
 import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
@@ -56,8 +58,8 @@ sealed interface DueNotice {
     /** You asked to be reminded to cancel [name] before it renews on [renews]. */
     data class Cancel(override val key: Int, val name: String, val renews: LocalDate) : DueNotice
 
-    /** A loan with [person] is due today: owed to you when [lent]. */
-    data class Loan(override val key: Int, val person: String, val lent: Boolean) : DueNotice
+    /** A loan with [person] ([personId]) is due today: owed to you when [lent]. */
+    data class Loan(override val key: Int, val personId: Long, val person: String, val lent: Boolean) : DueNotice
 
     /** An Awaeed term ([name]) matures on [due], in a few days: time to confirm what happens. */
     data class Maturing(override val key: Int, val name: String, val due: LocalDate) : DueNotice
@@ -141,7 +143,7 @@ class DueReminders @Inject constructor(
                 else null
             }
             val loansDue = loans.filter { it.isOpen && it.loan.dueOn == today }.map {
-                DueNotice.Loan(LOAN_KEYS + it.loan.id.toInt(), names[it.loan.personId].orEmpty(), it.loan.direction == LoanDirection.LENT)
+                DueNotice.Loan(LOAN_KEYS + it.loan.id.toInt(), it.loan.personId, names[it.loan.personId].orEmpty(), it.loan.direction == LoanDirection.LENT)
             }
             return bills + cancels + loansDue
         }
@@ -150,6 +152,17 @@ class DueReminders @Inject constructor(
         private const val BILL_KEYS = 100_000
         private const val CANCEL_KEYS = 200_000
         private const val LOAN_KEYS = 300_000
+
+        /** Where tapping [notice] takes you. */
+        fun screenFor(notice: DueNotice): Screen = when (notice) {
+            is DueNotice.Bill, is DueNotice.Cancel -> Screen.Recurring
+            is DueNotice.Loan -> Screen.Person(notice.personId)
+            is DueNotice.Maturing -> Screen.Savings
+            is DueNotice.Zakat -> Screen.Zakat
+            is DueNotice.DigestReady -> Screen.Digest(notice.kind.name, notice.period.start.toEpochDay())
+            is DueNotice.Budget -> Screen.Budgets
+            is DueNotice.Alerts -> Screen.Alerts
+        }
 
         @SuppressLint("MissingPermission") // areNotificationsEnabled covers POST_NOTIFICATIONS.
         fun notify(context: Context, notices: List<DueNotice>, today: LocalDate) {
@@ -161,11 +174,6 @@ class DueReminders @Inject constructor(
                     .setName(context.getString(R.string.due_channel))
                     .build()
             )
-            // Opens the app on its lock, then Home.
-            val open = PendingIntent.getActivity(
-                context, 0, context.packageManager.getLaunchIntentForPackage(context.packageName), PendingIntent.FLAG_IMMUTABLE
-            )
-
             for (notice in notices) {
                 val (title, text) = when (notice) {
                     is DueNotice.Bill -> context.getString(R.string.due_bill_title, notice.name) to
@@ -194,6 +202,13 @@ class DueReminders @Inject constructor(
                         notice.period.start.format(DIGEST_TITLE_MONTH), notice.period.start.year.toString()
                     ) to context.getString(R.string.digest_ready_text)
                 }
+                // Opens the app on its lock, then the notice's own screen.
+                val open = PendingIntent.getActivity(
+                    context,
+                    notice.key,
+                    OpenRequest.intent(context, screenFor(notice)),
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                )
                 manager.notify(
                     notice.key,
                     NotificationCompat.Builder(context, CHANNEL)
