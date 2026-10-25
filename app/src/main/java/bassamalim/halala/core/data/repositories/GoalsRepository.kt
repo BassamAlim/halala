@@ -6,12 +6,14 @@ import bassamalim.halala.core.data.dataSources.room.daos.LoansDao
 import bassamalim.halala.core.data.dataSources.room.daos.RetirementDao
 import bassamalim.halala.core.data.dataSources.room.daos.SavingsDao
 import bassamalim.halala.core.data.dataSources.room.daos.TransactionsDao
+import bassamalim.halala.core.data.dataSources.room.entities.Deposit
 import bassamalim.halala.core.data.dataSources.room.entities.GoalContribution
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.domain.GoalState
 import bassamalim.halala.core.domain.Goals
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.Planner
+import bassamalim.halala.core.enums.AccountType
 import bassamalim.halala.core.enums.Direction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -27,6 +29,7 @@ import javax.inject.Singleton
 /**
  * Savings goals, each measured by the balances of the accounts it is saved in and the deposits made
  * for it. The retirement plan's goal grows while you save, so what it needs a month is the plan's.
+ * A deposit's goal is kept on the deposit alone: marking its transfer toward a goal files it there.
  */
 @Singleton
 class GoalsRepository @Inject constructor(
@@ -49,6 +52,7 @@ class GoalsRepository @Inject constructor(
         val today = LocalDate.now(clock)
         val since = today.minusMonths(3).atStartOfDay(clock.zone).toInstant()
         val balances = accounts.associate { it.account.id to it.balanceMinor }
+        val holding = accounts.filter { it.account.type == AccountType.DEPOSIT }.map { it.account.id }.toSet()
         val arrived = details.associate { it.transaction.id to it.transaction }
         val byId = details.associateBy { it.transaction.id }
         val toward = contributions.mapNotNull { c -> byId[c.transactionId]?.let { c to it } }
@@ -62,9 +66,9 @@ class GoalsRepository @Inject constructor(
                 .mapNotNull { arrived[it.transactionId] }.filter { it.currency == goal.currency }
             Goals.stateOf(
                 goal,
-                Money.sum(ids.map { balances[it] ?: 0 } + held.map { it.amountMinor } + Goals.contributed(goal, toward)),
+                Money.sum(ids.map { balances[it] ?: 0 } + held.map { it.amountMinor } + Goals.contributed(goal, toward, holding = holding)),
                 flowIn.sum() + held.filter { !it.occurredAt.isBefore(since) }.sumOf { it.amountMinor } +
-                        Goals.contributed(goal, toward, since),
+                        Goals.contributed(goal, toward, since, holding),
                 today
             ).let { state ->
                 if (plan?.goalId != goal.id) state
@@ -94,16 +98,29 @@ class GoalsRepository @Inject constructor(
 
     fun observeContributions(): Flow<List<GoalContribution>> = goalsDao.observeContributions()
 
+    /** The term deposits, whose goal is the one their transfer goes toward. */
+    fun observeDeposits(): Flow<List<Deposit>> = savingsDao.observeDeposits()
+
     suspend fun getContributions(): List<GoalContribution> = goalsDao.getContributions()
 
     /**
      * [transactionId] went toward [goalId] (or, [withdrawn], came out of it). A plain one stops
-     * counting as spending or income. False when it can't be (a loan's, a split purchase, or
-     * already toward a goal).
+     * counting as spending or income. The transfer that opened a term deposit files the deposit
+     * under the goal instead, as its form does. False when it can't be (a loan's, a split
+     * purchase, another move into or out of a deposit, or already toward a goal).
      */
     suspend fun contribute(transactionId: Long, goalId: Long, withdrawn: Boolean): Boolean {
         val detail = transactionsDao.observeDetail(transactionId).first() ?: return false
-        if (goalsDao.get(goalId) == null || goalsDao.getContributionFor(transactionId) != null) return false
+        if (goalsDao.get(goalId) == null) return false
+        depositFor(transactionId, detail.counterpartId)?.let { deposit ->
+            if (deposit.goalId != null) return false
+            savingsDao.updateDeposit(deposit.copy(goalId = goalId))
+            return true
+        }
+        if (goalsDao.getContributionFor(transactionId) != null) return false
+        val types = listOfNotNull(detail.transaction.accountId, detail.counterpartAccountId)
+            .associateWith { accountsDao.get(it)?.type ?: AccountType.CURRENT }
+        if (Goals.touchesDeposits(detail, types)) return false
         val loanPart = loansDao.getEventFor(transactionId) != null
         if (!Goals.canContribute(detail, loanPart)) return false
         // A move is marked by its sending leg, so both legs read as the same contribution.
@@ -130,8 +147,15 @@ class GoalsRepository @Inject constructor(
         return goalsDao.getContributionFor(if (pair.outTransactionId == transactionId) pair.inTransactionId else pair.outTransactionId)
     }
 
-    /** No longer toward a goal: it counts as it did before it was marked. */
+    /** No longer toward a goal: it counts as it did before it was marked (a deposit is filed under none). */
     suspend fun uncontribute(transactionId: Long) {
+        val counterpart = transactionsDao.getTransferFor(transactionId)
+            ?.let { if (it.outTransactionId == transactionId) it.inTransactionId else it.outTransactionId }
+        depositFor(transactionId, counterpart)?.let { savingsDao.updateDeposit(it.copy(goalId = null)) }
         contributionFor(transactionId)?.let { goalsDao.withdrawContribution(it) }
     }
+
+    /** The deposit either leg of a transfer opened. */
+    private suspend fun depositFor(transactionId: Long, counterpartId: Long?): Deposit? =
+        savingsDao.getDepositFor(transactionId) ?: counterpartId?.let { savingsDao.getDepositFor(it) }
 }

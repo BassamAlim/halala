@@ -94,7 +94,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.ZakatProfile
         SeriesPayment::class,
         AssetPurchase::class
     ],
-    version = 30,
+    version = 31,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

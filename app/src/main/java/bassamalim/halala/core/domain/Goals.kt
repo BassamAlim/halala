@@ -1,5 +1,6 @@
 package bassamalim.halala.core.domain
 
+import bassamalim.halala.core.data.dataSources.room.entities.Deposit
 import bassamalim.halala.core.data.dataSources.room.entities.GoalContribution
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
@@ -80,19 +81,38 @@ object Goals {
     }
 
     /**
+     * The term deposit [detail] opened, by either leg of its transfer: what that transfer goes
+     * toward is the deposit's goal, never a contribution of its own.
+     */
+    fun depositOf(detail: TransactionDetail, deposits: List<Deposit>): Deposit? =
+        deposits.firstOrNull { it.transactionId == detail.transaction.id || it.transactionId == detail.counterpartId }
+
+    /**
+     * Whether [detail] goes into or out of a bank's deposit holding account ([types] by account
+     * id): the deposits in it count toward their goals while they run, so nothing moved there is
+     * a contribution as well.
+     */
+    fun touchesDeposits(detail: TransactionDetail, types: Map<Long, AccountType>): Boolean =
+        types[detail.transaction.accountId] == AccountType.DEPOSIT ||
+                detail.counterpartAccountId?.let { types[it] } == AccountType.DEPOSIT
+
+    /**
      * What [contributions] (each with its transaction) put toward [goal] from [since] on (all of
      * them when null): in the goal's currency, less what was taken out, and none that an account
-     * the goal is saved in already counts (it would be counted twice).
+     * the goal is saved in already counts, nor one into or out of a deposit [holding] account,
+     * which its deposit counts (either would be counted twice).
      */
     fun contributed(
         goal: SavingsGoal,
         contributions: List<Pair<GoalContribution, TransactionDetail>>,
-        since: Instant? = null
+        since: Instant? = null,
+        holding: Set<Long> = emptySet()
     ): Long = Money.sum(
         contributions
             .filter { (c, d) ->
                 c.goalId == goal.id && d.transaction.currency == goal.currency &&
                         d.transaction.accountId !in goal.accountIds && d.counterpartAccountId !in goal.accountIds &&
+                        d.transaction.accountId !in holding && d.counterpartAccountId !in holding &&
                         (since == null || !d.transaction.occurredAt.isBefore(since))
             }
             .map { (c, d) -> if (c.withdrawn) -d.transaction.amountMinor else d.transaction.amountMinor }

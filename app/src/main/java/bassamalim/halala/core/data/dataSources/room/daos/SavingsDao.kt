@@ -36,6 +36,10 @@ interface SavingsDao {
     @Query("SELECT * FROM deposits WHERE id = :id")
     suspend fun getDeposit(id: Long): Deposit?
 
+    /** The deposit [transactionId] (the leg that arrived in the holding account) opened. */
+    @Query("SELECT * FROM deposits WHERE transactionId = :transactionId")
+    suspend fun getDepositFor(transactionId: Long): Deposit?
+
     @Insert
     suspend fun insertDeposit(deposit: Deposit): Long
 

@@ -5,6 +5,7 @@ import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.GoalsRepository
+import bassamalim.halala.core.data.dataSources.room.entities.Deposit
 import bassamalim.halala.core.data.dataSources.room.entities.GoalContribution
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.enums.AccountType
@@ -78,6 +79,9 @@ class TransactionDomain @Inject constructor(
     suspend fun unbuyAsset(id: Long) = assetsRepository.unlink(id)
 
     fun observeContributions(): Flow<List<GoalContribution>> = goalsRepository.observeContributions()
+
+    /** The term deposits: a transfer that opened one goes toward the deposit's goal. */
+    fun observeDeposits(): Flow<List<Deposit>> = goalsRepository.observeDeposits()
 
     fun observeAccountTypes(): Flow<Map<Long, AccountType>> =
         accountsRepository.observeAll().map { accounts -> accounts.associate { it.account.id to it.account.type } }

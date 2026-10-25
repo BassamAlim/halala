@@ -414,6 +414,63 @@ class MigrationsTest {
     }
 
     @Test
+    fun `30 to 31 files a deposit under the goal its transfer was marked toward, once`() {
+        helper.createDatabase(DB, 30).use { db ->
+            db.execSQL(
+                "INSERT INTO accounts (id, uid, institutionId, nickname, type, last4, ibanSuffix, currency, " +
+                        "openingBalanceMinor, archived, createdAt) VALUES " +
+                        "(1, 'a', NULL, 'Main', 'CURRENT', '1111', NULL, 'SAR', 0, 0, 0), " +
+                        "(2, 'b', NULL, 'Awaeed', 'DEPOSIT', NULL, NULL, 'SAR', 0, 0, 0)"
+            )
+            db.execSQL(
+                "INSERT INTO savings_goals (id, uid, name, targetMinor, currency, targetDate, accountIds, createdAt) " +
+                        "VALUES (1, 'g', 'Retirement', 100000, 'SAR', NULL, '', 0)"
+            )
+            // 1 → 2 opened a deposit filed under no goal; 3 → 4 one already filed; 5 a broker
+            // transfer; 6 a payout out of the holding account, marked as taken out.
+            for ((id, account, direction, kind) in listOf(
+                listOf(1, 1, "DEBIT", "INTERNAL_TRANSFER"), listOf(2, 2, "CREDIT", "INTERNAL_TRANSFER"),
+                listOf(3, 1, "DEBIT", "INTERNAL_TRANSFER"), listOf(4, 2, "CREDIT", "INTERNAL_TRANSFER"),
+                listOf(5, 1, "DEBIT", "SAVINGS_DEPOSIT"), listOf(6, 2, "DEBIT", "SAVINGS_WITHDRAWAL")
+            )) db.execSQL(
+                "INSERT INTO transactions (id, uid, accountId, direction, amountMinor, currency, occurredAt, kind, " +
+                        "title, note, source, createdAt) " +
+                        "VALUES ($id, 't$id', $account, '$direction', 50000, 'SAR', 0, '$kind', '', '', 'MANUAL', 0)"
+            )
+            db.execSQL(
+                "INSERT INTO internal_transfers (id, uid, outTransactionId, inTransactionId, matchConfidence) " +
+                        "VALUES (1, 'p1', 1, 2, 1.0), (2, 'p2', 3, 4, 1.0)"
+            )
+            db.execSQL("INSERT INTO deposits (id, uid, transactionId, goalId) VALUES (1, 'd1', 2, NULL), (2, 'd2', 4, 1)")
+            db.execSQL(
+                "INSERT INTO goal_contributions (id, uid, goalId, transactionId, withdrawn, kindBefore) VALUES " +
+                        "(1, 'c1', 1, 1, 0, NULL), (2, 'c2', 1, 3, 0, NULL), (3, 'c3', 1, 5, 0, 'TRANSFER_OUT'), " +
+                        "(4, 'c4', 1, 6, 1, 'OTHER')"
+            )
+        }
+
+        helper.runMigrationsAndValidate(DB, 31, true, *MIGRATIONS).use { db ->
+            db.query("SELECT goalId FROM deposits ORDER BY id").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(1L, cursor.getLong(0))
+                cursor.moveToNext()
+                assertEquals(1L, cursor.getLong(0))
+            }
+            db.query("SELECT transactionId FROM goal_contributions").use { cursor ->
+                assertEquals(1, cursor.count)
+                cursor.moveToFirst()
+                assertEquals(5L, cursor.getLong(0))
+            }
+            db.query("SELECT kind FROM transactions WHERE id IN (5, 6) ORDER BY id").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("SAVINGS_DEPOSIT", cursor.getString(0))
+                cursor.moveToNext()
+                assertEquals("OTHER", cursor.getString(0))
+            }
+        }
+    }
+
+    @Test
     fun `23 to 24 also mends a 23 that had logos instead of goal contributions`() {
         helper.createDatabase(DB, 23).use { db ->
             db.execSQL("DROP TABLE `goal_contributions`")

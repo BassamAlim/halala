@@ -16,6 +16,7 @@ import bassamalim.halala.core.data.dataSources.room.entities.Asset
 import bassamalim.halala.core.data.dataSources.room.entities.TransactionPlace
 import bassamalim.halala.core.places.LocationAccess
 import bassamalim.halala.core.domain.Goals
+import bassamalim.halala.core.data.dataSources.room.entities.Deposit
 import bassamalim.halala.core.data.dataSources.room.entities.GoalContribution
 import bassamalim.halala.core.data.dataSources.room.entities.SavingsGoal
 import bassamalim.halala.core.enums.AccountType
@@ -64,7 +65,12 @@ class TransactionViewModel @Inject constructor(
     private val confirmingDelete = MutableStateFlow(false)
     private val sheet = MutableStateFlow<TransactionSheet?>(if (route.split) TransactionSheet.Split() else null)
 
-    private data class Savings(val goals: List<SavingsGoal>, val contributions: List<GoalContribution>, val types: Map<Long, AccountType>)
+    private data class Savings(
+        val goals: List<SavingsGoal>,
+        val contributions: List<GoalContribution>,
+        val deposits: List<Deposit>,
+        val types: Map<Long, AccountType>
+    )
 
     private data class Extras(
         val place: TransactionPlace?,
@@ -84,7 +90,7 @@ class TransactionViewModel @Inject constructor(
         combine(domain.observePlace(id), locationAccess, domain.observeSeries(), domain.observePayments(), combine(domain.observeAssets(), domain.observePurchases(), ::Pair)) { place, access, series, payments, assets ->
             Extras(place, access, series, payments, assets.first, assets.second)
         },
-        combine(domain.observeGoals(), domain.observeContributions(), domain.observeAccountTypes(), ::Savings),
+        combine(domain.observeGoals(), domain.observeContributions(), domain.observeDeposits(), domain.observeAccountTypes(), ::Savings),
         combine(confirmingDelete, sheet, ::Pair)
     ) { (detail, loans, people), (categories, rules), (place, access, allSeries, payments, allAssets, purchases), savings, (confirming, sheet) ->
         // Gone (deleted from here or elsewhere): the screen stays as it was while it leaves.
@@ -98,7 +104,16 @@ class TransactionViewModel @Inject constructor(
         val here = accountLabel(detail.institutionName, detail.accountNickname)
         val there = detail.counterpartNickname?.let { accountLabel(detail.counterpartInstitutionName, it) }
         val title = titleOf(detail)
-        val contribution = savings.contributions.firstOrNull { it.transactionId == tx.id || it.transactionId == detail.counterpartId }
+        // A deposit's transfer goes toward the deposit's goal; nothing else into or out of a
+        // deposit counts toward one, since the deposit already does.
+        val deposit = Goals.depositOf(detail, savings.deposits)
+        val intoDeposits = Goals.touchesDeposits(detail, savings.types)
+        val contribution = savings.contributions.takeIf { !intoDeposits }
+            ?.firstOrNull { it.transactionId == tx.id || it.transactionId == detail.counterpartId }
+        val goalLink = when {
+            deposit != null -> savings.goals.firstOrNull { it.id == deposit.goalId }?.let { GoalLink(it.name, withdrawn = false) }
+            else -> contribution?.let { c -> savings.goals.firstOrNull { it.id == c.goalId }?.let { GoalLink(it.name, c.withdrawn) } }
+        }
         val loanPart = loans.any { state -> state.events.any { it.transactionId == tx.id } }
         val series = allSeries.filter { it.currency == tx.currency }.sortedBy { it.name.lowercase() }
         val paysSeries = payments[tx.id]?.let { seriesId -> allSeries.firstOrNull { it.id == seriesId }?.name }
@@ -162,11 +177,11 @@ class TransactionViewModel @Inject constructor(
             canPayFor = canSplit && tx.kind !in Loans.MARKABLE,
             split = splitOf(detail, loans, people),
             people = people.map { PersonChoice(it.person.id, it.person.name) },
-            goal = contribution?.let { c ->
-                savings.goals.firstOrNull { it.id == c.goalId }?.let { GoalLink(it.name, c.withdrawn) }
-            },
+            goal = goalLink,
             canMarkSalary = tx.kind == TransactionKind.TRANSFER_IN && detail.personId != null && !detail.isInternalTransfer,
-            canMarkGoal = contribution == null && savings.goals.isNotEmpty() && Goals.canContribute(detail, loanPart),
+            canMarkGoal = goalLink == null && savings.goals.isNotEmpty() &&
+                    if (deposit != null) deposit.goalId == null else !intoDeposits && Goals.canContribute(detail, loanPart),
+            opensDeposit = deposit != null,
             goals = savings.goals.map { PersonChoice(it.id, it.name) },
             paysSeries = paysSeries,
             canPaySeries = paysSeries == null && series.isNotEmpty() && Charges.canPay(detail),
@@ -332,7 +347,8 @@ class TransactionViewModel @Inject constructor(
             val detail = domain.observe(id).first() ?: return@launch
             val types = domain.observeAccountTypes().first()
             val goals = uiState.value.goals
-            sheet.update { TransactionSheet.Goal(goals.singleOrNull()?.id, Goals.withdrawnByDefault(detail, types)) }
+            val withdrawn = !uiState.value.opensDeposit && Goals.withdrawnByDefault(detail, types)
+            sheet.update { TransactionSheet.Goal(goals.singleOrNull()?.id, withdrawn) }
         }
     }
 

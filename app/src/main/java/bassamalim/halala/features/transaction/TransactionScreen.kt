@@ -649,14 +649,18 @@ fun TransactionScreen(viewModel: TransactionViewModel = hiltViewModel()) {
 
         is TransactionSheet.Goal -> HalalaSheet(onDismiss = viewModel::onSheetDismiss) {
             Text(text = stringResource(R.string.goal_toward_mark), style = HalalaType.Title)
-            SegmentedControl(
+            if (!state.opensDeposit) SegmentedControl(
                 options = listOf(stringResource(R.string.goal_put_in), stringResource(R.string.goal_took_out)),
                 selectedIndex = if (sheet.withdrawn) 1 else 0,
                 onSelect = { viewModel.onGoalWayClick(it == 1) }
             )
             ChoiceChipsMulti(options = state.goals, selected = listOfNotNull(sheet.goalId), onToggle = viewModel::onGoalPick)
             if (sheet.noGoal) Text(text = stringResource(R.string.goal_toward_none), style = HalalaType.Label, color = HalalaColors.StateOver)
-            Text(text = stringResource(R.string.goal_toward_body), style = HalalaType.Label, color = HalalaColors.TextMuted)
+            Text(
+                text = stringResource(if (state.opensDeposit) R.string.goal_toward_deposit_body else R.string.goal_toward_body),
+                style = HalalaType.Label,
+                color = HalalaColors.TextMuted
+            )
             HalalaButton(
                 text = stringResource(R.string.goal_toward_confirm),
                 onClick = viewModel::onGoalConfirm,

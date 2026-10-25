@@ -259,7 +259,10 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   kept where Halala has no account, like Al Rajhi Capital; a plain one becomes `SAVINGS_DEPOSIT`
   or `SAVINGS_WITHDRAWAL`, so neither spending nor income, and goes back to its `kindBefore`
   when unmarked; a move is marked by its sending leg, and none is counted that an account the
-  goal holds already counts). A month's saving needed = what is left over the
+  goal holds already counts). A deposit's goal lives on the deposit alone: marking the transfer
+  that opened one files the deposit under that goal (put in, never taken out), the same as its
+  form, and "Not toward a goal" files it under none; nothing else into or out of the deposits'
+  holding account can be marked, nor counts if it was, since the deposit already does. A month's saving needed = what is left over the
   months to the target month (rounded up); "you averaged" = the net flow into those accounts
   over the last three months, a third of it.
 - **Term deposits** (`Deposit`, no board): an Awaeed isn't an account of yours. The bank opens
@@ -269,7 +272,8 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   by the `product:` ref), counted as savings in net worth and **never listed, chosen or edited**
   (`AccountType.listed`; filter any new account list by it). The SMS gives no terms: rate,
   tenor and what happens at maturity are yours to add on the Deposit form, with its purpose,
-  which is a savings goal (`goalId`). Al Rajhi's closing SMS ("اقفال حساب عوائد", one amount,
+  which is a savings goal (`goalId`; also set by marking its transfer toward a goal on
+  Transaction detail, one place either way). Al Rajhi's closing SMS ("اقفال حساب عوائد", one amount,
   naming no deposit) ends the running deposit it fits (`SavingsRepository.closePaid`: the
   largest that went in before, at 80% or more of what came back): what went in moves back, and
   the rest is profit (an `OTHER` credit, so income). "It was paid out" does the same by hand,

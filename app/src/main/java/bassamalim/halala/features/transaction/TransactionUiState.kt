@@ -64,6 +64,8 @@ data class TransactionUiState(
     val goal: GoalLink? = null,
     /** It can be marked toward a goal: money to or from a broker, say, or a move. */
     val canMarkGoal: Boolean = false,
+    /** It opened a term deposit: its goal is the deposit's, always put in. */
+    val opensDeposit: Boolean = false,
     /** A plain transfer in from someone: it can be marked as your salary, and theirs from now on. */
     val canMarkSalary: Boolean = false,
     val goals: List<PersonChoice> = emptyList(),
