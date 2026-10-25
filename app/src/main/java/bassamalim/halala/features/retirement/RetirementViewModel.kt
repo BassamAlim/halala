@@ -186,7 +186,7 @@ class RetirementViewModel @Inject constructor(
 
     fun onTryDone() = trying.update { null }
 
-    fun onGoalClick(id: Long) = navigator.navigate(Screen.EditGoal(id))
+    fun onGoalClick(id: Long) = navigator.navigate(Screen.Goal(id))
 
     fun onCompoundClick() = navigator.navigate(Screen.Compound)
 

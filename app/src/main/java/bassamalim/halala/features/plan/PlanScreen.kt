@@ -95,26 +95,7 @@ fun PlanScreen(viewModel: PlanViewModel = hiltViewModel()) {
         }
 
         state.goals.forEach { goal ->
-            HalalaCard(modifier = Modifier.fillMaxWidth(), onClick = { viewModel.onGoalClick(goal.id) }, verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(text = goal.name, style = HalalaType.Label, color = HalalaColors.TextMuted)
-                    goal.by?.let { Text(text = stringResource(R.string.goal_by_date, it), style = HalalaType.Caption, color = HalalaColors.TextMuted) }
-                }
-                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                    Text(text = goal.saved, style = HalalaNumbers.AmountLg)
-                    Text(text = stringResource(R.string.goal_of, goal.target), style = HalalaType.Label, color = HalalaColors.TextMuted)
-                }
-                ProgressBar(progress = goal.progress)
-                Text(
-                    text = when {
-                        goal.reached -> stringResource(R.string.goal_reached)
-                        goal.needed != null -> stringResource(R.string.goal_needed, goal.needed, goal.averaged)
-                        else -> stringResource(R.string.goal_averaged, goal.averaged)
-                    },
-                    style = HalalaType.Caption,
-                    color = HalalaColors.TextMuted
-                )
-            }
+            GoalCardView(goal, Modifier.fillMaxWidth(), onClick = { viewModel.onGoalClick(goal.id) })
         }
         HalalaCard(modifier = Modifier.fillMaxWidth(), onClick = viewModel::onAddGoalClick) {
             Text(text = stringResource(R.string.goal_add), style = HalalaType.Body)
@@ -144,5 +125,30 @@ fun PlanScreen(viewModel: PlanViewModel = hiltViewModel()) {
                 onClick = viewModel::onCompoundClick
             )
         }
+    }
+}
+
+/** The Plan board's goal card; also the head of a goal's own screen. */
+@Composable
+fun GoalCardView(goal: GoalCard, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
+    HalalaCard(modifier = modifier, onClick = onClick, verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(text = goal.name, style = HalalaType.Label, color = HalalaColors.TextMuted)
+            goal.by?.let { Text(text = stringResource(R.string.goal_by_date, it), style = HalalaType.Caption, color = HalalaColors.TextMuted) }
+        }
+        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+            Text(text = goal.saved, style = HalalaNumbers.AmountLg)
+            Text(text = stringResource(R.string.goal_of, goal.target), style = HalalaType.Label, color = HalalaColors.TextMuted)
+        }
+        ProgressBar(progress = goal.progress)
+        Text(
+            text = when {
+                goal.reached -> stringResource(R.string.goal_reached)
+                goal.needed != null -> stringResource(R.string.goal_needed, goal.needed, goal.averaged)
+                else -> stringResource(R.string.goal_averaged, goal.averaged)
+            },
+            style = HalalaType.Caption,
+            color = HalalaColors.TextMuted
+        )
     }
 }

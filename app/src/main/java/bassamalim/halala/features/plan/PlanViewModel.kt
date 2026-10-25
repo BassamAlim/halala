@@ -12,6 +12,7 @@ import bassamalim.halala.core.domain.BudgetState
 import bassamalim.halala.core.utils.monthYearLabel
 import bassamalim.halala.core.domain.Forecasts
 import bassamalim.halala.core.data.repositories.RecurringRepository
+import bassamalim.halala.core.domain.GoalState
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
@@ -63,7 +64,24 @@ data class GoalCard(
     val needed: String?,
     val averaged: String,
     val reached: Boolean
-)
+) {
+    companion object {
+        fun of(state: GoalState): GoalCard {
+            val c = state.goal.currency
+            return GoalCard(
+                id = state.goal.id,
+                name = state.goal.name,
+                saved = Money.format(state.savedMinor, c, decimals = false),
+                target = Money.format(state.goal.targetMinor, c, decimals = false),
+                by = state.goal.targetDate?.let(::monthYearLabel),
+                progress = BudgetState.progress(state.savedMinor, state.goal.targetMinor),
+                needed = state.neededMonthlyMinor?.let { Money.format(it, c, decimals = false) },
+                averaged = Money.format(state.averageMonthlyMinor, c, decimals = false),
+                reached = state.reached
+            )
+        }
+    }
+}
 
 @HiltViewModel
 class PlanViewModel @Inject constructor(
@@ -97,20 +115,7 @@ class PlanViewModel @Inject constructor(
             zakatDay = zakat.second.dueHijri?.let {
                 Triple(it.get(ChronoField.DAY_OF_MONTH), it.get(ChronoField.MONTH_OF_YEAR), it.get(ChronoField.YEAR))
             },
-            goals = goals.map { goal ->
-                val c = goal.goal.currency
-                GoalCard(
-                    id = goal.goal.id,
-                    name = goal.goal.name,
-                    saved = Money.format(goal.savedMinor, c, decimals = false),
-                    target = Money.format(goal.goal.targetMinor, c, decimals = false),
-                    by = goal.goal.targetDate?.let(::monthYearLabel),
-                    progress = BudgetState.progress(goal.savedMinor, goal.goal.targetMinor),
-                    needed = goal.neededMonthlyMinor?.let { Money.format(it, c, decimals = false) },
-                    averaged = Money.format(goal.averageMonthlyMinor, c, decimals = false),
-                    reached = goal.reached
-                )
-            }
+            goals = goals.map(GoalCard::of)
         )
     }.flowOn(Dispatchers.Default).stateIn(
         scope = viewModelScope,
@@ -124,7 +129,7 @@ class PlanViewModel @Inject constructor(
 
     fun onForecastClick() = navigator.navigate(Screen.Forecast)
 
-    fun onGoalClick(id: Long) = navigator.navigate(Screen.EditGoal(id))
+    fun onGoalClick(id: Long) = navigator.navigate(Screen.Goal(id))
 
     fun onAddGoalClick() = navigator.navigate(Screen.EditGoal())
 

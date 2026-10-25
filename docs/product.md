@@ -562,7 +562,10 @@ with Phase 5), Home's **balance card** (Home board and its warn/over states, wit
 "End ≈"), **Forecast** (Forecast board: the end figure and band, the balance chart drawn on a
 Canvas, left over each month with the dip's biggest payments, and "Can I afford it?"), **Budgets** and **Budget**
 (no board: the Plan board's budget rows full size, and the form), the Plan board's **goal
-cards** and **Savings goal** (no board: the form), **Alerts** (no board: a card per alert with
+cards** (each opens **Goal**, no board: the card, then what went into or out of it: every
+transaction on the accounts it is saved in, a move between two of them once, the transfer that
+opened each deposit filed under it, and what was marked toward it, newest first; Edit opens the
+form) and **Savings goal** (no board: the form), **Alerts** (no board: a card per alert with
 Open, Normal for it and Dismiss), **Digest** (Digest board, minus net worth) and **Digests**
 (the archive, from Activity and Settings' Digests sheet).
 
