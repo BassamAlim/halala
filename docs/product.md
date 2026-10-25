@@ -43,8 +43,7 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   (`TransactionKind.countsInTotals` and `inOut`), shown once in the feed by their sending leg
   ("Salary → Cash", muted, dashed swap avatar), or by the account's own leg when the feed is
   filtered to one account. A move across currencies is refused (by hand and from SMS alike).
-- **Totals** (Activity's In/Out) are per currency, in SAR for now, this calendar month (pay
-  cycles arrive with budgets).
+- **Totals** (Activity's In/Out) are per currency, in SAR for now, this pay cycle.
 - **Categories and rules**: only spending has a category (money out that counts in totals;
   `Rules.canCategorise`). A transaction with a category and no `ruleId` was filed by you, and no
   rule ever changes it; one with a `ruleId` was filed by that rule and shows the Auto badge.
@@ -232,7 +231,14 @@ These are decided (mostly by the spec); don't re-litigate them in code.
 - **Pay cycle** (`PayCycles`): salary to salary. Pay days are `SALARY` credits at least half the
   usual salary (median of the last three) and 20 days apart (an allowance after it doesn't start
   a cycle); the cycle ends a month after the last, and runs on while a salary is late. With no
-  salary in 45 days it is the calendar month.
+  salary in 45 days it is the calendar month. **What is counted a period at a time follows the
+  cycle**: budgets, the forecast, Home's spent so far, Activity's totals, Insights and Category
+  spending, Money flow, the map's "This pay cycle" and the pay cycle digest. Back through the
+  ledger (`PayCycles.calendar`, `CycleCalendar`; `Budgets.cycles` from the ledger), a cycle
+  starts on the last pay day within 45 days before the next one starts, else a month before
+  it (before the first salary, or after salaries stopped). A cycle is named by its days ("27 Sep
+  – 26 Oct"; `cycleLabel`). What stays calendar: Hasad's lowest balance (the bank's), a goal's
+  months left, net worth's this month, income a month, weeks, years and zakat.
 - **Budgets** (`Budget`, `core/domain/Budgets`): a limit each pay cycle on everything, a category,
   an expense type, a merchant or a tag (what carries it, `Tags.byTransaction`), optionally
   rolling over what was left last cycle. Spending is
@@ -291,14 +297,16 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   key; "Normal for it" quiets a merchant's large ones); a restore clears them. Home shows a row
   while any stand; the daily reminder work notifies a count of new ones, never what or how much.
 - **Digests** (`Digests`, `DigestRepository`): weekly (Sunday to Saturday, the Saudi week),
-  monthly and yearly, built from the ledger whenever one is opened, never stored (so "past
+  each pay cycle (`DigestKind.MONTH`) and yearly, built from the ledger whenever one is opened, never stored (so "past
   digests are kept" means every finished period can be opened). Spending against the period
   before (whole percent), income less spending, what is owed to you, the top five categories,
   and up to three observations: a category moved 25% and 100 or more against its average over
   the three periods before, a price rise with the new monthly total, a loan due within two
   weeks (rule-based; AI-written ones come with the assistant). Each kind is off until you turn
-  it on in Settings; the daily reminder work notifies the morning after a period with spending
-  ends. Net worth's change joins with Phase 5.
+  it on in Settings; the daily reminder work notifies the morning after a week or year with
+  spending ends, and a pay cycle's the day its next salary lands or the day after (it can land
+  after that day's look), once (the cycle told is in DataStore, by the day it began). Net
+  worth's change joins with Phase 5.
 - **Assets** (`Asset`, `Assets`): funds (units × unit price), gold (grams × karat/24 × the 24k
   gram price, less a dealer's spread), and cars, property and the rest (a value you give, less a
   yearly depreciation, compounded). Quantities and prices are exact decimal text; a value is
@@ -372,7 +380,7 @@ These are decided (mostly by the spec); don't re-litigate them in code.
   resume. The map (`HeatMap`, osmdroid, tiles inverted for the dark theme) shows a heat of
   your spending by period and category, and the top places (purchases within about 200 m,
   named by their usual merchant; `core/domain/Places`). It lives on the **Insights** tab's Spending view:
-  a "Where you spend" card for the month picked on the bars (a small map the page scrolls over,
+  a "Where you spend" card for the pay cycle picked on the bars (a small map the page scrolls over,
   how many purchases were placed and what they came to, the three places most went, or the
   street-grid placeholder with its fix); the card opens the whole map, where the period and
   category are chosen. Transaction detail's **Where** card (for spending) shows a purchase's place on a
@@ -495,7 +503,7 @@ archive, several per bank by last four), manual transactions and moves, the cash
 count, CSV/JSON export, and the CI and release workflows.
 
 Screens and where they come from: **Home** (Home board: mark and wordmark, wallet and banks in the
-summary-card grid, Recent; a "Spent this month" summary card (no board: the calendar month so far, counted as Insights counts it, against last month to the same day); the balance card waits for budgets; the board's review pill is gone, replaced by the Inbox icon beside Ask and Settings),
+summary-card grid, Recent; a "Spent this pay cycle" summary card (no board: the cycle so far, counted as Insights counts it, against the cycle before to the same day); the balance card waits for budgets; the board's review pill is gone, replaced by the Inbox icon beside Ask and Settings),
 **Activity** (Activity board: search, a row of plain chips to browse by (Merchants, People, Tags, Digests; no board), an Uncategorised chip (spending with no category yet, as the inbox counts it; on top of the account) and account filter chips, month In/Out, rows by day; Money flow
 waits for Phase 6), **Transaction** (Transaction detail board, minus category, tags, location
 and SMS), **Settings** (Settings board, only the rows that are true today; reached from a gear
@@ -581,9 +589,9 @@ month on this month's lowest balance, nothing under 5,000; a term maturing withi
 on Wealth and is reminded three days before; the terms form has no board), and fetched fund
 and gold prices (see Assets).
 
-**Phase 6 (delight)** is built: **Insights** (a tab of its own, between Activity and Plan, in the Inbox's old place; first built as Activity's third segment; no board. Beside its title it switches between **Spending** and **Money flow**. Spending: the month's spending against the month before, six months' bars that pick the month (chevrons page six months older, back to the first month anything was spent, or newer, up to this one; paging picks the newest shown), a category ring in one ink stepped (spending is never coloured; the top five and Other), each category tapping through to **Category spending** (`Screen.CategorySpending`, no board: that month's total, by merchant, and its transactions; unfiled too) and Other opening into the categories it gathers, spending through the month against the month before (`LineChart`'s dashed second line), where the most went, and Where you spend; `InsightsDomain`), **Money flow** (Money flow board, the Insights tab's second view,
-redrawn top to bottom for a phone: for a month and an account, salary or what came in, the share
-spent and kept and spending against the month before, then a vertical Sankey (`Sankey`
+**Phase 6 (delight)** is built: **Insights** (a tab of its own, between Activity and Plan, in the Inbox's old place; first built as Activity's third segment; no board. Beside its title it switches between **Spending** and **Money flow**. Spending: the pay cycle's spending against the cycle before, six cycles' bars (each labelled by the day it began) that pick the cycle (chevrons page six cycles older, back to the first cycle anything was spent in, or newer, up to this one; paging picks the newest shown), a category ring in one ink stepped (spending is never coloured; the top five and Other), each category tapping through to **Category spending** (`Screen.CategorySpending`, no board: that cycle's total, by merchant, and its transactions; unfiled too) and Other opening into the categories it gathers, spending through the cycle against the cycle before (`LineChart`'s dashed second line), where the most went, and Where you spend; `InsightsDomain`), **Money flow** (Money flow board, the Insights tab's second view,
+redrawn top to bottom for a phone: for a pay cycle and an account, salary or what came in, the share
+spent and kept and spending against the cycle before, then a vertical Sankey (`Sankey`
 component, `core/domain/MoneyFlow`) from where the money came from (salary, your accounts,
 people, refunds, what was already there) through the account to where it went (your accounts,
 saved, people, the top five categories and the rest, not filed yet, what stayed); tap a part on

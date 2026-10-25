@@ -104,6 +104,13 @@ object Budgets {
             if (already) null else status to percent
         }
 
+    /** The pay cycles reports count by (`PayCycles.calendar`), back to the first transaction. */
+    fun cycles(details: List<TransactionDetail>, zone: ZoneId, today: LocalDate): CycleCalendar = PayCycles.calendar(
+        salaries(details, zone),
+        today,
+        details.minOfOrNull { it.transaction.occurredAt }?.atZone(zone)?.toLocalDate() ?: today
+    )
+
     /** Salary credits, for the pay cycle. */
     fun salaries(details: List<TransactionDetail>, zone: ZoneId): List<SalaryCredit> = details
         .filter { it.transaction.kind == TransactionKind.SALARY && it.transaction.direction == Direction.CREDIT }

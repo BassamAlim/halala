@@ -8,6 +8,7 @@ import bassamalim.halala.core.data.repositories.PlacesRepository
 import bassamalim.halala.core.places.LocationAccess
 import bassamalim.halala.core.places.PlaceCapture
 import bassamalim.halala.core.data.repositories.TransactionsRepository
+import bassamalim.halala.core.domain.Budgets
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.Places
 import bassamalim.halala.core.nav.Navigator
@@ -26,7 +27,8 @@ import kotlin.math.sqrt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flowOn
 
-enum class MapPeriod { MONTH, THREE_MONTHS, YEAR, ALL }
+/** How far back the map looks: this pay cycle, three months, a year, or everything. */
+enum class MapPeriod { CYCLE, THREE_MONTHS, YEAR, ALL }
 
 data class PlaceRow(val key: String, val name: String, val count: Int, val spent: String, val latitude: Double, val longitude: Double)
 
@@ -72,7 +74,7 @@ class SpendingMapViewModel @Inject constructor(
         val today = LocalDate.now(clock)
         val c = Globals.PRIMARY_CURRENCY
         val from = when (filters.period) {
-            MapPeriod.MONTH -> today.withDayOfMonth(1)
+            MapPeriod.CYCLE -> Budgets.cycles(details, clock.zone, today).current.start
             MapPeriod.THREE_MONTHS -> today.minusMonths(3)
             MapPeriod.YEAR -> today.minusYears(1)
             MapPeriod.ALL -> LocalDate.MIN

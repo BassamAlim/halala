@@ -9,15 +9,12 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.TemporalAdjusters
 
-/** How often a digest looks back. */
+/** How often a digest looks back. [MONTH] is a pay cycle (salary to salary; a month until one arrives). */
 enum class DigestKind { WEEK, MONTH, YEAR }
 
 /** A digest's span: from [start] up to, not including, [end]. */
 data class DigestPeriod(val kind: DigestKind, val start: LocalDate, val end: LocalDate) {
     fun contains(date: LocalDate) = !date.isBefore(start) && date.isBefore(end)
-
-    /** The period before this one. */
-    fun previous(): DigestPeriod = Digests.periodOf(kind, start.minusDays(1))
 }
 
 /** Something worth a look in a digest, as data for the screen to put into words. */
@@ -35,6 +32,7 @@ sealed interface Observation {
 /** One digest: spending against the period before, income, what was left, where it went, what is worth a look. */
 data class Digest(
     val period: DigestPeriod,
+    val previous: DigestPeriod,
     val spentMinor: Long,
     val previousSpentMinor: Long,
     /** Spending against the period before, in whole percent (signed); null when there was none before. */
@@ -49,9 +47,9 @@ data class Digest(
 )
 
 /**
- * Weekly, monthly and yearly digests, built from the ledger as it is: nothing is stored, so a
+ * Weekly, pay cycle and yearly digests, built from the ledger as it is: nothing is stored, so a
  * past digest reads the same whenever it is opened (until what it covers is changed). Weeks
- * run Sunday to Saturday, as the Saudi week does.
+ * run Sunday to Saturday, as the Saudi week does; a cycle is [cycles]' (`Budgets.cycles`).
  */
 object Digests {
 
@@ -63,24 +61,24 @@ object Digests {
     private const val MOVE_FLOOR_MINOR = 10_000L
 
     /** The period of [kind] that [date] falls in. */
-    fun periodOf(kind: DigestKind, date: LocalDate): DigestPeriod = when (kind) {
+    fun periodOf(kind: DigestKind, date: LocalDate, cycles: CycleCalendar): DigestPeriod = when (kind) {
         DigestKind.WEEK -> {
             val start = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
             DigestPeriod(kind, start, start.plusWeeks(1))
         }
-        DigestKind.MONTH -> {
-            val start = date.withDayOfMonth(1)
-            DigestPeriod(kind, start, start.plusMonths(1))
-        }
+        DigestKind.MONTH -> cycles.of(date).let { DigestPeriod(kind, it.start, it.end) }
         DigestKind.YEAR -> {
             val start = date.withDayOfYear(1)
             DigestPeriod(kind, start, start.plusYears(1))
         }
     }
 
+    /** The period before [period]. */
+    fun previous(period: DigestPeriod, cycles: CycleCalendar): DigestPeriod = periodOf(period.kind, period.start.minusDays(1), cycles)
+
     /** The last [count] finished periods of [kind] before [today], newest first. */
-    fun finished(kind: DigestKind, today: LocalDate, count: Int): List<DigestPeriod> =
-        generateSequence(periodOf(kind, today).previous()) { it.previous() }.take(count).toList()
+    fun finished(kind: DigestKind, today: LocalDate, count: Int, cycles: CycleCalendar): List<DigestPeriod> =
+        generateSequence(previous(periodOf(kind, today, cycles), cycles)) { previous(it, cycles) }.take(count).toList()
 
     /** Your spending in [period], by category id (null for not yet filed). */
     fun spendingByCategory(details: List<TransactionDetail>, period: DigestPeriod, currency: String, zone: ZoneId): Map<Long?, Long> =
@@ -110,17 +108,19 @@ object Digests {
         categoryNames: Map<Long, String>,
         currency: String,
         zone: ZoneId,
+        cycles: CycleCalendar,
         owedToYouMinor: Long,
         priceRises: List<Observation.PriceRose>,
         loansDue: List<Observation.LoanDue>
     ): Digest {
         val now = spendingByCategory(details, period, currency, zone)
         val spent = Money.sum(now.values)
-        val previous = Money.sum(spendingByCategory(details, period.previous(), currency, zone).values)
+        val before = previous(period, cycles)
+        val previous = Money.sum(spendingByCategory(details, before, currency, zone).values)
         val income = income(details, period, currency, zone)
 
         // Each category against its average over the three periods before.
-        val history = generateSequence(period.previous()) { it.previous() }.take(3)
+        val history = generateSequence(before) { previous(it, cycles) }.take(3)
             .map { spendingByCategory(details, it, currency, zone) }.toList()
         val moved = now.mapNotNull { (categoryId, amount) ->
             val name = categoryId?.let(categoryNames::get) ?: return@mapNotNull null
@@ -133,6 +133,7 @@ object Digests {
 
         return Digest(
             period = period,
+            previous = before,
             spentMinor = spent,
             previousSpentMinor = previous,
             changePercent = percent(spent, previous),

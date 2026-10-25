@@ -6,9 +6,9 @@ import bassamalim.halala.core.domain.DigestKind
 data class DigestUiState(
     val isLoading: Boolean = true,
     val kind: DigestKind = DigestKind.MONTH,
-    /** "September", "Week of 5 Oct", "2026". */
+    /** "27 Sep – 26 Oct" (a pay cycle), "Week of 5 Oct", "2026". */
     val title: String = "",
-    /** "August", "the week before", "2025": what it is compared with. */
+    /** "27 Aug – 26 Sep", "the week before", "2025": what it is compared with. */
     val previousTitle: String = "",
     val spent: String = "",
     /** Signed percent against the period before; null with nothing to compare. */

@@ -14,7 +14,6 @@ import bassamalim.halala.core.enums.BudgetScope
 import bassamalim.halala.core.domain.BudgetState
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
-import bassamalim.halala.core.utils.monthLabel
 import bassamalim.halala.core.utils.shortDateLabel
 import bassamalim.halala.features.recurring.RecurringDomain
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,7 +23,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
-import java.time.YearMonth
 import javax.inject.Inject
 
 @HiltViewModel
@@ -42,7 +40,7 @@ class HomeViewModel @Inject constructor(
     ) { accounts, transactions, (loans, alerts), (recurring, forecast), overview ->
         val wallet = accounts.firstOrNull { it.account.type == AccountType.CASH && !it.account.archived }
         val today = domain.today()
-        val (monthSpent, monthBefore) = HomeDomain.monthSoFar(transactions, Globals.PRIMARY_CURRENCY, today, domain.zone())
+        val (monthSpent, monthBefore) = HomeDomain.cycleSoFar(transactions, Globals.PRIMARY_CURRENCY, today, domain.zone())
 
         HomeUiState(
             isLoading = false,
@@ -53,7 +51,6 @@ class HomeViewModel @Inject constructor(
             bankAccountCount = HomeDomain.bankAccounts(accounts).size,
             monthSpent = Money.format(monthSpent, Globals.PRIMARY_CURRENCY, decimals = false),
             monthChange = Digests.percent(monthSpent, monthBefore),
-            previousMonthName = monthLabel(YearMonth.from(today).minusMonths(1), today),
             recent = feedOf(transactions)
                 .take(HomeDomain.RECENT_COUNT)
                 .map { it.toItem(domain.zone(), today) },

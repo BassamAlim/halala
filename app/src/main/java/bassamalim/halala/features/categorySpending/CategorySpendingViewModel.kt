@@ -5,11 +5,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import bassamalim.halala.core.Globals
+import bassamalim.halala.core.domain.Budgets
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.toItem
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
-import bassamalim.halala.core.utils.monthLabel
+import bassamalim.halala.core.utils.cycleLabel
 import bassamalim.halala.features.insights.InsightsDomain
 import bassamalim.halala.features.insights.MerchantBar
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,10 +20,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
-import java.time.YearMonth
+import java.time.LocalDate
 import javax.inject.Inject
 
-/** Insights' drill-down: one category in one month, by merchant and transaction by transaction. */
+/** Insights' drill-down: one category in one pay cycle, by merchant and transaction by transaction. */
 @HiltViewModel
 class CategorySpendingViewModel @Inject constructor(
     private val domain: CategorySpendingDomain,
@@ -32,7 +33,8 @@ class CategorySpendingViewModel @Inject constructor(
 
     private val route = savedStateHandle.toRoute<Screen.CategorySpending>()
     private val categoryId = route.categoryId.takeIf { it != 0L }
-    private val month = YearMonth.parse(route.month)
+    /** A day in the pay cycle to show: the day it began. */
+    private val day = LocalDate.parse(route.cycleStart)
 
     val uiState: StateFlow<CategorySpendingUiState> = combine(
         domain.observeTransactions(),
@@ -41,14 +43,15 @@ class CategorySpendingViewModel @Inject constructor(
         val zone = domain.zone()
         val today = domain.today()
         val currency = Globals.PRIMARY_CURRENCY
-        val mine = CategorySpendingDomain.of(details, categoryId, month, currency, zone)
-        val merchants = InsightsDomain.topMerchants(mine, month, zone, Int.MAX_VALUE)
+        val cycle = Budgets.cycles(details, zone, today).of(day)
+        val mine = CategorySpendingDomain.of(details, categoryId, cycle, currency, zone)
+        val merchants = InsightsDomain.topMerchants(mine, cycle, zone, Int.MAX_VALUE)
         val biggest = merchants.maxOfOrNull { it.minor }?.coerceAtLeast(1) ?: 1
 
         CategorySpendingUiState(
             isLoading = false,
             name = categoryId?.let { id -> categories.firstOrNull { it.id == id }?.name.orEmpty() },
-            monthName = monthLabel(month, today),
+            monthName = cycleLabel(cycle, today),
             total = Money.format(Money.sum(mine.map { it.yourMinor }), currency, decimals = false),
             currency = currency,
             count = mine.size,

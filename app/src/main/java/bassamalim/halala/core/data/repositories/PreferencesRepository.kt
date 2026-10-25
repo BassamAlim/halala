@@ -170,6 +170,13 @@ class PreferencesRepository @Inject constructor(
         }
     }
 
+    /** The day the last pay cycle you were told the digest of began (a date, no amount). */
+    suspend fun cycleDigestTold(): String? = dataStore.data.first()[CYCLE_DIGEST_TOLD]
+
+    suspend fun setCycleDigestTold(start: String) {
+        dataStore.edit { it[CYCLE_DIGEST_TOLD] = start }
+    }
+
     private fun digestKey(kind: DigestKind) = booleanPreferencesKey("digest_${kind.name.lowercase()}")
 
     companion object {
@@ -186,6 +193,7 @@ class PreferencesRepository @Inject constructor(
         private val MERCHANTS_DISMISSED = stringSetPreferencesKey("merchants_merge_dismissed")
         private val PEOPLE_ASKED = stringSetPreferencesKey("people_asked")
         private val BUDGET_TOLD = stringSetPreferencesKey("budget_alerts_told")
+        private val CYCLE_DIGEST_TOLD = stringPreferencesKey("cycle_digest_told")
         private val WEB_SEARCH_MONTH = stringPreferencesKey("web_search_month")
         private val WEB_SEARCH_COUNT = intPreferencesKey("web_search_count")
         private val BACKUP_FOLDER = stringPreferencesKey("backup_folder")

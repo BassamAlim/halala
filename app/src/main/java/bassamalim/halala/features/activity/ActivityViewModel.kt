@@ -3,6 +3,7 @@ package bassamalim.halala.features.activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import bassamalim.halala.core.Globals
+import bassamalim.halala.core.domain.Budgets
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.inOut
 import bassamalim.halala.core.domain.toItem
@@ -41,7 +42,7 @@ class ActivityViewModel @Inject constructor(
         val zone = domain.zone()
         val today = domain.today()
         val shown = ActivityDomain.filter(transactions, filters.accountId, filters.query, filters.uncategorised)
-        val month = inOut(ActivityDomain.thisMonth(shown, zone, today), Globals.PRIMARY_CURRENCY)
+        val month = inOut(ActivityDomain.within(shown, Budgets.cycles(transactions, zone, today).current, zone), Globals.PRIMARY_CURRENCY)
 
         ActivityUiState(
             isLoading = false,

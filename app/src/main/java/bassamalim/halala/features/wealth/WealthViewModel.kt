@@ -11,8 +11,6 @@ import bassamalim.halala.core.data.repositories.SavingsRepository
 import bassamalim.halala.core.utils.shortDateLabel
 import bassamalim.halala.core.data.repositories.TransactionsRepository
 import bassamalim.halala.core.domain.Assets
-import bassamalim.halala.core.domain.DigestKind
-import bassamalim.halala.core.domain.Digests
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.NetWorth
 import bassamalim.halala.core.domain.Bought
@@ -109,7 +107,7 @@ class WealthViewModel @Inject constructor(
         )
         val shown = timeline.filter { !it.first.isBefore(from) }
         fun valueOn(day: LocalDate) = timeline.firstOrNull { !it.first.isBefore(day) }?.second
-        val monthStart = Digests.periodOf(DigestKind.MONTH, today).start
+        val monthStart = today.withDayOfMonth(1)
         val monthBase = valueOn(monthStart.minusDays(1).coerceAtLeast(timeline.first().first))
         val yearBase = valueOn(today.withDayOfYear(1).minusDays(1).coerceAtLeast(timeline.first().first))
         val points = sample(shown)

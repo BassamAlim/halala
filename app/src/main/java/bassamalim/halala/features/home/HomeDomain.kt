@@ -6,6 +6,7 @@ import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.AlertsRepository
 import bassamalim.halala.core.domain.Anomaly
+import bassamalim.halala.core.domain.Budgets
 import bassamalim.halala.core.data.repositories.BudgetsRepository
 import bassamalim.halala.core.data.repositories.CycleOverview
 import bassamalim.halala.core.data.repositories.ForecastRepository
@@ -21,7 +22,6 @@ import bassamalim.halala.features.insights.InsightsDomain
 import kotlinx.coroutines.flow.Flow
 import java.time.Clock
 import java.time.LocalDate
-import java.time.YearMonth
 import java.time.ZoneId
 import javax.inject.Inject
 
@@ -71,11 +71,14 @@ class HomeDomain @Inject constructor(
             }
 
         /**
-         * What was spent so far this calendar month, and last month to the same day, counted as
-         * Insights counts it (your share of money out that counts, in [currency]).
+         * What was spent so far this pay cycle, and in the cycle before to the same day, counted
+         * as Insights counts it (your share of money out that counts, in [currency]).
          */
-        fun monthSoFar(details: List<TransactionDetail>, currency: String, today: LocalDate, zone: ZoneId): Pair<Long, Long> {
-            val (now, before) = InsightsDomain.cumulative(InsightsDomain.spending(details, currency), YearMonth.from(today), today, zone)
+        fun cycleSoFar(details: List<TransactionDetail>, currency: String, today: LocalDate, zone: ZoneId): Pair<Long, Long> {
+            val cycles = Budgets.cycles(details, zone, today)
+            val (now, before) = InsightsDomain.cumulative(
+                InsightsDomain.spending(details, currency), cycles.current, cycles.before(cycles.current), today, zone
+            )
             return now.last() to before.last()
         }
 

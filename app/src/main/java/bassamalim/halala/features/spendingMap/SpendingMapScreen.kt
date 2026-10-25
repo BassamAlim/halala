@@ -69,7 +69,7 @@ fun SpendingMapScreen(viewModel: SpendingMapViewModel = hiltViewModel()) {
                 HalalaChip(
                     label = stringResource(
                         when (period) {
-                            MapPeriod.MONTH -> R.string.map_month
+                            MapPeriod.CYCLE -> R.string.map_month
                             MapPeriod.THREE_MONTHS -> R.string.map_three_months
                             MapPeriod.YEAR -> R.string.map_year
                             MapPeriod.ALL -> R.string.map_all

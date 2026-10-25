@@ -16,7 +16,7 @@ import java.time.ZoneOffset
 class MoneyFlowTest {
 
     private val zone = ZoneOffset.UTC
-    private val september = YearMonth.of(2026, 9)
+    private val september = YearMonth.of(2026, 9).atDay(1).let { PayCycle(it, it.plusMonths(1), false, null) }
 
     private fun leg(
         day: String, minor: Long, direction: Direction, kind: TransactionKind,
@@ -102,7 +102,7 @@ class MoneyFlowTest {
     @Test
     fun `starts on the account salary landed in`() {
         assertEquals(1L, MoneyFlow.startingAccount(board, september, zone))
-        assertNull(MoneyFlow.startingAccount(board, YearMonth.of(2026, 1), zone))
+        assertNull(MoneyFlow.startingAccount(board, LocalDate.parse("2026-01-01").let { PayCycle(it, it.plusMonths(1), false, null) }, zone))
     }
 
     @Test

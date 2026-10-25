@@ -60,13 +60,13 @@ import kotlin.math.abs
 
 /**
  * Spending is never coloured, so the category ring is one ink in steps, the biggest boldest;
- * the jade goes to the month picked on the bars.
+ * the jade goes to the pay cycle picked on the bars.
  */
 private val SLICE_INKS = listOf(1f, 0.72f, 0.52f, 0.38f, 0.27f, 0.18f).map { HalalaColors.Text.copy(alpha = it) }
 
 /**
- * Insights' Spending view (no board): what a month cost against the five before (tap a bar to look
- * at that month; the chevrons page six months older or newer), where it went by category, how it built up against the month before,
+ * Insights' Spending view (no board): what a pay cycle cost against the five before (tap a bar to look
+ * at that cycle; the chevrons page six cycles older or newer), where it went by category, how it built up against the cycle before,
  * where the most went, and where you spent it on the map.
  */
 @Composable
@@ -88,9 +88,9 @@ fun InsightsContent(viewModel: InsightsViewModel = hiltViewModel()) {
             state.change?.let {
                 Text(
                     text = when {
-                        it > 0 -> stringResource(R.string.insights_more_than, it, state.previousMonthName)
-                        it < 0 -> stringResource(R.string.insights_less_than, abs(it), state.previousMonthName)
-                        else -> stringResource(R.string.insights_same_as, state.previousMonthName)
+                        it > 0 -> stringResource(R.string.insights_more_than, it)
+                        it < 0 -> stringResource(R.string.insights_less_than, abs(it))
+                        else -> stringResource(R.string.insights_same_as)
                     },
                     style = HalalaType.Label,
                     color = HalalaColors.TextMuted
@@ -170,7 +170,7 @@ fun InsightsContent(viewModel: InsightsViewModel = hiltViewModel()) {
 
         if (state.pace.size >= 2) HalalaCard(label = stringResource(R.string.insights_pace), modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = stringResource(R.string.insights_pace_caption, state.previousMonthName),
+                text = stringResource(R.string.insights_pace_caption),
                 style = HalalaType.Caption,
                 color = HalalaColors.TextMuted
             )
@@ -287,9 +287,9 @@ private fun PlacesCard(state: InsightsUiState, viewModel: InsightsViewModel) {
 @Composable
 private fun Empty() = Text(text = stringResource(R.string.insights_nothing), style = HalalaType.Body, color = HalalaColors.TextMuted)
 
-/** Six months side by side, the picked one jade; a bar fills from nothing and glides when it moves. */
+/** Six pay cycles side by side, the picked one jade; a bar fills from nothing and glides when it moves. */
 @Composable
-private fun MonthBars(months: List<MonthBar>, onClick: (java.time.YearMonth) -> Unit) {
+private fun MonthBars(months: List<MonthBar>, onClick: (java.time.LocalDate) -> Unit) {
     Row(Modifier.fillMaxWidth().padding(top = Spacing.sm), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
         months.forEach { bar ->
             val height by animateFloatAsState(bar.fraction, settle(), label = "month bar")
@@ -297,7 +297,7 @@ private fun MonthBars(months: List<MonthBar>, onClick: (java.time.YearMonth) -> 
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .clickable(role = Role.Tab) { onClick(bar.month) },
+                    .clickable(role = Role.Tab) { onClick(bar.start) },
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(Spacing.xs)
             ) {
@@ -319,7 +319,7 @@ private fun MonthBars(months: List<MonthBar>, onClick: (java.time.YearMonth) -> 
     }
 }
 
-/** A chevron to page the bars six months older ([back]) or newer; dimmed with nowhere to go. */
+/** A chevron to page the bars six cycles older ([back]) or newer; dimmed with nowhere to go. */
 @Composable
 private fun PageButton(description: Int, enabled: Boolean, back: Boolean, onClick: () -> Unit) {
     Box(
@@ -340,5 +340,5 @@ private fun PageButton(description: Int, enabled: Boolean, back: Boolean, onClic
     }
 }
 
-/** An empty month still shows a sliver, so there is something to tap. */
+/** An empty cycle still shows a sliver, so there is something to tap. */
 private const val MIN_BAR = 0.02f

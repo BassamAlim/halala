@@ -8,7 +8,6 @@ import bassamalim.halala.core.Globals
 import bassamalim.halala.core.data.repositories.DigestRepository
 import bassamalim.halala.core.domain.DigestKind
 import bassamalim.halala.core.domain.DigestPeriod
-import bassamalim.halala.core.domain.Digests
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.Observation
 import bassamalim.halala.core.nav.Navigator
@@ -24,19 +23,15 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import java.time.Clock
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 import javax.inject.Inject
 
 /** Words for a digest's period, shared by the digest and the archive. */
 object DigestTitles {
-    private val MONTH = DateTimeFormatter.ofPattern("MMMM", Locale.US)
-    private val MONTH_YEAR = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.US)
 
-    /** "September" this year, "September 2025" before it; "5 Oct" for the week from it; "2026". */
+    /** "27 Sep – 26 Oct" for a pay cycle; "5 Oct" for the week from it; "2026". */
     fun of(period: DigestPeriod, today: LocalDate): String = when (period.kind) {
         DigestKind.WEEK -> shortDateLabel(period.start, today)
-        DigestKind.MONTH -> period.start.format(if (period.start.year == today.year) MONTH else MONTH_YEAR)
+        DigestKind.MONTH -> "${shortDateLabel(period.start, today)} – ${shortDateLabel(period.end.minusDays(1), today)}"
         DigestKind.YEAR -> period.start.year.toString()
     }
 }
@@ -51,17 +46,17 @@ class DigestViewModel @Inject constructor(
 
     private val route = savedStateHandle.toRoute<Screen.Digest>()
     private val kind = DigestKind.valueOf(route.kind)
-    private val period = Digests.periodOf(kind, LocalDate.ofEpochDay(route.startEpochDay))
-
-    val uiState: StateFlow<DigestUiState> = digestRepository.observe(period, Globals.PRIMARY_CURRENCY).map { digest ->
+    val uiState: StateFlow<DigestUiState> = digestRepository.observe(
+        kind, LocalDate.ofEpochDay(route.startEpochDay), Globals.PRIMARY_CURRENCY
+    ).map { digest ->
         val today = LocalDate.now(clock)
         val c = Globals.PRIMARY_CURRENCY
         val biggest = digest.categories.maxOfOrNull { it.second }?.takeIf { it > 0 } ?: 1
         DigestUiState(
             isLoading = false,
             kind = kind,
-            title = DigestTitles.of(period, today),
-            previousTitle = DigestTitles.of(period.previous(), today),
+            title = DigestTitles.of(digest.period, today),
+            previousTitle = DigestTitles.of(digest.previous, today),
             spent = Money.format(digest.spentMinor, c, decimals = false),
             changePercent = digest.changePercent,
             saved = Money.format(digest.savedMinor, c, decimals = false),

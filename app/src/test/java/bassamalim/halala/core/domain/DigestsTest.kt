@@ -24,14 +24,24 @@ class DigestsTest {
             counterpartNickname = null, counterpartInstitutionName = null, isTransferInLeg = false
         )
 
+    /** No salary: pay cycles are calendar months. */
+    private fun months(today: LocalDate) = PayCycles.calendar(emptyList(), today, LocalDate.parse("2026-01-01"))
+
     @Test
-    fun `periods are weeks from Sunday, calendar months and years`() {
+    fun `periods are weeks from Sunday, pay cycles and years`() {
         val wednesday = LocalDate.parse("2026-10-14")
-        assertEquals(LocalDate.parse("2026-10-11"), Digests.periodOf(DigestKind.WEEK, wednesday).start)
-        assertEquals(LocalDate.parse("2026-10-01"), Digests.periodOf(DigestKind.MONTH, wednesday).start)
+        assertEquals(LocalDate.parse("2026-10-11"), Digests.periodOf(DigestKind.WEEK, wednesday, months(wednesday)).start)
+        assertEquals(LocalDate.parse("2026-10-01"), Digests.periodOf(DigestKind.MONTH, wednesday, months(wednesday)).start)
         assertEquals(
             listOf("2026-09-01", "2026-08-01"),
-            Digests.finished(DigestKind.MONTH, wednesday, 2).map { it.start.toString() }
+            Digests.finished(DigestKind.MONTH, wednesday, 2, months(wednesday)).map { it.start.toString() }
+        )
+        // Salary on the 27th: the cycle digests run salary to salary.
+        val paid = listOf("2026-08-27", "2026-09-27").map { SalaryCredit(LocalDate.parse(it), 1_800_000) }
+        val cycles = PayCycles.calendar(paid, wednesday, LocalDate.parse("2026-08-01"))
+        assertEquals(
+            listOf("2026-08-27" to "2026-09-27", "2026-07-27" to "2026-08-27"),
+            Digests.finished(DigestKind.MONTH, wednesday, 2, cycles).map { it.start.toString() to it.end.toString() }
         )
     }
 
@@ -43,10 +53,12 @@ class DigestsTest {
             tx("2026-09-12", 60_000, 2), tx("2026-09-13", 5_000, null),
             tx("2026-09-27", 1_800_000, null, Direction.CREDIT, TransactionKind.SALARY)
         )
+        val cycles = months(LocalDate.parse("2026-10-14"))
         val digest = Digests.build(
-            Digests.periodOf(DigestKind.MONTH, LocalDate.parse("2026-09-01")),
-            details, mapOf(1L to "Groceries", 2L to "Delivery"), "SAR", ZoneOffset.UTC, 0, emptyList(), emptyList()
+            Digests.periodOf(DigestKind.MONTH, LocalDate.parse("2026-09-01"), cycles),
+            details, mapOf(1L to "Groceries", 2L to "Delivery"), "SAR", ZoneOffset.UTC, cycles, 0, emptyList(), emptyList()
         )
+        assertEquals(LocalDate.parse("2026-08-01"), digest.previous.start)
         assertEquals(155_000, digest.spentMinor)
         assertEquals(120_000, digest.previousSpentMinor)
         assertEquals(29, digest.changePercent)

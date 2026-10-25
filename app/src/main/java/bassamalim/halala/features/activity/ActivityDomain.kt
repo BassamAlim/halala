@@ -4,12 +4,12 @@ import bassamalim.halala.core.data.dataSources.room.relations.AccountWithBalance
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
+import bassamalim.halala.core.domain.PayCycle
 import bassamalim.halala.core.domain.Rules
 import bassamalim.halala.core.domain.feedOf
 import kotlinx.coroutines.flow.Flow
 import java.time.Clock
 import java.time.LocalDate
-import java.time.YearMonth
 import java.time.ZoneId
 import javax.inject.Inject
 
@@ -57,8 +57,8 @@ class ActivityDomain @Inject constructor(
             }
         }
 
-        /** This calendar month's transactions (pay cycles arrive with budgets). */
-        fun thisMonth(details: List<TransactionDetail>, zone: ZoneId, today: LocalDate) =
-            details.filter { YearMonth.from(it.transaction.occurredAt.atZone(zone)) == YearMonth.from(today) }
+        /** The transactions in [cycle] (this pay cycle, for the totals over the feed). */
+        fun within(details: List<TransactionDetail>, cycle: PayCycle, zone: ZoneId) =
+            details.filter { cycle.contains(it.transaction.occurredAt.atZone(zone).toLocalDate()) }
     }
 }

@@ -3,6 +3,7 @@ package bassamalim.halala.core.data.repositories
 import bassamalim.halala.core.data.dataSources.room.daos.ClassificationDao
 import bassamalim.halala.core.data.dataSources.room.daos.PeopleDao
 import bassamalim.halala.core.data.dataSources.room.daos.TransactionsDao
+import bassamalim.halala.core.domain.Budgets
 import bassamalim.halala.core.domain.Digest
 import bassamalim.halala.core.domain.DigestKind
 import bassamalim.halala.core.domain.DigestPeriod
@@ -33,7 +34,8 @@ class DigestRepository @Inject constructor(
     private val clock: Clock
 ) {
 
-    fun observe(period: DigestPeriod, currency: String): Flow<Digest> = combine(
+    /** The digest of [kind] for the period [start] falls in. */
+    fun observe(kind: DigestKind, start: LocalDate, currency: String): Flow<Digest> = combine(
         transactionsDao.observeAllDetails(),
         classificationDao.observeCategories(),
         loansRepository.observeStates(),
@@ -43,12 +45,14 @@ class DigestRepository @Inject constructor(
         val today = LocalDate.now(clock)
         val names = people.associate { it.person.id to it.person.name }
         val monthly = RecurringDomainTotals.monthly(series, currency)
+        val cycles = Budgets.cycles(details, clock.zone, today)
         Digests.build(
-            period = period,
+            period = Digests.periodOf(kind, start, cycles),
             details = details,
             categoryNames = categories.associate { it.id to it.name },
             currency = currency,
             zone = clock.zone,
+            cycles = cycles,
             owedToYouMinor = Loans.owed(loans, currency).first,
             priceRises = series.filter { it.raisedTo != null && it.series.currency == currency }.map {
                 Observation.PriceRose(it.series.name, it.series.amountMinor, it.raisedTo!!, monthly)
@@ -61,14 +65,22 @@ class DigestRepository @Inject constructor(
     /** The finished periods of [kind] that had spending, newest first, each with what was spent. */
     fun observeArchive(kind: DigestKind, count: Int, currency: String): Flow<List<Pair<DigestPeriod, Long>>> =
         combine(transactionsDao.observeAllDetails(), classificationDao.observeCategories()) { details, _ ->
-            Digests.finished(kind, LocalDate.now(clock), count)
+            val today = LocalDate.now(clock)
+            Digests.finished(kind, today, count, Budgets.cycles(details, clock.zone, today))
                 .map { it to Money.sum(Digests.spendingByCategory(details, it, currency, clock.zone).values) }
                 .filter { it.second > 0 }
         }.flowOn(Dispatchers.Default)
 
-    /** Whether [period] had any spending, for whether its digest is worth a notification. */
-    suspend fun hadSpending(period: DigestPeriod, currency: String): Boolean =
-        Digests.spendingByCategory(transactionsDao.getAllDetails(), period, currency, clock.zone).isNotEmpty()
+    /**
+     * The last finished period of [kind], when it had spending, for its notification; null
+     * without any. A pay cycle ends when the next salary arrives, read fresh.
+     */
+    suspend fun lastFinished(kind: DigestKind, currency: String): DigestPeriod? {
+        val details = transactionsDao.getAllDetails()
+        val today = LocalDate.now(clock)
+        val period = Digests.finished(kind, today, 1, Budgets.cycles(details, clock.zone, today)).single()
+        return period.takeIf { Digests.spendingByCategory(details, it, currency, clock.zone).isNotEmpty() }
+    }
 
     private companion object {
         const val LOAN_SOON_DAYS = 14L

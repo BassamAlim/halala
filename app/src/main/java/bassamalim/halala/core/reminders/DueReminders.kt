@@ -24,7 +24,6 @@ import bassamalim.halala.core.data.repositories.SavingsRepository
 import bassamalim.halala.core.data.repositories.ZakatRepository
 import bassamalim.halala.core.domain.DigestKind
 import bassamalim.halala.core.domain.DigestPeriod
-import bassamalim.halala.core.domain.Digests
 import bassamalim.halala.core.data.repositories.LoansRepository
 import bassamalim.halala.core.data.repositories.PeopleRepository
 import bassamalim.halala.core.data.repositories.RecurringRepository
@@ -90,14 +89,14 @@ private const val MATURING_KEY = 700_000
 private const val DEPOSIT_KEY = 800_000
 private const val MATURING_LEAD_DAYS = 3L
 private const val ZAKAT_LEAD_DAYS = 14L
-private val DIGEST_TITLE_MONTH = DateTimeFormatter.ofPattern("MMMM", Locale.US)
+private val DIGEST_TITLE_WEEK = DateTimeFormatter.ofPattern("d MMM", Locale.US)
 
 /**
  * Bill, renewal and loan reminders, digests that are ready, and the day's anomaly alerts: once a
  * day, each thing you asked to hear about whose day it is gets one notification. Quiet
  * otherwise. Bills and subscriptions remind you their lead time before they are due; a cancel
  * reminder comes three days before a renewal, or its lead time if that is longer; a loan, on its
- * due day; a digest, the day after its week, month or year ends.
+ * due day; a digest, the day after its week or year ends, or once a salary starts a new pay cycle.
  */
 class DueReminders @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -199,7 +198,7 @@ class DueReminders @Inject constructor(
                             DigestKind.MONTH -> R.string.digest_ready_month
                             DigestKind.YEAR -> R.string.digest_ready_year
                         },
-                        notice.period.start.format(DIGEST_TITLE_MONTH), notice.period.start.year.toString()
+                        notice.period.start.format(DIGEST_TITLE_WEEK), notice.period.start.year.toString()
                     ) to context.getString(R.string.digest_ready_text)
                 }
                 // Opens the app on its lock, then the notice's own screen.
@@ -250,9 +249,15 @@ class DueReminderWorker @AssistedInject constructor(
         val since = clock.instant().minus(Duration.ofDays(1))
         val fresh = alerts.observeAlerts().first().count { it.at.isAfter(since) }
         // A digest the day after its period ends, for each kind you turned on and that had spending.
+        // A pay cycle ends when the salary lands, which can be after today's look: it is told
+        // that day or the next, once.
         val ready = preferences.observeDigests().first().mapNotNull { kind ->
-            val period = Digests.periodOf(kind, today).previous()
-            if (period.end == today && digests.hadSpending(period, Globals.PRIMARY_CURRENCY)) DueNotice.DigestReady(kind, period) else null
+            val period = digests.lastFinished(kind, Globals.PRIMARY_CURRENCY) ?: return@mapNotNull null
+            when {
+                kind != DigestKind.MONTH -> period.takeIf { it.end == today }
+                period.end.isBefore(today.minusDays(1)) || preferences.cycleDigestTold() == period.start.toString() -> null
+                else -> period.also { preferences.setCycleDigestTold(it.start.toString()) }
+            }?.let { DueNotice.DigestReady(kind, it) }
         }
         // Zakat, two weeks before its day, if you asked and haven't paid.
         val (profile, state) = zakat.observeState(Globals.PRIMARY_CURRENCY).first()

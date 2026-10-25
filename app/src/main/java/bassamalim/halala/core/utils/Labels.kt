@@ -1,5 +1,6 @@
 package bassamalim.halala.core.utils
 
+import bassamalim.halala.core.domain.PayCycle
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.YearMonth
@@ -32,6 +33,13 @@ fun dateLabel(date: LocalDate, today: LocalDate): String =
 /** "3 Oct", with the year when it isn't this one: the boards' dates in lists of what is due. */
 fun shortDateLabel(date: LocalDate, today: LocalDate): String =
     date.format(if (date.year == today.year) SHORT_FORMAT else SHORT_WITH_YEAR_FORMAT)
+
+/** A pay cycle, by its first and last days: "27 Sep – 26 Oct" (a year on a day outside this one). */
+fun cycleLabel(cycle: PayCycle, today: LocalDate): String =
+    "${shortDateLabel(cycle.start, today)} – ${shortDateLabel(cycle.end.minusDays(1), today)}"
+
+/** A chart's pay cycle, by the day it began: "27 Sep". */
+fun cycleShortLabel(cycle: PayCycle): String = cycle.start.format(SHORT_FORMAT)
 
 /** "Aug 2027": when a contract ends. */
 fun monthYearLabel(date: LocalDate): String = date.format(MONTH_YEAR_FORMAT)

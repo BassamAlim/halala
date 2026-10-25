@@ -4,15 +4,15 @@ import bassamalim.halala.core.data.dataSources.room.entities.Category
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
 import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
+import bassamalim.halala.core.domain.PayCycle
 import bassamalim.halala.features.insights.InsightsDomain
 import kotlinx.coroutines.flow.Flow
 import java.time.Clock
 import java.time.LocalDate
-import java.time.YearMonth
 import java.time.ZoneId
 import javax.inject.Inject
 
-/** What one category's spending in one month is made of, as Insights counts it. */
+/** What one category's spending in one pay cycle is made of, as Insights counts it. */
 class CategorySpendingDomain @Inject constructor(
     private val transactionsRepository: TransactionsRepository,
     private val classificationRepository: ClassificationRepository,
@@ -29,16 +29,15 @@ class CategorySpendingDomain @Inject constructor(
 
     companion object {
 
-        /** [month]'s spending in [currency] filed under [categoryId] (null: not yet filed), newest first. */
+        /** [cycle]'s spending in [currency] filed under [categoryId] (null: not yet filed), newest first. */
         fun of(
             details: List<TransactionDetail>,
             categoryId: Long?,
-            month: YearMonth,
+            cycle: PayCycle,
             currency: String,
             zone: ZoneId
         ): List<TransactionDetail> = InsightsDomain.spending(details, currency).filter {
-            it.transaction.categoryId == categoryId &&
-                    YearMonth.from(it.transaction.occurredAt.atZone(zone)) == month
+            it.transaction.categoryId == categoryId && cycle.contains(it.transaction.occurredAt.atZone(zone).toLocalDate())
         }
     }
 }

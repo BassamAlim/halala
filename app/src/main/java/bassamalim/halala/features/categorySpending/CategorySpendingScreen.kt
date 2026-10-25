@@ -35,7 +35,7 @@ import bassamalim.halala.core.ui.theme.Insets
 import bassamalim.halala.core.ui.theme.Spacing
 
 /**
- * What a category came to in one month, from Insights' category list (no board): the total,
+ * What a category came to in one pay cycle, from Insights' category list (no board): the total,
  * where it went by merchant (as Insights' top merchants), and each transaction.
  */
 @Composable

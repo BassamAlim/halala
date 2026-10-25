@@ -2,6 +2,7 @@ package bassamalim.halala.features.insights
 
 import bassamalim.halala.core.data.dataSources.room.entities.Transaction
 import bassamalim.halala.core.data.dataSources.room.relations.TransactionDetail
+import bassamalim.halala.core.domain.PayCycle
 import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.enums.TransactionKind
 import bassamalim.halala.core.enums.TransactionSource
@@ -17,6 +18,9 @@ class InsightsDomainTest {
 
     private val zone = ZoneOffset.UTC
 
+    /** A calendar month as a cycle, as when no salary has come. */
+    private fun month(year: Int, month: Int) = YearMonth.of(year, month).atDay(1).let { PayCycle(it, it.plusMonths(1), false, null) }
+
     private fun tx(day: String, minor: Long, category: Long? = 1, merchant: Long? = null, direction: Direction = Direction.DEBIT) =
         TransactionDetail(
             transaction = Transaction(
@@ -30,20 +34,21 @@ class InsightsDomainTest {
         )
 
     @Test
-    fun `months, oldest first, count spending only`() {
+    fun `cycles count spending only`() {
         val spending = InsightsDomain.spending(
             listOf(tx("2026-08-03", 500), tx("2026-10-01", 200), tx("2026-10-02", 900, direction = Direction.CREDIT)),
             "SAR"
         )
-        assertEquals(
-            listOf(YearMonth.of(2026, 8) to 500L, YearMonth.of(2026, 9) to 0L, YearMonth.of(2026, 10) to 200L),
-            InsightsDomain.byMonth(spending, YearMonth.of(2026, 10), 3, zone)
-        )
+        val cycles = listOf(month(2026, 8), month(2026, 9), month(2026, 10))
+        assertEquals(cycles.zip(listOf(500L, 0L, 200L)), InsightsDomain.byCycle(spending, cycles, zone))
+        // Salary on the 27th: the 3 Aug charge is in the cycle from 27 Jul.
+        val paid = PayCycle(LocalDate.parse("2026-07-27"), LocalDate.parse("2026-08-27"), true, 1)
+        assertEquals(listOf(paid to 500L), InsightsDomain.byCycle(spending, listOf(paid), zone))
     }
 
     @Test
     fun `categories past the fifth become Other`() {
-        val month = YearMonth.of(2026, 10)
+        val month = month(2026, 10)
         val details = (1L..7L).map { tx("2026-10-0$it", it * 100, it) } + tx("2026-10-08", 50, null)
         val shares = InsightsDomain.byCategory(details, month, zone)
         assertEquals(listOf("C7", "C6", "C5", "C4", "C3", ""), shares.map { it.name })
@@ -57,7 +62,7 @@ class InsightsDomainTest {
             tx("2026-10-01", 300, 1), tx("2026-10-02", 400, 2), tx("2026-09-30", 500, 1),
             tx("2026-10-03", 600, null), tx("2026-10-04", 700, 1, direction = Direction.CREDIT)
         )
-        val october = YearMonth.of(2026, 10)
+        val october = month(2026, 10)
         fun amounts(category: Long?) =
             CategorySpendingDomain.of(details, category, october, "SAR", zone).map { it.transaction.amountMinor }
         assertEquals(listOf(300L), amounts(1))
@@ -68,17 +73,21 @@ class InsightsDomainTest {
     @Test
     fun `top merchants leave out what has none`() {
         val details = listOf(tx("2026-10-01", 300, merchant = 1), tx("2026-10-02", 400, merchant = 2), tx("2026-10-03", 900))
-        assertEquals(listOf(2L, 1L), InsightsDomain.topMerchants(details, YearMonth.of(2026, 10), zone, 5).map { it.id })
+        assertEquals(listOf(2L, 1L), InsightsDomain.topMerchants(details, month(2026, 10), zone, 5).map { it.id })
     }
 
     @Test
-    fun `the month under way runs to today, against the month before to the same day`() {
+    fun `the cycle under way runs to today, against the cycle before to the same day`() {
         val details = listOf(tx("2026-09-01", 100), tx("2026-09-30", 50), tx("2026-10-02", 70))
-        val (now, before) = InsightsDomain.cumulative(details, YearMonth.of(2026, 10), LocalDate.parse("2026-10-03"), zone)
+        val (now, before) = InsightsDomain.cumulative(details, month(2026, 10), month(2026, 9), LocalDate.parse("2026-10-03"), zone)
         assertEquals(listOf(0L, 70L, 70L), now)
         assertEquals(listOf(100L, 100L, 100L), before)
         // March's 31st compares with February's last day.
-        val (_, feb) = InsightsDomain.cumulative(listOf(tx("2026-02-28", 10)), YearMonth.of(2026, 3), LocalDate.parse("2026-10-03"), zone)
+        val (_, feb) = InsightsDomain.cumulative(listOf(tx("2026-02-28", 10)), month(2026, 3), month(2026, 2), LocalDate.parse("2026-10-03"), zone)
         assertEquals(10L, feb.last())
+        // From the 27th: the first days are the 27th on.
+        val cycle = PayCycle(LocalDate.parse("2026-09-27"), LocalDate.parse("2026-10-27"), true, 1)
+        val (fromSalary, _) = InsightsDomain.cumulative(details, cycle, month(2026, 9), LocalDate.parse("2026-10-03"), zone)
+        assertEquals(listOf(0L, 0L, 0L, 50L, 50L, 120L, 120L), fromSalary)
     }
 }

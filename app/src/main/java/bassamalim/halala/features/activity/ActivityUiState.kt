@@ -11,7 +11,7 @@ data class ActivityUiState(
     /** Only spending that has no category yet. */
     val uncategorisedOnly: Boolean = false,
     val accountFilters: List<AccountFilter> = emptyList(),
-    /** This month's money in and out, SAR, summary style: "+18,000", "−11,760". */
+    /** This pay cycle's money in and out, SAR, summary style: "+18,000", "−11,760". */
     val monthIn: String = "",
     val monthOut: String = "",
     val groups: List<DayGroup> = emptyList(),

@@ -50,4 +50,31 @@ class PayCyclesTest {
         assertEquals(LocalDate.parse("2026-02-01"), cycle.start)
         assertEquals(LocalDate.parse("2026-03-01"), cycle.end)
     }
+
+    @Test
+    fun `the calendar runs salary to salary back to the first, a month at a time where none came`() {
+        fun day(text: String) = LocalDate.parse(text)
+        // Paid on the 27th from July, a gap with no salary over December, paid again from 3 Jan.
+        val paid = listOf("2026-07-27", "2026-08-27", "2026-09-26", "2026-10-27", "2027-01-03", "2027-02-03")
+            .map { SalaryCredit(day(it), 1_800_000) }
+        val cycles = PayCycles.calendar(paid, day("2027-02-10"), since = day("2026-06-01"))
+
+        assertEquals(day("2027-02-03"), cycles.current.start)
+        fun span(date: String) = cycles.of(day(date)).let { it.start.toString() to it.end.toString() }
+        assertEquals("2026-09-26" to "2026-10-27", span("2026-10-01"))
+        assertEquals("2026-08-27" to "2026-09-26", span("2026-09-25"))
+        // Before the first salary, a month at a time back from it.
+        assertEquals("2026-06-27" to "2026-07-27", span("2026-07-01"))
+        assertEquals("2026-05-27" to "2026-06-27", span("2026-06-26"))
+        // No salary from 27 Oct to 3 Jan (more than 45 days): a month back from 3 Jan, then 27 Oct to it.
+        assertEquals("2026-12-03" to "2027-01-03", span("2026-12-15"))
+        assertEquals("2026-10-27" to "2026-12-03", span("2026-11-30"))
+        assertTrue(cycles.of(day("2026-10-01")).fromSalary)
+        assertFalse(cycles.of(day("2026-12-15")).fromSalary)
+
+        val back = cycles.back(cycles.current, 3)
+        assertEquals(listOf("2027-02-03", "2027-01-03", "2026-12-03"), back.map { it.start.toString() })
+        assertEquals(back[1], cycles.after(back[2]))
+        assertEquals(null, cycles.after(cycles.current))
+    }
 }

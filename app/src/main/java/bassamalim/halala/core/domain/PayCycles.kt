@@ -83,10 +83,75 @@ object PayCycles {
             .take(count)
     }
 
+    /**
+     * The pay cycles reports count by, from [since] to [today]'s: back from the current cycle,
+     * each starts on the last pay day within [STALE_DAYS] before the next one starts, or a
+     * month before it where no salary came (before the first, or after one stopped).
+     */
+    fun calendar(credits: List<SalaryCredit>, today: LocalDate, since: LocalDate): CycleCalendar {
+        val current = current(credits, today)
+        val days = payDays(credits.filter { !it.date.isAfter(today) }).map { it.date }.filter { it.isBefore(current.start) }
+        val starts = ArrayDeque(listOf(current.start))
+        var index = days.lastIndex
+        while (starts.first().isAfter(since)) {
+            val next = starts.first()
+            while (index >= 0 && !days[index].isBefore(next)) index--
+            val payDay = days.getOrNull(index)?.takeIf { !it.isBefore(next.minusDays(STALE_DAYS)) }
+            starts.addFirst(payDay ?: next.minusMonths(1))
+        }
+        return CycleCalendar(starts.toList(), days.toSet(), current)
+    }
+
     /** The middle value (the lower of the two middles for an even count). */
     fun median(values: List<Long>): Long {
         require(values.isNotEmpty())
         val sorted = values.sorted()
         return sorted[(sorted.size - 1) / 2]
     }
+}
+
+/**
+ * Pay cycles back through the ledger, for what is counted a cycle at a time: [current] and the
+ * ones before it, found by the day they hold. Before the oldest known start, a month at a time.
+ */
+class CycleCalendar internal constructor(
+    /** Each cycle's start, oldest first, the current one's last. */
+    private val starts: List<LocalDate>,
+    private val payDays: Set<LocalDate>,
+    val current: PayCycle
+) {
+
+    /** The cycle [date] falls in: the current one from its start on. */
+    fun of(date: LocalDate): PayCycle {
+        if (!date.isBefore(current.start)) return current
+        val oldest = starts.first()
+        if (date.isBefore(oldest)) {
+            var end = oldest
+            var start = oldest.minusMonths(1)
+            while (date.isBefore(start)) {
+                end = start
+                start = start.minusMonths(1)
+            }
+            return cycle(start, end)
+        }
+        // The last start on or before it; the next start ends it.
+        var low = 0
+        var high = starts.lastIndex
+        while (low < high) {
+            val mid = (low + high + 1) / 2
+            if (starts[mid].isAfter(date)) high = mid - 1 else low = mid
+        }
+        return cycle(starts[low], starts[low + 1])
+    }
+
+    /** The cycle just before [cycle]. */
+    fun before(cycle: PayCycle): PayCycle = of(cycle.start.minusDays(1))
+
+    /** The cycle after [cycle]; null for the current one. */
+    fun after(cycle: PayCycle): PayCycle? = if (!cycle.start.isBefore(current.start)) null else of(cycle.end)
+
+    /** [count] cycles back from [last], newest first. */
+    fun back(last: PayCycle, count: Int): List<PayCycle> = generateSequence(last, ::before).take(count).toList()
+
+    private fun cycle(start: LocalDate, end: LocalDate) = PayCycle(start, end, start in payDays, current.salaryMinor)
 }

@@ -7,7 +7,7 @@ data class CategorySpendingUiState(
     val isLoading: Boolean = true,
     /** The category's name; null for spending not yet filed. */
     val name: String? = null,
-    /** "September", or "September 2025" in another year. */
+    /** The pay cycle: "27 Sep – 26 Oct". */
     val monthName: String = "",
     /** What it came to, summary style. */
     val total: String = "",

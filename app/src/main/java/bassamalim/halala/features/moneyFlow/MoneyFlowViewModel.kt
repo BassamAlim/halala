@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import bassamalim.halala.core.data.repositories.AccountsRepository
 import bassamalim.halala.core.data.repositories.ClassificationRepository
 import bassamalim.halala.core.data.repositories.TransactionsRepository
+import bassamalim.halala.core.domain.Budgets
 import bassamalim.halala.core.domain.Money
 import bassamalim.halala.core.domain.FlowPart
 import bassamalim.halala.core.domain.MoneyFlow
@@ -14,7 +15,7 @@ import bassamalim.halala.core.enums.Direction
 import bassamalim.halala.core.nav.Navigator
 import bassamalim.halala.core.nav.Screen
 import bassamalim.halala.core.utils.accountLabel
-import bassamalim.halala.core.utils.monthLabel
+import bassamalim.halala.core.utils.cycleLabel
 import bassamalim.halala.core.utils.shortDateLabel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -28,13 +29,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
 import java.time.LocalDate
-import java.time.YearMonth
 import javax.inject.Inject
 
 /**
  * One part of the flow, worded: [name] is the account's or category's (null for the others,
  * which the screen names by [kind]); [percent] of what came in (or went out, when that was more);
- * [change] against the month before; [items] the transactions that make it up, biggest first.
+ * [change] against the cycle before; [items] the transactions that make it up, biggest first.
  * [weight] is minor units, for drawing only.
  */
 data class FlowPartUi(
@@ -58,6 +58,7 @@ data class UnmatchedLeg(val id: Long, val amount: String, val account: String, v
 data class Choice(val id: Long, val label: String)
 
 sealed interface FlowSheet {
+    /** Picking the pay cycle. */
     data object Month : FlowSheet
     data object Account : FlowSheet
     data class PickAccount(val legId: Long, val options: List<Choice>) : FlowSheet
@@ -65,9 +66,10 @@ sealed interface FlowSheet {
 
 data class MoneyFlowUiState(
     val isLoading: Boolean = true,
-    val month: YearMonth = YearMonth.of(2000, 1),
+    /** The pay cycle shown, by the day it began, and its words ("27 Sep – 26 Oct"); the cycles to pick from, newest first. */
+    val month: LocalDate = LocalDate.of(2000, 1, 1),
     val monthName: String = "",
-    val months: List<Pair<YearMonth, String>> = emptyList(),
+    val months: List<Pair<LocalDate, String>> = emptyList(),
     val accountId: Long? = null,
     val accountName: String = "",
     val accounts: List<Choice> = emptyList(),
@@ -82,7 +84,7 @@ data class MoneyFlowUiState(
     /** Whole percents of the total: spent (with what went to people), and kept (moved, saved or left). */
     val spentPercent: Int = 0,
     val keptPercent: Int = 0,
-    /** Spending against the month before, whole percent; null with nothing then. */
+    /** Spending against the cycle before, whole percent; null with nothing then. */
     val spentChange: Int? = null,
     /** The part tapped on the chart or in the lists. */
     val selected: String? = null,
@@ -91,7 +93,7 @@ data class MoneyFlowUiState(
 )
 
 /**
- * Money flow, the Insights tab's second view (from the Money flow board): for one account and month, what came in and
+ * Money flow, the Insights tab's second view (from the Money flow board): for one account and pay cycle, what came in and
  * where it went, as a Sankey, and the moves with one side missing.
  */
 @HiltViewModel
@@ -104,7 +106,8 @@ class MoneyFlowViewModel @Inject constructor(
 ) : ViewModel() {
 
     private data class Picks(
-        val month: YearMonth? = null,
+        /** A day in the cycle picked; null is this one. */
+        val month: LocalDate? = null,
         val accountId: Long? = null,
         val sheet: FlowSheet? = null,
         val selected: String? = null
@@ -119,16 +122,17 @@ class MoneyFlowViewModel @Inject constructor(
     ) { accounts, details, picks ->
         val zone = clock.zone
         val today = LocalDate.now(clock)
-        val month = picks.month ?: YearMonth.from(today)
+        val cycles = Budgets.cycles(details, zone, today)
+        val cycle = cycles.of(picks.month ?: today)
         val open = accounts.filter { !it.account.archived && it.account.type.listed }
         val accountId = picks.accountId?.takeIf { id -> open.any { it.account.id == id } }
-            ?: MoneyFlow.startingAccount(details, month, zone)
+            ?: MoneyFlow.startingAccount(details, cycle, zone)
             ?: open.firstOrNull()?.account?.id
         val account = open.firstOrNull { it.account.id == accountId }
         val names = accounts.associate { it.account.id to accountLabel(it.institutionName, it.account.nickname) }
         val currency = account?.account?.currency.orEmpty()
-        val flow = accountId?.let { MoneyFlow.of(details, it, month, zone) }
-        val before = accountId?.let { MoneyFlow.of(details, it, month.minusMonths(1), zone) }
+        val flow = accountId?.let { MoneyFlow.of(details, it, cycle, zone) }
+        val before = accountId?.let { MoneyFlow.of(details, it, cycles.before(cycle), zone) }
         fun f(minor: Long) = Money.format(minor, currency, decimals = false)
         val byId = details.associateBy { it.transaction.id }
         val total = flow?.totalMinor ?: 0
@@ -155,14 +159,14 @@ class MoneyFlowViewModel @Inject constructor(
         val uses = flow?.uses.orEmpty()
         val spentMinor = Money.sum(uses.filter { it.kind.spending }.map { it.minor })
         val spentBefore = before?.uses?.filter { it.kind.spending }?.let { list -> Money.sum(list.map { it.minor }) }
-        val first = details.minOfOrNull { it.transaction.occurredAt }?.atZone(zone)?.let(YearMonth::from) ?: YearMonth.from(today)
+        val first = details.minOfOrNull { it.transaction.occurredAt }?.atZone(zone)?.toLocalDate() ?: today
         MoneyFlowUiState(
             isLoading = false,
-            month = month,
-            monthName = monthLabel(month, today),
-            months = generateSequence(YearMonth.from(today)) { it.minusMonths(1) }
-                .takeWhile { !it.isBefore(first) }.take(MONTHS)
-                .map { it to monthLabel(it, today) }.toList(),
+            month = cycle.start,
+            monthName = cycleLabel(cycle, today),
+            months = cycles.back(cycles.current, CYCLES)
+                .takeWhile { it.end.isAfter(first) }
+                .map { it.start to cycleLabel(it, today) },
             accountId = accountId,
             accountName = account?.let { names[it.account.id] }.orEmpty(),
             accounts = open.map { Choice(it.account.id, names[it.account.id].orEmpty()) },
@@ -192,7 +196,7 @@ class MoneyFlowViewModel @Inject constructor(
     fun onMonthClick() = picks.update { it.copy(sheet = FlowSheet.Month) }
     fun onAccountClick() = picks.update { it.copy(sheet = FlowSheet.Account) }
     fun onSheetDismiss() = picks.update { it.copy(sheet = null) }
-    fun onMonthPicked(month: YearMonth) = picks.update { it.copy(month = month, sheet = null, selected = null) }
+    fun onMonthPicked(start: LocalDate) = picks.update { it.copy(month = start, sheet = null, selected = null) }
     fun onAccountPicked(id: Long) = picks.update { it.copy(accountId = id, sheet = null, selected = null) }
 
     /** Tapping a part shows what makes it up; tapping it again lets go. */
@@ -225,7 +229,7 @@ class MoneyFlowViewModel @Inject constructor(
     }
 
     private companion object {
-        const val MONTHS = 24
+        const val CYCLES = 24
 
         /** Transactions shown under a part when it is tapped. */
         const val ITEMS = 5
