@@ -549,9 +549,9 @@ Screens: **People** (People board: owed to you and you owe, then Loans, open and
 transfers, everyone, the most transfers first, with what came back less what went; reached from Activity, Home and the loan lines of Wealth's breakdown),
 **Person** (Person board: each open loan with what is still owed, its caption and progress,
 "Send reminder" (the share sheet, so WhatsApp or SMS, with a polite message), "Record
-repayment" (choose their transfer) and, on a loan they owe you, "Forgive what is left" (one you
-owe is forgiven from the repayment sheet, for when they let it go), "This loan" with its due date and
-events; settled loans; then all transfers with them, how the bank writes their name, "Same as
+repayment" (choose their transfer), "This loan" with its due date, on a loan they owe you
+"Forgive what is left" (one you owe is forgiven from the repayment sheet, for when they let it
+go), and its events; settled loans; then all transfers with them, how the bank writes their name, "Same as
 another person" and their transfers; reached from People and from Transaction detail's Person
 row), and Transaction detail's **Loan** card (no board: built from the system's card and
 buttons), **Subscriptions and bills** (Recurring board: a month and a year, alert cards for a
