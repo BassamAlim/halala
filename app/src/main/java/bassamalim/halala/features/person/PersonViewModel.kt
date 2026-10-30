@@ -108,10 +108,8 @@ class PersonViewModel @Inject constructor(
         viewModelScope.launch { domain.repay(repay.loanId, transactionId) }
     }
 
-    fun onForgiveClick() {
-        val repay = sheet.value as? PersonSheet.Repay ?: return
-        sheet.update { PersonSheet.Forgive(repay.loanId) }
-    }
+    /** From the loan's card, or from its repayment sheet. */
+    fun onForgiveClick(loanId: Long) = sheet.update { PersonSheet.Forgive(loanId) }
 
     fun onForgiveConfirm() {
         val forgive = sheet.value as? PersonSheet.Forgive ?: return

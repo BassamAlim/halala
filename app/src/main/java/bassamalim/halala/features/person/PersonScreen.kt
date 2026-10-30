@@ -49,7 +49,7 @@ import bassamalim.halala.core.ui.theme.Spacing
 
 /**
  * One person, from the Person board: each open loan (what is still owed, the reminder, recording
- * a repayment, and what happened to it), settled ones, then all transfers with them (sent,
+ * a repayment, forgiving it, and what happened to it), settled ones, then all transfers with them (sent,
  * received, net) and their feed. A spelling
  * that joined them by mistake is taken out from here, and someone who is another by a
  * different name is merged from here, as on the Merchant screen.
@@ -292,9 +292,10 @@ fun PersonScreen(viewModel: PersonViewModel = hiltViewModel()) {
                     )
                 }
             }
-            HalalaButton(
+            // A loan they owe you is forgiven from its card; one you owe, when they let it go, from here.
+            if (loan != null && !loan.lent) HalalaButton(
                 text = stringResource(R.string.loan_forgive),
-                onClick = viewModel::onForgiveClick,
+                onClick = { viewModel.onForgiveClick(loan.loanId) },
                 destructive = true,
                 modifier = Modifier.fillMaxWidth()
             )

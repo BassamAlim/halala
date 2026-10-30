@@ -548,8 +548,9 @@ found by `applyRules`) and loans (`Loan`, `LoanEvent`, `LoansRepository`, `core/
 Screens: **People** (People board: owed to you and you owe, then Loans, open and settled, or All
 transfers, everyone, the most transfers first, with what came back less what went; reached from Activity, Home and the loan lines of Wealth's breakdown),
 **Person** (Person board: each open loan with what is still owed, its caption and progress,
-"Send reminder" (the share sheet, so WhatsApp or SMS, with a polite message) and "Record
-repayment" (choose their transfer, or forgive what is left), "This loan" with its due date and
+"Send reminder" (the share sheet, so WhatsApp or SMS, with a polite message), "Record
+repayment" (choose their transfer) and, on a loan they owe you, "Forgive what is left" (one you
+owe is forgiven from the repayment sheet, for when they let it go), "This loan" with its due date and
 events; settled loans; then all transfers with them, how the bank writes their name, "Same as
 another person" and their transfers; reached from People and from Transaction detail's Person
 row), and Transaction detail's **Loan** card (no board: built from the system's card and

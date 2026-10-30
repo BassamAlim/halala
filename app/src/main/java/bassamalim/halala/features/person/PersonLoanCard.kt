@@ -31,7 +31,8 @@ import bassamalim.halala.core.ui.theme.Spacing
 
 /**
  * The Person board's loan: what is still owed, of what was lent when and what was repaid, how
- * far it is paid back, the reminder and repayment buttons, and "This loan": what happened to it.
+ * far it is paid back, the reminder and repayment buttons, forgiving what they still owe you,
+ * and "This loan": what happened to it.
  */
 @Composable
 fun OpenLoan(loan: PersonLoan, person: String, viewModel: PersonViewModel) {
@@ -74,6 +75,13 @@ fun OpenLoan(loan: PersonLoan, person: String, viewModel: PersonViewModel) {
                 modifier = Modifier.weight(1f)
             )
         }
+        // Letting it go is yours to do only when they owe you; what you owe is forgiven from the repayment sheet.
+        if (loan.lent) HalalaButton(
+            text = stringResource(R.string.loan_forgive),
+            onClick = { viewModel.onForgiveClick(loan.loanId) },
+            destructive = true,
+            modifier = Modifier.fillMaxWidth()
+        )
         LoanEvents(loan, viewModel)
     }
 }
